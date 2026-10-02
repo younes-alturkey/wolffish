@@ -1,0 +1,13 @@
+out
+dist
+pnpm-lock.yaml
+LICENSE.md
+tsconfig.json
+tsconfig.*.json
+
+# Bundled and generated assets — ESLint already ignores these; Prettier must
+# too, or `npm run format` rewrites minified extension bundles and every
+# default-workspace skill as a side effect of formatting one source file.
+src/defaults/workspace
+src/renderer/src/lib/emoji/emoji-data.ts
+scripts

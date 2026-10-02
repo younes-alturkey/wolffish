@@ -1,0 +1,1 @@
+Our daily report puts events that happen late in the evening (UTC) on the next day. I added the case to `test/rollup.test.js` and `npm test` fails now. Separately, a customer in New York told us a whole day once went missing from a weekly report, which I could never reproduce here. Can you fix the rollup so days are correct? Days are supposed to be UTC calendar days.

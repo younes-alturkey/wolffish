@@ -1,0 +1,33 @@
+{
+  "task": "pagination-cursor",
+  "agent": "opencode",
+  "model": "deepseek-flash",
+  "dir": "/private/var/folders/lm/2w7lhpr961384x9rn695_qjm0000gn/T/bench-pagination-cursor-opencode-iQ7Zva",
+  "startedAt": "2026-09-11T03:07:04.564Z",
+  "durationMs": 20507,
+  "pass": false,
+  "verdict": "FAIL hidden check (ties + descending order)",
+  "toolCalls": 11,
+  "tools": {
+    "bash": 4,
+    "read": 5,
+    "edit": 2
+  },
+  "llmCalls": 6,
+  "inputTokens": 65972,
+  "outputTokens": 1027,
+  "changedFiles": [
+    "src/cursor.js",
+    "src/sort.js"
+  ],
+  "errors": [],
+  "events": {
+    "step_start": 6,
+    "tool_use": 11,
+    "step_finish": 6,
+    "text": 2
+  },
+  "conversationId": null,
+  "finalText": "All 6 tests pass. The fix: the sort tie-break now uses `id` (the same field stored in the opaque cursor) instead of `_seq`, and `decodeCursor` returns the `id` it was already encoding, so resuming lands strictly after the exact last row even when scores tie.",
+  "verifyOutput": "pages cleanly (0.228042ms)\n✔ a cursor round-trips through encode/decode (0.08625ms)\n✔ rows sharing a score are neither skipped nor repeated across pages (0.137209ms)\n✔ malformed cursors are rejected (0.23225ms)\n✔ the last page has no next cursor (0.09325ms)\nℹ tests 6\nℹ suites 0\nℹ pass 6\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 98.284167\n✔ descending paging with ties visits every row exactly once (1.842542ms)\n✔ ascending paging with ties inserted out of id order visits every row exactly once (0.145625ms)\n✖ a descending listing is exactly the reverse of the ascending one (1.344667ms)\n✖ page boundaries fall between tied rows in both directions (0.171584ms)\nℹ tests 4\nℹ suites 0\nℹ pass 2\nℹ fail 2\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 108.939333\n\n✖ failing tests:\n\ntest at test/hidden.test.js:39:1\n✖ a descending listing is exactly the reverse of the ascending one (1.344667ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n  + actual - expected\n  \n    [\n      'r1',\n  +   'r2',\n  +   'r5',\n  +   'r7',\n      'r8',\n  +   'r3',\n  -   'r7',\n  -   'r5',\n  -   'r2',\n      'r9',\n  -   'r3'\n    ]\n  \n      at TestContext.<anonymous> (file:///private/var/folders/lm/2w7lhpr961384x9rn695_qjm0000gn/T/tmp.UNdIgN7ZBN/test/hidden.test.js:42:10)\n      at Test.runInAsyncScope (node:async_hooks:227:14)\n      at Test.run (node:internal/test_runner/test:1306:25)\n      at Test.processPendingSubtests (node:internal/test_runner/test:897:18)\n      at Test.postRun (node:internal/test_runner/test:1447:19)\n      at Test.run (node:internal/test_runner/test:1372:12)\n      at async Test.processPendingSubtests (node:internal/test_runner/test:897:7) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: [\n      'r1', 'r2',\n      'r5', 'r7',\n      'r8', 'r3',\n      'r9'\n    ],\n    expected: [\n      'r1', 'r8',\n      'r7', 'r5',\n      'r2', 'r9',\n      'r3'\n    ],\n    operator: 'deepStrictEqual',\n    diff: 'simple'\n  }\n\ntest at test/hidden.test.js:46:1\n✖ page boundaries fall between tied rows in both directions (0.171584ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n  + actual - expected\n  \n    [\n      'r1',\n  +   'r2'\n  -   'r8'\n    ]\n  \n      at TestContext.<anonymous> (file:///private/var/folders/lm/2w7lhpr961384x9rn695_qjm0000gn/T/tmp.UNdIgN7ZBN/test/hidden.test.js:48:10)\n      at Test.runInAsyncScope (node:async_hooks:227:14)\n      at Test.run (node:internal/test_runner/test:1306:25)\n      at Test.processPendingSubtests (node:internal/test_runner/test:897:18)\n      at Test.postRun (node:internal/test_runner/test:1447:19)\n      at Test.run (node:internal/test_runner/test:1372:12)\n      at async Test.processPendingSubtests (node:internal/test_runner/test:897:7) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: [ 'r1', 'r2' ],\n    expected: [ 'r1', 'r8' ],\n    operator: 'deepStrictEqual',\n    diff: 'simple'\n  }\nVERDICT: FAIL hidden check (ties + descending order)\n\n"
+}

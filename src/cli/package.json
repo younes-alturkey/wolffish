@@ -1,0 +1,21 @@
+{
+  "name": "wolffish-cli",
+  "private": true,
+  "type": "module",
+  "description": "The wolffish terminal client — compiled with Bun, rendered by OpenTUI.",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@opentui/core": "0.5.11",
+    "@opentui/solid": "0.5.11",
+    "fuzzysort": "3.1.0",
+    "solid-js": "1.9.12"
+  },
+  "devDependencies": {
+    "@tsconfig/bun": "1.0.8",
+    "@types/bun": "1.3.13",
+    "typescript": "5.9.3"
+  }
+}

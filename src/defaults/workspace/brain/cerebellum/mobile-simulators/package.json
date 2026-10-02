@@ -1,0 +1,10 @@
+{
+  "name": "@wolffish-cap/mobile-simulators",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Wolffish mobile-simulators capability — sharp (installed lazily on first use) downscales screenshots for the model.",
+  "dependencies": {
+    "sharp": "^0.34.5"
+  }
+}

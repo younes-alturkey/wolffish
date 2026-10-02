@@ -1,0 +1,34 @@
+{
+  "task": "unicode-slug",
+  "agent": "opencode",
+  "model": "deepseek-flash",
+  "dir": "/private/var/folders/lm/2w7lhpr961384x9rn695_qjm0000gn/T/bench-unicode-slug-opencode-V7m6nl",
+  "startedAt": "2026-09-11T03:16:17.592Z",
+  "durationMs": 27666,
+  "pass": true,
+  "verdict": "PASS",
+  "toolCalls": 16,
+  "tools": {
+    "bash": 5,
+    "read": 7,
+    "edit": 4
+  },
+  "llmCalls": 10,
+  "inputTokens": 113187,
+  "outputTokens": 1526,
+  "changedFiles": [
+    "src/length.js",
+    "src/slug.js",
+    "src/truncate.js"
+  ],
+  "errors": [],
+  "events": {
+    "step_start": 10,
+    "tool_use": 16,
+    "step_finish": 10,
+    "text": 3
+  },
+  "conversationId": null,
+  "finalText": "Fixed. Two root causes:\n\n- `src/length.js` / `src/truncate.js` counted and sliced UTF-16 units, splitting surrogate pairs (the lone `\\ud83c`). Now they operate on code points via `[...string]`.\n- `src/slug.js` ran its drop regex before normalizing, so combining marks (`U+0300`, etc.) were deleted. It now `.normalize('NFC')` first, composing accents so they survive and canonical equivalents produce identical slugs.",
+  "verifyOutput": "✔ ascii titles (1.064834ms)\n✔ custom separator and trailing separators are trimmed (0.125417ms)\n✔ non-latin letters are kept (0.488541ms)\n✔ emoji are kept and never cut in half (0.076417ms)\n✔ accents written as combining marks survive (0.072583ms)\n✔ truncate and charLength on plain text (0.216375ms)\nℹ tests 6\nℹ suites 0\nℹ pass 6\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 130.556458\n✔ NFC and NFD inputs produce the same slug, also when truncated (1.177ms)\n✔ a 4-byte emoji exactly at the cut boundary (0.589292ms)\n✔ charLength counts characters, not UTF-16 units (0.06375ms)\nℹ tests 3\nℹ suites 0\nℹ pass 3\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 95.861417\nVERDICT: PASS\n\n"
+}

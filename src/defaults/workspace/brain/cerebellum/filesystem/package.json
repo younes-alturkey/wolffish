@@ -1,0 +1,11 @@
+{
+  "name": "@wolffish-cap/filesystem",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Wolffish filesystem capability \u2014 runtime npm dependencies (sharp for image_view, @vscode/ripgrep for file_grep/file_glob) installed lazily on first use.",
+  "dependencies": {
+    "sharp": "^0.34.5",
+    "@vscode/ripgrep": "^1.18.0"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "@wolffish-cap/browser",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Wolffish browser automation capability — runtime npm dependencies installed lazily on first use.",
+  "dependencies": {
+    "playwright-core": "1.49.1"
+  },
+  "scripts": {
+    "postinstall": "node install.mjs"
+  }
+}

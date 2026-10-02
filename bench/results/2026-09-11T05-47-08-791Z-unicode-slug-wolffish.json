@@ -1,0 +1,37 @@
+{
+  "task": "unicode-slug",
+  "agent": "wolffish",
+  "model": "deepseek-flash",
+  "dir": "/private/var/folders/lm/2w7lhpr961384x9rn695_qjm0000gn/T/bench-unicode-slug-wolffish-R24Ymh",
+  "startedAt": "2026-09-11T05:47:08.791Z",
+  "durationMs": 57252,
+  "pass": true,
+  "verdict": "PASS",
+  "toolCalls": 21,
+  "tools": {
+    "operating_manual": 1,
+    "file_read": 8,
+    "file_glob": 1,
+    "todo_write": 2,
+    "shell_exec": 5,
+    "file_edit": 3,
+    "notify_phone": 1
+  },
+  "llmCalls": 9,
+  "inputTokens": 48874,
+  "outputTokens": 19906,
+  "changedFiles": [
+    "src/length.js",
+    "src/slug.js",
+    "src/truncate.js"
+  ],
+  "errors": [],
+  "events": {
+    "turnEvent": 96,
+    "segment": 7536,
+    "done": 1
+  },
+  "conversationId": "2026-09-11_08-47-08_795-48f721",
+  "finalText": "ncate` slices the code-point array instead of `String.slice`, so a cut can only land between characters. `truncateWords` needed no change — it splits at a separator index, which is always a valid boundary.\n\n**2. Mac-pasted accents lost** — this was never platform-dependent behaviour, it's the input encoding. A Mac paste produces NFD (`e` + U+0300), and the `DROP` filter keeps only `\\p{L}\\p{N}\\p{Extended_Pictographic}`, so combining marks aren't letters and were deleted *before* they could attach. Typed-on-Linux NFC input had its accents precomposed inside `\\p{L}` and survived. I confirmed the test literal at the byte level: `43 72 65 300 6d 65 …`.\n- `src/slug.js:18` — `slugify` now runs `.normalize('NFC')` before lowercasing, so both spellings compose into the same letters, are kept, and produce identical output — which is what the README guarantees (\"two inputs that are canonically equivalent produce the same slug\", \"output is always in NFC form\").\n\n**Verification beyond the suite** — 20,000 fuzzed inputs (mixed ASCII, emoji, Japanese, NFD, separator-only) produced **zero** over-`maxLength` slugs and **zero** lone surrogates. Spot checks: `truncate('🌍🌍🌍', 2) → '🌍🌍'`, `slugify('Crème Brûlée') === slugify(NFD)` → `'crème-brûlée'`, `maxLength: 0 → ''`, `slugify('Hello World Foo', {maxLength: 6}) → 'hello'` (cut lands on the separator, then it's trimmed), and `uniqueSlugs` stays deduped and within budget across NFC/NFD duplicates (`['crème-brûlée', 'crème-brûlée-2']`).\n\nNot committed, and `git status` shows only those three files modified — nothing else in the tree was touched.\n\nOne thing I deliberately did **not** change: `DROP` is why a ZWJ sequence like 👨👩👧 loses its joiner and splits into three emoji, and why ❤️ drops its variation selector. That's a separate fidelity question from the two bugs you reported, and fixing it means adding `\\p{Emoji_Component}` to the keep-set — which would also start preserving `#` and `*` in slugs. Say the word and I'll do it.",
+  "verifyOutput": "✔ ascii titles (1.078292ms)\n✔ custom separator and trailing separators are trimmed (0.078208ms)\n✔ non-latin letters are kept (0.417542ms)\n✔ emoji are kept and never cut in half (0.072917ms)\n✔ accents written as combining marks survive (0.066334ms)\n✔ symbols become words and repeated titles get numbered (0.801708ms)\n✔ truncateWords cuts at a word boundary (0.076625ms)\n✔ truncate and charLength on plain text (0.178292ms)\nℹ tests 8\nℹ suites 0\nℹ pass 8\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 98.216458\n✔ NFC and NFD inputs produce the same slug, also when truncated (1.047291ms)\n✔ a 4-byte emoji exactly at the cut boundary (0.565166ms)\n✔ charLength counts characters, not UTF-16 units (0.062959ms)\nℹ tests 3\nℹ suites 0\nℹ pass 3\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 91.780708\nVERDICT: PASS\n\n"
+}

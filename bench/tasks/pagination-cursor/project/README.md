@@ -1,0 +1,3 @@
+# cursor-pages
+
+An in-memory table with keyset (cursor) pagination. `listPage(rows, { sortBy, dir, limit, cursor })` returns one page of rows sorted by `sortBy` in direction `dir` (`asc` or `desc`) and an opaque `nextCursor` that resumes exactly where the page ended. Ordering is a total order: rows are compared on the sort field first and ties are broken by `id` in the same direction, so a descending listing is exactly the reverse of the ascending one and every row appears exactly once when paging to the end. Cursors are opaque base64url strings produced by `src/cursor.js`; callers never build them by hand.

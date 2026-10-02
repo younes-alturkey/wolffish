@@ -1,0 +1,13 @@
+{
+  "name": "@wolffish-cap/spreadsheet",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Wolffish spreadsheet capability \u2014 runtime npm dependencies installed lazily on first use.",
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "papaparse": "^5.5.3",
+    "fast-formula-parser": "^1.0.19",
+    "adm-zip": "^0.5.17"
+  }
+}

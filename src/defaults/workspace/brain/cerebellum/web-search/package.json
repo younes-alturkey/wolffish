@@ -1,0 +1,10 @@
+{
+  "name": "@wolffish-cap/web-search",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Wolffish web-search capability — runtime npm dependencies installed lazily on first use.",
+  "dependencies": {
+    "cheerio": "^1.0.0"
+  }
+}

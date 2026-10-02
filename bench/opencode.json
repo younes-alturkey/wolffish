@@ -1,0 +1,15 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "deepseek": {
+      "models": {
+        "deepseek-flash": {
+          "name": "DeepSeek V4.1 Flash (same wire id Wolffish uses)",
+          "limit": { "context": 128000, "output": 32000 },
+          "tool_call": true
+        }
+      }
+    }
+  },
+  "permission": "allow"
+}

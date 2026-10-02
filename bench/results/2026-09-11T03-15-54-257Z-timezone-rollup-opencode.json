@@ -1,0 +1,33 @@
+{
+  "task": "timezone-rollup",
+  "agent": "opencode",
+  "model": "deepseek-flash",
+  "dir": "/private/var/folders/lm/2w7lhpr961384x9rn695_qjm0000gn/T/bench-timezone-rollup-opencode-uugqFf",
+  "startedAt": "2026-09-11T03:15:54.257Z",
+  "durationMs": 22834,
+  "pass": true,
+  "verdict": "PASS",
+  "toolCalls": 12,
+  "tools": {
+    "bash": 5,
+    "read": 4,
+    "edit": 3
+  },
+  "llmCalls": 8,
+  "inputTokens": 84992,
+  "outputTokens": 1496,
+  "changedFiles": [
+    "src/keys.js",
+    "src/range.js"
+  ],
+  "errors": [],
+  "events": {
+    "step_start": 8,
+    "tool_use": 12,
+    "step_finish": 8,
+    "text": 2
+  },
+  "conversationId": null,
+  "finalText": "Fixed. Root causes:\n\n- `src/keys.js:7` — used local getters (`getFullYear`/`getMonth`/`getDate`), so an event at `2024-05-01T23:30Z` was bucketed as May 2 under any UTC+ offset. Now `getUTC*`.\n- `src/range.js` — built local midnights and used local `setDate`, so `daysBetween` divided DST-shortened/lengthened days and floored wrong. Under `America/New_York` across spring-forward, `daysBetween('2024-03-09','2024-03-16')` returned 6 and `dayRange` dropped March 16 — the customer's missing day. Now `Date.UTC` + `getUTC*` + `setUTCDate`, making each day exactly 86,400,000 ms.\n\n`npm test` passes 6/6.",
+  "verifyOutput": "✔ an instant in the middle of the day keys to that day (0.737833ms)\n✔ instants just before midnight stay on their own day (0.060875ms)\n✔ offsets are honoured: 09:30+09:00 is 00:30Z (0.057541ms)\n✔ dayRange enumerates inclusive days and daysBetween counts them (0.996333ms)\n✔ rollup buckets events by day, near midnight included (0.127375ms)\n✔ rollup keeps zero rows and ignores events outside the range (0.090292ms)\nℹ tests 6\nℹ suites 0\nℹ pass 6\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 103.153667\n✔ verify.sh pinned the zone (1.3965ms)\n✔ UTC day keys do not follow the local clock (0.09625ms)\n✔ the range spanning the spring-forward day has every day (0.846167ms)\n✔ the range spanning the fall-back day has every day exactly once (0.076792ms)\n✔ a week of one event per UTC day across the DST change rolls up 1 per day (0.159583ms)\nℹ tests 5\nℹ suites 0\nℹ pass 5\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 93.838333\nVERDICT: PASS\n\n"
+}

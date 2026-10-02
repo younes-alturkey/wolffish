@@ -1,0 +1,147 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - run: npx electron-builder --mac --universal
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: macos-artifacts
+          path: |
+            dist/*.dmg
+            dist/*.zip
+            dist/*.blockmap
+            dist/latest-mac.yml
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      # TODO: code signing — add these secrets for signing:
+      # WIN_CSC_LINK, WIN_CSC_KEY_PASSWORD
+      - run: npx electron-builder --win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: windows-artifacts
+          path: |
+            dist/*.exe
+            dist/latest.yml
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      # rpmbuild is required to emit .rpm on the Ubuntu runner; deb tooling ships with the image.
+      - name: Install RPM build tooling
+        run: sudo apt-get update && sudo apt-get install -y rpm
+
+      - run: npx electron-builder --linux AppImage deb rpm
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: linux-artifacts
+          path: |
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.rpm
+            dist/latest-linux.yml
+
+  release:
+    needs: [build-macos, build-windows, build-linux]
+    runs-on: ubuntu-latest
+    environment: Production
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: install
+
+      - uses: actions/download-artifact@v7
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Upload to Cloudflare R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          # Recursive copy uploads every built artifact (.dmg/.exe/.AppImage/.deb/.rpm/.zip/.blockmap);
+          # latest*.yml manifests are excluded here and published to the bucket root below.
+          aws s3 cp --endpoint-url "$R2_ENDPOINT" ./artifacts/ "s3://$R2_BUCKET/$VERSION/" --recursive --exclude "latest*.yml" --cache-control "public, max-age=31536000, immutable"
+          sed -i "s|url: |url: $VERSION/|g" ./artifacts/latest-mac.yml
+          sed -i "s|url: |url: $VERSION/|g" ./artifacts/latest.yml
+          sed -i "s|url: |url: $VERSION/|g" ./artifacts/latest-linux.yml
+          aws s3 cp --endpoint-url "$R2_ENDPOINT" "./artifacts/latest-mac.yml" "s3://$R2_BUCKET/latest-mac.yml"
+          aws s3 cp --endpoint-url "$R2_ENDPOINT" "./artifacts/latest.yml" "s3://$R2_BUCKET/latest.yml"
+          aws s3 cp --endpoint-url "$R2_ENDPOINT" "./artifacts/latest-linux.yml" "s3://$R2_BUCKET/latest-linux.yml"
+          aws s3 cp --endpoint-url "$R2_ENDPOINT" "./install/install.sh" "s3://$R2_BUCKET/install.sh" --content-type "text/plain"
+          aws s3 cp --endpoint-url "$R2_ENDPOINT" "./install/install.ps1" "s3://$R2_BUCKET/install.ps1" --content-type "text/plain"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            artifacts/*.dmg
+            artifacts/*.exe
+            artifacts/*.AppImage
+            artifacts/*.deb
+            artifacts/*.rpm
+            install/install.sh
+            install/install.ps1
+          generate_release_notes: true

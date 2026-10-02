@@ -1,0 +1,2736 @@
+{
+  "app": {
+    "name": "Wolffish",
+    "tagline": "A calm home for your work"
+  },
+  "common": {
+    "save": "Save",
+    "back": "Back",
+    "cancel": "Cancel",
+    "loading": "Loading…",
+    "offline": "No network connection",
+    "networkOffline": "No network connection detected",
+    "networkRestored": "Network connection restored",
+    "dismiss": "Dismiss",
+    "diskUsage": "{{free}} free of {{total}}",
+    "contextMenu": {
+      "selectAll": "Select all",
+      "copy": "Copy",
+      "paste": "Paste",
+      "clear": "Clear",
+      "addToDictionary": "Add to dictionary",
+      "noSuggestions": "No suggestions"
+    }
+  },
+  "closing": {
+    "title": "Closing Wolffish",
+    "subtitle": "Wolffish is finishing up some background work so nothing is lost.",
+    "bodyTitle": "Saving your work",
+    "body": "Closes once your work is saved."
+  },
+  "onboarding": {
+    "welcome": "Welcome to Wolffish",
+    "subtitle": "Pick a theme and language. Change anytime.",
+    "getStarted": "Get Started",
+    "settingsTitle": "Preferences",
+    "settingsSubtitle": "Adjust your theme and language. Changes save instantly.",
+    "done": "Done"
+  },
+  "theme": {
+    "label": "Appearance",
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "locale": {
+    "label": "Language",
+    "en": "English",
+    "ar": "العربية"
+  },
+  "lowDiskSpace": {
+    "title": "Not enough free space",
+    "subtitle": "Wolffish needs at least {{min}} free to run.",
+    "titleChecking": "Checking free space",
+    "subtitleChecking": "Looking at how much room is left on your disk.",
+    "titleOk": "You're good to go",
+    "subtitleOk": "There's plenty of room for Wolffish to run.",
+    "checkingTitle": "Checking free space",
+    "checking": "Please wait while we measure your free disk space.",
+    "hint": "Only {{free}} is free. Delete unused downloads, videos, or apps, then recalculate.",
+    "enough": "{{free}} free",
+    "enoughHint": "That's enough for Wolffish to run.",
+    "recalculate": "Recalculate",
+    "continue": "Continue",
+    "continueAnyway": "Continue anyway",
+    "continueAnywayHint": "You can keep using Wolffish, but with this little space things may fail — models, saves, and downloads can error until you free up room.",
+    "toast": {
+      "stillLow": "Still low on space — delete files and retry.",
+      "enough": "{{free}} free — enough to continue."
+    }
+  },
+  "ollamaSetup": {
+    "title": "Install Ollama",
+    "subtitle": "A lightweight runtime for running AI models locally.",
+    "titleDetecting": "Detecting Ollama",
+    "subtitleDetecting": "Checking if Ollama — the local AI runtime Wolffish needs — is installed.",
+    "detectingTitle": "Detecting Ollama",
+    "detecting": "Please wait while we detect Ollama.",
+    "titleNotRunning": "Start Ollama",
+    "subtitleNotRunning": "Ollama is installed but not running. Start it to continue.",
+    "howToInstall": "Click below to download Ollama for your system, then run the installer. Wolffish will detect it automatically.",
+    "notRunningHint": "Open Ollama and Wolffish will pick it up automatically. If the button doesn't work, start Ollama yourself and tap Detect.",
+    "download": "Download Ollama",
+    "openOllama": "Open Ollama",
+    "detectButton": "Detect Ollama",
+    "checking": "Checking",
+    "polling": "Watching for Ollama",
+    "notDetected": "Ollama isn't running yet. Install it and try again.",
+    "detected": "Ollama is running",
+    "detectedHint": "Wolffish can now talk to it.",
+    "continue": "Continue",
+    "skip": "Skip for now",
+    "toast": {
+      "notDetected": "Ollama not detected — install or start it.",
+      "installedNotRunning": "Ollama installed but not running — open it."
+    }
+  },
+  "modelPicker": {
+    "title": "Pick your Ollama model",
+    "tagline": "Ollama model downloads once and is local forever.",
+    "specs": {
+      "os": "OS",
+      "cpu": "Cores",
+      "ram": "RAM",
+      "disk": "Free space"
+    },
+    "family": {
+      "gemma": "Gemma",
+      "qwen": "Qwen",
+      "llama": "Llama",
+      "deepseek": "DeepSeek",
+      "kimi": "Kimi"
+    },
+    "modelSize": {
+      "nano": "Nano",
+      "mini": "Mini",
+      "compact": "Compact",
+      "standard": "Standard",
+      "pro": "Pro",
+      "ultra": "Ultra",
+      "max": "Max",
+      "extreme": "Extreme"
+    },
+    "modelDescription": {
+      "nano": "Tiny and quick — barely uses memory.",
+      "mini": "Light and snappy for everyday questions.",
+      "compact": "A solid all-rounder for most work.",
+      "standard": "Balanced capability with a moderate footprint.",
+      "pro": "Capable enough for complex, multi-step work.",
+      "ultra": "Highly capable — needs plenty of memory.",
+      "max": "Frontier-class — requires serious hardware.",
+      "extreme": "The biggest weights this family ships."
+    },
+    "approxRam": "≈ {{ram}} RAM",
+    "params": "{{value}} params",
+    "tooBig": "Too large for your machine",
+    "loadingCatalog": "Fetching available sizes from Ollama",
+    "catalogUnavailable": "Couldn't reach Ollama's registry. Check your connection and try again.",
+    "current": "Currently selected",
+    "alreadyInstalled": "Downloaded",
+    "latest": "Latest",
+    "recommended": "Recommended",
+    "tags": {
+      "vision": "Vision",
+      "tools": "Tools",
+      "thinking": "Thinking",
+      "code": "Code",
+      "safety": "Safety",
+      "embedding": "Embedding",
+      "medical": "Medical",
+      "translation": "Translation",
+      "math": "Math",
+      "reasoning": "Reasoning",
+      "ocr": "OCR"
+    },
+    "install": "Install",
+    "use": "Use this model",
+    "cancel": "Cancel",
+    "retry": "Try again",
+    "speedLine": "{{speed}} / sec · {{eta}} remaining",
+    "speedLineNoEta": "{{speed}} / sec",
+    "pullStatus": {
+      "lookingUp": "Looking up",
+      "downloading": "Downloading",
+      "processing": "Processing",
+      "verifying": "Verifying"
+    },
+    "pullHints": {
+      "lookingUp": "Finding your model in Ollama's registry.",
+      "downloading": "Streaming the model files to your machine.",
+      "processing": "Setting up the model on your machine.",
+      "verifying": "Making sure everything is intact."
+    },
+    "pullErrors": {
+      "manifestMissing": "Model unavailable — pick another or update Ollama.",
+      "connection": "Connection failed — check internet and Ollama.",
+      "generic": "Something went wrong. Try to restart the app."
+    },
+    "reinstallOllama": "Need to reinstall Ollama?",
+    "available": "Available",
+    "availableDescription": "Models already downloaded on your machine, ready to use.",
+    "modelsFolder": "Models folder",
+    "modelsFolderDescription": "Scan this folder for downloaded Ollama models.",
+    "chooseFolder": "Choose folder",
+    "noAvailableModels": "No models found in this folder.",
+    "useAvailable": "Use this model",
+    "availableDetail": {
+      "family": "Family",
+      "params": "Parameters",
+      "quantization": "Quantization",
+      "format": "Format",
+      "size": "Size",
+      "unknown": "Unknown"
+    }
+  },
+  "settings": {
+    "tabs": {
+      "appearance": "Appearance",
+      "model": "Models",
+      "wolffish": "Preferences",
+      "variables": "Variables",
+      "capabilities": "Capabilities",
+      "channels": "Channels",
+      "services": "Services",
+      "mcp": "MCP",
+      "usage": "Usage",
+      "data": "Data",
+      "updates": "Updates",
+      "knowledge": "Knowledge"
+    },
+    "wolffish": {
+      "title": "Wolffish",
+      "subtitle": "Runtime behavior. Off by default — turn things on as you trust them.",
+      "toggle": {
+        "on": "On",
+        "off": "Off"
+      },
+      "launchAtStartup": {
+        "label": "Launch at startup",
+        "description": "Automatically start Wolffish when you log into your computer. When enabled, Wolffish registers itself as a login item with your operating system — macOS, Windows, and Linux are all supported. This lets Wolffish be ready the moment your session begins, so you can jump straight into a conversation without opening it manually. Disable this if you prefer to launch Wolffish only when you need it.",
+        "active": "Active",
+        "inactive": "Inactive",
+        "enabledToast": "Wolffish will start at login"
+      },
+      "blockCredentials": {
+        "label": "Block sensitive data in messages",
+        "description": "When enabled, messages that appear to contain passwords, API keys, tokens, or private keys are immediately discarded — they never reach the agent, are never stored, and you get a short notification instead. Off by default so the agent can freely discuss credentials when needed. Turn it on if you want a hard guard against accidentally pasting secrets into chat."
+      },
+      "bypassPermissions": {
+        "label": "Bypass permissions mode",
+        "description": "When enabled, all tool actions auto-approve without showing the approval dialog. The amygdala still classifies every action and logs everything to the corpus event bus and feedback files exactly as before — only the human approval step is skipped. Use this for trusted environments where you want full agent autonomy. Disable it any time to restore manual approval."
+      },
+      "restrictPowerfulModels": {
+        "label": "Restrict powerful local models",
+        "description": "When enabled, the model picker blocks local models whose memory footprint exceeds what your system can handle comfortably (~55% of total RAM). This prevents severe slowdowns, swap thrashing, and system instability caused by loading oversized models. Turning this off lets you install and run any model regardless of hardware limits — not recommended. Oversized models force your system into heavy disk swapping, making both Wolffish and your entire machine unresponsive."
+      },
+      "voiceReplies": {
+        "label": "Voice replies",
+        "description": "When you send a voice prompt, Wolffish replies with a spoken voice memo. Files and text still arrive when the work needs them — the reply just ends spoken aloud. This switch alone controls whether the model is instructed to do this. Turn it off to get text replies to voice prompts."
+      },
+      "weekStartsOn": {
+        "label": "Start of week",
+        "sunday": "Sunday",
+        "monday": "Monday",
+        "description": "Sets the day Wolffish treats as the first day of the week. Drives how the activity heatmap is laid out and how date ranges like \"this week\" line up in your head. Default is Monday (the ISO 8601 standard most of the world uses); pick Sunday if your calendar app and routines start there. Internal weekly memory files keep their existing ISO-week names so older summaries don't shift."
+      }
+    },
+    "knowledge": {
+      "tabs": {
+        "compaction": "Compaction",
+        "reflection": "Reflection"
+      },
+      "reflection": {
+        "title": "Reflection",
+        "subtitle": "Every night, Wolffish reviews its finished conversations — what worked, what failed — and distills the lessons into a playbook it carries into every future turn.",
+        "nightly": {
+          "label": "Nightly reflection",
+          "description": "Reviews every conversation that has settled since the last pass — automations included — scoring each one and extracting what worked, what failed, and what you liked. The lessons fold into the playbook carried into every turn. Missed fires (asleep, app closed) run on the next launch."
+        },
+        "quiet": {
+          "label": "Review after quiet for",
+          "description": "A conversation is only reviewed once it has been idle this long, so unfinished work isn't judged early. Anything still warm simply waits for a later night — nothing is ever skipped — and a conversation you continue after its review gets reviewed again with the new turns included."
+        },
+        "quietHoursOption": "{{count}}h",
+        "deepClean": {
+          "label": "Monthly deep reflection",
+          "description": "Once a month, a deep reflection takes the opposite stance of the nightly pass: it challenges the playbook and knowledge files against recent evidence, merging duplicates and pruning stale, over-general, or contradicted entries — the structural guard against learned bad habits."
+        },
+        "runNow": "Run now",
+        "runStarted": "Started — the result card updates when it finishes.",
+        "runAlready": "Already running or queued.",
+        "runError": "Couldn't start the run",
+        "nextRun": "Next run {{time}}",
+        "resync": "Resync",
+        "resyncSuccessToast": "Reflection config resynced",
+        "resyncErrorToast": "Failed to resync reflection config",
+        "lastRun": {
+          "reflectionTitle": "Last reflection",
+          "deepCleanTitle": "Last deep reflection",
+          "ranAt": "Ran {{time}}",
+          "took": "Took {{duration}}",
+          "tokens": "{{input}} tokens in · {{output}} tokens out"
+        }
+      },
+      "compaction": {
+        "title": "Memory compaction",
+        "subtitle": "Wolffish compacts your conversations into long-term memory. Daily compaction extracts key facts from each day's episodes and promotes them to knowledge files. Weekly consolidation merges the week's episodes into a single digest.",
+        "daily": {
+          "label": "Daily compaction",
+          "description": "Extracts key facts from today's conversations and saves them to knowledge files."
+        },
+        "weekly": {
+          "label": "Weekly consolidation",
+          "description": "Merges the week's episode logs into a single digest for archival."
+        },
+        "days": {
+          "0": "Sunday",
+          "1": "Monday",
+          "2": "Tuesday",
+          "3": "Wednesday",
+          "4": "Thursday",
+          "5": "Friday",
+          "6": "Saturday"
+        },
+        "nextRun": "Next run {{time}}",
+        "resync": "Resync",
+        "resyncSuccessToast": "Compaction config resynced",
+        "resyncErrorToast": "Failed to resync compaction config",
+        "lastRun": {
+          "dailyTitle": "Last daily run",
+          "weeklyTitle": "Last weekly run",
+          "ranAt": "Ran {{time}}",
+          "took": "Took {{duration}}",
+          "tokens": "{{input}} tokens in · {{output}} tokens out"
+        }
+      }
+    },
+    "capabilities": {
+      "title": "Capabilities",
+      "subtitle": "Loaded capabilities and their runtime status.",
+      "loading": "Loading capabilities…",
+      "empty": "No capabilities loaded.",
+      "active": "Active",
+      "inactive": "Inactive",
+      "error": "Error",
+      "official": "Official",
+      "unknown": "Unknown",
+      "wolffish": "Wolffish",
+      "untested": "Untested",
+      "untestedHint": "Created by Wolffish and not yet verified — this clears automatically after its first successful tool call.",
+      "core": "Core",
+      "alwaysOn": "Always on",
+      "lockedHint": "Core capability — always on and can't be disabled.",
+      "plugin": "Plugin",
+      "tools": "{{count}} tools",
+      "requires": "Requires {{deps}}",
+      "resync": "Resync",
+      "resyncSuccessToast": "Capabilities resynced",
+      "resyncErrorToast": "Failed to resync capabilities",
+      "import": {
+        "label": "Import a capability",
+        "hint": "Add your own skills, plugins, and tools here.",
+        "dropzone": "Drag a SKILL.md, folder, or .zip here — or click to browse",
+        "dropzoneActive": "Drop to import",
+        "dialogTitle": "Import a capability",
+        "dialogFilter": "Capability (SKILL.md or .zip)",
+        "importing": "Importing…",
+        "successToast": "Imported \"{{name}}\"",
+        "errorToast": "Import failed",
+        "errorTitle": "Import failed",
+        "dismiss": "Dismiss",
+        "readError": "Could not read the dropped item. Try the browse button instead.",
+        "guide": {
+          "title": "What you can drop",
+          "skillTitle": "A single SKILL.md",
+          "skillDesc": "A markdown procedure with a YAML frontmatter block (name, description, and optional triggers). Imported as a pure skill — guidance the agent follows when a trigger matches, with no tools or dependencies to install.",
+          "folderTitle": "A capability folder",
+          "folderDesc": "A folder containing a SKILL.md alongside an optional plugin/ (index.mjs) and package.json. This is the full capability — the skill, its executable tools, and any declared dependencies, all in a single drop.",
+          "zipTitle": "A .zip archive",
+          "zipDesc": "The same capability folder, compressed into one file. It's safely unpacked to a temporary location, validated exactly like a folder, then added only once every check passes.",
+          "tip": "Every drop is fully validated before anything is written to disk, so a failed import can't corrupt or half-install your existing capabilities. The name must be unique across all capabilities, and any system or npm dependencies are installed automatically the first time the capability runs."
+        }
+      },
+      "delete": {
+        "action": "Delete capability",
+        "title": "Delete capability",
+        "warning": "Delete \"{{name}}\" and permanently remove its folder from your workspace? This can't be undone.",
+        "cta": "Delete",
+        "cancel": "Cancel",
+        "successToast": "Deleted \"{{name}}\""
+      }
+    },
+    "model": {
+      "providers": {
+        "ollama": "Ollama",
+        "anthropic": "Anthropic",
+        "openai": "OpenAI",
+        "deepseek": "DeepSeek",
+        "mimo": "Xiaomi Mimo",
+        "kimi": "Kimi",
+        "minimax": "MiniMax",
+        "xai": "xAI",
+        "qwen": "Qwen",
+        "stepfun": "Stepfun",
+        "zai": "Z.ai",
+        "openrouter": "OpenRouter",
+        "descriptions": {
+          "zai": "Z.ai — Zhipu's GLM models: frontier agentic reasoning and coding with long context",
+          "stepfun": "Step — frontier reasoning models with built-in thinking and vision support",
+          "qwen": "Alibaba's Qwen models — powerful reasoning and coding with long-context support",
+          "xai": "Grok — xAI's frontier reasoning models with vision and live web search",
+          "minimax": "MiniMax's frontier models — strong reasoning and code with competitive pricing",
+          "kimi": "Moonshot AI's flagship models — powerful reasoning with long-context support",
+          "mimo": "Xiaomi's cloud AI — affordable frontier models with strong multilingual support",
+          "deepseek": "Open-weight reasoning powerhouse — frontier performance at a fraction of the cost",
+          "anthropic": "Claude — safety-focused frontier models with exceptional long-context reasoning",
+          "openai": "GPT and o-series — the industry-standard frontier model family",
+          "openrouter": "Unified gateway — OpenAI, Anthropic, Google, Meta, and more from one key",
+          "ollama": "Open-weight models running locally — private, offline, no API key needed"
+        }
+      },
+      "cloudBadge": "Cloud API",
+      "titleWithCount": "Models ({{count}})",
+      "subtitle": "Model providers Wolffish can think with — local through Ollama, or cloud with an API key.",
+      "searchPlaceholder": "Search providers",
+      "noMatches": "No providers match your search.",
+      "ollamaNotAvailable": {
+        "subtitle": "Ollama is not running or not installed.",
+        "description": "Install or start Ollama to browse and download local models.",
+        "setup": "Set up Ollama"
+      },
+      "cloud": {
+        "title": "{{provider}}",
+        "apiKey": "API key",
+        "apiKeyPlaceholder": "Paste your {{provider}} key",
+        "showKey": "Show key",
+        "hideKey": "Hide key",
+        "brainNotice": "Pick the active model and mode from the chat composer.",
+        "modelsBreakdown": "Models",
+        "breakdown": {
+          "model": "Model",
+          "context": "Context",
+          "input": "Input / 1M",
+          "output": "Output / 1M",
+          "cached": "Cached / 1M",
+          "modes": "Modes",
+          "free": "Free",
+          "badges": {
+            "frontier": "Frontier",
+            "vision": "Vision",
+            "reasoning": "Reasoning",
+            "code": "Code",
+            "fast": "Fast",
+            "voice": "Voice"
+          },
+          "disclaimer": "Prices are in USD per 1M tokens. Actual billing may vary.",
+          "moreModels": "more models available at"
+        },
+        "platform": "Platform",
+        "test": "Save",
+        "testConnection": "Test connection",
+        "remove": "Disconnect",
+        "keyWorksToast": "{{provider}} key seems to work correctly",
+        "removedToast": "{{provider}} key removed",
+        "status": {
+          "untested": "Models will become available once the key is verified",
+          "testing": "Testing connection",
+          "ready": "Models are ready",
+          "invalid": "Connection failed"
+        },
+        "alerts": {
+          "invalidKey": "The {{provider}} key seems to be invalid. Update it below."
+        },
+        "errors": {
+          "invalidKey": "The API key was rejected. Check it and try again.",
+          "rateLimited": "Rate limited. Wait a moment and try again.",
+          "invalidModel": "Model not available with this key.",
+          "network": "Can't reach {{provider}} — check connection.",
+          "generic": "Test failed: {{message}}"
+        }
+      }
+    },
+    "channels": {
+      "tabs": {
+        "inapp": "In-App",
+        "telegram": "Telegram",
+        "whatsapp": "WhatsApp",
+        "mobile": "Mobile",
+        "cli": "CLI",
+        "browser": "Browser"
+      },
+      "cli": {
+        "title": "CLI",
+        "subtitle": "Wolffish in a terminal. The same agent, the same settings, the same conversations — no window needed, which is what lets it run on a server you reach over SSH.",
+        "tabLabel": "CLI",
+        "verbose": {
+          "label": "Show all tool activity",
+          "description": "On prints every tool call and its result in the terminal, plus the model chip. Off prints only the agent's replies, the files it delivers, and anything that failed."
+        },
+        "path": {
+          "title": "The wolffish command",
+          "installed": "Ready",
+          "missing": "Not on your PATH",
+          "install": "Install command",
+          "reinstall": "Reinstall",
+          "remove": "Remove",
+          "installed_at": "Installed at",
+          "resolves": "Your shell runs",
+          "shadowed": "Another program named \"wolffish\" comes first on your PATH — this is usually the desktop app itself, linked by the package manager. Running the command will open the app instead of the terminal session. Move {{dir}} ahead of it, or remove the other link.",
+          "needsEntry": "Its folder is not on your PATH yet. Add this line, then open a new terminal:",
+          "needsEntryDone": "Its folder was added to your shell profile. Open a new terminal window and the command is there.",
+          "failed": "Could not install the command: {{error}}",
+          "hint": "Wolffish writes this automatically on every launch, so it stays pointed at the current version after an update.",
+          "verify": "Check any time with",
+          "nothing": "nothing",
+          "toast": {
+            "installed": "Command installed",
+            "needsPath": "Installed — add its folder to your PATH",
+            "openTerminal": "Command installed — open a new terminal to use it",
+            "shadowed": "Installed, but another wolffish runs first",
+            "failed": "Could not install the command",
+            "removed": "Command removed",
+            "removeFailed": "Could not remove the command"
+          }
+        },
+        "service": {
+          "title": "Start on its own",
+          "description": "Wolffish registers itself with the operating system so it comes back after a restart — automations fire, channels answer, and the terminal attaches whenever you want one. This is the same setting as Launch at startup; changing it here changes it there.",
+          "registered": "Registered with the OS",
+          "notRegistered": "Not registered",
+          "location": "Location",
+          "managedByOs": "managed by the OS",
+          "modeLabel": "Start it as",
+          "mode": {
+            "gui": {
+              "label": "Login item",
+              "description": "Starts when you log in, and opens the window. Needs a desktop session, so it never fires on a server."
+            },
+            "headless": {
+              "label": "Background service",
+              "description": "Starts with the machine, with no session and no window. This is what a server wants, and what the terminal attaches to."
+            }
+          },
+          "headlessHostHint": "This machine has no desktop session, so a login item will never fire here. Choose the background service.",
+          "sameAsPreferences": "This is the same switch, so changing it here changes it there. What this card adds is the choice of mechanism, which only matters when you run without a window.",
+          "openSetting": "Open {{tab}}",
+          "confirm": {
+            "title": "Run as a background service?",
+            "body": "A background service is registered to stay running: if you quit Wolffish, the system starts it again within a few seconds. That is what a server wants — automations keep firing and channels keep answering with nobody logged in — but on a machine you use directly it means the app will not stay closed.",
+            "reversible": "You can switch back to a login item, or turn autostart off entirely, from this same card at any time.",
+            "accept": "Register as a service",
+            "cancel": "Keep the login item"
+          }
+        },
+        "guide": {
+          "title": "How it works",
+          "daemon": {
+            "title": "The terminal is a view, not the app",
+            "body": "Wolffish runs as a background process. The command attaches to it and detaches when you leave — close the terminal, or lose the SSH connection, and the agent keeps working. Come back and it reattaches to whatever is still running."
+          },
+          "files": {
+            "title": "Files are paths, both ways",
+            "body": "Attach with a path; a delivered file prints its own path, ready to open or copy. Nothing is uploaded or encoded, because the terminal and the agent share one filesystem."
+          },
+          "settings": {
+            "title": "Every setting on this screen",
+            "body": "The command reads and writes the same settings these panels do, through the same code. Anything you can change here you can change there, with the same label and description."
+          },
+          "approvals": {
+            "title": "Approvals wait for you",
+            "body": "A tool call that needs approval pauses and asks in the terminal. If you disconnect first, it waits — you can answer when you come back, or from your phone."
+          }
+        },
+        "commands": {
+          "title": "Commands",
+          "chat": "Chat",
+          "conversations": "Conversations",
+          "settings": "Settings",
+          "workspace": "Workspace",
+          "machine": "Machine",
+          "examples": "Examples"
+        }
+      }
+    },
+    "services": {
+      "titleWithCount": "Services ({{count}})",
+      "subtitle": "Tools and integrations that extend what Wolffish can do.",
+      "searchPlaceholder": "Search services",
+      "noMatches": "No services match your search.",
+      "tabs": {
+        "tts": "Text-to-Speech",
+        "stt": "Speech-to-Text",
+        "brave": "Brave Search",
+        "notion": "Notion",
+        "github": "GitHub",
+        "google": "Google Workspace",
+        "memes": "Memes",
+        "computerUse": "Computer Use",
+        "video": "Video generation"
+      },
+      "gate": {
+        "missingTitle": "Capability not installed",
+        "missingBody": "The {{name}} capability is not installed in this copy of Wolffish, so these settings are disabled for now. Open the Capabilities page to review what is loaded, or reinstall the app to restore the built-in set.",
+        "offTitle": "Capability turned off",
+        "offBody": "The {{name}} capability is currently turned off, so these settings are disabled for now. Turn it back on from the Capabilities page and everything here comes back to life.",
+        "errorTitle": "Capability failed to load",
+        "errorBody": "The {{name}} capability hit a problem while loading, so these settings are disabled for now. The error is shown below, and the Capabilities page has the full picture.",
+        "openCapabilities": "Open Capabilities"
+      },
+      "engine": "Engine",
+      "engineInstall": {
+        "checking": "Checking",
+        "installed": "Installed",
+        "notInstalled": "Not installed",
+        "install": "Install",
+        "reinstall": "Reinstall",
+        "installing": "Installing",
+        "phasePython": "Setting up the local Python runtime",
+        "phaseEngine": "Installing the engine",
+        "phaseFfmpeg": "Setting up the audio encoder",
+        "phaseModel": "Downloading model {{percent}}%",
+        "phaseDone": "Finishing up",
+        "failed": "Install failed: {{error}}"
+      },
+      "tts": {
+        "title": "Text-to-Speech",
+        "subtitle": "Configure how Wolffish generates spoken audio from text.",
+        "local": "Local",
+        "engineName": "Kokoro",
+        "engineDescription": "Local neural text-to-speech. Runs entirely on your machine — no cloud, no API key.",
+        "installRequirement": "Downloads the Kokoro engine and voice model (~340 MB) once, then runs fully offline.",
+        "voice": "Default voice",
+        "speed": "Speech rate",
+        "previewHint": "Preview plays the selected Kokoro voice",
+        "previewError": "Couldn't play the preview. Please try again.",
+        "voicesTitle": "Available voices"
+      },
+      "stt": {
+        "title": "Speech-to-Text",
+        "subtitle": "Configure how Wolffish transcribes audio into text.",
+        "local": "Local",
+        "engineName": "faster-whisper",
+        "engineDescription": "Open-source speech recognition (CTranslate2). Runs entirely on your machine — no API key, no cloud, no setup.",
+        "installRequirement": "Installs the faster-whisper engine. The selected model downloads on first use.",
+        "model": "Default model",
+        "language": "Language",
+        "languageDescription": "Every voice note and transcription is pinned to this language. Pick Auto-detect only if you switch languages often — detection can misread short recordings.",
+        "languageAuto": "Auto-detect",
+        "modelsTitle": "Available models",
+        "formatsTitle": "Supported formats",
+        "modelOption": "{{id}} — {{size}} ({{speed}})",
+        "models": {
+          "tiny": {
+            "size": "~75 MB",
+            "speed": "Fastest",
+            "description": "Quick previews of long audio"
+          },
+          "base": {
+            "size": "~150 MB",
+            "speed": "Fast",
+            "description": "Default for most transcription"
+          },
+          "small": {
+            "size": "~500 MB",
+            "speed": "Moderate",
+            "description": "Better accuracy when it matters"
+          },
+          "medium": {
+            "size": "~1.5 GB",
+            "speed": "Slow",
+            "description": "High-stakes transcription"
+          },
+          "large": {
+            "size": "~3 GB",
+            "speed": "Very slow",
+            "description": "Research-grade accuracy"
+          }
+        }
+      },
+      "inapp": {
+        "title": "In-App Chat",
+        "subtitle": "Configure the in-app chat on this desktop.",
+        "toggle": {
+          "on": "On",
+          "off": "Off"
+        },
+        "verbose": {
+          "label": "Show all tool activity",
+          "description": "On adds every tool call and its result to the chat, plus the model chip. Off shows only what always appears: replies, delivered files, code edits and shell runs, questions and approvals, reasoning and task lists."
+        },
+        "reasoning": {
+          "label": "Show reasoning",
+          "description": "Show the model's thinking as a collapsible card in the chat. On by default, here and on your phone — switching it off only hides the card; the model still thinks, and the reasoning is still saved with the conversation."
+        }
+      },
+      "telegram": {
+        "title": "Telegram",
+        "subtitle": "Talk to Wolffish from Telegram. Same agent, same memory, same history.",
+        "enable": "Enable Telegram channel",
+        "enableDescription": "Message Wolffish from Telegram to access it remotely.",
+        "toggle": {
+          "on": "On",
+          "off": "Off"
+        },
+        "botToken": "Bot token",
+        "botTokenPlaceholder": "1234567890:ABCdef…",
+        "botTokenHint": "Get one from @BotFather on Telegram. Treated as a secret — stored in config.json on your machine.",
+        "showToken": "Show",
+        "hideToken": "Hide",
+        "allowedUsers": "Allowed user IDs",
+        "allowedUsersPlaceholder": "123456789, 987654321",
+        "allowedUsersHint": "Send /start to @userinfobot to get your ID.",
+        "test": "Save",
+        "testHint": "Sends a verification message to the first allowed user without taking the bot online.",
+        "save": "Save",
+        "status": {
+          "label": "Status",
+          "running": "Active",
+          "stopped": "Inactive",
+          "starting": "Starting",
+          "error": "Error"
+        },
+        "connectedAs": "Connected bot",
+        "disconnect": "Disconnect",
+        "disconnectSuccess": "Telegram bot disconnected",
+        "disconnectFailed": "Failed to disconnect Telegram",
+        "testSuccess": "Test message sent",
+        "testFailure": "Test failed: {{message}}",
+        "saveSuccess": "Telegram settings saved",
+        "validation": {
+          "tokenRequired": "Bot token is required when enabled.",
+          "userIdRequired": "Add at least one user ID when enabled.",
+          "userIdInvalid": "User IDs must be numeric."
+        },
+        "errors": {
+          "missing_token": "Bot token is required.",
+          "token_format": "Invalid token format.",
+          "invalid_token": "Telegram rejected the token.",
+          "invalid_user_id": "Invalid user ID — see @userinfobot.",
+          "rate_limit": "Rate limited — retry later.",
+          "network": "Can't reach Telegram.",
+          "unknown": "Telegram error: {{message}}"
+        },
+        "autoRefresh": {
+          "label": "Auto-refresh conversations",
+          "description": "Start a fresh conversation after idle time. Previous ones stay accessible via /resume.",
+          "staleLabel": "Idle timeout",
+          "hours_one": "{{count}} hour",
+          "hours_other": "{{count}} hours"
+        },
+        "verbose": {
+          "label": "Show all tool activity",
+          "description": "On relays every tool call and its result to the chat. Off sends only the agent's replies and the files it delivers."
+        },
+        "hideAutomations": {
+          "label": "Hide automations from <cmd>/resume</cmd>",
+          "description": "Keep scheduled automation runs out of the <cmd>/resume</cmd> list so it only offers real conversations. On by default. They stay in <cmd>/delete</cmd> and in the app."
+        },
+        "commandsTitle": "Available commands",
+        "commandsSubtitle": "Slash commands users send from Telegram. Type each one exactly.",
+        "commands": {
+          "new": "Start a fresh conversation. Only works when nothing is processing — use /stop first if a task is running. Anything still queued is dropped with the old conversation.",
+          "current": "Current conversation.",
+          "resume": "Pick a past conversation to continue. The chat switches to the one you choose, and anything still queued is dropped.",
+          "delete": "Pick a conversation to delete. If it was the active one, a fresh conversation starts and anything still queued is dropped.",
+          "clear": "Clear all messages.",
+          "stop": "Stop the task currently running in this chat. Anything queued still runs after it.",
+          "cancel": "Drop every message waiting in the queue. Leaves the running task alone.",
+          "approve": "Approve a pending confirmation prompt (e.g. before a destructive action runs).",
+          "deny": "Deny a pending confirmation prompt.",
+          "status": "Wolffish current status.",
+          "mode": "Show or set the chat mode — /mode single or /mode workflow.",
+          "model": "List connected cloud models and switch. Reply with a number, or /model <name> to filter."
+        },
+        "limitationsTitle": "Limitations",
+        "limitations": {
+          "singleConversation": "Only one conversation processes at a time. Messages sent meanwhile are queued and run in order.",
+          "fileSize": "File downloads capped at 20 MB.",
+          "allowList": "Only allowed user IDs receive replies.",
+          "silentIgnore": "Other messages are silently ignored."
+        }
+      },
+      "brave": {
+        "title": "Brave Search",
+        "platform": "Platform",
+        "subtitle": "Use Brave Search API as the primary web-search provider, with DuckDuckGo as fallback.",
+        "enable": "Enable Brave Search",
+        "enableDescription": "When on, web searches go through Brave first. When off, DuckDuckGo is used directly.",
+        "toggle": {
+          "on": "On",
+          "off": "Off"
+        },
+        "apiKey": "API key",
+        "apiKeyPlaceholder": "BSA_…",
+        "apiKeyHint": "Free key (2,000/mo) from <link>api.search.brave.com</link>. Stored locally in config.json.",
+        "showKey": "Show",
+        "hideKey": "Hide",
+        "test": "Save",
+        "testConnection": "Test connection",
+        "testHint": "Sends a tiny query to Brave to verify the key works. Counts toward your monthly quota.",
+        "save": "Save",
+        "status": {
+          "label": "Status",
+          "configured": "Active",
+          "disabled": "Inactive",
+          "error": "Error"
+        },
+        "testSuccess": "Brave API key works ({{count}} results returned)",
+        "testFailure": "Test failed: {{message}}",
+        "saveSuccess": "Brave settings saved",
+        "validation": {
+          "keyRequired": "API key is required when enabled."
+        },
+        "errors": {
+          "missing_key": "API key is required.",
+          "invalid_key": "Key rejected — copy a new one from Brave.",
+          "rate_limit": "Rate-limited by Brave — wait and retry.",
+          "subscription": "Brave subscription expired — check your plan.",
+          "network": "Can't reach Brave — check connection.",
+          "unknown": "Brave returned an error: {{message}}"
+        },
+        "howItWorksTitle": "How it works",
+        "howItWorks": {
+          "primary": "Brave runs first when enabled with a valid key.",
+          "fallback": "Falls back to DuckDuckGo on rate-limit, error, or timeout.",
+          "free": "Free tier: 2,000 queries/month, 1 per second.",
+          "paid": "Heavier use needs a paid plan.",
+          "privacy": "Key stays in your config.json — no proxy, no telemetry."
+        }
+      },
+      "notion": {
+        "title": "Notion",
+        "platform": "Platform",
+        "subtitle": "Read and write pages, databases, and blocks via your Notion integration token.",
+        "connections": {
+          "title": "Connections",
+          "subtitle": "Link one or more Notion workspaces; the label tells Wolffish which to use.",
+          "label": "Label",
+          "labelPlaceholder": "e.g. Personal",
+          "labelHint": "A short name Wolffish uses to pick this connection (e.g. Personal).",
+          "add": "Add connection",
+          "remove": "Remove connection",
+          "empty": "No connections yet — add one to link a Notion workspace.",
+          "labelRequired": "Label is required.",
+          "labelDuplicate": "Each connection needs a unique label.",
+          "untitled": "Connection {{index}}"
+        },
+        "token": "Integration token",
+        "tokenPlaceholder": "ntn_…",
+        "tokenHint": "Create an internal integration at notion.so/my-integrations, then share pages/databases with it. Token is stored in config.json on your machine — never sent anywhere except api.notion.com.",
+        "showToken": "Show",
+        "hideToken": "Hide",
+        "test": "Save",
+        "testConnection": "Test connection",
+        "testHint": "Calls Notion’s /v1/users/me endpoint to verify the integration token is valid.",
+        "save": "Save",
+        "status": {
+          "label": "Status",
+          "configured": "Active",
+          "disabled": "Inactive",
+          "error": "Error"
+        },
+        "connectedAs": "Connected as",
+        "testSuccess": "Token valid — connected as {{name}}",
+        "testFailure": "Test failed: {{message}}",
+        "saveSuccess": "Notion settings saved",
+        "validation": {
+          "tokenRequired": "Integration token is required."
+        },
+        "errors": {
+          "missing_token": "Integration token is required.",
+          "invalid_token": "Notion rejected the token.",
+          "rate_limit": "Rate limited — retry later.",
+          "network": "Can’t reach Notion.",
+          "unknown": "Notion error: {{message}}"
+        },
+        "howItWorksTitle": "How it works",
+        "howItWorks": {
+          "integration": "Create an internal integration at notion.so/my-integrations.",
+          "pages": "Share specific pages or databases with the integration to grant access.",
+          "databases": "The agent can search, read, create, and update pages and databases.",
+          "privacy": "Token stays in your config.json — no proxy, no telemetry.",
+          "setup": "Only pages explicitly shared with the integration are accessible."
+        }
+      },
+      "github": {
+        "title": "GitHub",
+        "platform": "Platform",
+        "subtitle": "Manage repos, issues, PRs, branches, CI, releases, and gists via your Personal Access Token.",
+        "connections": {
+          "title": "Connections",
+          "subtitle": "Link one or more GitHub accounts; the label tells Wolffish which to use.",
+          "label": "Label",
+          "labelPlaceholder": "e.g. Personal",
+          "labelHint": "A short name Wolffish uses to pick this account (e.g. Personal).",
+          "add": "Add connection",
+          "remove": "Remove connection",
+          "empty": "No connections yet — add one to link a GitHub account.",
+          "labelRequired": "Label is required.",
+          "labelDuplicate": "Each connection needs a unique label.",
+          "untitled": "Connection {{index}}"
+        },
+        "token": "Personal Access Token",
+        "tokenPlaceholder": "ghp_… or github_pat_…",
+        "tokenHint": "Create a token at <link>github.com/settings/personal-access-tokens</link> with the 'repo' scope (and 'gist' for gists). Token is stored in config.json on your machine — never sent anywhere except api.github.com.",
+        "showToken": "Show",
+        "hideToken": "Hide",
+        "test": "Save",
+        "testConnection": "Test connection",
+        "testHint": "Calls GitHub's <code>/user</code> endpoint to verify the token is valid and shows your username.",
+        "save": "Save",
+        "status": {
+          "label": "Status",
+          "configured": "Active",
+          "disabled": "Inactive",
+          "error": "Error"
+        },
+        "testSuccess": "Token valid — connected as @{{login}} ({{name}})",
+        "testFailure": "Test failed: {{message}}",
+        "saveSuccess": "GitHub settings saved",
+        "connectedAs": "Connected as",
+        "validation": {
+          "tokenRequired": "Personal Access Token is required."
+        },
+        "errors": {
+          "missing_token": "Personal Access Token is required.",
+          "invalid_token": "GitHub rejected the token.",
+          "rate_limit": "Rate limited — retry later.",
+          "insufficient_scope": "Token missing 'repo' scope.",
+          "network": "Can't reach GitHub.",
+          "unknown": "GitHub error: {{message}}"
+        },
+        "howItWorksTitle": "How it works",
+        "howItWorks": {
+          "pat": "Create a Personal Access Token at <link>github.com/settings/personal-access-tokens</link>.",
+          "scopes": "Grant 'repo' scope for full repository access, 'gist' for gists.",
+          "tools": "The agent can list repos, manage issues and PRs, check CI, create releases, and search code.",
+          "privacy": "Token stays in your config.json — no proxy, no telemetry.",
+          "ci": "CI/Actions logs are available for debugging failed workflows."
+        },
+        "capabilitiesTitle": "What you can ask Wolffish to do",
+        "capabilitiesSubtitle": "Destructive actions are confirmed before they run.",
+        "capabilities": {
+          "repos": "Browse your repositories, get repo details, or create new ones.",
+          "issues": "Read, create, and close issues — including comments and labels.",
+          "prs": "Open pull requests, review their status, and merge them (with approval).",
+          "branches": "List branches and clean up merged ones (with approval).",
+          "ci": "Check CI/Actions runs and pull workflow logs to debug failures.",
+          "releases": "Cut a release with tag, notes, draft, and prerelease support (with approval).",
+          "search": "Search code across all of GitHub by keyword, filename, or language.",
+          "files": "Read any file from any accessible repo without cloning it locally.",
+          "gists": "List your gists or create a new one to share a snippet."
+        }
+      },
+      "google": {
+        "title": "Google Workspace",
+        "platform": "Platform",
+        "subtitle": "Gmail, Drive, Calendar, Contacts, Tasks, and Sheets — drop your OAuth JSON to connect.",
+        "toasts": {
+          "installed": "gogcli {{version}} installed",
+          "installFailed": "Install failed",
+          "updated": "Updated to gogcli {{version}}",
+          "latest": "Latest version is installed",
+          "updateFailed": "Update check failed",
+          "credentialsStored": "Credentials stored",
+          "credentialsRejected": "Credentials rejected",
+          "credentialsDeleted": "Credentials and accounts removed",
+          "credentialsDeleteFailed": "Could not delete credentials",
+          "linkCopied": "Authorization link copied",
+          "linkCopyFailed": "Could not copy link",
+          "authorized": "Account authorized",
+          "authFailed": "Authorization failed",
+          "removed": "Account removed",
+          "removeFailed": "Could not remove account"
+        },
+        "setup": {
+          "label": "gogcli: Google Suite CLI",
+          "ready": "<code>{{version}}</code> is installed and ready",
+          "needsInstall": "Click Install — Wolffish will download <code>gogcli</code> for you",
+          "install": "Install",
+          "update": "Update"
+        },
+        "credentials": {
+          "label": "OAuth Credentials",
+          "hint": "OAuth Desktop client JSON from console.cloud.google.com → APIs & Services → Credentials.",
+          "dropzone": "Drop OAuth client JSON here or click to browse",
+          "dropzoneActive": "Release to upload",
+          "validating": "Validating credentials…",
+          "stored": "Credentials stored",
+          "rotate": "Drop a new JSON to replace credentials",
+          "delete": "Delete credentials and all accounts",
+          "project": "Project",
+          "client": "Client",
+          "guideTitle": "Create an OAuth Client",
+          "guidePrereq": "You need a Google account — any free Gmail works.",
+          "step1": "Open ",
+          "step1Link": "Google Cloud Console",
+          "step1Rest": " and create a new project (name it anything)",
+          "step1Confirm": "You see the project dashboard with your project name in the top bar.",
+          "step2": "Go to APIs & Services → Library and search for each API below — click it then hit \"Enable\"",
+          "step2Confirm": "Each enabled API appears in the \"Enabled APIs & services\" dashboard.",
+          "step2Apis": [
+            "Gmail API",
+            "Google Drive API",
+            "Google Calendar API",
+            "Google Sheets API",
+            "Google Docs API",
+            "Google Slides API",
+            "Tasks API",
+            "People API",
+            "Google Forms API",
+            "Google Chat API",
+            "Google Keep API",
+            "Google Classroom API",
+            "Apps Script API",
+            "Admin SDK API"
+          ],
+          "step3": "Go to OAuth consent screen → set User type to \"External\" → fill in your email → add yourself as a Test user",
+          "step3Confirm": "You see the consent screen summary with status \"Testing\".",
+          "step4": "Go to Credentials → Create Credentials → OAuth client ID → choose \"Desktop app\"",
+          "step4Confirm": "The new client appears in the OAuth 2.0 Client IDs list.",
+          "step5": "Click the download icon (⬇) next to the client to get the JSON file",
+          "step5Confirm": "A file starting with \"client_secret_\" downloads.",
+          "step6": "Drop the JSON file below — Wolffish takes it from here",
+          "step6Confirm": "The credentials section shows a green checkmark after upload.",
+          "guideTip1": "Leave publishing status as \"Testing\" — only test users can authorize, which is fine for personal use.",
+          "guideTip2": "You can always enable more APIs later — just go back to APIs & Services → Library."
+        },
+        "auth": {
+          "label": "Accounts",
+          "hint": "Add multiple accounts — the LLM picks which one to use on every call, and fans out across all of them for identity-agnostic requests.",
+          "placeholder": "you@gmail.com",
+          "authorize": "Authorize",
+          "cancel": "Cancel",
+          "addMore": "Add account",
+          "active": "Active",
+          "inactive": "Inactive",
+          "remove": "Remove",
+          "reconnect": "Reconnect",
+          "reconnecting": "Reconnecting",
+          "reconnectLabel": "Reconnect {{account}}",
+          "accountLabel": "Authorized account {{account}}",
+          "linkNote": "If the browser didn't open,",
+          "linkOpen": "open the authorization link",
+          "copyLink": "Copy authorization link"
+        },
+        "status": {
+          "label": "Status",
+          "active": "Active",
+          "inactive": "Inactive",
+          "error": "Error",
+          "accounts": "Connected accounts",
+          "project": "Project ID"
+        },
+        "errors": {
+          "platform_unsupported": "Unsupported OS / architecture",
+          "install_failed": "Install failed",
+          "credentials_invalid": "Credentials rejected",
+          "auth_failed": "Authorization failed",
+          "auth_timeout": "Authorization timed out",
+          "network": "Network error"
+        },
+        "capabilities": {
+          "title": "Available services",
+          "list": [
+            "Gmail — search, send, attachments, labels, drafts, filters, auto-reply, vacation",
+            "Calendar — list/create/update events, invites, OOO, working-location, free/busy",
+            "Drive — list, search, upload, download, convert, permissions, shared drives",
+            "Docs — create, edit by tab, import Markdown, find/replace, export",
+            "Sheets — read/write ranges, rows/cols, tabs, formatting, find/replace",
+            "Slides — create, copy, export, generate from Markdown or templates",
+            "Contacts — search, create, update, directory, custom fields",
+            "Tasks — manage tasklists and tasks with recurring schedules",
+            "Forms — create, manage questions, inspect responses",
+            "Chat — spaces, messages, DMs, emoji reactions (Workspace)",
+            "Classroom — courses, roster, coursework, submissions, announcements",
+            "Apps Script — create projects, inspect content, run functions",
+            "People — profile lookup, directory search",
+            "Keep — list, search, create, delete notes (Workspace)",
+            "Admin — Workspace users/groups directory ops",
+            "Groups — list memberships, view members (Workspace)",
+            "Multiple accounts — switch between Google accounts with aliases",
+            "Encrypted backups — export account data to age-encrypted Git shards",
+            "Email tracking — track opens for sent mail"
+          ]
+        }
+      },
+      "memes": {
+        "title": "Memes",
+        "subtitle": "Captioned memes and reaction GIFs via Memegen, Giphy, or Imgflip",
+        "save": "Save",
+        "saveSuccess": "Memes settings saved",
+        "testConnection": "Save",
+        "testAndSave": "Test & save",
+        "testFailure": "Test failed: {{message}}",
+        "testGiphySuccess": "Giphy connection successful",
+        "testImgflipSuccess": "Imgflip connection successful",
+        "showKey": "Show",
+        "hideKey": "Hide",
+        "providerStatus": {
+          "available": "Available",
+          "configured": "Active",
+          "disabled": "Not configured",
+          "error": "Error"
+        },
+        "memegen": {
+          "title": "Memegen",
+          "description": "Free, zero-config meme generator. Always available — no account needed."
+        },
+        "giphy": {
+          "title": "Giphy",
+          "description": "Search and download reaction GIFs. Requires a free API key.",
+          "apiKeyLabel": "API Key",
+          "apiKeyPlaceholder": "Giphy API key",
+          "hint": "Sign up at developers.giphy.com, create an app, and copy the API key.",
+          "getKey": "Get API Key"
+        },
+        "imgflip": {
+          "title": "Imgflip",
+          "description": "Premium meme generation with more templates. Requires a free account.",
+          "usernameLabel": "Username",
+          "usernamePlaceholder": "Imgflip username",
+          "passwordLabel": "Password",
+          "passwordPlaceholder": "Imgflip password",
+          "hint": "Create a free account at imgflip.com. Username and password are used to generate memes.",
+          "createAccount": "Create Account"
+        },
+        "validation": {
+          "giphyKeyRequired": "Giphy API key is required.",
+          "imgflipCredsRequired": "Imgflip username and password are required."
+        },
+        "errors": {
+          "missing_key": "Credentials are required.",
+          "invalid_key": "Credentials rejected — check key or password.",
+          "rate_limit": "Rate-limited — wait and retry.",
+          "network": "Can't reach service — check connection.",
+          "unknown": "Error: {{message}}"
+        }
+      },
+      "whatsapp": {
+        "title": "WhatsApp",
+        "subtitle": "Connect Wolffish to WhatsApp. Scan the QR code to link your account.",
+        "enable": "Enable WhatsApp",
+        "enableDescription": "Connect to WhatsApp and listen for messages.",
+        "toggle": {
+          "on": "On",
+          "off": "Off"
+        },
+        "connect": "Connect",
+        "connectDescription": "Link your WhatsApp account to get started.",
+        "scanQr": "Scan this QR code with WhatsApp on your phone.",
+        "scanQrHelp": "Open WhatsApp → Settings → Linked Devices → Link a Device",
+        "status": {
+          "label": "Status",
+          "connected": "Connected",
+          "connecting": "Connecting",
+          "qr": "Waiting for QR scan",
+          "error": "Error",
+          "disconnected": "Disconnected",
+          "inactive": "Inactive"
+        },
+        "connectedAs": "Connected as",
+        "allowedPhones": "Allowed phone numbers",
+        "allowedPhonesPlaceholder": "+966xxxxxxxxx, +1xxxxxxxxxx",
+        "allowedPhonesHint": "Comma-separated phone numbers. Only messages from these numbers will be processed.",
+        "save": "Save",
+        "saveSuccess": "WhatsApp settings saved",
+        "logout": "Disconnect",
+        "logoutSuccess": "WhatsApp session cleared",
+        "logoutFailed": "Failed to disconnect WhatsApp",
+        "autoRefresh": {
+          "label": "Auto-refresh conversations",
+          "description": "Start a fresh conversation after idle time. Previous ones stay accessible via /resume.",
+          "staleLabel": "Idle timeout",
+          "hours_one": "{{count}} hour",
+          "hours_other": "{{count}} hours"
+        },
+        "verbose": {
+          "label": "Show all tool activity",
+          "description": "On relays every tool call and its result to the chat. Off sends only the agent's replies and the files it delivers."
+        },
+        "hideAutomations": {
+          "label": "Hide automations from <cmd>/resume</cmd>",
+          "description": "Keep scheduled automation runs out of the <cmd>/resume</cmd> list so it only offers real conversations. On by default. They stay in <cmd>/delete</cmd> and in the app."
+        },
+        "commandsTitle": "Available commands",
+        "commandsSubtitle": "Send these commands in your WhatsApp chat.",
+        "commands": {
+          "new": "Start a fresh conversation — anything still queued is dropped",
+          "current": "Show the active conversation",
+          "resume": "Continue a previous chat — anything still queued is dropped",
+          "delete": "Delete a saved conversation — deleting the active one also drops anything queued",
+          "stop": "Stop the current task — anything queued still runs after it",
+          "cancel": "Drop every message waiting in the queue",
+          "approve": "Approve a pending tool call",
+          "deny": "Deny a pending tool call",
+          "status": "System status report",
+          "mode": "Single or workflow mode",
+          "model": "Pick the cloud model",
+          "local": "Switch to local model",
+          "cloud": "Switch to cloud model"
+        },
+        "limitationsTitle": "Limitations",
+        "limitations": {
+          "singleConversation": "One active conversation per phone number at a time. Messages sent meanwhile are queued and run in order",
+          "allowList": "Only allowed phone numbers can interact",
+          "silentIgnore": "Messages from non-allowed numbers are silently ignored"
+        },
+        "validation": {
+          "phoneRequired": "At least one phone number is required when enabled"
+        }
+      },
+      "computerUse": {
+        "title": "Computer Use",
+        "subtitle": "Let the agent see your screen and drive apps without taking your mouse — actions are delivered to the target window in the background, with a shadow cursor showing where it works.",
+        "enableLabel": "Enable Computer Use",
+        "enableHint": "When enabled, the agent can take screenshots, move the mouse, click, scroll, and type.",
+        "permissionsTitle": "Permissions",
+        "permAccessibility": "Accessibility",
+        "permScreenRecording": "Screen Recording",
+        "recheckPermissions": "Recheck permissions",
+        "visionWarningTitle": "Your current model cannot see the screen",
+        "visionWarning": "The selected Brain model ({{model}}) does not accept images, so screenshots never reach it and it cannot click accurately. Switch to a vision-capable model before using Computer Use.",
+        "howItWorksTitle": "How it works",
+        "howItWorks": {
+          "step1": "A blue glow, a notice and a shadow cursor appear on the display while the agent works — the shadow cursor glides to every target before the action, and your own pointer stays yours.",
+          "step2": "Clicks, typing and shortcuts are posted straight to the target window in the background; when an app refuses, the agent switches to a brief foreground delivery and says so.",
+          "step3": "It finds controls by name through the app's accessibility tree and clicks them by reference, or zooms into small targets at native resolution — never guessing.",
+          "step4": "Every action returns evidence: how it was delivered, the control found under the point, an objective before-and-after screen comparison, and whether your mouse moved during it.",
+          "step5": "It checks the permissions this machine grants before starting and tells you the exact setting to enable when one is missing.",
+          "step6": "It chooses each capture's resolution and format itself — sharper when it must read detail, lighter when it only navigates. Ask for a higher-resolution screenshot any time."
+        },
+        "openSettings": "Open System Settings",
+        "permHint": "Both are one-time grants. Screen Recording takes effect after restarting Wolffish.",
+        "linuxTitle": "Desktop session"
+      },
+      "browserExtension": {
+        "title": "Browser Extension",
+        "subtitle": "Connect the Wolffish browser extension to control your browsers from the agent. Several browsers can be connected at the same time.",
+        "status": {
+          "stopped": "Stopped",
+          "listening": "Waiting for extension",
+          "connected": "Connected",
+          "error": "Error"
+        },
+        "updateBtn": "Reload Extension",
+        "extensionFolder": "Extension folder",
+        "revealMac": "Reveal in Finder",
+        "revealWindows": "Reveal in Explorer",
+        "revealLinux": "Open in Files",
+        "portLabel": "WebSocket Port",
+        "portHint": "The port the extension connects to. Default is 23151. Change only if there's a conflict.",
+        "savePort": "Save",
+        "resolutionLabel": "Screenshot resolution",
+        "resolutionHint": "Maximum width in pixels. Lower values use less tokens but reduce detail.",
+        "formatLabel": "Screenshot format",
+        "formatHint": "JPEG is smaller and faster. PNG is lossless and better for text-heavy screens.",
+        "saveSuccess": "Extension settings saved",
+        "saveError": "Failed to save extension settings",
+        "invalidPort": "Port must be between 1 and 65535",
+        "updateSent": "Reload signal sent to extension",
+        "updateError": "Failed to send reload signal",
+        "installTitle": "Install the Extension",
+        "step1": "Open your browser's extensions page — ",
+        "step1Link": "chrome://extensions",
+        "step1Toast": "Attempted to open chrome://extensions",
+        "step2": "Enable \"Developer mode\" (top-right toggle)",
+        "step3": "Click \"Load unpacked\" and select — or drag & drop — the extension folder below",
+        "step4": "The extension will connect automatically to Wolffish",
+        "waitingForConnection": "Server is running — install the extension and it will connect automatically.",
+        "testBtn": "Test connection",
+        "testRunning": "Running test",
+        "testPassed": "Connection verified",
+        "testFailed": "Check failed",
+        "testPassedToast": "Extension connected — all {{passed}}/{{steps}} checks passed",
+        "testFailedToast": "{{passed}}/{{steps}} checks passed — some commands failed",
+        "testErrorToast": "Failed to run test scenario",
+        "supported": "Supported",
+        "notSupported": "Not supported",
+        "actionsTitle": "Available Actions",
+        "actionsSubtitle": "73 tools the agent can use when the extension is connected.",
+        "actions": {
+          "navigation": {
+            "category": "Navigation"
+          },
+          "interaction": {
+            "category": "Page Interaction"
+          },
+          "reading": {
+            "category": "Page Reading"
+          },
+          "tabs": {
+            "category": "Tabs & Windows"
+          },
+          "capture": {
+            "category": "Capture"
+          },
+          "data": {
+            "category": "Data & Storage"
+          },
+          "advanced": {
+            "category": "Advanced"
+          },
+          "ext_navigate": "Navigate to a URL",
+          "ext_back": "Go back in history",
+          "ext_forward": "Go forward in history",
+          "ext_reload": "Reload the page",
+          "ext_click": "Click an element",
+          "ext_type": "Type text into an input",
+          "ext_select": "Select a dropdown value",
+          "ext_hover": "Hover over an element",
+          "ext_scroll": "Scroll the page",
+          "ext_focus": "Focus an element",
+          "ext_keypress": "Press a key or shortcut",
+          "ext_drag_drop": "Drag and drop elements",
+          "ext_file_upload": "Upload files to an input",
+          "ext_read_page": "Extract page content as text, markdown, or HTML",
+          "ext_query_selector": "Query DOM elements by CSS selector",
+          "ext_get_attribute": "Read element attributes",
+          "ext_get_value": "Read form field values",
+          "ext_get_url": "Get the current URL and title",
+          "ext_get_page_info": "Get links, headings, forms, metadata",
+          "ext_tabs_list": "List all open tabs",
+          "ext_tab_open": "Open a new tab",
+          "ext_tab_close": "Close a tab",
+          "ext_tab_switch": "Switch to a tab",
+          "ext_windows_list": "List all windows",
+          "ext_window_open": "Open a new window",
+          "ext_window_resize": "Resize or reposition a window",
+          "ext_screenshot": "Screenshot the page or an element",
+          "ext_pdf": "Save the page as PDF",
+          "ext_download": "Download a file from a URL",
+          "ext_cookies_get": "Read cookies for a domain",
+          "ext_cookies_set": "Set a cookie",
+          "ext_cookies_remove": "Remove a cookie",
+          "ext_storage_get": "Read localStorage or sessionStorage",
+          "ext_storage_set": "Write to localStorage or sessionStorage",
+          "ext_clipboard_read": "Read clipboard text",
+          "ext_clipboard_write": "Write text to clipboard",
+          "ext_execute_js": "Execute JavaScript in the page",
+          "ext_wait_for": "Wait for an element to appear",
+          "ext_wait_for_navigation": "Wait for page navigation",
+          "ext_wait_for_network_idle": "Wait for network to settle",
+          "ext_notify": "Show a browser notification",
+          "ext_debugger_attach": "Attach debugger for trusted input events",
+          "ext_debugger_detach": "Detach debugger from tab",
+          "ext_debugger_status": "Check debugger attachment state",
+          "ext_mouse_move": "Move cursor with bezier path",
+          "ext_humanize": "Inject random human micro-action",
+          "ext_take_snapshot": "Read the page as a tree of elements you can act on",
+          "ext_find": "Find elements by what you are looking for",
+          "ext_fill": "Fill one form field reliably",
+          "ext_fill_form": "Fill several form fields at once",
+          "ext_list_network_requests": "List the page's network requests",
+          "ext_get_network_request": "Read one request and its response body",
+          "ext_list_console_messages": "Read the page's console output",
+          "ext_handle_dialog": "Accept or dismiss a page dialog",
+          "ext_emulate": "Emulate a device, network or location",
+          "ext_doctor": "Check what is missing or misconfigured",
+          "ext_fix": "Apply the fix for a finding"
+        },
+        "debuggerMode": {
+          "title": "Debugger Mode",
+          "body": "Wolffish uses Chrome's debugger API to simulate human-like browser interactions (clicks, typing, scrolling) that are indistinguishable from real user input. This works automatically on all Chromium-based browsers — Chrome, Brave, Edge, Arc, Opera, and Vivaldi. No setup is required.",
+          "infobarNote": "When debugger mode is active, a yellow infobar saying \"Extension is debugging this page\" may appear at the top of the tab. This is a standard Chrome notification and is purely cosmetic — it does not affect functionality. To hide it, launch your browser with the following flag:",
+          "tipLabel": "Tip:",
+          "tipText": "Create a separate browser shortcut with this flag for Wolffish automation sessions.",
+          "notSupportedLabel": "Not supported:",
+          "notSupportedText": "Firefox and Safari do not support the debugger extension API. Debugger mode is Chromium-only."
+        },
+        "readinessTitle": "Readiness",
+        "readinessSubtitle": "What Wolffish needs to drive your browser, and what to do about anything missing.",
+        "readinessReady": "Everything Wolffish needs is in place.",
+        "readinessRecheck": "Check again",
+        "readinessChecking": "Checking",
+        "readinessFix": "Fix",
+        "readinessFixing": "Working",
+        "readinessVerify": "Verify",
+        "readinessTier": "Tier",
+        "severityBlocker": "Blocker",
+        "severityDegraded": "Limited",
+        "severityNote": "Note",
+        "overlayTitle": "On-page cursor",
+        "overlayHint": "Show a shadow cursor, a target outline and a small pill on the pages Wolffish is using, so you can see what it is doing.",
+        "overlayOn": "Shown",
+        "overlayOff": "Hidden"
+      },
+      "video": {
+        "title": "Video generation",
+        "platform": "MiniMax platform",
+        "subtitle": "Generate video with MiniMax H3 from text, images, frames, or reference media.",
+        "apiKey": "MiniMax API key (video)",
+        "apiKeyPlaceholder": "sk-api-…",
+        "apiKeyHint": "The same MiniMax key you use elsewhere works here; it is stored separately on purpose — see below.",
+        "showKey": "Show key",
+        "hideKey": "Hide key",
+        "save": "Save",
+        "test": "Test connection",
+        "saveSuccess": "Video generation key saved",
+        "testSuccess": "Key accepted — video generation is ready",
+        "testFailure": "MiniMax rejected this key",
+        "status": {
+          "label": "Status",
+          "ready": "Ready",
+          "error": "Key rejected",
+          "disabled": "No key set"
+        },
+        "separateKey": {
+          "title": "Why this key is separate from the MiniMax chat provider",
+          "p1": "MiniMax issues one credential that unlocks both its chat models and its video API, so the value you paste here is the same string you may already have under Settings → Providers → MiniMax. The app deliberately does not copy one into the other, and you need to fill in both.",
+          "p2": "They are independent decisions. Video generation is a service — like Brave search or Giphy — not a property of whichever brain you are chatting with. If the keys were shared, switching your chat brain to another provider and clearing the MiniMax entry would silently break video generation, and rotating a key for one use would drag the other along with it."
+        },
+        "howItWorks": {
+          "title": "How it works",
+          "p1": "MiniMax H3 never appears in the model picker, because you never chat with it. It is a tool your current model calls. Generation is asynchronous — the API hands back a task id and renders for a few minutes — so the app manages that lifetime for you.",
+          "s1": "Ask for a video in any conversation. Your current model calls the video tool with a prompt it writes itself.",
+          "s2": "A task card appears in the chat with the task id, live status and a progress estimate. It updates itself; you can cancel from the card.",
+          "s3": "The finished mp4 is downloaded automatically and plays inline in the card.",
+          "s4": "Your model then delivers the file — in the app, or to Telegram / WhatsApp when the conversation came from there (oversized videos are compressed to fit, with the original kept here at full quality).",
+          "footer": "If a generation outlives its turn — the app restarts, or the model moved on — the app finishes the job on its own: it keeps polling, saves the video, updates the card, and sends it to the channel it came from."
+        },
+        "director": {
+          "title": "Your chat model is the director",
+          "p1": "The video model does not read your request. Your selected chat model does, and rewrites it into a full cinematic prompt — subject, camera movement, lighting, mood — then chooses duration, resolution, aspect ratio, and which images act as first frame, last frame or style reference. That rewriting is where most of the quality comes from.",
+          "youAsk": "You ask",
+          "askExample": "a 4 second video of gentle ocean waves rolling onto a beach at sunset",
+          "modelSends": "Your model sends",
+          "promptExample": "Gentle ocean waves rolling onto a sandy beach at sunset. Soft golden-orange light reflecting off the water, calm ripples of foam washing up the shore and receding. Slow, soothing motion, warm pastel sky with hints of pink and amber near the horizon, a few scattered clouds catching the last light. Cinematic, serene, photorealistic, gentle push-in camera barely moving.",
+          "b1": "It adds the creative detail you left out — light, texture, atmosphere, camera language — because sparse prompts produce flat, generic footage.",
+          "b2": "It picks the technical settings from context, and omits the aspect ratio when you supply an image so the video adopts the picture's own shape.",
+          "b3": "It names the task, waits for the render, and decides how to present the result to you.",
+          "footer": "A stronger chat model writes a better prompt and gets a better video from the identical request. If a clip misses what you pictured, telling your model what to change is usually more effective than rewording your original ask.",
+          "currentLabel": "Your current director",
+          "currentHint": "This is whichever model you chat with — switch it from the composer and the next video is directed by the new one.",
+          "noModel": "No model selected yet",
+          "on": "On",
+          "off": "Off",
+          "offHint": "Director mode is off — your request is sent to the video model exactly as you wrote it. The model still picks duration and resolution unless you specify them."
+        },
+        "capabilities": {
+          "title": "What H3 can do",
+          "p1": "One model, four input modes — combine them freely, up to twelve media items in a single request.",
+          "modes": "Text to video · image to video (first frame) · first-and-last frame transition · reference images, clips and audio for consistent subjects, motion and voice.",
+          "output": "H.264 mp4 with a generated soundtrack, 24 fps, 768P or 2K, 4 to 15 seconds. Rendering typically takes one to five minutes.",
+          "limits": "Media you attach is checked and optimized automatically — oversized images are downscaled, unusual video and audio formats are converted — so requests fit the API's limits without you resizing anything.",
+          "storage": "Videos are saved per conversation under generations/video in the workspace, and deleted with the conversation.",
+          "footer": "You can also attach a media URL from the composer's paperclip menu instead of a file; MiniMax fetches it directly, which sidesteps the request size limit for large references."
+        }
+      }
+    },
+    "mcp": {
+      "title": "MCP",
+      "subtitle": "Connect Model Context Protocol servers to give Wolffish new tools.",
+      "how": {
+        "title": "How this works",
+        "add": "Add a connection with a command (for servers that run on this machine) or a URL (for remote servers). Wolffish connects right away — no restart, no setup steps. If a server requires sign-in, you'll see one button for it here.",
+        "tools": "Everything a connected server offers becomes available to Wolffish on your very next message, in normal chat and to workflow agents alike.",
+        "background": "Wolffish keeps each connection healthy on its own: it checks in periodically, reconnects with steadily-spaced retries if one drops, refreshes a server's tools whenever it reconnects, and keeps every connection isolated so one failing never touches another.",
+        "offline": "If a server crashes or drops offline, its tools quietly step aside while Wolffish reconnects in the background. Nothing breaks, and there's nothing you need to do."
+      },
+      "connections": {
+        "title": "Connections",
+        "empty": "No connections yet. Add one below to get started."
+      },
+      "status": {
+        "connected": "Connected",
+        "connecting": "Connecting",
+        "needsAuth": "Sign-in required",
+        "offline": "Offline",
+        "disabled": "Disabled"
+      },
+      "toolCount_one": "{{count}} tool",
+      "toolCount_other": "{{count}} tools",
+      "actions": {
+        "test": "Test",
+        "remove": "Remove",
+        "signIn": "Sign in"
+      },
+      "toggle": {
+        "label": "Enabled",
+        "on": "On",
+        "off": "Off"
+      },
+      "test": {
+        "ok_one": "OK — {{count}} tool in {{ms}} ms",
+        "ok_other": "OK — {{count}} tools in {{ms}} ms",
+        "failed": "Test failed"
+      },
+      "progress": {
+        "generic": "establishing the connection…"
+      },
+      "auth": {
+        "prompt": "This server requires sign-in.",
+        "promptHeaders": "This server requires sign-in — or an updated header value below."
+      },
+      "headers": {
+        "toggle": "+ Headers",
+        "label": "Headers",
+        "editWithCount_one": "Headers ({{count}})",
+        "editWithCount_other": "Headers ({{count}})",
+        "keyPlaceholder": "Header",
+        "valuePlaceholder": "Value",
+        "markSensitive": "Sensitive — mask the value in this list",
+        "reveal": "Reveal value",
+        "hide": "Hide value",
+        "addRow": "Add header",
+        "removeRow": "Remove header",
+        "save": "Save",
+        "cancel": "Cancel",
+        "saved": "Headers saved — reconnecting",
+        "failed": "Couldn't save headers",
+        "hint": "Sent with every request — an Authorization header skips sign-in. Stored as plain text."
+      },
+      "add": {
+        "title": "Add a connection",
+        "subtitle": "Paste a server command or a URL — Wolffish figures out the rest.",
+        "targetLabel": "Command or URL",
+        "targetPlaceholder": "uvx some-mcp-server   ·   https://mcp.example.com/mcp",
+        "nameLabel": "Name (optional)",
+        "namePlaceholder": "How this connection appears in the list",
+        "envToggle": "+ Environment variables",
+        "envLabel": "Environment variables",
+        "envPlaceholder": "API_KEY=…\nONE PER LINE",
+        "hintStdio": "Runs as a local command",
+        "hintHttp": "Connects to a remote server",
+        "button": "Add"
+      }
+    },
+    "variables": {
+      "title": "Variables",
+      "subtitle": "Store API keys, tokens, base URLs, and other values in one place.",
+      "loading": "Loading variables…",
+      "empty": "No variables yet. Add one to get started.",
+      "add": "Add variable",
+      "save": "Save",
+      "remove": "Remove",
+      "reveal": "Reveal value",
+      "hide": "Hide value",
+      "sensitive": "Sensitive",
+      "markSensitive": "Sensitive variable",
+      "cancel": "Cancel",
+      "namePlaceholder": "Variable name",
+      "valuePlaceholder": "Value",
+      "duplicate": "A variable with this name already exists.",
+      "hint": "Variables are stored in config.json and injected into every conversation. The agent can read them to authenticate API calls, connect to services, or fill in values you'd otherwise have to paste each time. Sensitive variables are masked in the UI but available to the agent in plaintext."
+    },
+    "appearance": {
+      "title": "Appearance",
+      "subtitle": "Customize how Wolffish looks and reads.",
+      "theme": {
+        "description": "Sets the app's color scheme. Light and Dark keep Wolffish in that one look, while System follows your operating system and switches automatically when it does. This is a display setting only — it changes how the app looks on screen and has no effect on the model or how the agent works."
+      },
+      "language": {
+        "description": "Sets the language of the interface — menus, settings, buttons, and labels — and flips the layout to right-to-left for Arabic. This is a display setting only: it doesn't change the language the model replies in, which simply follows whatever language you write to it in."
+      }
+    },
+    "usage": {
+      "title": "Usage",
+      "subtitle": "Token usage and cost across providers.",
+      "range": {
+        "today": "Today",
+        "this_month": "This Month",
+        "3_months": "3 Months",
+        "6_months": "6 Months",
+        "ytd": "YTD",
+        "all_time": "All Time"
+      },
+      "stats": {
+        "messages": "Messages",
+        "conversations": "Conversations",
+        "activeDays": "Active Days",
+        "longestStreak": "Longest Streak",
+        "totalTokens": "Total Tokens",
+        "favouriteModel": "Favourite Model",
+        "streakDays": "{{count}} days",
+        "streakDay": "{{count}} day",
+        "noModel": "Unknown"
+      },
+      "overview": "Overview",
+      "costs": {
+        "title": "Costs",
+        "totalSpend": "Total Spend",
+        "topDaySpend": "Top Day Spend",
+        "dailyAverage": "Daily Average"
+      },
+      "providers": {
+        "local": "Ollama",
+        "anthropic": "Anthropic",
+        "openai": "OpenAI",
+        "deepseek": "DeepSeek",
+        "mimo": "Xiaomi Mimo",
+        "kimi": "Kimi",
+        "minimax": "MiniMax",
+        "xai": "xAI",
+        "qwen": "Qwen",
+        "stepfun": "Stepfun",
+        "zai": "Z.ai",
+        "openrouter": "OpenRouter",
+        "brave": "Brave Search"
+      },
+      "tokens": "tokens",
+      "queries": "queries",
+      "inputTokens": "Input",
+      "outputTokens": "Output",
+      "cost": "Cost",
+      "noUsage": "No usage",
+      "totalTokens": "Total tokens",
+      "sync": "Sync",
+      "syncSuccessToast": "Usage data resynced",
+      "syncErrorToast": "Failed to sync usage data",
+      "activity": "Activity",
+      "activityTooltip": "{{date}}: {{tokens}} tokens"
+    },
+    "data": {
+      "title": "Data",
+      "subtitle": "How much space Wolffish is using and how to start over.",
+      "refresh": "Refresh",
+      "refreshSuccessToast": "Data analytics refreshed",
+      "refreshErrorToast": "Failed to refresh data",
+      "disk": {
+        "title": "Disk usage"
+      },
+      "metrics": {
+        "workspace": "Workspace",
+        "knowledge": "Knowledge",
+        "corpus": "Corpus",
+        "prefrontal": "Prefrontal",
+        "ram": "RAM",
+        "cpu": "CPU",
+        "cpuValue": "{{percent}}%",
+        "cpuValueLow": "Less than 0.1%"
+      },
+      "factoryReset": {
+        "label": "Factory reset",
+        "description": "Deletes all memories, conversations, feedback, task logs, event logs, debug snapshots, knowledge files, and usage data. Default workspace files are recreated from bundled templates. Your API keys, model selection, language, and theme are preserved so you don't have to re-enter them.",
+        "button": "Factory reset",
+        "title": "Factory reset Wolffish?",
+        "warning": "This wipes every memory, conversation, and log. API keys, model selection, language, and theme are preserved. The app will restart. This cannot be undone.",
+        "typePrompt": "Type {{phrase}} to confirm.",
+        "confirmPhrase": "FACTORY RESET",
+        "confirm": "Reset Wolffish",
+        "cancel": "Cancel",
+        "errorToast": "Reset failed. Try again."
+      }
+    },
+    "updates": {
+      "title": "Updates",
+      "subtitle": "Manage app updates and version info.",
+      "version": "Version",
+      "changelog": "Changelog",
+      "autoUpdates": "Auto-updates",
+      "autoUpdatesDescription": "Check for and download updates automatically on launch.",
+      "checkManual": "Check for updates",
+      "checkManualDescription": "Manually check for new versions.",
+      "check": "Check",
+      "retry": "Retry",
+      "checkError": "Update failed. Please try again.",
+      "errorTitle": "Update failed",
+      "errors": {
+        "checksum": "The downloaded update was corrupted and couldn't be verified. Please try again.",
+        "network": "Couldn't reach the update server. Check your connection and try again.",
+        "timeout": "The update timed out before it finished. Please try again.",
+        "filesystem": "Couldn't save the update to your disk. Close other apps and try again.",
+        "install": "The update couldn't be installed. Please try again.",
+        "unknown": "The update failed to download. Please try again."
+      },
+      "install": "Update",
+      "upToDate": "Up to date",
+      "updateFound": "Update found",
+      "checkFailed": "Could not check for updates",
+      "downloading": "Downloading update {{version}}…",
+      "downloadingTitle": "Downloading update",
+      "downloadingSubtitle": "Your update is downloading",
+      "verifyingTitle": "Verifying update",
+      "verifyingSubtitle": "Almost done — verifying your update",
+      "installReady": "Install downloaded update",
+      "updateAvailable": "Ready to install"
+    },
+    "mobile": {
+      "title": "Mobile",
+      "description": "Run Wolffish on your phone as a companion to this desktop — the same conversations, settings and usage, over an end-to-end encrypted tunnel.",
+      "notPaired": "No phone is paired yet. Start a pairing, then open Wolffish on your phone and connect.",
+      "qrTitle": "Pairing QR",
+      "qrDesc": "Generate a QR and scan it with your phone's camera. The secret travels screen to camera — it never crosses the network.",
+      "codeTitle": "Pairing code",
+      "codeDesc": "Generate a short code and type it on your phone — for when the camera can't see this screen.",
+      "codeDescCustomRelay": "Generate a short code and type it on your phone along with your relay's address — the code alone can't carry it. The QR does this for you.",
+      "generate": "Generate",
+      "scanHint": "Open Wolffish on your phone, tap Connect to Desktop, and scan this code.",
+      "codeHint": "Type this code on your phone — case and dashes don't matter.",
+      "codeRelayHint": "Your phone must use the same relay — enter this address in the Relay card on its pairing screen:",
+      "expires": "Expires in about {{minutes}} min",
+      "newCode": "New code",
+      "qrAlt": "Pairing QR code",
+      "offerFailed": "Could not start pairing.",
+      "unknownDevice": "Phone",
+      "unpair": "Unpair",
+      "relay": "Relay",
+      "rendezvous": "Rendezvous",
+      "keyDesktop": "This desktop",
+      "keyPhone": "Phone",
+      "session": "Session",
+      "cipher": "Cipher",
+      "frames": "Frames",
+      "lastSeen": "Last seen",
+      "fingerprintHint": "Matching values on both devices mean nothing sits in between.",
+      "how": {
+        "title": "How it works",
+        "pairTitle": "Pair once",
+        "pairBody": "The QR or code carries a one-time secret. Each device keeps its own key and pins the other's — no account, no password.",
+        "e2eTitle": "Encrypted end to end",
+        "e2eBody": "Everything is sealed on your devices before it is sent (X25519 · ChaCha20-Poly1305). Only this desktop and your phone hold the keys.",
+        "relayTitle": "Forwarded by a blind relay",
+        "relayBody": "The relay only helps the two devices find each other and passes sealed bytes along. It cannot read, alter or replay them, and it stores nothing — no database, no logs, no accounts, no message history."
+      },
+      "getApp": {
+        "title": "Get the app",
+        "body": "Wolffish for your phone, on both stores. Install it, open it, and pair it here.",
+        "ios": "iPhone and iPad",
+        "android": "Android",
+        "appStore": "App Store",
+        "googlePlay": "Google Play"
+      },
+      "openRelay": "Open in browser",
+      "relayConfig": {
+        "body": "Where the two devices meet to exchange sealed frames. Any deployment of the open-source relay works — run your own, point this at it, and the next pairing carries it to your phone.",
+        "inputLabel": "Relay URL",
+        "apply": "Use this relay",
+        "reset": "Reset to default",
+        "repo": "wolffish-relay on GitHub",
+        "confirmTitle": "Change the relay?",
+        "confirmBody": "This desktop and your phone will meet at:",
+        "confirmCompat": "The relay must be compatible with Wolffish — any deployment of the open-source relay works:",
+        "confirmUnpair": "Your phone is paired through the current relay and will be unpaired. Pair it again after the change.",
+        "confirmApply": "Change relay",
+        "invalid": "That doesn't look like a relay URL. Use wss://host, or paste your relay's https:// address."
+      },
+      "keyStorage": "Pairing keys are stored on this machine using {{backend}}.",
+      "notifications": "Phone notifications",
+      "notificationsHint": "Lets the agent send a push notification to your paired phone with its notify_phone tool — when a run finishes, fails, or needs you. Nothing is ever sent automatically; the agent has to deliberately call the tool, and Off makes that tool refuse.",
+      "verbose": "Task results",
+      "verboseHint": "Off keeps the phone's feed clean: replies, delivered files, code edits and shell runs, questions and approvals, reasoning, and errors. On relays every tool call and its result. Connection logging is always on and is not affected by this.",
+      "status": {
+        "connected": "Connected",
+        "connecting": "Connecting",
+        "handshaking": "Securing the link",
+        "waiting-for-peer": "Waiting for the phone",
+        "reconnecting": "Reconnecting",
+        "error": "Not connected",
+        "idle": "Idle"
+      },
+      "toggle": {
+        "off": "Off",
+        "on": "On"
+      },
+      "device": "Device",
+      "pairedAt": "Paired",
+      "appVersion": "App version",
+      "method": "Paired by",
+      "methodValue": {
+        "qr": "QR",
+        "code": "Typed code"
+      },
+      "disconnect": "Disconnect",
+      "disconnectHint": "Cut the link loose. Your phone reconnects the next time it is opened.",
+      "unpairAction": "Unpair",
+      "unpairHint": "Forget this phone and drop its keys. Pairing again needs a new QR or code."
+    }
+  },
+  "update": {
+    "available": "Update available",
+    "install": "Update",
+    "retry": "Retry",
+    "changelog": "Changelog"
+  },
+  "changelog": {
+    "empty": "No changelog entries yet."
+  },
+  "chat": {
+    "placeholder": "Message Wolffish",
+    "expandDraft": "Write your message",
+    "send": "Send",
+    "stop": "Stop",
+    "empty": {
+      "title": "Wolffish is ready",
+      "subtitle": "Ask anything. I bite through anything."
+    },
+    "noModel": {
+      "notice": "No local model or cloud provider configured.",
+      "localMissing": "Your local model is no longer installed in Ollama.",
+      "settingsLink": "Go to Settings → Models"
+    },
+    "thinking": "Thinking…",
+    "thinkingWords": [
+      "Pondering",
+      "Ruminating",
+      "Cogitating",
+      "Deliberating",
+      "Musing",
+      "Contemplating",
+      "Mulling",
+      "Brooding",
+      "Percolating",
+      "Noodling",
+      "Concocting",
+      "Conjuring",
+      "Simmering",
+      "Weaving",
+      "Unraveling",
+      "Speculating",
+      "Devising",
+      "Fathoming",
+      "Surmising",
+      "Reckoning",
+      "Meditating",
+      "Reflecting",
+      "Distilling",
+      "Digesting",
+      "Unfurling",
+      "Deciphering",
+      "Ferreting",
+      "Hatching",
+      "Envisioning",
+      "Discerning"
+    ],
+    "awaitingPermission": "Awaiting permission…",
+    "awaitingAnswer": "Awaiting your answer…",
+    "errorPrefix": "Something went wrong",
+    "newChat": "New chat",
+    "attachFile": "Attach file",
+    "interject": {
+      "pending": "Read at the next step",
+      "holding": "Waiting for the current turn to finish",
+      "withdraw": "Take this message back",
+      "placeholder": "Message Wolffish while it works…"
+    },
+    "downloadPdf": "Download chat as PDF",
+    "pdfExport": {
+      "you": "You",
+      "untitled": "Wolffish chat",
+      "saved": "PDF saved",
+      "error": "Couldn't export the PDF"
+    },
+    "selectFolder": "Select working folder",
+    "clearFolder": "Clear working folder",
+    "workingFolder": "Working folders",
+    "removeFolder": "Remove folder",
+    "removeFolderBusy": "Can't remove a folder while a turn is running",
+    "addMore": "Add more",
+    "dropToAttach": "Drop files to attach",
+    "upload": {
+      "fileTooLarge": "File exceeds maximum size of {{limit}}",
+      "maxFiles": "Maximum {{count}} files per message",
+      "totalExceeded": "Total attachments cannot exceed {{limit}}",
+      "typeNotSupported": "File type not supported",
+      "videoNotAllowed": "Video files are not supported",
+      "copying": "Copying",
+      "copyingFile": "Copying {{name}} into Wolffish",
+      "copyingWait": "Wait for the file to finish copying"
+    },
+    "pdfViewer": {
+      "loading": "Loading PDF",
+      "deleted": "PDF file was deleted",
+      "openExternal": "Open in default viewer",
+      "download": "Download"
+    },
+    "fileCard": {
+      "deleted": "File was deleted",
+      "download": "Download",
+      "reveal": "Reveal in folder",
+      "expand": "Expand",
+      "close": "Close"
+    },
+    "chartCard": {
+      "savePng": "Save as image",
+      "viewChart": "Chart",
+      "viewData": "Data"
+    },
+    "pathCard": {
+      "folder": "Folder",
+      "file": "File",
+      "open": "Open",
+      "reveal": "Reveal in folder",
+      "unavailableFolder": "Folder is unavailable",
+      "unavailableFile": "File is unavailable",
+      "unavailablePath": "Path is unavailable"
+    },
+    "optionsCard": {
+      "heading_one": "{{count}} option to copy",
+      "heading_other": "{{count}} options to copy",
+      "tabsLabel": "Options",
+      "optionCount": "Option {{current}} of {{total}}",
+      "copy": "Copy this option"
+    },
+    "questionCard": {
+      "otherLabel": "Something else",
+      "otherDescription": "Tell wolffish exactly what to do instead",
+      "otherPlaceholder": "Type your instructions…",
+      "submit": "Send",
+      "yourAnswer": "Your answer",
+      "yourAnswers": "Your answers",
+      "questionCount": "Question {{current}} of {{total}}",
+      "questionTab": "Question {{number}}"
+    },
+    "htmlViewer": {
+      "preview": "Preview",
+      "source": "Source",
+      "openInBrowser": "Open in browser",
+      "reload": "Reload",
+      "devTools": "Developer tools",
+      "openInSheet": "Showing in the expanded view",
+      "sourceTooLarge": "This file is too large to show its source here. The preview still works."
+    },
+    "audioPlayer": {
+      "deleted": "Audio file was deleted or unavailable"
+    },
+    "videoPlayer": {
+      "deleted": "Video file was deleted or unavailable"
+    },
+    "imageViewer": {
+      "deleted": "Image file was deleted or unavailable"
+    },
+    "pageViewer": {
+      "untitled": "Page content",
+      "chars": "chars"
+    },
+    "docxViewer": {
+      "loading": "Loading document",
+      "pageOf": "Page {{index}} of {{count}}"
+    },
+    "presentationViewer": {
+      "loading": "Rendering slides",
+      "slideOf": "Slide {{index}} of {{count}}",
+      "partial": "Showing the first {{count}} of {{total}} slides"
+    },
+    "viewerPager": {
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "spreadsheetViewer": {
+      "loading": "Loading spreadsheet",
+      "empty": "This sheet is empty",
+      "sheets": "Sheets",
+      "clipped": "Showing the first {{rows}} rows",
+      "tierValues": "Legacy .xls file — formatting is not stored in this format",
+      "tierPlain": "Plain text file — no formatting to show"
+    },
+    "voice": {
+      "record": "Record voice message",
+      "noMic": "No microphone available",
+      "permissionDenied": "Mic access denied — allow in system settings.",
+      "recording": "Recording",
+      "stopRecording": "Stop recording",
+      "play": "Play",
+      "pause": "Pause",
+      "send": "Send recording",
+      "delete": "Delete recording",
+      "transcribing": "Transcribing…",
+      "transcribed": "Transcribed",
+      "error": "Recording failed"
+    },
+    "changeModel": "Change model",
+    "modelLabel": "Model: {{model}}",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyMessage": "Copy message",
+    "copyCode": "Copy code",
+    "contextMenu": {
+      "selectAll": "Select all",
+      "copy": "Copy",
+      "paste": "Paste",
+      "clear": "Clear"
+    },
+    "settings": "Settings",
+    "history": "History",
+    "conversations": "Conversations",
+    "conversationsUntitled": "Untitled",
+    "workspace": "Workspace",
+    "customization": "Customization",
+    "library": "Library",
+    "soul": "Soul",
+    "user": "User",
+    "agents": "Agents",
+    "heartbeat": "Automations",
+    "procedures": "Procedures",
+    "projects": "Projects",
+    "task": {
+      "kind": {
+        "video": "Video"
+      },
+      "status": {
+        "submitted": "Submitted",
+        "queued": "Queued",
+        "running": "Running",
+        "succeeded": "Done",
+        "failed": "Failed",
+        "cancelled": "Cancelled"
+      },
+      "cancel": "Cancel task"
+    },
+    "countdown": {
+      "status": {
+        "armed": "Armed",
+        "counting": "Counting down",
+        "fired": "Ran",
+        "failed": "Failed",
+        "aborted": "Aborted"
+      },
+      "remaining_one": "{{count}} second",
+      "remaining_other": "{{count}} seconds",
+      "abort": "Abort",
+      "armedHint_one": "Starts {{count}} second after this reply finishes.",
+      "armedHint_other": "Starts {{count}} seconds after this reply finishes.",
+      "countingHint": "Abort to stop it. Nothing runs until the bar empties.",
+      "firedHint": "Done.",
+      "abortedBy": {
+        "user": "Aborted by you.",
+        "stop": "Dropped because the turn was stopped before its reply landed.",
+        "superseded": "Replaced by a newer countdown.",
+        "relaunch": "Dropped because Wolffish was relaunched before it fired."
+      }
+    },
+    "browser": {
+      "untitled": "Untitled page",
+      "back": "Back",
+      "forward": "Forward",
+      "reload": "Reload",
+      "expand": "Expand — take over the page",
+      "close": "Close this page",
+      "closed": "Closed",
+      "loading": "Loading the page",
+      "waiting": "Nothing to show yet",
+      "openInSheet": "Open in the expanded view",
+      "livePage": "The live page",
+      "open": "Wolffish Browser",
+      "newTab": "New page",
+      "address": "Enter an address",
+      "pages": "Open pages",
+      "closeTab": "Close page",
+      "blank": "Blank page",
+      "startTitle": "Wolffish Browser",
+      "startTagline": "Sign in once and let Wolffish take it from here",
+      "startChip": "Browser",
+      "closeAll": "Close the browser",
+      "openInBrowser": "Open in browser",
+      "closedNote": "The browser is closed",
+      "relaunch": "Relaunch the browser",
+      "opening": "Opening {{host}}"
+    },
+    "wait": {
+      "status": {
+        "waiting": "Waiting",
+        "elapsed": "Waited",
+        "interrupted": "Woken early",
+        "canceled": "Stopped"
+      },
+      "remaining": "{{duration}} left",
+      "waitingHint": "Waiting {{duration}} before continuing. Send a message to carry on now.",
+      "elapsedHint": "Waited {{duration}}, then carried on.",
+      "interruptedHint": "You sent a message after {{duration}}, so it carried on early.",
+      "canceledHint": "Stopped after {{duration}}.",
+      "inputPlaceholder": "Send a message to continue now",
+      "send": "Send"
+    },
+    "planMode": {
+      "label": "Plan",
+      "onTitle": "Plan mode is on: this turn only investigates and writes a plan. Click to allow changes.",
+      "offTitle": "Plan first: read-only turns that write a plan you approve before anything changes."
+    },
+    "todoCard": {
+      "title": "Tasks",
+      "progress": "{{done}}/{{total}} done",
+      "high": "high"
+    },
+    "toolCard": {
+      "exit": "exit {{code}}",
+      "savedTo": "Full output saved to",
+      "status": {
+        "running": "Running",
+        "success": "Done",
+        "failed": "Failed",
+        "denied": "Denied",
+        "checked_in": "Still running",
+        "stopped": "Stopped",
+        "stoppedByUser": "Stopped by you",
+        "stoppedByModel": "Stopped by Wolffish"
+      },
+      "stopReason": {
+        "user": "You pressed Stop before it finished.",
+        "model": "Wolffish ended it early with call_stop; its output up to the stop is below."
+      }
+    },
+    "compactionCard": {
+      "title": "Compaction",
+      "summary": "{{count}} message compacted, ~{{tokens}} tokens saved",
+      "summary_plural": "{{count}} messages compacted, ~{{tokens}} tokens saved",
+      "detail": "{{tool}}: {{from}} → {{to}} chars ({{pct}}% smaller, via {{model}})",
+      "detailTruncated": "{{tool}}: {{from}} → {{to}} chars ({{pct}}% smaller, truncated)",
+      "targetAssistant": "assistant message",
+      "targetUser": "user message",
+      "compacting": "Compacting {{targets}} of {{messages}} messages · {{current}} / {{limit}} tokens"
+    },
+    "turnFooter": {
+      "error": "Connection error"
+    },
+    "reasoningCard": {
+      "title": "Reasoning"
+    },
+    "providerError": {
+      "retry": "Try again"
+    },
+    "providerChange": {
+      "label": "Switched to local model"
+    },
+    "contextCard": {
+      "aria": "Context and usage details",
+      "noModel": "No model",
+      "context": "Context window",
+      "usage": "{{used}} of {{max}} ({{percent}}%)",
+      "compactAt": "Auto-compacts at {{value}}",
+      "fresh": "fresh",
+      "cacheRead": "Cache read",
+      "cacheWrite": "Cache write",
+      "inContext": "in context",
+      "usageUnavailable": "Provider reported no usage — showing last known reading",
+      "measuredUnder": "Measured under {{model}}",
+      "thisTurn": "This turn",
+      "lastTurn": "Last turn",
+      "input": "Input",
+      "output": "Output",
+      "calls": "API calls",
+      "tools": "{{count}} tools",
+      "cost": "Cost",
+      "workers": "agents: {{turns}} turns · {{tokens}} tokens",
+      "summaries": "summaries: {{calls}} calls · {{tokens}} tokens",
+      "workflow": "Workflow",
+      "workflowTotals": "{{tools}} tool calls · {{tokens}} tokens",
+      "allTime": "All time",
+      "turns": "Turns",
+      "apiCalls": "API calls",
+      "toolCalls": "Tool calls",
+      "cachedShare": "{{percent}}% of ingested context came from cache",
+      "lastCall": "Last call"
+    },
+    "timeline": {
+      "viewLogs": "View Logs",
+      "title": "Timeline",
+      "event": {
+        "turn.started": "New turn",
+        "context.built": "Context built",
+        "llm.response": "Model responded",
+        "turn.usage": "Usage summary",
+        "tool.called": "Tool called",
+        "tool.completed": "Tool completed",
+        "tool.failed": "Tool failed",
+        "safety.allowed": "Allowed",
+        "safety.blocked": "Blocked",
+        "safety.approved": "Approved",
+        "safety.denied": "Denied",
+        "compaction.started": "Compacting context",
+        "compaction.applied": "Compaction applied",
+        "task.created": "Task created",
+        "task.stepCompleted": "Step completed",
+        "task.completed": "Task completed",
+        "task.failed": "Task failed",
+        "task.stopped": "Task stopped",
+        "segment.text": "Generating text",
+        "segment.tool_call": "Calling tool",
+        "segment.tool_result": "Tool result",
+        "segment.compaction": "Compacting context"
+      },
+      "eventCount": "{{count}} events"
+    },
+    "files": {
+      "viewFiles": "View Files",
+      "title": "Files",
+      "fileCount": "{{count}} files"
+    },
+    "modeToggle": {
+      "ariaLabel": "Provider mode",
+      "local": "Local",
+      "cloud": "Cloud",
+      "noModelShort": "No model"
+    },
+    "thinkingMode": {
+      "ariaLabel": "Thinking mode",
+      "none": "Off",
+      "on": "On",
+      "noneTooltip": "Standard response without extended thinking",
+      "basic": "Think",
+      "basicTooltip": "Enable basic thinking",
+      "high": "High",
+      "highTooltip": "High reasoning effort",
+      "extended": "Deep",
+      "extendedTooltip": "Enable extended deep thinking",
+      "max": "Max",
+      "maxTooltip": "Maximum thinking depth and detail",
+      "fast": "Fast",
+      "fastTooltip": "Quick responses with minimal thinking",
+      "budget": "Budget",
+      "budgetTooltip": "Cost-optimized thinking mode"
+    },
+    "reasoning": {
+      "ariaLabel": "Reasoning mode",
+      "label": "Thinking",
+      "off": "Thinking off — answers directly, no reasoning.",
+      "on": "Thinking on — reasons before answering.",
+      "high": "High effort — more thorough reasoning.",
+      "max": "Max effort — deepest, most thorough reasoning.",
+      "unsupported": "Reasoning is not supported by this model.",
+      "shortOff": "Off",
+      "shortOn": "Normal",
+      "shortHigh": "High",
+      "shortMax": "Max"
+    },
+    "newChatShort": "New",
+    "approval": {
+      "approveSession": "Allow for this conversation",
+      "approvedSession": "Allowed for this conversation",
+      "level": {
+        "safe": "Safe",
+        "warn": "Warning",
+        "confirm": "Confirm",
+        "destructive": "Destructive",
+        "block": "Blocked"
+      },
+      "risk": {
+        "low": "Low risk",
+        "medium": "Medium risk",
+        "high": "High risk"
+      },
+      "approve": "Approve",
+      "deny": "Deny",
+      "approved": "Approved",
+      "denied": "Denied"
+    },
+    "modelPicker": {
+      "ariaLabel": "Active model",
+      "search": "Search models",
+      "noProviders": "Connect a provider API key in Settings first.",
+      "noResults": "No models match your search.",
+      "noLocalModels": "No Ollama models installed yet."
+    },
+    "modePicker": {
+      "ariaLabel": "Choose the chat mode",
+      "label": "Mode",
+      "single": "Single",
+      "singleDesc": "One model answers directly — everyday questions.",
+      "workflow": "Workflow",
+      "workflowDesc": "Many agents plan, verify — complex tasks."
+    },
+    "workflow": {
+      "title": "Workflow",
+      "toggleAria": "Expand or collapse the workflow details",
+      "headStats": "{{done}}/{{agents}} agents done · {{tools}} tool calls",
+      "noAgents": "No agents spawned yet.",
+      "status": {
+        "running": "running",
+        "completed": "completed",
+        "canceled": "canceled",
+        "error": "error"
+      },
+      "agentStatus": {
+        "queued": "queued",
+        "running": "running",
+        "completed": "completed",
+        "failed": "failed",
+        "cancelled": "cancelled"
+      },
+      "col": {
+        "agent": "Agent",
+        "model": "Model",
+        "phase": "Phase",
+        "time": "Time",
+        "tokens": "Tokens",
+        "tools": "Tools",
+        "cost": "Cost"
+      },
+      "tokens": "{{compact}} tok"
+    },
+    "touchedFolders": {
+      "label": "Folders this conversation works in",
+      "attached": "Working folder of this conversation, no files changed yet. Click to open it",
+      "chip_one": "{{count}} file changed here. Click to open the folder",
+      "chip_other": "{{count}} files changed here. Click to open the folder"
+    },
+    "processes": "Processes",
+    "process": {
+      "title": "Processes",
+      "titleOne": "Process",
+      "empty": "Nothing to show.",
+      "runningCount": "{{count}} of {{total}} running",
+      "state": {
+        "starting": "Starting",
+        "running": "Running",
+        "stopping": "Stopping",
+        "stopped": "Stopped",
+        "exited": "Exited",
+        "crashed": "Crashed"
+      },
+      "exitCode": "exit {{code}}",
+      "adopted": "Adopted",
+      "stop": "Stop",
+      "stopping": "Stopping…",
+      "restart": "Restart",
+      "restarting": "Restarting…",
+      "start": "Start",
+      "since": "Up for {{time}}",
+      "endedAt": "Ended {{time}}",
+      "port": "Port {{port}}",
+      "restarts_one": "{{count}} restart",
+      "restarts_other": "{{count}} restarts",
+      "autostart": {
+        "off": "",
+        "wolffish": "Starts with Wolffish",
+        "system": "Starts at login"
+      }
+    }
+  },
+  "library": {
+    "title": "Library"
+  },
+  "customization": {
+    "title": "Customization",
+    "unsaved": "Unsaved changes",
+    "docs": {
+      "soul": {
+        "description": "Personality, tone, humor and the hard rules. This is who Wolffish is on every surface — chat, Telegram, WhatsApp."
+      },
+      "user": {
+        "description": "Facts about you Wolffish should always know: name, work, preferences, the people and routines it keeps track of."
+      },
+      "agents": {
+        "description": "Your own procedures and overrides. These win over the built-in ones when the two disagree."
+      }
+    }
+  },
+  "workspace": {
+    "title": "Workspace",
+    "subtitle": "Browse and edit the files that shape Wolffish's behavior.",
+    "loadingTree": "Reading workspace…",
+    "loadingFile": "Loading file…",
+    "empty": "No files yet.",
+    "pickFile": "Select a file from the tree to view or edit it.",
+    "unsupported": "This file type can't be previewed here.",
+    "readOnlyNotice": "This file is read-only.",
+    "readOnly": "Read-only",
+    "edit": "Edit",
+    "preview": "Preview",
+    "save": "Save",
+    "reset": "Reset to default",
+    "resetTitle": "Reset this file to default?",
+    "resetWarning": "Your current changes to this file will be replaced with the bundled default. This cannot be undone.",
+    "resetConfirm": "Reset",
+    "resetCancel": "Cancel",
+    "resync": "Resync",
+    "resyncSuccess": "Workspace synced",
+    "resyncError": "Sync failed",
+    "resynced": "File resynced",
+    "saved": "File saved",
+    "saveError": "Save failed",
+    "download": "Download",
+    "reveal": "Reveal"
+  },
+  "reindex": {
+    "overlay": {
+      "title": "Rebuilding memory index",
+      "startedAt": "Started at {{time}}",
+      "body": "Wolffish is rebuilding the search index over your memory so recall stays accurate and complete. It runs after an update or when your memory has grown — chat resumes automatically the moment it's done.",
+      "progress": "Indexing files",
+      "blocked": "Chat is paused until the rebuild finishes — it's a one-time wait, not a hang."
+    }
+  },
+  "diagnostics": {
+    "button": "Export diagnostics",
+    "overlay": {
+      "title": "Collecting diagnostics",
+      "startedAt": "Started at {{time}}",
+      "body": "Wolffish is gathering everything related to this conversation — the transcript, its event logs, task records, prompts, memory and settings — into one archive you can send to the developer. Credentials are redacted and attachment media is left out.",
+      "progress": "Preparing",
+      "filesCollected": "{{count}} files collected",
+      "blocked": "This takes a few seconds. The window stays put until the archive is ready.",
+      "doneTitle": "Diagnostic archive ready",
+      "fileCount": "{{count}} files",
+      "summary": "What went in",
+      "reveal": "Reveal",
+      "saveCopy": "Save a copy",
+      "copySaved": "Copy saved",
+      "done": "Done",
+      "opinionIncluded": "Included",
+      "opinionSkipped": {
+        "no-model": "No model configured",
+        "local-only": "Skipped on local model",
+        "failed": "Model did not respond",
+        "empty": "Model returned nothing"
+      },
+      "forward": "Send this archive to the developer so they can analyse the problem and fix it. It is used for that analysis only and discarded immediately afterwards.",
+      "failedTitle": "Diagnostic export failed",
+      "failedBody": "The archive could not be created.",
+      "failedHint": "Nothing was changed. You can close this and try again."
+    },
+    "steps": {
+      "conversation": "Reading the conversation",
+      "logs": "Collecting logs",
+      "tasks": "Collecting task records",
+      "memory": "Collecting memory",
+      "context": "Collecting prompts and instructions",
+      "settings": "Collecting settings",
+      "attachments": "Listing attachments",
+      "opinion": "Asking the model for its opinion",
+      "archive": "Building the archive"
+    },
+    "groups": {
+      "summary": "Readme and environment",
+      "conversation": "Conversation",
+      "logs": "Logs",
+      "tasks": "Task records",
+      "memory": "Memory",
+      "context": "Prompts and instructions",
+      "settings": "Settings",
+      "attachments": "Attachments",
+      "opinion": "Model opinion"
+    }
+  },
+  "heartbeat": {
+    "title": "Automations",
+    "subtitle": "Scheduled prompts that run on their own.",
+    "new": "New automation",
+    "empty": "No automations yet. Create one to run a prompt on a schedule.",
+    "editedAt": "Edited {{time}}",
+    "nextRun": "Next run {{time}}",
+    "onLaunch": "Runs when the app starts",
+    "promptEmpty": "No prompt yet — edit this automation to add one.",
+    "markdownMode": "Markdown",
+    "cardsMode": "Cards",
+    "edit": "Edit automation",
+    "active": "Active",
+    "inactive": "Inactive",
+    "toggleActive": "Active — click to pause",
+    "toggleInactive": "Inactive — click to enable",
+    "run": "Run now",
+    "runStarted": "Automation started",
+    "runQueued": "Automation queued — the run slots are full ({{count}} in progress). It starts when one frees up",
+    "runCoalesced": "Already in flight — this press joined the run that is going, it won’t start a second one",
+    "noteRunning": "This automation is running right now.",
+    "noteQueued": "This automation is queued and will run shortly.",
+    "runError": "Couldn’t run automation",
+    "runFailed": "Automation run failed",
+    "delete": "Delete automation",
+    "deleteTitle": "Delete this automation?",
+    "deleteWarning": "“{{name}}” will be permanently removed from heartbeat.md and unscheduled. This cannot be undone.",
+    "deleteConfirm": "Delete",
+    "deleteCancel": "Cancel",
+    "deleteSuccess": "Automation deleted",
+    "type": {
+      "startup": "Startup",
+      "once": "One-time",
+      "every": "Interval",
+      "hourly": "Hourly",
+      "daily": "Daily",
+      "weekday": "Weekday",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "cron": "Cron"
+    },
+    "overlay": {
+      "waiting": "Waiting for output…"
+    },
+    "modeAria": "Run mode",
+    "editor": {
+      "createTitle": "New automation",
+      "editTitle": "Edit automation",
+      "name": "Name",
+      "namePlaceholder": "Morning digest",
+      "nameRequired": "Give this automation a name.",
+      "schedule": "Schedule",
+      "pickIcon": "Choose an icon",
+      "project": "Project",
+      "projectNone": "No project",
+      "projectIcon": "Uses the project’s icon",
+      "invalid": "Invalid schedule.",
+      "duplicate": "Another automation already uses this exact schedule — change the time by a minute.",
+      "pastOnce": "This time is already in the past.",
+      "cronUnknown": "Couldn’t compute the next run for this cron expression — double-check it.",
+      "files": "Files ({{count}})",
+      "addFiles": "Add files",
+      "removeFile": "Remove file",
+      "folders": "Working folders ({{count}})",
+      "addFolders": "Add folders",
+      "removeFolder": "Remove folder",
+      "prompt": "Prompt",
+      "promptPlaceholder": "Write the prompt to run…",
+      "autosaveHint": "Saved automatically once the schedule and prompt are valid.",
+      "done": "Done",
+      "guideButton": "How schedules work",
+      "chips": {
+        "hourly": "Every hour",
+        "daily": "Every day",
+        "weekly": "Every week",
+        "monthly": "Every month"
+      },
+      "timesAria": "How many times per period",
+      "times": {
+        "1": "Once",
+        "2": "Twice",
+        "3": "3 times",
+        "4": "4 times",
+        "5": "5 times"
+      },
+      "editPrompt": "Edit the prompt",
+      "addPrompt": "Write the prompt"
+    },
+    "guide": {
+      "title": "Setting automation times",
+      "intro": "An automation is a schedule heading plus the prompt underneath it. The heading decides when it runs — use one of these forms:",
+      "startup": "Runs once every time the app launches.",
+      "every": "Runs on an interval — minutes (m) or hours (h).",
+      "hourly": "Runs every hour at that minute.",
+      "daily": "Runs every day at that time.",
+      "dailyTimes": "Several times a day: list the times, separated by commas. Every listed time runs.",
+      "nightly": "Same as Daily — reads better for night times.",
+      "weekday": "Runs Monday through Friday at that time.",
+      "weekly": "Runs once a week on that day. Day names are in English.",
+      "weeklyDays": "Several days a week: list the days, then the time. Add more times after a comma to run each day more than once.",
+      "monthly": "Runs monthly on that day number. Keep it between 1 and 28 so no month is skipped.",
+      "monthlyDays": "Several days a month: list the day numbers, then the time. Keep them between 1 and 28.",
+      "once": "Runs one time at that date, then removes itself.",
+      "cron": "A full cron expression, for anything the forms above can’t say. Join several with a semicolon to combine them.",
+      "localTime": "Times are 24-hour, in your computer’s local time zone.",
+      "chipsTip": "The pills above the schedule field fill in a correct schedule for you: pick how many times, then the period — then just adjust the times."
+    }
+  },
+  "projects": {
+    "title": "Projects",
+    "subtitle": "Instructions and files that fresh conversations start from.",
+    "new": "New",
+    "project": "Project",
+    "untitled": "Untitled project",
+    "empty": "No projects yet. Create one to give a set of conversations shared instructions and files.",
+    "editedAt": "Edited {{time}}",
+    "usedAt": "Used {{time}}",
+    "conversationCount": "{{count}} conversations",
+    "viewConversations": "Conversations",
+    "noConversations": "No conversations in this project yet.",
+    "edit": "Edit",
+    "editTitle": "Project",
+    "titlePlaceholder": "Project name",
+    "titleRequired": "A title is required",
+    "instructions": "Instructions",
+    "instructionsPlaceholder": "Write the instructions every conversation in this project starts from…",
+    "noInstructions": "No instructions yet.",
+    "copy": "Copy instructions",
+    "copied": "Instructions copied",
+    "pickIcon": "Choose an icon",
+    "emojiSearch": "Search emojis",
+    "emojiNoResults": "No matching emojis.",
+    "emojiGroups": {
+      "smileys": "Smileys & Emotion",
+      "people": "People & Body",
+      "nature": "Animals & Nature",
+      "food": "Food & Drink",
+      "travel": "Travel & Places",
+      "activities": "Activities",
+      "objects": "Objects",
+      "symbols": "Symbols",
+      "flags": "Flags"
+    },
+    "files": "Files ({{count}})",
+    "addFiles": "Add files",
+    "copyingFiles": "Copying files into Wolffish",
+    "copyingCount": "File {{index}} of {{total}}",
+    "folders": "Working folders ({{count}})",
+    "addFolders": "Add folders",
+    "removeFolder": "Remove folder",
+    "removeFile": "Remove file",
+    "newConversation": "New conversation",
+    "exit": "Close project",
+    "autosaveHint": "Changes save automatically.",
+    "done": "Done",
+    "delete": "Delete",
+    "deleteTitle": "Delete this project?",
+    "deleteWarning": "“{{name}}” will be permanently removed. Its conversations stay in History. This can't be undone.",
+    "deleteConfirm": "Delete",
+    "deleteCancel": "Cancel",
+    "deleteSuccess": "Project deleted",
+    "saveError": "Something went wrong",
+    "editInstructions": "Edit the instructions",
+    "addInstructions": "Write the instructions"
+  },
+  "procedures": {
+    "title": "Procedures",
+    "subtitle": "Saved prompts you can run on demand.",
+    "new": "New",
+    "untitled": "Untitled procedure",
+    "empty": "No procedures yet. Create one to save a prompt you run often.",
+    "editedAt": "Edited {{time}}",
+    "run": "Run",
+    "runEmptyHint": "Add a prompt to run this",
+    "edit": "Edit",
+    "editTitle": "Edit procedure",
+    "titlePlaceholder": "Procedure name",
+    "pickIcon": "Choose an icon",
+    "project": "Project",
+    "projectNone": "No project",
+    "projectIcon": "Uses the project’s icon",
+    "titleRequired": "A title is required",
+    "prompt": "Prompt",
+    "files": "Files ({{count}})",
+    "addFiles": "Add files",
+    "removeFile": "Remove file",
+    "folders": "Working folders ({{count}})",
+    "addFolders": "Add folders",
+    "removeFolder": "Remove folder",
+    "promptPlaceholder": "Write the prompt to run…",
+    "autosaveHint": "Changes save automatically.",
+    "done": "Done",
+    "delete": "Delete",
+    "deleteTitle": "Delete this procedure?",
+    "deleteWarning": "“{{name}}” will be permanently removed. This can't be undone.",
+    "deleteConfirm": "Delete",
+    "deleteCancel": "Cancel",
+    "deleteSuccess": "Procedure deleted",
+    "saveError": "Something went wrong",
+    "runFailed": "Procedure run failed",
+    "modeAria": "Run mode",
+    "editPrompt": "Edit the prompt",
+    "addPrompt": "Write the prompt"
+  },
+  "history": {
+    "loading": "Loading conversations…",
+    "empty": "No conversations yet.",
+    "delete": "Delete",
+    "deleteTitle": "Delete this conversation?",
+    "deleteWarning": "This can't be undone.",
+    "deleteConfirm": "Delete",
+    "deleteCancel": "Cancel",
+    "newChat": "New chat",
+    "processing": "Processing…",
+    "diagnosticsPending": "Not indexed yet — try again in a moment",
+    "searchPlaceholder": "Search conversations by title",
+    "searchEmpty": "No conversations match that search.",
+    "groups": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "last7": "Previous 7 days",
+      "last30": "Previous 30 days",
+      "last3m": "Previous 3 months",
+      "last6m": "Previous 6 months",
+      "lastYear": "Previous year",
+      "older": "Older"
+    }
+  },
+  "units": {
+    "bytes": "{{value}} B",
+    "kilobytes": "{{value}} KB",
+    "megabytes": "{{value}} MB",
+    "gigabytes": "{{value}} GB",
+    "terabytes": "{{value}} TB",
+    "seconds": "{{value}}s",
+    "minutes": "{{value}}m",
+    "hours": "{{value}}h"
+  },
+  "errors": {
+    "provider": {
+      "noProviderTitle": "API provider error",
+      "noProviderDescription": "The API provider failed to complete the response — this is not a wolffish issue.",
+      "invalidKeyTitle": "API key invalid",
+      "invalidKey": "API key invalid or expired — update in settings.",
+      "badRequestTitle": "Request rejected",
+      "badRequest": "The provider rejected the request — try a different model or check your configuration.",
+      "modelNotFound": "Model not found — may be renamed or retired.",
+      "rateLimited": "Rate-limited — try again shortly.",
+      "offline": "You're offline — check your connection.",
+      "timeoutTitle": "Provider not responding",
+      "timeout": "The provider didn't respond in time — it may be overloaded. Try again or switch providers.",
+      "serverError": "Provider temporarily unavailable — retry shortly.",
+      "viewDetails": "View details",
+      "tryAgain": "Try again",
+      "tryAgainMessage": "The previous response was cut off by a provider failure ({{reason}}). Pick up where you left off — check what already completed (files written, tool results, plans made) and continue without redoing finished work.",
+      "stalledTitle": "No response from the API",
+      "stalled": "Five minutes passed with zero response from the API, so the request was aborted. Nothing was lost — Continue picks up from here.",
+      "continue": "Continue",
+      "stallContinueMessage": "[System: The previous API request was aborted after five minutes with no response from the provider. The conversation continues from here. Everything above — tool results, files written, the plan so far — is still valid; pick up exactly where you left off without redoing finished work, and do not mention this note.]",
+      "systemAsideLabel": "Continued after the API stopped responding"
+    },
+    "runFailedReason": {
+      "offline": "no internet connection",
+      "invalidKey": "invalid API key",
+      "modelNotFound": "model not found",
+      "rateLimited": "rate-limited, try again soon",
+      "badRequest": "provider rejected the request",
+      "timeout": "provider timed out",
+      "serverError": "provider unavailable"
+    }
+  },
+  "processes": {
+    "title": "Processes",
+    "subtitle": "Servers, tunnels and scripts Wolffish keeps running.",
+    "runningBadge": "{{running}} of {{total}} running",
+    "stopAll": "Stop all",
+    "stoppedCount": "Stopped {{count}}",
+    "empty": "No managed processes yet. Ask for a dev server to be started, or have Wolffish adopt one that is already running.",
+    "autostartLabel": "Autostart",
+    "autostart": {
+      "off": "Off",
+      "wolffish": "With Wolffish",
+      "system": "At login"
+    },
+    "restartLabel": "Restart",
+    "restart": {
+      "never": "never",
+      "on-failure": "on failure",
+      "always": "always"
+    },
+    "onQuitLabel": "When Wolffish quits",
+    "onQuit": {
+      "keep": "Keep running",
+      "stop": "Stop"
+    },
+    "createdAt": "Added {{time}}",
+    "logs": "Logs",
+    "logsTitle": "Log · {{name}}",
+    "logsEmpty": "The log is empty.",
+    "edit": "Edit",
+    "editTitle": "Edit {{name}}",
+    "command": "Command",
+    "cwd": "Working directory",
+    "portHint": "Write {port} in the command where the port goes; Wolffish fills it with a free port from its own band and sets PORT.",
+    "saved": "Saved",
+    "savedRestartHint": "Saved. The running copy keeps its old definition until you restart it.",
+    "remove": "Remove",
+    "removeTitle": "Remove process",
+    "removeConfirm": "Stop \"{{name}}\" if it is running, remove its login entry if any, and forget it along with its logs?",
+    "removed": "Removed {{name}}",
+    "error": "Something went wrong",
+    "searchPlaceholder": "Search by name, command, folder or URL",
+    "filterStatus": "Status",
+    "status": {
+      "all": "All",
+      "running": "Running",
+      "stopped": "Stopped",
+      "crashed": "Crashed"
+    },
+    "groupCount": "{{running}} of {{total}} running",
+    "noMatches": "No processes match these filters.",
+    "showingCount": "Showing {{shown}} of {{total}}",
+    "pid": "pid {{pid}}",
+    "deleteAll": "Delete all",
+    "stopAllTitle": "Stop all processes",
+    "stopAllConfirm_one": "Stop the {{count}} running process?",
+    "stopAllConfirm_other": "Stop all {{count}} running processes?",
+    "deleteAllTitle": "Delete all processes",
+    "deleteAllConfirm": "Stop everything still running ({{running}}), remove any login entries, and forget all {{count}} processes along with their logs?",
+    "removedCount_one": "Removed {{count}} process",
+    "removedCount_other": "Removed {{count}} processes"
+  }
+}

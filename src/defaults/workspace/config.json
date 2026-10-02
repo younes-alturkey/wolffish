@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "launchAtStartup": false,
+  "llm": {
+    "local": {
+      "enabled": false,
+      "provider": "ollama",
+      "model": "",
+      "endpoint": "http://localhost:11434"
+    },
+    "providers": [],
+    "restrictPowerfulModels": true
+  },
+  "safety": {
+    "bypassPermissions": true,
+    "blockCredentials": false
+  },
+  "updates": {
+    "enabled": true
+  },
+  "weekStartsOn": 1,
+  "locale": "en",
+  "theme": "system",
+  "onboardingCompleted": false
+}

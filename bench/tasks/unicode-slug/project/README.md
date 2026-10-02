@@ -1,0 +1,3 @@
+# uslug
+
+URL-slug generation for titles in any script. `slugify(text, { maxLength, separator })` lower-cases the input, drops punctuation and symbols, keeps letters, digits and emoji from any language, joins words with the separator, and shortens the result to at most `maxLength` **characters** (Unicode code points, not UTF-16 units) without ever cutting a character in half or leaving a dangling separator. Output is always in Unicode NFC form, so two inputs that are canonically equivalent produce the same slug. The helpers in `src/length.js` and `src/truncate.js` are also exported for callers that need to measure or shorten text under the same rules.

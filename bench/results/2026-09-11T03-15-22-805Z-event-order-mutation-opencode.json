@@ -1,0 +1,33 @@
+{
+  "task": "event-order-mutation",
+  "agent": "opencode",
+  "model": "deepseek-flash",
+  "dir": "/private/var/folders/lm/2w7lhpr961384x9rn695_qjm0000gn/T/bench-event-order-mutation-opencode-FZvmAJ",
+  "startedAt": "2026-09-11T03:15:22.805Z",
+  "durationMs": 13328,
+  "pass": true,
+  "verdict": "PASS",
+  "toolCalls": 10,
+  "tools": {
+    "bash": 3,
+    "read": 5,
+    "edit": 2
+  },
+  "llmCalls": 5,
+  "inputTokens": 53358,
+  "outputTokens": 989,
+  "changedFiles": [
+    "src/emitter.js",
+    "src/reducers.js"
+  ],
+  "errors": [],
+  "events": {
+    "step_start": 5,
+    "tool_use": 10,
+    "text": 3,
+    "step_finish": 5
+  },
+  "conversationId": null,
+  "finalText": "Both fixed, all 6 tests pass.\n\n- `src/emitter.js:34` — `emit` now iterates a snapshot (`list.slice()`), so a `once` listener unsubscribing itself mid-emit no longer shifts the array and skips the next listener.\n- `src/reducers.js:21` — `sort` now copies before sorting (`[...state.items].sort(...)`), preserving the `prev` state's order for undo.",
+  "verifyOutput": "✔ add, rename and remove (1.576625ms)\n✔ change listeners get the event with prev and next (0.112459ms)\n✔ unsubscribing stops further notifications (0.104792ms)\n✔ a once listener does not starve the listener registered after it (0.106ms)\n✔ after a sort event the prev snapshot still has the old order (0.124125ms)\n✔ replay folds events into a state (0.082834ms)\nℹ tests 6\nℹ suites 0\nℹ pass 6\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 98.331667\n✔ a listener that removes itself (via off) does not skip the next listener (1.355083ms)\n✔ a listener that removes a different, earlier listener does not shift the rest (0.092791ms)\n✔ two once listeners in a row both fire, then are gone (0.164791ms)\n✔ replay leaves its inputs untouched and is repeatable (0.232042ms)\n✔ a state held by a caller is unaffected by later dispatches (0.079542ms)\nℹ tests 5\nℹ suites 0\nℹ pass 5\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 92.773458\nVERDICT: PASS\n\n"
+}

@@ -1,0 +1,36 @@
+{
+  "task": "unicode-slug",
+  "agent": "wolffish",
+  "model": "deepseek-flash",
+  "dir": "/private/var/folders/lm/2w7lhpr961384x9rn695_qjm0000gn/T/bench-unicode-slug-wolffish-ojjYk7",
+  "startedAt": "2026-09-11T03:19:54.928Z",
+  "durationMs": 68899,
+  "pass": true,
+  "verdict": "PASS",
+  "toolCalls": 18,
+  "tools": {
+    "operating_manual": 1,
+    "file_read": 7,
+    "file_glob": 1,
+    "shell_exec": 5,
+    "file_edit": 3,
+    "notify_phone": 1
+  },
+  "llmCalls": 10,
+  "inputTokens": 52154,
+  "outputTokens": 24372,
+  "changedFiles": [
+    "src/length.js",
+    "src/slug.js",
+    "src/truncate.js"
+  ],
+  "errors": [],
+  "events": {
+    "turnEvent": 85,
+    "segment": 9880,
+    "done": 1
+  },
+  "conversationId": "2026-09-11_06-19-54_929-489bfb",
+  "finalText": "mbining marks that cannot compose** are still dropped (`\\p{M}` is outside `DROP`): `slugify('हिन्दी')` → `हनद` — Hindi vowel signs vanish. One-character fix is adding `\\p{M}` to `DROP`, but it changes behavior beyond the failing tests, so it's your call.\n- **Emoji sequences lose their parts**, since only `Extended_Pictographic` survives: `❤️` → `❤`, `👍🏽` → `👍`, and `🇸🇦` is dropped entirely (regional indicators aren't pictographic), while a ZWJ family splits into members. Preserving those means measuring `maxLength` in grapheme clusters (`Intl.Segmenter`) instead of code points — a spec change, not a bug fix.\n\nSay the word and I'll do either.Fixed — `npm test` passes 6/6. Three root causes, one per file:\n\n- **`src/length.js:3`** — `charLength` counted UTF-16 units, so `'🌍'` measured 2. Now counts code points.\n- **`src/truncate.js:9`** — `slice(0, max)` cut through surrogate pairs, leaving the lone high surrogate `\\ud83c` (your \"broken character\"). Now slices a code-point array.\n- **`src/slug.js:14`** — no normalization, so the drop regex (`\\p{L}` but not `\\p{M}`) stripped macOS/NFD combining accents: `Crème Brûlée` → `creme-brulee`, while Linux/NFC input kept its precomposed `è`. Now lowercased and normalized to NFC *before* the drop, with a final NFC pass so output form holds even for a non-NFC separator.\n\nVerified by `npm test` plus a sweep over 5 titles × `maxLength` 0–20: zero violations of the README's three invariants (≤ max in code points, no split character, no dangling separator), and NFD/NFC spellings now slug identically.\n\nTwo adjacent gaps I flagged rather than changed, since the README defines \"character\" as a code point: `\\p{M}` still drops non-composable marks (`slugify('हिन्दी')` → `हनद`), and emoji sequences lose parts (`❤️` → `❤`, `🇸🇦` dropped entirely) — preserving those means measuring in grapheme clusters, a spec change. Happy to do either on your word.\n\nChanges uncommitted, touching only `src/length.js`, `src/slug.js`, `src/truncate.js`.",
+  "verifyOutput": "✔ ascii titles (1.158917ms)\n✔ custom separator and trailing separators are trimmed (0.103625ms)\n✔ non-latin letters are kept (0.461541ms)\n✔ emoji are kept and never cut in half (0.078375ms)\n✔ accents written as combining marks survive (0.067459ms)\n✔ truncate and charLength on plain text (0.182667ms)\nℹ tests 6\nℹ suites 0\nℹ pass 6\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 101.098584\n✔ NFC and NFD inputs produce the same slug, also when truncated (1.093916ms)\n✔ a 4-byte emoji exactly at the cut boundary (0.526125ms)\n✔ charLength counts characters, not UTF-16 units (0.056208ms)\nℹ tests 3\nℹ suites 0\nℹ pass 3\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 92.242125\nVERDICT: PASS\n\n"
+}

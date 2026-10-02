@@ -1,0 +1,10 @@
+{
+  "name": "@wolffish-cap/notion",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Wolffish Notion capability — runtime npm dependencies installed lazily on first use.",
+  "dependencies": {
+    "@notionhq/client": "^2.3.0"
+  }
+}

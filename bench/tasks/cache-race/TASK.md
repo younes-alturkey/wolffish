@@ -1,0 +1,1 @@
+Calling `refresh()` on a key while that key is still loading sometimes leaves the old value in the cache afterwards, so users see data we just replaced. I reproduced it in `test/loader.test.js` and `npm test` fails. This loader sits on the hot path and the upstream it talks to flakes now and then, so please make sure it is genuinely robust, not just green on that one test.

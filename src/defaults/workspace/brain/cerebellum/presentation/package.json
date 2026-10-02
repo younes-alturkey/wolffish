@@ -1,0 +1,11 @@
+{
+  "name": "@wolffish-cap/presentation",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Wolffish presentation capability — runtime npm dependencies installed lazily on first use.",
+  "dependencies": {
+    "adm-zip": "^0.5.17",
+    "pptxgenjs": "^4.0.1"
+  }
+}

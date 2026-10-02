@@ -1,0 +1,10 @@
+{
+  "name": "@wolffish-cap/github",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Wolffish GitHub capability — runtime npm dependencies installed lazily on first use.",
+  "dependencies": {
+    "octokit": "^4.1.2"
+  }
+}

@@ -1,0 +1,3 @@
+# keyed-loader
+
+A read-through cache in front of an async fetch function, used on the request hot path. `createLoader(fetchFn)` returns `get(key)`, which serves a cached value when there is one, otherwise fetches it exactly once no matter how many callers ask concurrently; `invalidate(key)`, which drops the cached value so the next `get` fetches again; and `refresh(key)`, which invalidates and immediately starts a new fetch. A value produced by a fetch that started before an `invalidate`/`refresh` is stale and must never overwrite a newer one. Failed fetches are not cached: the next `get` after a rejection tries again. `stats()` reports how many times the fetch function was called.

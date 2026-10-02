@@ -1,0 +1,33 @@
+{
+  "task": "pagination-cursor",
+  "agent": "opencode",
+  "model": "deepseek-flash",
+  "dir": "/private/var/folders/lm/2w7lhpr961384x9rn695_qjm0000gn/T/bench-pagination-cursor-opencode-3LMdom",
+  "startedAt": "2026-09-11T03:15:36.626Z",
+  "durationMs": 17165,
+  "pass": true,
+  "verdict": "PASS",
+  "toolCalls": 11,
+  "tools": {
+    "bash": 4,
+    "read": 5,
+    "edit": 2
+  },
+  "llmCalls": 6,
+  "inputTokens": 64663,
+  "outputTokens": 1048,
+  "changedFiles": [
+    "src/cursor.js",
+    "src/sort.js"
+  ],
+  "errors": [],
+  "events": {
+    "step_start": 6,
+    "tool_use": 11,
+    "step_finish": 6,
+    "text": 2
+  },
+  "conversationId": null,
+  "finalText": "All 6 tests pass. The comparator now tie-breaks by `id` in the sort direction (matching the documented total order), and `decodeCursor` preserves the `id` so the resume probe can compare against it. Cursor wire format (`[sortKey, id]` base64url) is unchanged.",
+  "verifyOutput": "✔ first page without a cursor is sorted ascending (1.393291ms)\n✔ descending order with distinct scores pages cleanly (0.21875ms)\n✔ a cursor round-trips through encode/decode (0.081666ms)\n✔ rows sharing a score are neither skipped nor repeated across pages (0.137125ms)\n✔ malformed cursors are rejected (0.2085ms)\n✔ the last page has no next cursor (0.087459ms)\nℹ tests 6\nℹ suites 0\nℹ pass 6\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 96.180291\n✔ descending paging with ties visits every row exactly once (1.732208ms)\n✔ ascending paging with ties inserted out of id order visits every row exactly once (0.144375ms)\n✔ a descending listing is exactly the reverse of the ascending one (0.101375ms)\n✔ page boundaries fall between tied rows in both directions (0.091958ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 91.343917\nVERDICT: PASS\n\n"
+}

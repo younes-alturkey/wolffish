@@ -1,0 +1,35 @@
+{
+  "task": "event-order-mutation",
+  "agent": "wolffish",
+  "model": "deepseek-flash",
+  "dir": "/private/var/folders/lm/2w7lhpr961384x9rn695_qjm0000gn/T/bench-event-order-mutation-wolffish-qMQvyc",
+  "startedAt": "2026-09-11T03:15:30.218Z",
+  "durationMs": 90325,
+  "pass": true,
+  "verdict": "PASS",
+  "toolCalls": 21,
+  "tools": {
+    "operating_manual": 1,
+    "file_read": 6,
+    "shell_exec": 8,
+    "file_edit": 4,
+    "file_glob": 1,
+    "notify_phone": 1
+  },
+  "llmCalls": 13,
+  "inputTokens": 72892,
+  "outputTokens": 34296,
+  "changedFiles": [
+    "src/emitter.js",
+    "src/reducers.js"
+  ],
+  "errors": [],
+  "events": {
+    "turnEvent": 88,
+    "segment": 11557,
+    "done": 1
+  },
+  "conversationId": "2026-09-11_06-15-30_219-1cf76b",
+  "finalText": "beyond the suite: `once` mid-list, add-mid-emit not double-called, remove-mid-emit not skipping its neighbours, emit return counts, duplicate registrations, `prev` correctness for `sort`/`rename`/`remove` in sequence, caller-supplied `initial` never mutated, `replay` parity, sort idempotence.\n\nOne probe initially reported FAIL — that was my own expectation being wrong (I typo'd the `next` column on the rename case), not the code. Worth flagging so you don't read the sequence as a masked failure.\n\n**Risk / the judgement call I made:** the README says removal mid-emit must not cause *any other* listener to be skipped or called twice. That's satisfiable by snapshot alone, but I implemented the stronger reading — an unsubscribe takes effect immediately, even mid-emit. If you actually want the frozen-set semantics (a listener removed during an emit still receives that one in-flight emit), delete the `if (!entry.live) continue;` line at `src/emitter.js:45`; the rest stands. Not checked: there are no other test files in the repo and no reference branch, so the visible suite is all the coverage that exists — nothing pins the mid-emit removal semantics either way.\n\nPer your rules I haven't committed anything; `src/emitter.js` and `src/reducers.js` are modified in the working tree, `test/` untouched.Done — final state:\n\n- **`src/emitter.js`** — listeners stored as `{ fn, live }` entries; `emit` walks a snapshot taken at the start of the emit, skipping entries unsubscribed before their turn. A `once` listener unsubscribing itself no longer shifts the loop past the next listener, and nothing added mid-emit gets called an extra time.\n- **`src/reducers.js`** — `sort` copies first (`[...state.items].sort(byName)`), so `prev` handed to change listeners keeps the old order and undo restores the right thing.\n\n`npm test` → 6/6 pass (was 4/6), plus 16 extra edge-case probes green. `test/store.test.js` untouched; nothing committed — the two modified files are yours to review and commit.",
+  "verifyOutput": "✔ add, rename and remove (1.575375ms)\n✔ change listeners get the event with prev and next (0.123458ms)\n✔ unsubscribing stops further notifications (0.107292ms)\n✔ a once listener does not starve the listener registered after it (0.107666ms)\n✔ after a sort event the prev snapshot still has the old order (0.112458ms)\n✔ replay folds events into a state (0.073125ms)\nℹ tests 6\nℹ suites 0\nℹ pass 6\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 96.576125\n✔ a listener that removes itself (via off) does not skip the next listener (1.380791ms)\n✔ a listener that removes a different, earlier listener does not shift the rest (0.111167ms)\n✔ two once listeners in a row both fire, then are gone (0.1635ms)\n✔ replay leaves its inputs untouched and is repeatable (0.226ms)\n✔ a state held by a caller is unaffected by later dispatches (0.075125ms)\nℹ tests 5\nℹ suites 0\nℹ pass 5\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 90.02325\nVERDICT: PASS\n\n"
+}

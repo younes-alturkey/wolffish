@@ -1,0 +1,21 @@
+#!/bin/sh
+# Wolffish CLI launcher — shipped by the .deb/.rpm as /usr/bin/wolffish.
+#
+# The app also writes a per-user shim into ~/.wolffish/bin on every boot, and
+# that one has to exist: an AppImage runs from a mount whose path changes every
+# launch, so only the running app knows where it lives. A native package has no
+# such problem — /opt/Wolffish is fixed by the packaging — which lets the
+# package answer the question outright instead of deferring to a first launch:
+# this file exists the moment `apt install` finishes, the same command for
+# every user on the machine, and dpkg removes it on purge.
+#
+# The client is a compiled console program (src/cli); WOLFFISH_EXEC tells it
+# where the app binary is so it can start a daemon that is not running, with
+# no window ever opening.
+#
+# Keep the "Wolffish CLI launcher" line above: the app reads it to tell its own
+# command apart from an unrelated `wolffish` earlier on PATH.
+export WOLFFISH_EXEC=/opt/Wolffish/wolffish-app
+arch="$(uname -m)"
+case "$arch" in x86_64|amd64) arch=x64;; arm64|aarch64) arch=arm64;; esac
+exec "/opt/Wolffish/resources/cli/wolffish-cli-linux-$arch" "$@"

@@ -1,0 +1,20 @@
+node_modules
+dist
+out
+.DS_Store
+.eslintcache
+*.log*
+.claude
+v24*
+*.tsbuildinfo
+
+# Compiled by beforePack from build/win-cli-launcher/wolffish-cli.cs — the
+# source is the checked-in artifact, the .exe is rebuilt per platform.
+build/win-cli-launcher/*.exe
+
+# Python bytecode (cerebellum plugins ship .py workers, e.g. text-to-speech/synth.py)
+__pycache__/
+*.py[cod]
+
+# Compiled terminal-client binaries (scripts/cli/build.mjs)
+build/cli/

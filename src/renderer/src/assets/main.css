@@ -1,0 +1,438 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url('../../../../resources/fonts/IBM_Plex_Sans_Arabic/IBMPlexSansArabic-Regular.ttf')
+    format('truetype');
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  src: url('../../../../resources/fonts/IBM_Plex_Sans_Arabic/IBMPlexSansArabic-Medium.ttf')
+    format('truetype');
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  src: url('../../../../resources/fonts/IBM_Plex_Sans_Arabic/IBMPlexSansArabic-SemiBold.ttf')
+    format('truetype');
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  src: url('../../../../resources/fonts/IBM_Plex_Sans_Arabic/IBMPlexSansArabic-Bold.ttf')
+    format('truetype');
+}
+
+@theme {
+  --font-sans:
+    'IBM Plex Sans Arabic', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+
+  --color-ocean: #1b365d;
+  --color-arctic: #a5d8ff;
+  --color-cyan: #00d4ff;
+  --color-void: #0d1117;
+  --color-frosted: #f0f4f8;
+  --color-cloud: #ffffff;
+
+  --color-bg: #f0f4f8;
+  --color-surface: #ffffff;
+  --color-fg: #0d1117;
+  --color-muted: #5b6778;
+  --color-border: #d5dde5;
+  --color-primary: #1b365d;
+  --color-primary-fg: #ffffff;
+  --color-accent: #00d4ff;
+  --color-ring: #1b365d;
+}
+
+:root {
+  color-scheme: light;
+}
+
+:root.dark {
+  color-scheme: dark;
+
+  --color-bg: #0d1117;
+  --color-surface: #161b22;
+  --color-fg: #ffffff;
+  --color-muted: #8b95a7;
+  --color-border: #2a313c;
+  --color-primary: #a5d8ff;
+  --color-primary-fg: #0d1117;
+  --color-accent: #00d4ff;
+  --color-ring: #a5d8ff;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*:focus {
+  outline: none;
+}
+
+/* Scrollbars — global default. 8px gutter is always reserved so content
+   never reflows when it grows past its container. The thumb is invisible
+   at rest and fades in on hover. Theme-aware via :root.dark.
+*/
+* {
+  /* Firefox: thin bar, both thumb + track invisible at rest. */
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+*::-webkit-scrollbar {
+  /* Chromium / WebKit: always reserve the gutter. */
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 4px;
+}
+
+/* Hover state — light theme. Firefox uses scrollbar-color on the parent
+   (lighter alpha because Firefox renders the bar a bit chunkier);
+   WebKit uses ::-webkit-scrollbar-thumb:hover (heavier alpha). */
+*:hover {
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* Hover state — dark theme. */
+:root.dark *:hover {
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+:root.dark *::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+.app-titlebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  z-index: 50;
+  -webkit-app-region: drag;
+}
+
+button,
+a,
+input,
+select,
+textarea,
+[role='button'],
+[role='listbox'],
+[role='option'],
+[contenteditable='true'] {
+  -webkit-app-region: no-drag;
+}
+
+/* highlight.js theme — colorful VS Code-inspired palette. Every common token
+   class produced by highlight.js gets a distinct color so output isn't
+   limited to a couple of shades (no "purposely ignored" tokens). */
+:root {
+  --hljs-keyword: #cf222e;
+  --hljs-entity: #6f42c1;
+  --hljs-attr: #0550ae;
+  --hljs-number: #e36209;
+  --hljs-literal: #e36209;
+  --hljs-string: #0a7c3f;
+  --hljs-variable: #953800;
+  --hljs-comment: #6e7781;
+  --hljs-tag: #116329;
+  --hljs-property: #1f7eea;
+  --hljs-punctuation: #57606a;
+  --hljs-operator: #cf222e;
+  --hljs-section: #0550ae;
+  --hljs-bullet: #735c0f;
+  --hljs-addition-fg: #116329;
+  --hljs-addition-bg: #dafbe1;
+  --hljs-deletion-fg: #82071e;
+  --hljs-deletion-bg: #ffebe9;
+}
+
+:root.dark {
+  --hljs-keyword: #ff7b72;
+  --hljs-entity: #d2a8ff;
+  --hljs-attr: #79c0ff;
+  --hljs-number: #ffa657;
+  --hljs-literal: #ffa657;
+  --hljs-string: #a5d6ff;
+  --hljs-variable: #ffa657;
+  --hljs-comment: #8b949e;
+  --hljs-tag: #7ee787;
+  --hljs-property: #79c0ff;
+  --hljs-punctuation: #c9d1d9;
+  --hljs-operator: #ff7b72;
+  --hljs-section: #79c0ff;
+  --hljs-bullet: #f2cc60;
+  --hljs-addition-fg: #aff5b4;
+  --hljs-addition-bg: #033a16;
+  --hljs-deletion-fg: #ffdcd7;
+  --hljs-deletion-bg: #67060c;
+}
+
+/* Conversations sheet: enter-only slide from the leading edge, transform only
+   (no opacity/color transitions — those are banned for perf). Exit is an
+   instant unmount, matching every other overlay in the app. The RTL variant
+   exists because translateX doesn't mirror with the writing direction; the
+   easing matches the mobile sheet's Easing.out(cubic). */
+@keyframes wf-sheet-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes wf-sheet-in-rtl {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.wf-sheet-panel {
+  animation: wf-sheet-in 200ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+[dir='rtl'] .wf-sheet-panel {
+  animation-name: wf-sheet-in-rtl;
+}
+
+/* The browser card's "opening a page" bar: transform-only, eases out toward
+   the end and holds there until the first frame lands, then the card swaps. */
+@keyframes wf-progress-fake {
+  0% {
+    transform: scaleX(0);
+  }
+  60% {
+    transform: scaleX(0.7);
+  }
+  100% {
+    transform: scaleX(0.92);
+  }
+}
+.wf-progress-fake {
+  transform-origin: 0 50%;
+  animation: wf-progress-fake 6s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+[dir='rtl'] .wf-progress-fake {
+  transform-origin: 100% 50%;
+}
+
+/* A sideways strip that scrolls without end and without a bar (the browser
+   card's tab strip): the global 8px gutter above is reserved for every
+   scroller, and a strip of chips has no room for it. */
+.wf-scroll-x-bare {
+  scrollbar-width: none;
+}
+.wf-scroll-x-bare::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Trailing-edge variant: same motion mirrored, for sheets that open opposite
+   the profile/conversations pair (the chat's logs and files sheets). */
+.wf-sheet-panel-end {
+  animation: wf-sheet-in-rtl 200ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+[dir='rtl'] .wf-sheet-panel-end {
+  animation-name: wf-sheet-in;
+}
+
+@keyframes rainbow-slide {
+  0% {
+    background-position: 0% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.rainbow-border {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background: linear-gradient(
+    90deg,
+    #f43f5e,
+    #f59e0b,
+    #10b981,
+    #3b82f6,
+    #8b5cf6,
+    #ec4899,
+    #f43f5e,
+    #f59e0b,
+    #10b981,
+    #3b82f6,
+    #8b5cf6,
+    #ec4899
+  );
+  background-size: 200% 100%;
+  animation: rainbow-slide 2.5s linear infinite;
+}
+
+.hljs {
+  color: var(--color-fg);
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  color: var(--hljs-keyword);
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_,
+.hljs-function .hljs-title {
+  color: var(--hljs-entity);
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-meta,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  color: var(--hljs-attr);
+}
+.hljs-number {
+  color: var(--hljs-number);
+}
+.hljs-literal {
+  color: var(--hljs-literal);
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  color: var(--hljs-string);
+}
+.hljs-built_in,
+.hljs-symbol {
+  color: var(--hljs-variable);
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula,
+.hljs-quote {
+  color: var(--hljs-comment);
+  font-style: italic;
+}
+.hljs-name,
+.hljs-tag,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  color: var(--hljs-tag);
+}
+.hljs-property,
+.hljs-params {
+  color: var(--hljs-property);
+}
+.hljs-punctuation {
+  color: var(--hljs-punctuation);
+}
+.hljs-operator {
+  color: var(--hljs-operator);
+}
+.hljs-subst {
+  color: var(--color-fg);
+}
+.hljs-section {
+  color: var(--hljs-section);
+  font-weight: 600;
+}
+.hljs-bullet {
+  color: var(--hljs-bullet);
+}
+.hljs-emphasis {
+  font-style: italic;
+}
+.hljs-strong {
+  font-weight: 600;
+}
+.hljs-addition {
+  color: var(--hljs-addition-fg);
+  background-color: var(--hljs-addition-bg);
+}
+.hljs-deletion {
+  color: var(--hljs-deletion-fg);
+  background-color: var(--hljs-deletion-bg);
+}
+
+/* Word pages painted by docx-preview. The library scopes everything it emits
+   under .docx, but it leaves the page itself transparent with black text —
+   which is unreadable on our dark surface. A page is paper: give it white,
+   in both themes, and let the document's own colours sit on it. */
+.docx-surface section.docx {
+  background: #ffffff;
+  color: #111111;
+  /* The page fills the viewer rather than floating on a desk: a document card
+     is not a print-preview, and a shadowed sheet inset from both edges spends
+     the width the text needs — most of it, in the expanded sheet. */
+  margin: 0;
+}
+
+/* Consecutive pages butt together, so the only thing marking the join is a
+   hairline — enough to tell a footer from the header under it, without the
+   card-on-a-desk framing. */
+.docx-surface section.docx + section.docx {
+  border-top: 1px solid rgb(0 0 0 / 0.12);
+}
+
+/* Word's page width (A4 = 794px, Letter = 816px) rarely matches the surface.
+   The viewer sets `zoom` to fit the page to the FULL viewer width, which
+   reflows rather than blurs; this keeps the page from forcing a horizontal
+   scrollbar before that measurement lands. */
+.docx-surface {
+  max-width: 100%;
+}

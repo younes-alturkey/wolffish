@@ -1,0 +1,167 @@
+appId: sh.wolffi.app
+productName: Wolffish
+directories:
+  buildResources: build
+# Compiles the terminal client (src/cli, Bun + OpenTUI) for the platform being
+# packed into build/cli/dist. See build/before-pack.mjs for why this is a hook
+# and not an npm script.
+beforePack: build/before-pack.mjs
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,README.md}'
+  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+asarUnpack:
+  - resources/**
+extraResources:
+  - from: src/defaults
+    to: defaults
+    filter:
+      - '**/*'
+      - '!**/node_modules/**'
+      - '!**/package-lock.json'
+      - '!**/.wolffish-installed'
+  - from: src/changelog
+    to: changelog
+  # The terminal client: one compiled executable per platform/arch (both macOS
+  # slices in the universal app), built by the beforePack hook.
+  - from: build/cli/dist
+    to: cli
+win:
+  executableName: wolffish
+  icon: resources/icons-win/icons/icon.ico
+  target: nsis
+nsis:
+  artifactName: ${name}-${version}-setup.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: always
+  include: build/installer.nsh
+mac:
+  icon: resources/icons/icons/icon.icns
+  entitlementsInherit: build/entitlements.mac.plist
+  extendInfo:
+    - NSCameraUsageDescription: Application requests access to the device's camera.
+    - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
+    - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
+    - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
+    - NSAppleEventsUsageDescription: Wolffish controls other applications on your behalf when you ask it to drive the screen.
+  notarize: true
+  hardenedRuntime: true
+  # Mach-O files allowed to be identical in the x64 and arm64 passes of the
+  # universal merge. The two terminal-client binaries (one per arch) ride in
+  # BOTH passes on purpose — the shim picks the right one at launch — and
+  # @electron/universal refuses identical Mach-O files it is not told about.
+  x64ArchFiles: '{Contents/Resources/app.asar.unpacked/node_modules/**/*.{node,dylib},Contents/Resources/cli/*}'
+  target:
+    - target: dmg
+      arch:
+        - universal
+    - target: zip
+      arch:
+        - universal
+  category: public.app-category.productivity
+dmg:
+  artifactName: ${name}-${version}.${ext}
+linux:
+  icon: resources/icons-win/icons
+  # Goes into the generated .desktop `Exec=` for every Linux target. Chromium
+  # refuses to start as root with the sandbox on, aborting from PreSandboxStartup
+  # — before any of the app's own JavaScript runs, so the `no-sandbox` switch main
+  # appends at startup cannot satisfy it. The app already runs fully unsandboxed
+  # by design (that block in main explains why: the sandbox sets no_new_privs,
+  # which breaks every sudo the agent shells out to), so this only states the same
+  # decision early enough for the check that reads it.
+  executableArgs:
+    - --no-sandbox
+  # AppImage is the auto-update channel: electron-updater self-updates the AppImage in
+  # place via latest-linux.yml. deb/rpm install natively into the system app menu but
+  # CANNOT self-update — electron-updater can replace an AppImage, not run a package
+  # manager. deb/rpm users update by reinstalling. See .github/workflows/release.yml.
+  target:
+    - AppImage
+    - deb
+    - rpm
+  maintainer: Younes Alturkey <younes@wolffi.sh>
+  vendor: wolffi.sh
+  # Drives the .desktop `Categories=` field (electron-builder appends the trailing ';').
+  # This is NOT the deb Section / rpm Group (those come from packageCategory), so a
+  # multi-value list here is safe and only affects application-menu placement.
+  category: Utility;Development
+  # Short summary — used as the deb short description and the rpm summary. The longer
+  # .desktop `Comment=` and the deb/rpm body description come from package.json#description.
+  synopsis: Personal AI agent that runs locally with full system access
+  desktop:
+    entry:
+      # Name and StartupWMClass both already default to productName ("Wolffish"); set
+      # explicitly so window grouping is guaranteed. Comment and Categories are deliberately
+      # NOT set here — electron-builder always overrides desktop.entry.Comment (from the app
+      # description) and desktop.entry.Categories (from `category` above), so those values
+      # live on the keys above instead of being silently dropped here.
+      Name: Wolffish
+      StartupWMClass: Wolffish
+appImage:
+  artifactName: ${name}-${version}.${ext}
+# electron-builder's own default list, PLUS libasound2 — which it omits. Electron
+# links ALSA at load time whether or not the machine has a sound card, so without
+# it the app does not start at all: it dies at exec with "error while loading
+# shared libraries: libasound.so.2". A desktop distro already has it, which is why
+# this only ever surfaces on the minimal images a server install starts from.
+# Setting `depends` REPLACES the default list rather than extending it, so every
+# entry has to be repeated here.
+#
+# libasound2 is the one versioned entry, deliberately. On Ubuntu 24.04 the real
+# package is libasound2t64 and `libasound2` survives only as a virtual name —
+# provided by BOTH libasound2t64 (versioned) and liboss4-salsa-asound2
+# (unversioned). apt will not choose between two providers, so an unversioned
+# dependency on it is reported as flatly uninstallable. A VERSIONED dependency can
+# only be satisfied by a versioned Provides, which leaves exactly one candidate.
+# Same trick google-chrome's .deb uses, and 1.0.16 predates every distro we ship
+# to, so it is a tie-breaker rather than a real floor.
+deb:
+  # `wolffish` as a file the package owns, beside the `wolffish-app` symlink
+  # electron-builder's postinst already creates. An extra fpm source=dest
+  # mapping rather than a custom afterInstall script, because setting
+  # `afterInstall` REPLACES electron-builder's template — which is where the
+  # chrome-sandbox SUID handling, the mime/desktop database refresh and the
+  # Ubuntu 24 AppArmor profile live. This way dpkg owns the file, purge removes
+  # it, and none of that has to be copied into this repo to rot.
+  fpm:
+    - build/wolffish-cli=/usr/bin/wolffish
+  depends:
+    - libgtk-3-0
+    - libnotify4
+    - libnss3
+    - libxss1
+    - libxtst6
+    - xdg-utils
+    - libatspi2.0-0
+    - libuuid1
+    - libsecret-1-0
+    - libasound2 (>= 1.0.16)
+# The RPM equivalent, and the same alsa-lib fix. electron-builder's default list
+# here is inherited from a much older Electron and no longer describes either this
+# app or a current Fedora: it requires ffmpeg (not in Fedora's own repositories at
+# all — RPM Fusion only), http-parser and libappindicator-gtk3 (both retired), and
+# a handful of libraries Electron stopped linking years ago, while missing the
+# audio library it does link. The list below is the set modern Electron RPMs ship.
+rpm:
+  fpm:
+    - build/wolffish-cli=/usr/bin/wolffish
+  depends:
+    - gtk3
+    - libnotify
+    - nss
+    - libXScrnSaver
+    - libXtst
+    - xdg-utils
+    - at-spi2-core
+    - libuuid
+    - libsecret
+    - alsa-lib
+npmRebuild: false
+publish:
+  provider: generic
+  url: https://releases.wolffi.sh

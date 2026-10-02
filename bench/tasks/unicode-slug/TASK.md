@@ -1,0 +1,1 @@
+Slugs for titles with emoji come out with a broken character at the end when they get shortened, and a title pasted from a Mac ("Crème Brûlée") loses its accents while the same title typed on Linux keeps them. Both cases are in `test/slug.test.js` and `npm test` fails. Please fix the slug generation; the README describes what it is supposed to guarantee.

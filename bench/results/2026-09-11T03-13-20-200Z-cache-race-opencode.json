@@ -1,0 +1,36 @@
+{
+  "task": "cache-race",
+  "agent": "opencode",
+  "model": "deepseek-flash",
+  "dir": "/private/var/folders/lm/2w7lhpr961384x9rn695_qjm0000gn/T/bench-cache-race-opencode-l8P4DX",
+  "startedAt": "2026-09-11T03:13:20.200Z",
+  "durationMs": 122141,
+  "pass": true,
+  "verdict": "PASS",
+  "toolCalls": 27,
+  "tools": {
+    "bash": 11,
+    "skill": 1,
+    "read": 5,
+    "edit": 10
+  },
+  "llmCalls": 24,
+  "inputTokens": 630425,
+  "outputTokens": 4071,
+  "changedFiles": [
+    "src/inflight.js",
+    "src/loader.js",
+    "src/store.js",
+    "test/loader.test.js"
+  ],
+  "errors": [],
+  "events": {
+    "step_start": 24,
+    "tool_use": 27,
+    "step_finish": 24,
+    "text": 4
+  },
+  "conversationId": null,
+  "finalText": "Fixed. `npm test` passes 9/9, stable across repeated runs.\n\nThree independent races, all in the get/fetch/invalidate path:\n\n1. **Stale write accepted** — `src/store.js:25` guarded with `gen > this.generation(key)`, which only rejects *future* generations and lets an old one through. Changed to `gen !== this.generation(key)` so any writer whose generation is no longer current is dropped.\n2. **Stale result evicted the live fetch** — `src/inflight.js:22` deleted the map entry by key unconditionally, so when an old promise settled it removed the *newer* in-flight fetch, breaking dedup. Cleanup now only deletes if the entry is still its own promise.\n3. **`invalidate` served a stale load** — `src/loader.js:22` didn't drop the in-flight fetch, so a `get` right after `invalidate` joined the pre-invalidation fetch and was handed stale data (and never cached it). `invalidate` now drops the in-flight slot; `refresh` reuses it.\n\nI mutation-tested each fix: reverting any one of the three makes a specific test fail, so the tests aren't just tailored to the original failure. Added regressions for invalidate-mid-load, stale-settle-vs-dedup, and rejection-retry.\n\nResidual risk (unchanged behavior, flagging in case it matters): a fetch that resolves `undefined` is treated as a cache miss (`get` uses `!== undefined`), and invalidating during a load intentionally starts a second upstream call rather than reusing the stale one.",
+  "verifyOutput": "✔ a second get for the same key is served from cache (0.787333ms)\n✔ concurrent gets for the same key share one fetch (2.70675ms)\n✔ different keys are fetched independently (0.14325ms)\n✔ invalidate makes the next get fetch again (0.105333ms)\n✔ refresh while a load is in flight: the refreshed value wins (0.680042ms)\n✔ rejects when fetchFn is not a function (0.260666ms)\nℹ tests 6\nℹ suites 0\nℹ pass 6\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 93.500208\n✔ a rejected fetch is not cached: the next get tries again and succeeds (0.976125ms)\n✔ concurrent callers all see the rejection, then a later call recovers (1.957667ms)\n✔ a load that started before invalidate() does not repopulate the cache (0.374959ms)\n✔ no unhandled rejections leaked from the loader (0.881167ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 91.423208\nVERDICT: PASS\n\n"
+}
