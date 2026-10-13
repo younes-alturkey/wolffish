@@ -1,0 +1,40 @@
+{
+  "meta": {
+    "title": "Wolffish: The Personal AI Agent For Everyone",
+    "description": "A local-first, markdown-powered personal AI desktop agent for macOS, Windows and Linux. Free and open source."
+  },
+  "hero": {
+    "name": "Wolffish",
+    "tagline": "The Personal AI Agent For Everyone",
+    "subtitle": "The personal AI agent that gets out of your way. It acts, automates, and remembers on Mac, Windows, and Linux — fully local or with the model of your choice.",
+    "version": "latest"
+  },
+  "features": {
+    "local": "Local & Markdown-First",
+    "localDesc": "Runs offline using local models — data never leaves your machine. Your agent's brain is markdown you can read, edit, and version control. No cloud. No code. Full privacy.",
+    "brain": "Brain-Inspired Architecture",
+    "brainDesc": "Built like a human brain — memory, reasoning, and action in one agentic architecture. The agent remembers context, thinks step by step, and acts on your behalf.",
+    "extensible": "Extensible",
+    "extensibleDesc": "Drop a folder with a SKILL.md to teach your agent something new instantly. Add tools, workflows, or entire capabilities — no config, no setup, just plug and go."
+  },
+  "install": {
+    "shell": "{macos} / {linux} / {windows}",
+    "powershell": "for {windows} only (PowerShell)",
+    "copy": "Copy to clipboard"
+  },
+  "download": {
+    "macos": "macOS",
+    "windows": "Windows",
+    "linux": "Linux",
+    "macosFile": "wolffish-app.dmg",
+    "windowsFile": "wolffish-app-setup.exe",
+    "linuxFile": "wolffish-app.AppImage",
+    "compatible": "Compatible"
+  },
+  "footer": {
+    "github": "GitHub",
+    "releases": "All releases",
+    "docs": "Docs",
+    "license": "MIT License"
+  }
+}

@@ -6,7 +6,7 @@ Wolffish is a local-first, markdown-powered personal AI desktop agent built with
 
 Built around a 15-module runtime modeled after the human brain, from memory consolidation to safety gating. Every piece of state lives in readable markdown files. To change what the agent does, you edit markdown — not code.
 
-> **Status: no longer maintained.** Wolffish is not under active development. There is no website, no app-store listing, no hosted relay and no support channel. The code and the [documentation](docs/README.md) stay here, under the MIT license, for anyone who wants a battle-tested, working agent harness to build on top of or run as is. Fork it and make it yours. Issues and pull requests on this repository are not actively reviewed.
+> **Status: no longer maintained.** Wolffish is not under active development. There is no app-store listing, no hosted relay and no support channel; the one website is the [download page](https://younes-alturkey.github.io/wolffish/), served from this repository. The code and the [documentation](docs/README.md) stay here, under the MIT license, for anyone who wants a battle-tested, working agent harness to build on top of or run as is. Fork it and make it yours. Issues and pull requests on this repository are not actively reviewed.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/younes-alturkey/wolffish)](https://github.com/younes-alturkey/wolffish/releases/latest)

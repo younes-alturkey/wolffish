@@ -43,6 +43,8 @@ src/
 │   └── lib/         i18n, utils
 └── defaults/workspace/  bundled into the app, copied to ~/.wolffish on first launch
 
+apps/landing/    the download page on GitHub Pages (Vite + three.js), deployed by .github/workflows/pages.yml;
+                 versions and download links come from this repo's GitHub Releases. Its AGENTS.md has the rules.
 apps/mobile/     the companion phone app (Expo). Not in the stores any more: users build it from
                  source with their own Expo account — its README is the guide. src/lib/tunnel/ there is
                  vendored byte-identical from src/main/tunnel/ here.
