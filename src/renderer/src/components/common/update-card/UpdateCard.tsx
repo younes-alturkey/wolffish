@@ -101,11 +101,7 @@ export function UpdateCard(): React.JSX.Element | null {
               }
             )}
           </p>
-        ) : (
-          update.releaseNotes && (
-            <p className="text-muted truncate text-xs">{update.releaseNotes}</p>
-          )
-        )}
+        ) : null}
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5">
