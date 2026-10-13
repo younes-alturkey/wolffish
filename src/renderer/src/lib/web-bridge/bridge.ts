@@ -19,14 +19,17 @@ import { buildApi } from '@preload/api'
 import type { WolffishApi } from '@preload/index'
 import i18n from '@lib/i18n'
 import {
+  emitUploadProgress,
   pendingAttachmentFor,
   peekPickedFile,
   registerPickedFile,
+  takePickedFile,
   uploadToStaging,
   type Staged
 } from '@lib/web-bridge/picked-files'
 import { webPrompt } from '@lib/web-bridge/prompt'
 import type { WebTransport } from '@lib/web-bridge/transport'
+import { randomId } from '@lib/utils/randomId'
 
 export type { Staged } from '@lib/web-bridge/picked-files'
 export { uploadToStaging } from '@lib/web-bridge/picked-files'
@@ -107,8 +110,65 @@ export function installWebApi(transport: WebTransport): WolffishApi {
             })
         : undefined
     )
-  const stageAll = async (files: File[]): Promise<string[]> =>
-    (await Promise.all(files.map((f) => stage(f, f.name)))).map((s) => s.path)
+  // A panel's files go up one after another, reported the way the main-side
+  // copy reports its own progress (file position, bytes across the whole
+  // batch), so the panel's copy card shows the upload — the slow half in a
+  // browser — exactly as it shows the copy that follows it.
+  type BatchTick = {
+    index: number
+    total: number
+    name: string
+    copiedBytes: number
+    totalBytes: number
+  }
+  const stageAll = async (files: File[], onTick: (tick: BatchTick) => void): Promise<string[]> => {
+    const totalBytes = files.reduce((sum, file) => sum + file.size, 0)
+    const paths: string[] = []
+    let before = 0
+    for (const [i, file] of files.entries()) {
+      const tick = (loaded: number): void =>
+        onTick({
+          index: i + 1,
+          total: files.length,
+          name: file.name,
+          copiedBytes: Math.min(totalBytes, before + loaded),
+          totalBytes
+        })
+      tick(0)
+      const staged = await uploadToStaging(file, file.name, (loaded) => tick(loaded))
+      before += file.size
+      tick(file.size)
+      paths.push(staged.path)
+    }
+    return paths
+  }
+  // A single file whose panel has a busy state but no bar of its own shows
+  // its upload on the send-time pill instead.
+  const stageWithPill = async (file: File): Promise<Staged> => {
+    const id = randomId()
+    const progress = (loaded: number, done: boolean, error: string | null): void =>
+      emitUploadProgress({
+        id,
+        name: file.name,
+        loaded,
+        total: file.size,
+        index: 1,
+        count: 1,
+        done,
+        error
+      })
+    progress(0, false, null)
+    try {
+      const staged = await uploadToStaging(file, file.name, (loaded) =>
+        progress(loaded, false, null)
+      )
+      progress(file.size, true, null)
+      return staged
+    } catch (err) {
+      progress(0, true, err instanceof Error ? err.message : String(err))
+      throw err
+    }
+  }
 
   const folderPrompt = async (): Promise<string | null> => {
     const value = await webPrompt({
@@ -155,34 +215,52 @@ export function installWebApi(transport: WebTransport): WolffishApi {
   api.projects.pickFiles = async (projectId) => {
     const files = await pickFiles({ multiple: true })
     if (files.length === 0) return null
+    const paths = await stageAll(files, (tick) =>
+      transport.emitLocal('projects:copyProgress', { projectId, ...tick })
+    )
     return transport.invoke('web:attachFiles', {
       kind: 'project',
       id: projectId,
-      paths: await stageAll(files)
+      paths
     }) as ReturnType<WolffishApi['projects']['pickFiles']>
   }
   api.procedures.pickFiles = async (procedureId) => {
     const files = await pickFiles({ multiple: true })
     if (files.length === 0) return null
+    const paths = await stageAll(files, (tick) =>
+      transport.emitLocal('procedures:copyProgress', { procedureId, ...tick })
+    )
     return transport.invoke('web:attachFiles', {
       kind: 'procedure',
       id: procedureId,
-      paths: await stageAll(files)
+      paths
     }) as ReturnType<WolffishApi['procedures']['pickFiles']>
   }
   api.automationFiles.pickFiles = async (existing) => {
     const files = await pickFiles({ multiple: true })
     if (files.length === 0) return null
+    const paths = await stageAll(files, (tick) =>
+      transport.emitLocal('automations:copyProgress', tick)
+    )
     return transport.invoke('web:attachFiles', {
       kind: 'automation',
       existing: existing ?? [],
-      paths: await stageAll(files)
+      paths
     }) as ReturnType<WolffishApi['automationFiles']['pickFiles']>
   }
   api.cerebellum.pickImport = async () => {
     const [file] = await pickFiles({ accept: '.md,.zip,text/markdown,application/zip' })
     if (!file) return null
-    return (await stage(file, file.name)).path
+    return (await stageWithPill(file)).path
+  }
+  const baseImportCapability = api.cerebellum.importCapability
+  // A dropped file reaches the panel as a virtual path (getPathForFile); it
+  // is staged here, so the panel's own import call gets a real path.
+  api.cerebellum.importCapability = async (sourcePath) => {
+    const file = takePickedFile(sourcePath)
+    if (!file) return baseImportCapability(sourcePath)
+    const staged = await stageWithPill(file)
+    return baseImportCapability(staged.path)
   }
 
   const asDownload = (answer: DownloadAnswer): DownloadAnswer => {
