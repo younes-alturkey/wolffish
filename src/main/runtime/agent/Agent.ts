@@ -63,14 +63,6 @@ import { BasalGanglia } from '@main/runtime/basalganglia'
 import { Brainstem } from '@main/runtime/brainstem'
 import {
   Broca,
-  upsertTaskSegment,
-  upsertCountdownSegment,
-  upsertWaitSegment,
-  upsertProcessSegment,
-  upsertBrowserSegment,
-  upsertToolResultSegment,
-  appendTextSegment,
-  upsertWorkflowSegment,
   WORKFLOW_TOOL_NAMES,
   type Segment,
   type SegmentSink,
@@ -79,7 +71,8 @@ import {
   type ToolResultMeta,
   type ToolResultStatus,
   openTodoList,
-  type OpenTodoList
+  type OpenTodoList,
+  foldSegment
 } from '@main/runtime/broca'
 import { Cerebellum, type WorkflowHost } from '@main/runtime/cerebellum'
 import type { StepResult } from '@main/runtime/motor'
@@ -169,6 +162,37 @@ import { isInternalToolCall, readConfig } from '@main/workspace/workspace'
 const PROVIDER_TOOL_LIMITS: Record<string, number> = {
   openai: 128,
   xai: 200
+}
+
+/**
+ * What the model reads before an automation's or procedure's saved
+ * instruction. The instruction alone arrived as a bare user message, and one
+ * that DESCRIBES its job ("UNATTENDED AUTOMATION — runs daily…") reads exactly
+ * like a request to set that automation up: a heartbeat run of a news brief
+ * went looking for the brief's schedule, found itself "already running", and
+ * spent the whole run confirming the setup instead of writing the brief. The
+ * prompt shown in the conversation stays the instruction as saved.
+ */
+function autonomousRunFraming(opts: {
+  jobLabel: string
+  jobName?: string
+  channel?: string
+}): string {
+  const now = new Date().toString()
+  const job = opts.jobName ? `${opts.jobName}" (${opts.jobLabel})` : `${opts.jobLabel}"`
+  if (opts.channel === 'procedure') {
+    return (
+      `[Run of the saved procedure "${job}, started ${now}. The text below is its ` +
+      'saved instruction: carry it out now, in this run.]\n\n'
+    )
+  }
+  return (
+    `[Scheduled run of the automation "${job}, firing ${now}. The text below is its ` +
+    'saved instruction: carry it out now, in this run. The automation already exists and is ' +
+    'already scheduled — this run IS it — so do not look for, create, verify, reschedule or edit ' +
+    'it unless the instruction itself asks you to. Nobody watches this run live; the user reads ' +
+    'what it delivers afterwards.]\n\n'
+  )
 }
 
 /**
@@ -409,6 +433,8 @@ export type AgentTurnResult = {
 export type AutonomousTurnOptions = {
   instruction: string
   jobLabel: string
+  /** The automation's display name (`name:` marker), when it has one. */
+  jobName?: string
   /**
    * The brainstem job id this run belongs to (e.g. "every-2",
    * "procedure:<id>") — the same id the pool's RunningJobInfo carries.
@@ -2100,8 +2126,11 @@ export class Agent {
 
         // close_turn — the model's explicit "everything is delivered and
         // nothing further is needed". Handled before dispatch so it never
-        // becomes a task step, never reaches the amygdala, and never emits a
-        // tool_result (there is nothing to report back — the loop is over).
+        // becomes a task step and never reaches the amygdala. Its tool_call
+        // segment already streamed, so it is answered here: left open, the
+        // turn-end sweep stamped EVERY close as "failed — interrupted because
+        // the run was stopped", which drew a failed card on each turn and
+        // replayed into the next turn's history as a failed call.
         // This is the producible exit that replaces the old, impossible
         // "end with an entirely empty response" ask; see cerebellum's
         // registerCloseTurnCapability for why that ask had to go.
@@ -2119,6 +2148,7 @@ export class Agent {
         // failed a turn whose work had already finished and shipped.
         const closeTurnCall = parsed.toolCalls.find((tc) => tc.name === 'close_turn')
         if (closeTurnCall) {
+          broca.emitToolResult(turn.turnId, closeTurnCall.id, 'success', 'Turn closed.')
           console.log(
             `[agent] close_turn${parsed.toolCalls.length > 1 ? ` (with ${parsed.toolCalls.length - 1} other call(s))` : ''} — ending turn (iter ${iterationCount})`
           )
@@ -3098,15 +3128,7 @@ export class Agent {
       // Workflow/task snapshots supersede each other — keep only the latest
       // per run/task in the sealed conversation, mirroring every other
       // persist path.
-      if (seg.kind === 'workflow') upsertWorkflowSegment(segments, seg)
-      else if (seg.kind === 'task') upsertTaskSegment(segments, seg)
-      else if (seg.kind === 'countdown') upsertCountdownSegment(segments, seg)
-      else if (seg.kind === 'wait') upsertWaitSegment(segments, seg)
-      else if (seg.kind === 'process') upsertProcessSegment(segments, seg)
-      else if (seg.kind === 'browser') upsertBrowserSegment(segments, seg)
-      else if (seg.kind === 'tool_result') upsertToolResultSegment(segments, seg)
-      else if (seg.kind === 'text' || seg.kind === 'reasoning') appendTextSegment(segments, seg)
-      else segments.push(seg)
+      foldSegment(segments, seg)
       if (seg.kind === 'text') acc.assistantContent += seg.delta
       if (seg.kind === 'turn_end') acc.stopReason = seg.stopReason
       // Task snapshots flush immediately — a card flipping to running/succeeded
@@ -3222,7 +3244,7 @@ export class Agent {
       interjections?.open(conv.id)
       result = await turnScope.run({ turnId, conversationId: conv.id, autonomous: true }, () =>
         this.respond({
-          history: [{ role: 'user', content: opts.instruction }],
+          history: [{ role: 'user', content: autonomousRunFraming(opts) + opts.instruction }],
           turnId,
           onSegment: sink,
           signal: controller.signal,

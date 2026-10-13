@@ -185,6 +185,38 @@ async function run(): Promise<void> {
   )
 
   // ── Grouped collapse past the index line cap ────────────────────────
+  // A capability NAMED in the query outranks one that only shares its
+  // words. Observed: "send browser push notification to signed-in Web UI
+  // browser" tied browser-extension with web-ui (the repeated "browser"
+  // counted twice, "ui" is under the term floor) and the extension — not
+  // even installed on that box — won on insertion order.
+  const named = new Cerebellum({})
+  await named.loadAll()
+  named.registerInProcessCapability(
+    makeCap(
+      'browser-extension',
+      ['ext_notify', 'ext_navigate'],
+      'the user browser: notification, push, open pages, web sites'
+    ),
+    stubPlugin('browser-extension')
+  )
+  named.registerInProcessCapability(
+    makeCap('web-ui', ['notify_web'], 'reach signed-in browsers with a notification'),
+    stubPlugin('web-ui')
+  )
+  const ranked = named.searchCapabilities(
+    'send browser push notification to signed-in Web UI browser'
+  )
+  ok('a capability named in the query ranks first', ranked[0]?.cap.name === 'web-ui')
+  ok(
+    'a tool named in the query ranks its capability first',
+    named.searchCapabilities('use notify web for the browser')[0]?.cap.name === 'web-ui'
+  )
+  ok(
+    'without a name, term matching still decides',
+    named.searchCapabilities('open web pages in the browser')[0]?.cap.name === 'browser-extension'
+  )
+
   const big = new Cerebellum({})
   await big.loadAll()
   for (let i = 0; i < 75; i++) {

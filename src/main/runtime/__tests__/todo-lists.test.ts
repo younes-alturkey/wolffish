@@ -8,6 +8,7 @@
  */
 import {
   Broca,
+  foldSegment,
   latestTodoLists,
   openTodoList,
   todoListId,
@@ -88,6 +89,35 @@ function main(): void {
     'the fold keeps the list id',
     segs.some((s) => s.kind === 'todo' && s.listId === 't1' && s.items === aDone)
   )
+
+  // A long run that rewrites its list every iteration — the heartbeat run
+  // that saved 138 cards because its accumulator appended todo segments.
+  // foldSegment is the one fold every accumulator uses: one card, at the
+  // first write's position, in the latest state.
+  const run: Segment[] = []
+  let last: TodoItem[] = a
+  for (let i = 0; i < 138; i++) {
+    foldSegment(run, {
+      kind: 'active_model',
+      turnId: 'hb',
+      segmentId: `m${i}`,
+      provider: 'p',
+      model: 'm'
+    })
+    foldSegment(run, { kind: 'text', turnId: 'hb', segmentId: `t${i}`, delta: `step ${i}. ` })
+    last = i % 2 ? aDone : a
+    foldSegment(run, todo('hb', `s${i}`, last))
+  }
+  const runTodos = run.filter((s) => s.kind === 'todo')
+  ok('138 writes in one run fold into one todo segment', runTodos.length === 1, runTodos.length)
+  ok('the folded card carries the latest items', (runTodos[0] as TodoSegment).items === last)
+  ok('the card stays where the list was first written', run[2]?.kind === 'todo')
+
+  // Two lists in two turns stay two cards.
+  const twoTurns: Segment[] = []
+  foldSegment(twoTurns, todo('t6', 's6', a))
+  foldSegment(twoTurns, todo('t7', 's7', a))
+  ok('different turns keep their own cards', twoTurns.length === 2)
 
   // emitTodo stamps the list id only when it differs from the turn.
   const emitted: Segment[] = []

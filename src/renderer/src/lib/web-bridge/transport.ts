@@ -9,12 +9,14 @@
  * renderer already accepts.
  *
  * Reconnects on its own with a short backoff — a phone that locks and
- * unlocks loses the socket every time — and replays nothing: the renderer
- * re-fetches what it shows on `conversation:changed`-style events, and a turn
- * that streamed while the socket was down is recovered the way a window
- * reopened mid-turn recovers it (chat:turnMirror). A close with code 4001
+ * unlocks loses the socket every time. Broadcasts are not replayed (the
+ * renderer re-fetches what it shows on `conversation:changed`-style events),
+ * but events addressed to this page — a turn it started — are: the server
+ * holds them under `pageId` while the socket is down. A close with code 4001
  * means this browser was signed out, and that is final.
  */
+
+import { randomId } from '@lib/utils/randomId'
 
 export type HelloFrame = {
   version: string
@@ -25,6 +27,12 @@ export type HelloFrame = {
   secure: boolean
   notificationsEnabled: boolean
   vapidPublicKey: string | null
+  /**
+   * Whether the server still held this page's events across the gap. False on
+   * a first connect and on a reconnect after the server gave the page up —
+   * then a turn this page was streaming must be recovered from main.
+   */
+  resumed?: boolean
 }
 
 export type ConnectionState = 'connecting' | 'open' | 'closed' | 'signed-out'
@@ -86,6 +94,12 @@ export class WebTransport {
   /** Whether the CURRENT socket ever got its hello — a close before one is a refused upgrade. */
   private greeted = false
   hello: HelloFrame | null = null
+  /**
+   * This page load's identity across reconnects. The server binds a running
+   * turn's events to the page, not the socket, and holds them while the
+   * socket is down — a phone that locks mid-answer gets the rest on unlock.
+   */
+  private readonly pageId = randomId()
   state: ConnectionState = 'closed'
 
   constructor() {
@@ -138,7 +152,7 @@ export class WebTransport {
     }
     this.setState('connecting')
     const scheme = location.protocol === 'https:' ? 'wss' : 'ws'
-    const ws = new WebSocket(`${scheme}://${location.host}/ws`)
+    const ws = new WebSocket(`${scheme}://${location.host}/ws?page=${this.pageId}`)
     this.ws = ws
     this.greeted = false
     ws.onmessage = (event) => this.onFrame(String(event.data))

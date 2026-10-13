@@ -1,3 +1,4 @@
+import { webTransport } from '@lib/web-bridge/boot'
 import type { ConversationFile, Project } from '@preload/index'
 import type { ChatMessage, PendingProcedure } from '@providers/flow/useFlow'
 import {
@@ -133,6 +134,45 @@ export function ChatSessionsProvider({ children }: { children: ReactNode }): Rea
     return () => {
       cancelled = true
     }
+  }, [])
+
+  // The Web UI's socket drops whenever a phone locks, and lifecycle
+  // broadcasts are not replayed: a turn that ended while it was down stayed
+  // 'processing' here forever — composer locked, stop button live. Re-ask on
+  // every reconnect and settle what main no longer runs.
+  useEffect(() => {
+    const transport = webTransport()
+    if (!transport) return
+    return transport.onConnection((state) => {
+      if (state !== 'open') return
+      void window.api.chat
+        .activeRuns()
+        .then((runs) => {
+          const live = new Map(runs.map((run) => [run.conversationId, run]))
+          setRunStatuses((prev) => {
+            let changed = false
+            const next = { ...prev }
+            for (const [conversationId, status] of Object.entries(prev)) {
+              if (status.phase === 'processing' && !live.has(conversationId)) {
+                next[conversationId] = { ...status, phase: 'completed', at: Date.now() }
+                changed = true
+              }
+            }
+            for (const run of runs) {
+              if (next[run.conversationId]?.phase === 'processing') continue
+              next[run.conversationId] = {
+                phase: 'processing',
+                channel: run.channel,
+                title: run.title,
+                at: Date.now()
+              }
+              changed = true
+            }
+            return changed ? next : prev
+          })
+        })
+        .catch(() => {})
+    })
   }, [])
 
   // Turn lifecycle across ALL channels (in-app, WhatsApp, Telegram) — the

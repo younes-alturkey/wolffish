@@ -745,7 +745,7 @@ tools:
         required: false
   # Notifications
   - name: ext_notify
-    description: Show a browser notification.
+    description: Show a notification from the browser that has the Wolffish extension connected — it fails without that extension. To reach the user wherever they are (their phone's lock screen, a signed-in Web UI tab), use notify_web or notify_phone instead; neither needs the extension.
     parameters:
       title:
         type: string

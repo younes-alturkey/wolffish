@@ -1,4 +1,30 @@
-## v1.0.325 — 2026-10-13 `Latest`
+## v1.0.326 — 2026-10-13 `Latest`
+
+### Automations Run Their Job Instead of Setting Themselves Up
+
+An automation's saved instruction used to reach the model as a plain message. One that describes its own job — "unattended automation, runs daily…" — read exactly like a request to create that automation, so a scheduled run could spend its whole time **looking for its own schedule and confirming it exists** instead of doing the work. Every automation and procedure run now opens by saying **which job is firing and that this run is it**, so the model carries out the instruction. What the conversation shows as the prompt is still your instruction as you wrote it.
+
+### One Task List per Run, Not One per Update
+
+A scheduled run that updated its task list many times saved **a new copy of the list every time** — one brief ended up with 138 identical "Tasks" cards stacked through its transcript. The list is now **one card, updated in place**, in automations as in chat, and conversations already saved with copies show it once, in the app and in a PDF export. A WhatsApp run no longer repeats the in-app browser's page card either.
+
+### The Web UI Keeps Up After Your Phone Locks
+
+When a phone's screen locked mid-answer, the Web UI lost the rest of that answer: the page stayed on **"working" forever**, even after the run had finished. Now whatever the run says while you're away is **held for your page and delivered the moment it reconnects**, in order. If you were gone so long that it couldn't be held, the page picks the answer up from what was saved and follows the run to its end, and the composer unlocks once it is done.
+
+### Capabilities Keep Working on a Server After a Restart
+
+On a server with no Node.js of its own, Wolffish installs one for itself, but after the next restart **its tools could no longer find npm**, so capabilities that install packages — web search, PDF, documents, spreadsheets, files — failed with "npm command not found". That Node is now **on the path at every launch**. A reboot also no longer leaves a stale lock that made Wolffish think a second copy owned the workspace and skip its **MCP connections**.
+
+### Notifications Reach the Web UI
+
+Asked to "send a Web UI notification", a run could pick the **browser extension's** notification tool instead, and keep failing on a server where no browser is installed. Tool search now puts a tool **named in the request** first, and the extension's notification tells the model that **notify_web** and **notify_phone** work without it.
+
+### Closing a Turn No Longer Shows a Failure
+
+Every turn the model ended with `close_turn` was recorded as a **failed, interrupted** call, a red card in the tools view that the next turn also saw as an error. It is now recorded as **done**.
+
+## v1.0.325 — 2026-10-13
 
 ### `wolffish service install` Survives a Reboot on a Server
 

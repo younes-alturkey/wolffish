@@ -67,19 +67,11 @@ import {
 import { compressVideoToLimit } from '@main/channels/video-compress'
 import { renderOptionsForChannel } from '@main/channels/options-render'
 import {
-  upsertTaskSegment,
-  upsertCountdownSegment,
-  upsertWaitSegment,
-  upsertProcessSegment,
-  upsertBrowserSegment,
-  upsertToolResultSegment,
-  upsertTodoSegment,
-  appendTextSegment,
-  upsertWorkflowSegment,
   WORKFLOW_TOOL_NAMES,
   type Segment,
   type SegmentTurnEndReason,
-  type WorkflowSnapshot
+  type WorkflowSnapshot,
+  foldSegment
 } from '@main/runtime/broca'
 import { turnScope, type CorpusEvents } from '@main/runtime/corpus'
 import type { LocalProvider } from '@main/runtime/providers/local'
@@ -2940,17 +2932,7 @@ export class TelegramChannel {
     // tool calls would disappear, approvals would orphan, etc.
     // Workflow/task snapshots supersede each other — keep only the latest
     // per run/task or a long run persists hundreds of full snapshots.
-    if (segment.kind === 'workflow') upsertWorkflowSegment(active.segments, segment)
-    else if (segment.kind === 'task') upsertTaskSegment(active.segments, segment)
-    else if (segment.kind === 'countdown') upsertCountdownSegment(active.segments, segment)
-    else if (segment.kind === 'wait') upsertWaitSegment(active.segments, segment)
-    else if (segment.kind === 'process') upsertProcessSegment(active.segments, segment)
-    else if (segment.kind === 'browser') upsertBrowserSegment(active.segments, segment)
-    else if (segment.kind === 'tool_result') upsertToolResultSegment(active.segments, segment)
-    else if (segment.kind === 'todo') upsertTodoSegment(active.segments, segment)
-    else if (segment.kind === 'text' || segment.kind === 'reasoning')
-      appendTextSegment(active.segments, segment)
-    else active.segments.push(segment)
+    foldSegment(active.segments, segment)
 
     // The todo checklist is an in-app card; on a chat channel the model's
     // own narration carries progress, so the segment persists but sends nothing.

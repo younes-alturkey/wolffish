@@ -534,7 +534,7 @@ const toolDefinitions = [
   {"name": "ext_wait_for", "description": "Wait for an element (CSS selector or text=<visible text>) or for any one of several strings to appear in the page's visible text. Prefer waiting for what you expect to see over a blind sleep.", "parameters": {"type": "object", "properties": {"selector": {"type": "string", "description": "CSS selector to wait for."}, "timeout": {"type": "number", "description": "Max wait time in ms. Default 30000."}, "visible": {"type": "boolean", "description": "Wait for the element to be visible. Default false."}, "tabId": {"type": "number", "description": "Target tab."}, "text": {"type": "array", "description": "Wait until any one of these strings appears in the page's visible text. Use instead of selector when you know what the page will say.", "items": {"type": "string"}}}, "required": ["selector"]}},
   {"name": "ext_wait_for_navigation", "description": "Wait for the next page navigation to complete.", "parameters": {"type": "object", "properties": {"timeout": {"type": "number", "description": "Max wait time in ms. Default 30000."}, "tabId": {"type": "number", "description": "Target tab."}}, "required": []}},
   {"name": "ext_wait_for_network_idle", "description": "Wait until network activity settles.", "parameters": {"type": "object", "properties": {"timeout": {"type": "number", "description": "Max wait time in ms. Default 30000."}, "idleTime": {"type": "number", "description": "Time with no requests to consider idle. Default 500ms."}, "tabId": {"type": "number", "description": "Target tab."}}, "required": []}},
-  {"name": "ext_notify", "description": "Show a browser notification.", "parameters": {"type": "object", "properties": {"title": {"type": "string", "description": "Notification title."}, "message": {"type": "string", "description": "Notification body text."}, "iconUrl": {"type": "string", "description": "URL of the notification icon."}}, "required": ["title", "message"]}},
+  {"name": "ext_notify", "description": "Show a notification from the browser that has the Wolffish extension connected — it fails without that extension. To reach the user wherever they are (their phone's lock screen, a signed-in Web UI tab), use notify_web or notify_phone instead; neither needs the extension.", "parameters": {"type": "object", "properties": {"title": {"type": "string", "description": "Notification title."}, "message": {"type": "string", "description": "Notification body text."}, "iconUrl": {"type": "string", "description": "URL of the notification icon."}}, "required": ["title", "message"]}},
   {"name": "ext_debugger_attach", "description": "Attach the Chrome debugger to a tab. Sessions are per tab and stay attached, so attach the tab you are working in once and keep going. It unlocks trusted input (indistinguishable from a real user), the accessibility snapshot, full-page and element screenshots, network and console reads, emulation, and uploading files by path.", "parameters": {"type": "object", "properties": {"tabId": {"type": "number", "description": "ID of the tab to attach the debugger to."}}, "required": ["tabId"]}},
   {"name": "ext_debugger_detach", "description": "Detach the debugger from one tab, or from every attached tab when no tabId is given. Detach when you are handing a tab back to the user or finishing with it \u2014 Chrome shows a debugging banner the whole time it is attached.", "parameters": {"type": "object", "properties": {"tabId": {"type": "number", "description": "Detach this tab. Omit to detach every attached tab."}}, "required": []}},
   {"name": "ext_debugger_status", "description": "Check which tabs the debugger is attached to. Returns the attached tab list, so you can tell whether the trusted-input, network, console, emulation and full-page-capture tools will work on the tab you are about to use.", "parameters": {"type": "object", "properties": {}, "required": []}},
@@ -764,12 +764,20 @@ const plugin = {
       }
     }
 
+    // ext_notify is the tool a model reaches for when it means "notify the
+    // user", and on a box with no browser it fails here every time — a
+    // heartbeat run retried it for ~190 iterations. Name the routes that work.
+    const notifyHint =
+      toolName === 'ext_notify'
+        ? ' To notify the user without the extension, call notify_web (the Web UI) or notify_phone — tool_activate("web-ui") / tool_activate("phone") if they are not loaded.'
+        : ''
     const bridge = getBridge()
     if (!bridge) {
       return {
         success: false,
         error:
-          'Browser extension is not connected. Install and connect the Wolffish browser extension to use ext_* tools, or call ext_launch_browser to start a browser. Run ext_doctor to see exactly what is missing.',
+          'Browser extension is not connected. Install and connect the Wolffish browser extension to use ext_* tools, or call ext_launch_browser to start a browser. Run ext_doctor to see exactly what is missing.' +
+          notifyHint,
         retryable: false
       }
     }
@@ -777,7 +785,8 @@ const plugin = {
       return {
         success: false,
         error:
-          'Browser extension is not connected. The browser may be closed — call ext_launch_browser to start one. Run ext_doctor to see exactly what is missing.',
+          'Browser extension is not connected. The browser may be closed — call ext_launch_browser to start one. Run ext_doctor to see exactly what is missing.' +
+          notifyHint,
         retryable: false
       }
     }

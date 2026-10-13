@@ -584,6 +584,40 @@ export function appendTextSegment(
   segments.push(segment)
 }
 
+/**
+ * Fold one streamed segment into an accumulated message: snapshot kinds
+ * upsert by their key, prose folds per run, everything else appends. The ONE
+ * fold every accumulator calls. It used to be a hand-copied if-chain in eight
+ * places, and the copies drifted: the automation/heartbeat accumulator never
+ * learned `todo`, so a heartbeat run that rewrote its task list 138 times
+ * saved 138 checklist cards, and WhatsApp never learned `browser`.
+ */
+export function foldSegment(segments: Segment[], segment: Segment): void {
+  switch (segment.kind) {
+    case 'workflow':
+      return upsertWorkflowSegment(segments, segment)
+    case 'task':
+      return upsertTaskSegment(segments, segment)
+    case 'countdown':
+      return upsertCountdownSegment(segments, segment)
+    case 'wait':
+      return upsertWaitSegment(segments, segment)
+    case 'process':
+      return upsertProcessSegment(segments, segment)
+    case 'browser':
+      return upsertBrowserSegment(segments, segment)
+    case 'tool_result':
+      return upsertToolResultSegment(segments, segment)
+    case 'todo':
+      return upsertTodoSegment(segments, segment)
+    case 'text':
+    case 'reasoning':
+      return appendTextSegment(segments, segment)
+    default:
+      segments.push(segment)
+  }
+}
+
 export type Segment =
   | { kind: 'text'; turnId: string; segmentId: string; delta: string; worker?: SegmentWorker }
   | {

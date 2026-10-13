@@ -447,6 +447,7 @@ function assistantParts(
   }
 
   const parts: string[] = []
+  const drawnTodoLists = new Set<string>()
   let textBuffer = ''
 
   const flushText = (): void => {
@@ -479,7 +480,8 @@ function assistantParts(
     } else if (seg.kind === 'todo') {
       // One block per list, at the turn that created it, in its latest state
       // — the feed's rule (Chat.tsx renderSegments), mirrored.
-      if (todoListId(seg) !== seg.turnId) continue
+      if (todoListId(seg) !== seg.turnId || drawnTodoLists.has(seg.turnId)) continue
+      drawnTodoLists.add(seg.turnId)
       flushText()
       parts.push(todoBlock(todoLists.get(seg.turnId) ?? seg.items))
     } else if (seg.kind === 'user_message') {

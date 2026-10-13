@@ -55,6 +55,7 @@ import { RTL_LOCALES } from '@lib/i18n'
 import { cn } from '@lib/utils/cn'
 import { formatBytesL, formatCompact } from '@lib/utils/format'
 import { isWeb, pageTopPadding } from '@lib/utils/platform'
+import { webTransport } from '@lib/web-bridge/boot'
 import { finalizeAttachments } from '@lib/web-bridge/attachments'
 import {
   changedDirectories,
@@ -66,19 +67,12 @@ import {
   CODE_ACTIVITY_TOOLS,
   latestTodoLists,
   todoListId,
-  upsertTaskSegment,
-  upsertCountdownSegment,
-  upsertWaitSegment,
-  upsertProcessSegment,
   browserKey,
-  upsertBrowserSegment,
-  upsertToolResultSegment,
-  upsertTodoSegment,
-  upsertWorkflowSegment,
   WORKFLOW_TOOL_NAMES,
   type TaskSnapshot,
   type CountdownSnapshot,
-  type WorkflowSnapshot
+  type WorkflowSnapshot,
+  foldSegment
 } from '@main/runtime/broca'
 import { BrowserCard } from '@components/common/browser-card/BrowserCard'
 import { keepLatestBrowserCard } from '@main/runtime/browser-card'
@@ -1672,6 +1666,44 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
       cancelled = true
     }
   }, [activeConversationId, remoteRunning])
+
+  // Web UI: a reconnect the server did NOT resume (the page was away past its
+  // grace) lost every event of the turn this page was streaming, `chat:done`
+  // included — left alone the feed sits mid-answer, "working", forever. Hand
+  // the turn back to main's copy: stop owning it WITHOUT saving (the partial
+  // feed copy would overwrite the checkpoint main kept writing) and take the
+  // message from disk. A run still going is then followed the way any other
+  // surface's run is — remoteRunning, the checkpoint syncs, the mirror.
+  useEffect(() => {
+    const transport = webTransport()
+    if (!transport) return
+    return transport.onConnection((state) => {
+      if (state !== 'open' || transport.hello?.resumed !== false) return
+      const turnId = pendingTurnIdRef.current
+      const targetId = conversationIdRef.current
+      if (turnId === null || !targetId) return
+      lastTerminalTurnIdRef.current = turnId
+      pendingTurnIdRef.current = null
+      setStreaming(false)
+      setTurnEndedAt(Date.now())
+      void window.api.conversation
+        .load(targetId)
+        .then((conv) => {
+          if (!conv || conversationIdRef.current !== targetId) return
+          setMessages((prev) => {
+            const fromDisk = new Map(
+              conv.messages.filter((m) => m.id).map((m) => [m.id!, m] as const)
+            )
+            return prev.map((m) => {
+              if (!isAssistant(m) || m.status !== 'streaming') return m
+              const saved = fromDisk.get(m.id)
+              return saved ? mapConversationMessage(saved) : { ...m, status: 'complete' }
+            })
+          })
+        })
+        .catch(() => undefined)
+    })
+  }, [setMessages])
 
   // Async-task snapshots (video generation) keep flowing AFTER the owning
   // turn ends — poll transitions, artifact download. Fold each push into the
@@ -5327,6 +5359,7 @@ function renderSegments(
   // than one detector (e.g. a voice result that also matches the generic media
   // extractor). Rebuilt every render, so the per-render scope IS the TTL.
   const emittedFiles = new Set<string>()
+  const drawnTodoLists = new Set<string>()
   const emitOnce = (filePath: string): boolean => {
     if (emittedFiles.has(filePath)) return false
     emittedFiles.add(filePath)
@@ -5489,7 +5522,10 @@ function renderSegments(
       // created it, in its latest state — a later turn's write that continues
       // the list (listId ≠ turnId) resolves this card in place and draws
       // nothing of its own. Output FOR the user — renders on the clean feed.
-      if (todoListId(seg) !== seg.turnId) continue
+      // drawnTodoLists: conversations saved before every accumulator upserted
+      // todo segments hold one per write (a heartbeat run saved 138).
+      if (todoListId(seg) !== seg.turnId || drawnTodoLists.has(seg.turnId)) continue
+      drawnTodoLists.add(seg.turnId)
       flushText()
       blocks.push(
         <TodoCard key={`todo-${seg.turnId}`} items={todoLists.get(seg.turnId) ?? seg.items} />
@@ -6887,20 +6923,11 @@ function appendSegment(messages: ChatMessage[], segment: Segment): ChatMessage[]
   for (let i = out.length - 1; i >= 0; i--) {
     const m = out[i]
     if (isAssistant(m) && m.status === 'streaming') {
-      // Workflow and task snapshots REPLACE their predecessor for the same
-      // run/task — the segment kinds' documented contract (see broca.ts
-      // WorkflowSnapshot/TaskSnapshot), not render-layer dedup. Everything
-      // else appends.
+      // Snapshot kinds REPLACE their predecessor for the same run/task/list —
+      // the segment kinds' documented contract (broca foldSegment), not
+      // render-layer dedup. Everything else appends.
       const nextSegments = [...m.segments]
-      if (segment.kind === 'workflow') upsertWorkflowSegment(nextSegments, segment)
-      else if (segment.kind === 'task') upsertTaskSegment(nextSegments, segment)
-      else if (segment.kind === 'countdown') upsertCountdownSegment(nextSegments, segment)
-      else if (segment.kind === 'wait') upsertWaitSegment(nextSegments, segment)
-      else if (segment.kind === 'process') upsertProcessSegment(nextSegments, segment)
-      else if (segment.kind === 'browser') upsertBrowserSegment(nextSegments, segment)
-      else if (segment.kind === 'todo') upsertTodoSegment(nextSegments, segment)
-      else if (segment.kind === 'tool_result') upsertToolResultSegment(nextSegments, segment)
-      else nextSegments.push(segment)
+      foldSegment(nextSegments, segment)
       const next: AssistantMessage = { ...m, segments: nextSegments }
       if (segment.kind === 'turn_end') next.stopReason = segment.stopReason
       if (segment.kind === 'tool_call') {

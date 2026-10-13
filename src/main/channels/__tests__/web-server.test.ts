@@ -137,6 +137,17 @@ async function run(): Promise<void> {
       sizeBytes: readFileSync(payload.sourcePath).length
     }
   })
+  let heldSender: { send: (c: string, p: unknown) => void; isDestroyed: () => boolean } | null =
+    null
+  handlers.set(
+    'test:holdSender',
+    async (e: {
+      sender: { send: (c: string, p: unknown) => void; isDestroyed: () => boolean }
+    }) => {
+      heldSender = e.sender
+      return true
+    }
+  )
   handlers.set('throws', async () => {
     throw new Error('boom')
   })
@@ -365,9 +376,9 @@ async function run(): Promise<void> {
     next: () => Promise<Frame>
     closed: Promise<number>
   }
-  const openSocket = (c: string): Promise<Browser> =>
+  const openSocket = (c: string, page?: string): Promise<Browser> =>
     new Promise((resolve, reject) => {
-      const sock = new WebSocket(`ws://127.0.0.1:${port}/ws`, {
+      const sock = new WebSocket(`ws://127.0.0.1:${port}/ws${page ? `?page=${page}` : ''}`, {
         headers: { origin: base, cookie: c }
       })
       const q: Frame[] = []
@@ -680,6 +691,55 @@ async function run(): Promise<void> {
     'broadcast delivered',
     got.channel === 'theme:updated' && (got.payload as { dark: boolean }).dark === true
   )
+
+  console.log('step: a page keeps its turn across a reconnect')
+  // A phone locks mid-answer: the socket that started the turn closes, the
+  // turn keeps emitting, and the same page reconnects. Bound to the socket,
+  // those events (chat:done included) were lost and the page froze "working".
+  const pageA = await openSocket(cookie, 'pageAAAA1111')
+  const helloA = await pageA.next()
+  ok('first connect of a page is not a resume', helloA.resumed === false, JSON.stringify(helloA))
+  pageA.ws.send(JSON.stringify({ t: 'invoke', id: 1, channel: 'test:holdSender', args: [] }))
+  await pageA.next()
+  pageA.ws.close()
+  await pageA.closed
+  await new Promise((r) => setTimeout(r, 50))
+  const held = heldSender as unknown as {
+    send: (c: string, p: unknown) => void
+    isDestroyed: () => boolean
+  }
+  ok('a page away within its grace is not destroyed', held.isDestroyed() === false)
+  held.send('chat:segment', { n: 1 })
+  held.send('chat:segment', { n: 2 })
+  held.send('chat:done', { turnId: 't1' })
+  const pageA2 = await openSocket(cookie, 'pageAAAA1111')
+  const helloA2 = await pageA2.next()
+  ok('the same page reconnecting is a resume', helloA2.resumed === true, JSON.stringify(helloA2))
+  const replay = [await pageA2.next(), await pageA2.next(), await pageA2.next()]
+  ok(
+    'events sent while away arrive in order after the hello',
+    replay.map((f) => `${f.channel}:${(f.payload as { n?: number }).n ?? ''}`).join(',') ===
+      'chat:segment:1,chat:segment:2,chat:done:',
+    JSON.stringify(replay)
+  )
+  held.send('chat:segment', { n: 3 })
+  ok(
+    'live events reach the reconnected socket',
+    ((await pageA2.next()).payload as { n: number }).n === 3
+  )
+  const otherPage = await openSocket(cookie, 'pageBBBB2222')
+  const helloB = await otherPage.next()
+  held.send('chat:segment', { n: 4 })
+  ok('a different page is not a resume', helloB.resumed === false)
+  ok('the page still gets its events', ((await pageA2.next()).payload as { n: number }).n === 4)
+  const stray = await Promise.race([
+    otherPage.next().then(() => 'leaked'),
+    new Promise((r) => setTimeout(() => r('quiet'), 150))
+  ])
+  ok("another page never sees this page's events", stray === 'quiet')
+  otherPage.ws.close()
+  pageA2.ws.close()
+  await pageA2.closed
 
   console.log('step: upload → staged → consumed by upload:saveFile')
   const up = await fetch(`${base}/api/upload?name=${encodeURIComponent('my photo.png')}`, {

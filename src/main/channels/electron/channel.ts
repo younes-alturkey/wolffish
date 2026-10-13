@@ -15,17 +15,7 @@ import {
 import type { Agent } from '@main/runtime/agent'
 import type { InterjectVerdict, Interjection } from '@main/runtime/agent/interjection'
 import type { ApprovalDecision, ApprovalRequest } from '@main/runtime/amygdala'
-import {
-  appendTextSegment,
-  upsertTaskSegment,
-  upsertCountdownSegment,
-  upsertWaitSegment,
-  upsertProcessSegment,
-  upsertBrowserSegment,
-  upsertToolResultSegment,
-  upsertTodoSegment,
-  upsertWorkflowSegment
-} from '@main/runtime/broca'
+import { foldSegment } from '@main/runtime/broca'
 import type { AskUserRequest, AskUserResponse } from '@main/runtime/cerebellum'
 import { turnScope, type CorpusEvents } from '@main/runtime/corpus'
 import type { ChatHistoryMessage } from '@preload/index'
@@ -499,17 +489,7 @@ export class ElectronChannel {
         // somewhere to put it.
         if (!conversationId || (!this.mirrorListener && !checkpoint)) return
         if ('worker' in segment && segment.worker) return
-        if (segment.kind === 'workflow') upsertWorkflowSegment(acc.segments, segment)
-        else if (segment.kind === 'task') upsertTaskSegment(acc.segments, segment)
-        else if (segment.kind === 'countdown') upsertCountdownSegment(acc.segments, segment)
-        else if (segment.kind === 'wait') upsertWaitSegment(acc.segments, segment)
-        else if (segment.kind === 'process') upsertProcessSegment(acc.segments, segment)
-        else if (segment.kind === 'browser') upsertBrowserSegment(acc.segments, segment)
-        else if (segment.kind === 'tool_result') upsertToolResultSegment(acc.segments, segment)
-        else if (segment.kind === 'todo') upsertTodoSegment(acc.segments, segment)
-        else if (segment.kind === 'text' || segment.kind === 'reasoning')
-          appendTextSegment(acc.segments, segment)
-        else acc.segments.push(segment)
+        foldSegment(acc.segments, segment)
         if (segment.kind === 'turn_end') acc.stopReason = segment.stopReason
         if (segment.kind === 'text') acc.assistantContent += segment.delta
         // Task snapshots flush the mirror immediately — a card flipping to

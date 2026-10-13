@@ -302,6 +302,40 @@ type Client = {
 }
 
 /**
+ * One loaded page, across the sockets it opens. A turn keeps the sender of
+ * the socket that started it, and a phone drops its socket every time it
+ * locks: bound to the socket, every later `chat:segment`/`chat:done` went to
+ * a closed socket, the page froze mid-answer and stayed "working" forever.
+ * Bound to the page, events that land while it is away wait in `outbox` and
+ * are flushed, in order, when the same page reconnects.
+ */
+type PageLink = {
+  sessionId: string
+  client: Client | null
+  outbox: string[]
+  outboxBytes: number
+  /** When the last socket closed; null while one is open. */
+  lostAt: number | null
+  /** Gone for good — signed out, away past the grace, or the outbox overflowed. */
+  dead: boolean
+  reaper: ReturnType<typeof setTimeout> | null
+}
+
+/**
+ * How long a page that lost its socket is still owed its events. Past this
+ * the sender reports destroyed (an approval resolves as denied, exactly as
+ * for a closed window) and a reload recovers the turn from main's mirror.
+ */
+const PAGE_GRACE_MS = 30 * 60_000
+const PAGE_OUTBOX_MAX_BYTES = 16 * 1024 * 1024
+const PAGE_ID_RE = /^[A-Za-z0-9_-]{8,64}$/
+
+function pageGone(link: PageLink): boolean {
+  if (link.dead) return true
+  return link.client === null && link.lostAt !== null && Date.now() - link.lostAt > PAGE_GRACE_MS
+}
+
+/**
  * A bound server plus every TCP socket it accepted. The sockets are tracked
  * so a stop can destroy them outright: Node's `server.close()` and ws 8's
  * `WebSocketServer.close()` both wait for live connections to end on their
@@ -538,6 +572,7 @@ export class WebServer {
   private secure: Listener | null = null
   private wss: WebSocketServer | null = null
   private readonly clients = new Set<Client>()
+  private readonly pages = new Map<string, PageLink>()
   private readonly limiter = new LoginRateLimiter()
   private readonly state: WebStateStore
   /** Public links — records that let a request past the sign-in. See public.ts. */
@@ -1248,6 +1283,7 @@ export class WebServer {
     for (const client of this.clients) {
       if (client.session.id === id) client.ws.close(4001, 'signed out')
     }
+    this.retireSessionPages((sessionId) => sessionId !== id)
     this.sessionCount = (await this.state.listSessions()).length
     this.emitStatus()
   }
@@ -1263,6 +1299,7 @@ export class WebServer {
    */
   async revokeAllSessions({ except }: { except?: string } = {}): Promise<void> {
     await this.state.revokeAllSessions({ except })
+    this.retireSessionPages((sessionId) => except !== undefined && sessionId === except)
     for (const client of this.clients) {
       if (except !== undefined && client.session.id === except) continue
       try {
@@ -1645,6 +1682,7 @@ export class WebServer {
         for (const client of this.clients) {
           if (client.session.id === session.id) client.ws.close(4001, 'signed out')
         }
+        this.retireSessionPages((sessionId) => sessionId !== session.id)
         this.sessionCount = Math.max(0, this.sessionCount - 1)
         this.deps.log(`${TAG} signed out: session ${session.id}`)
         this.emitStatus()
@@ -2351,6 +2389,7 @@ export class WebServer {
   }
 
   private onConnection(ws: WebSocket, req: http.IncomingMessage, session: WebSession): void {
+    const { link, resumed } = this.pageLinkFor(req, session)
     const client: Client = {
       id: randomBytes(6).toString('hex'),
       ws,
@@ -2361,9 +2400,11 @@ export class WebServer {
       sender: {
         send: (channel, payload) => {
           const frame = this.frame({ t: 'event', channel, payload })
-          if (frame) this.write(client, frame)
+          if (!frame) return
+          if (link) this.sendToPage(link, frame)
+          else this.write(client, frame)
         },
-        isDestroyed: () => ws.readyState !== WebSocket.OPEN
+        isDestroyed: () => (link ? pageGone(link) : ws.readyState !== WebSocket.OPEN)
       }
     }
     this.clients.add(client)
@@ -2371,12 +2412,15 @@ export class WebServer {
       client.alive = true
     })
     ws.on('message', (data) => void this.onFrame(client, data))
-    const drop = (): void => {
+    let dropped = false
+    const drop = (code?: number): void => {
       this.clients.delete(client)
+      if (link && !dropped) this.pageLost(link, client, code === 4001)
+      dropped = true
       this.emitStatus()
     }
-    ws.on('close', drop)
-    ws.on('error', drop)
+    ws.on('close', (code) => drop(code))
+    ws.on('error', () => drop())
     const hello = this.frame({
       t: 'hello',
       version: this.deps.version,
@@ -2385,11 +2429,102 @@ export class WebServer {
       sessionId: session.id,
       secure: Boolean((req.socket as { encrypted?: boolean }).encrypted),
       notificationsEnabled: this.config?.notifications !== false,
-      vapidPublicKey: this.vapid?.publicKey ?? null
+      vapidPublicKey: this.vapid?.publicKey ?? null,
+      // False on a reconnect whose page was not kept (away past the grace,
+      // signed out, overflowed): its turn's events are gone, so it resyncs.
+      resumed
     })
     if (hello) this.write(client, hello)
+    if (link) this.pageAttached(link, client)
     this.deps.log(`${TAG} browser connected from ${client.address} (session ${session.id})`)
     this.emitStatus()
+  }
+
+  /** The page this socket belongs to (`/ws?page=<id>`), reattached when it is a reconnect. */
+  private pageLinkFor(
+    req: http.IncomingMessage,
+    session: WebSession
+  ): { link: PageLink | null; resumed: boolean } {
+    const pageId = new URL(req.url ?? '/', 'http://localhost').searchParams.get('page')
+    if (!pageId || !PAGE_ID_RE.test(pageId)) return { link: null, resumed: false }
+    const existing = this.pages.get(pageId)
+    // Another session presenting a known page id gets nothing of it.
+    if (existing && !existing.dead && existing.sessionId === session.id)
+      return { link: existing, resumed: true }
+    if (existing) this.retirePage(pageId, existing)
+    const link: PageLink = {
+      sessionId: session.id,
+      client: null,
+      outbox: [],
+      outboxBytes: 0,
+      lostAt: null,
+      dead: false,
+      reaper: null
+    }
+    this.pages.set(pageId, link)
+    return { link, resumed: false }
+  }
+
+  private pageAttached(link: PageLink, client: Client): void {
+    // A second tab can never share a page id, but a reconnect can race the
+    // old socket's close: the newest socket is the page.
+    link.client = client
+    link.lostAt = null
+    if (link.reaper) {
+      clearTimeout(link.reaper)
+      link.reaper = null
+    }
+    const queued = link.outbox
+    link.outbox = []
+    link.outboxBytes = 0
+    for (const frame of queued) this.write(client, frame)
+  }
+
+  private sendToPage(link: PageLink, frame: string): void {
+    if (link.dead) return
+    const client = link.client
+    if (client && client.ws.readyState === WebSocket.OPEN) {
+      this.write(client, frame)
+      return
+    }
+    link.outboxBytes += frame.length
+    if (link.outboxBytes > PAGE_OUTBOX_MAX_BYTES) {
+      // Too far behind to replay faithfully — a gap in the middle of a turn
+      // is worse than none. The page recovers by reloading the conversation.
+      link.dead = true
+      link.outbox = []
+      link.outboxBytes = 0
+      return
+    }
+    link.outbox.push(frame)
+  }
+
+  private pageLost(link: PageLink, client: Client, signedOut: boolean): void {
+    if (link.client !== client) return
+    link.client = null
+    link.lostAt = Date.now()
+    if (signedOut) link.dead = true
+    if (link.reaper) clearTimeout(link.reaper)
+    link.reaper = setTimeout(() => {
+      link.reaper = null
+      if (link.client) return
+      for (const [id, l] of this.pages) if (l === link) this.retirePage(id, l)
+    }, PAGE_GRACE_MS)
+    link.reaper.unref?.()
+  }
+
+  private retirePage(pageId: string, link: PageLink): void {
+    link.dead = true
+    link.outbox = []
+    link.outboxBytes = 0
+    if (link.reaper) clearTimeout(link.reaper)
+    link.reaper = null
+    if (this.pages.get(pageId) === link) this.pages.delete(pageId)
+  }
+
+  /** A signed-out session's pages are owed nothing — not even events queued for them. */
+  private retireSessionPages(keep: (sessionId: string) => boolean): void {
+    for (const [id, link] of [...this.pages]) if (!keep(link.sessionId)) this.retirePage(id, link)
   }
 
   private sweepClients(): void {

@@ -130,17 +130,9 @@ import { TurnStatsCollector } from '@main/channels/turn-stats'
 import type { TurnSink } from '@main/channels/channel'
 import {
   CODE_ACTIVITY_TOOLS,
-  appendTextSegment,
-  upsertTaskSegment,
-  upsertTodoSegment,
-  upsertWorkflowSegment,
   type Segment,
   type CountdownSnapshot,
-  upsertCountdownSegment,
-  upsertWaitSegment,
-  upsertToolResultSegment,
-  upsertProcessSegment,
-  upsertBrowserSegment
+  foldSegment
 } from '@main/runtime/broca'
 import type { ApprovalDecision, ApprovalRequest } from '@main/runtime/amygdala'
 import type {
@@ -2846,17 +2838,7 @@ export class MobileChannel {
         // Everything the phone's replay will want, whatever the mirror below
         // decides to push right now. Workflow/task snapshots upsert by id — a
         // stream of them is one card, not a card per tick.
-        if (segment.kind === 'workflow') upsertWorkflowSegment(acc.segments, segment)
-        else if (segment.kind === 'task') upsertTaskSegment(acc.segments, segment)
-        else if (segment.kind === 'countdown') upsertCountdownSegment(acc.segments, segment)
-        else if (segment.kind === 'wait') upsertWaitSegment(acc.segments, segment)
-        else if (segment.kind === 'process') upsertProcessSegment(acc.segments, segment)
-        else if (segment.kind === 'browser') upsertBrowserSegment(acc.segments, segment)
-        else if (segment.kind === 'tool_result') upsertToolResultSegment(acc.segments, segment)
-        else if (segment.kind === 'todo') upsertTodoSegment(acc.segments, segment)
-        else if (segment.kind === 'text' || segment.kind === 'reasoning')
-          appendTextSegment(acc.segments, segment)
-        else acc.segments.push(segment)
+        foldSegment(acc.segments, segment)
         if (segment.kind === 'turn_end') acc.stopReason = segment.stopReason
         if (segment.kind === 'text') {
           acc.assistantContent += segment.delta

@@ -34,7 +34,9 @@ import yaml from 'js-yaml'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { execFileSync, spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
+import { existsSync } from 'node:fs'
 import fs from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -1857,11 +1859,17 @@ export class Cerebellum {
    * trigger keywords, and tool names/descriptions.
    */
   searchCapabilities(query: string, limit = 5): Array<{ cap: Capability; score: number }> {
-    const terms = query
-      .toLowerCase()
-      .split(/[^\p{L}\p{N}_]+/u)
-      .filter((t) => t.length >= 3)
+    const words = query.toLowerCase().split(/[^\p{L}\p{N}_]+/u)
+    // Deduped: a word the query repeats ("send a browser notification to the
+    // signed-in browser") must not count twice for every capability that
+    // merely mentions it — that alone tied browser-extension with web-ui.
+    const terms = [...new Set(words.filter((t) => t.length >= 3))]
     if (terms.length === 0) return []
+    // The query spelled as space-separated words, so a capability or tool
+    // NAMED outright ("Web UI", "notify web", "browser extension") is matched
+    // as a phrase — its short parts ("ui") fall under the term-length floor.
+    const phrase = ` ${words.filter(Boolean).join(' ')} `
+    const named = (id: string): boolean => phrase.includes(` ${id.replace(/[-_]+/g, ' ')} `)
     const scored: Array<{ cap: Capability; score: number }> = []
     for (const cap of this.capabilities.values()) {
       if (cap.status !== 'ok') continue
@@ -1885,6 +1893,8 @@ export class Cerebellum {
         if (desc.includes(term)) score += 2
         if (toolDescs.includes(term)) score += 1
       }
+      if (name.includes('-') && named(name)) score += 12
+      if (cap.tools.some((t) => t.name.includes('_') && named(t.name))) score += 8
       if (score > 0) scored.push({ cap, score })
     }
     scored.sort((a, b) => b.score - a.score)
@@ -3679,6 +3689,27 @@ function hashString(s: string): string {
 }
 
 /**
+ * Put the no-root Node that `node_install` provisions (~/.wolffish/bin/node)
+ * on PATH, after everything else so a system or nvm node still wins. The node
+ * plugin only did this inside its own call, and nothing re-did it at the next
+ * launch: on a box with no system Node (a VPS running the service) every
+ * restart left npm invisible, and each capability with npm dependencies —
+ * web-search, filesystem — failed with "npm command not found" although Node
+ * was installed. Idempotent; a no-op until that copy exists.
+ */
+export function appendManagedNodeToPath(): void {
+  const home = path.join(os.homedir(), '.wolffish', 'bin', 'node')
+  const dir = process.platform === 'win32' ? home : path.join(home, 'bin')
+  const exe = path.join(dir, process.platform === 'win32' ? 'node.exe' : 'node')
+  if (!existsSync(exe)) return
+  const sep = process.platform === 'win32' ? ';' : ':'
+  const entries = (process.env.PATH ?? '').split(sep).filter(Boolean)
+  if (entries.includes(dir)) return
+  entries.push(dir)
+  process.env.PATH = entries.join(sep)
+}
+
+/**
  * Re-resolve PATH from the user's login shell and write it back into
  * process.env.PATH. Called after a system dependency install so newly
  * installed binaries are visible to every subsequent spawn — shell
@@ -3715,6 +3746,7 @@ function refreshPath(): void {
     } catch {
       // best-effort
     }
+    appendManagedNodeToPath()
     return
   }
   const userShell = process.env.SHELL || '/bin/sh'
@@ -3739,4 +3771,5 @@ function refreshPath(): void {
   } catch {
     // best-effort
   }
+  appendManagedNodeToPath()
 }

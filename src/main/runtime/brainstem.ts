@@ -1693,6 +1693,7 @@ export class Brainstem {
       thinking?: ReasoningMode | null
       project?: string | null
       icon?: string | null
+      name?: string | null
       files?: string[]
       dirs?: string[]
     }
@@ -1709,7 +1710,8 @@ export class Brainstem {
         source.icon,
         source.id,
         source.files,
-        source.dirs
+        source.dirs,
+        source.name
       )
   }
 
@@ -1723,7 +1725,8 @@ export class Brainstem {
     icon?: string | null,
     jobId?: string,
     files?: string[],
-    dirs?: string[]
+    dirs?: string[],
+    name?: string | null
   ): Promise<void> {
     if (!this.agent) return
     // Concurrency is handled by the run pool, so this just runs the turn.
@@ -1740,6 +1743,7 @@ export class Brainstem {
       await this.agent.processAutonomous({
         instruction,
         jobLabel: label,
+        ...(name ? { jobName: name } : {}),
         jobId,
         channel,
         mode: mode ?? undefined,

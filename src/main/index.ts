@@ -169,7 +169,11 @@ import type { ApprovalDecision } from '@main/runtime/amygdala'
 import { nextCronMs, previewSchedule } from '@main/runtime/brainstem'
 import { COMPACTION_THRESHOLD } from '@main/runtime/compactor'
 import type { AskUserResponse } from '@main/runtime/cerebellum'
-import { LOCKED_CAPABILITIES, WOLFFISH_AUTHOR } from '@main/runtime/cerebellum'
+import {
+  appendManagedNodeToPath,
+  LOCKED_CAPABILITIES,
+  WOLFFISH_AUTHOR
+} from '@main/runtime/cerebellum'
 import {
   isKnowledgeTarget,
   KNOWLEDGE_TARGETS,
@@ -3290,6 +3294,7 @@ app.whenReady().then(async () => {
   }
 
   resolveShellPath()
+  appendManagedNodeToPath()
   await ensureWorkspace()
   await reconcileLocalModel()
   initUpdater()
