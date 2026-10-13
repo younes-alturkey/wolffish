@@ -1,13 +1,18 @@
 import { cn } from '@lib/utils/cn'
 import { Radar01Icon } from 'hugeicons-react'
+import type { AppClosingPendingEvent } from '@preload/index'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+
+type Reason = NonNullable<AppClosingPendingEvent['reason']>
 
 /**
  * Full-screen overlay shown when the user tries to quit Wolffish while
  * background tasks (conversation save, title generation) are still in
- * flight. The main process holds the actual quit until the task counter
- * drains; this component only narrates the wait.
+ * flight, and for every restart, device reboot and factory reset. The main
+ * process holds the actual exit until the task counter drains; this
+ * component only narrates the wait. A browser on the Web UI keeps it up
+ * through the outage and reloads once the new process answers (boot.ts).
  *
  * The progress bar is intentionally fake — it follows an asymptotic
  * curve `1 - exp(-t / k)` capped near 95% so it always feels alive but
@@ -17,14 +22,14 @@ import { useTranslation } from 'react-i18next'
 export function ClosingOverlay(): React.JSX.Element | null {
   const { t } = useTranslation()
   const [closing, setClosing] = useState(false)
-  const [reason, setReason] = useState<'quit' | 'reboot'>('quit')
+  const [reason, setReason] = useState<Reason>('quit')
   const [progress, setProgress] = useState(0)
   const startedAtRef = useRef<number | null>(null)
 
   useEffect(() => {
     return window.api.app.onClosingPending((event) => {
       if (startedAtRef.current === null) startedAtRef.current = Date.now()
-      if (event.reason === 'reboot') setReason('reboot')
+      if (event.reason && event.reason !== 'quit') setReason(event.reason)
       setClosing(true)
     })
   }, [])
@@ -44,7 +49,7 @@ export function ClosingOverlay(): React.JSX.Element | null {
 
   if (!closing) return null
 
-  const k = reason === 'reboot' ? 'closing.reboot' : 'closing'
+  const k = reason === 'quit' ? 'closing' : `closing.${reason}`
 
   return (
     <div className="bg-bg/95 fixed inset-0 z-50 flex items-center justify-center px-6 py-12 backdrop-blur-sm">

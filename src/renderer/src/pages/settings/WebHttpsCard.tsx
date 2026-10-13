@@ -357,7 +357,7 @@ export function WebHttpsCard({
   const restart = async (): Promise<void> => {
     setRestarting(true)
     try {
-      await window.api.app.reboot()
+      await window.api.app.restart()
     } catch (err) {
       fail(err)
       setRestarting(false)

@@ -3,12 +3,20 @@ import { BrowserSheet } from '@components/common/browser-sheet/BrowserSheet'
 import { ConversationsSheet } from '@components/common/floating-chrome/ConversationsSheet'
 import { glassButtonClass } from '@components/common/floating-chrome/glass'
 import { NewChatButton } from '@components/common/new-chat-button/NewChatButton'
+import { NotificationsSheet } from '@components/common/notifications-sheet/NotificationsSheet'
 import { ProjectDialog } from '@components/common/project-dialog/ProjectDialog'
+import { UnreadBadge } from '@components/core/UnreadBadge'
+import {
+  unarchivedFor,
+  unreadFor,
+  unreadTotal,
+  useWebNotifications
+} from '@hooks/use-web-notifications/useWebNotifications'
 import { cn } from '@lib/utils/cn'
 import { isMac } from '@lib/utils/platform'
 import { useSessions } from '@providers/sessions/useSessions'
-import { Globe02Icon, Menu01Icon } from 'hugeicons-react'
-import { useState } from 'react'
+import { Globe02Icon, Menu01Icon, Notification03Icon } from 'hugeicons-react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 /**
@@ -25,6 +33,10 @@ import { useTranslation } from 'react-i18next'
  * - Beside it, the browser disc: Wolffish's own browser, expanded, for the
  *   active conversation — the user's way in (sign in somewhere by hand, look
  *   at what the model opened, start a page for it).
+ * - The bell: what THIS conversation has notified about, present
+ *   only while it has something unarchived behind it (the phone's rule — a
+ *   control that is inert on most screens teaches the eye to skip it). It
+ *   wears this conversation's unread count; the menu disc wears everyone's.
  *
  * Rendered ONCE at app level (inside the chatVisible gate that held the old
  * conversations rail), never per Chat instance: the sheet holds list state
@@ -42,6 +54,17 @@ export function FloatingChrome(): React.JSX.Element {
   const conversationBrowser = useConversationBrowser({ conversationId: activeConversationId })
   const hasBrowser = conversationBrowser.tabs.length > 0
   const [projectDialogOpen, setProjectDialogOpen] = useState(false)
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const notifications = useWebNotifications()
+  const unreadEverywhere = unreadTotal(notifications)
+  const hasNotifications = useMemo(
+    () =>
+      activeConversationId !== null
+        ? unarchivedFor(notifications, activeConversationId).length > 0
+        : false,
+    [notifications, activeConversationId]
+  )
+  const unreadHere = activeConversationId ? unreadFor(notifications, activeConversationId) : 0
   // The dialog's `busy` lock (instructions/files frozen under a running turn):
   // the active conversation's live phase is the app-level equivalent of the
   // old per-session `streaming` flag. Exiting is deliberately not part of the
@@ -62,16 +85,41 @@ export function FloatingChrome(): React.JSX.Element {
           isMac ? 'top-12' : 'top-6'
         )}
       >
-        <button
-          type="button"
-          onClick={() => setSheetOpen(true)}
-          title={t('chat.conversations')}
-          aria-label={t('chat.conversations')}
-          className={glassButtonClass}
-        >
-          <Menu01Icon size={18} />
-        </button>
+        {/* The disc clips to its circle for the blur, so the count hangs off
+            a wrapper around it — top-trailing, half out of the disc. */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setSheetOpen(true)}
+            title={t('chat.conversations')}
+            aria-label={t('chat.conversations')}
+            className={glassButtonClass}
+          >
+            <Menu01Icon size={18} />
+          </button>
+          <UnreadBadge
+            count={unreadEverywhere}
+            className="pointer-events-none absolute -top-1 -inset-e-1"
+          />
+        </div>
         <div className="flex items-center gap-2">
+          {hasNotifications && activeConversationId && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setNotificationsOpen(true)}
+                title={t('notifications.title')}
+                aria-label={t('notifications.title')}
+                className={glassButtonClass}
+              >
+                <Notification03Icon size={18} />
+              </button>
+              <UnreadBadge
+                count={unreadHere}
+                className="pointer-events-none absolute -top-1 -inset-e-1"
+              />
+            </div>
+          )}
           {hasBrowser && (
             <button
               type="button"
@@ -104,6 +152,13 @@ export function FloatingChrome(): React.JSX.Element {
         </div>
       </div>
       {sheetOpen && <ConversationsSheet onClose={() => setSheetOpen(false)} />}
+      {notificationsOpen && activeConversationId && (
+        <NotificationsSheet
+          key={activeConversationId}
+          conversationId={activeConversationId}
+          onClose={() => setNotificationsOpen(false)}
+        />
+      )}
       {browserOpen && hasBrowser && (
         <BrowserSheet conversationId={activeConversationId} onClose={() => setBrowserOpen(false)} />
       )}

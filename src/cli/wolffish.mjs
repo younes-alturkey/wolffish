@@ -73,6 +73,7 @@ import { processCommand } from './commands/process.mjs'
 import { pair } from './commands/pair.mjs'
 import { webCommand } from './commands/web.mjs'
 import { reboot } from './commands/reboot.mjs'
+import { restart } from './commands/restart.mjs'
 
 /**
  * The top level is the app's own nav, and nothing else.
@@ -129,7 +130,8 @@ ${c.gray('MACHINE')}
   wolffish status                   daemon, brain, autostart, channels
   wolffish cancel [id|--all]        stop a running turn, on any channel
   wolffish service <install|status|uninstall|stop|logs>
-  wolffish reboot                   stop everything and start again ${c.gray('· --yes to skip the question')}
+  wolffish restart                  stop everything and start Wolffish again ${c.gray('· --yes to skip the question')}
+  wolffish reboot                   reboot this device ${c.gray('· --yes to skip the question')}
   wolffish process                  what the agent keeps running ${c.gray('· show · start · stop · restart · logs · autostart · rm · ports')}
   wolffish path <status|install>    make "wolffish" resolvable
   wolffish pair <phone|whatsapp|telegram>
@@ -366,8 +368,7 @@ const ALIASES = new Map([
   ['user', ['customizations', 'user']],
   ['agents', ['customizations', 'agents']],
   ['setting', ['settings']],
-  ['webui', ['web']],
-  ['restart', ['reboot']]
+  ['webui', ['web']]
 ])
 
 async function dispatch(client, command, args, flags) {
@@ -552,10 +553,14 @@ async function dispatch(client, command, args, flags) {
       return webCommand(client, args, flags)
 
     /**
-     * The Settings rail's Reboot. The daemon replies before it goes down and
-     * the command waits for a different pid to answer, so a script can chain
-     * on it.
+     * The Settings rail's Restart Wolffish. The daemon replies before it goes
+     * down and the command waits for a different pid to answer, so a script
+     * can chain on it.
      */
+    case 'restart':
+      return restart(client, flags)
+
+    /** The Settings rail's Reboot device — the machine, not the app. */
     case 'reboot':
       return reboot(client, flags)
 
@@ -636,6 +641,7 @@ const COMMANDS = [
   'path',
   'pair',
   'web',
+  'restart',
   'reboot',
   'config',
   'keys',

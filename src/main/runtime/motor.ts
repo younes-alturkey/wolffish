@@ -139,6 +139,12 @@ const NOT_FOUND_RE =
 const NETWORK_RE =
   /ECONNREFUSED|ETIMEDOUT|ECONNRESET|network error|fetch failed|DNS resolution|could not resolve host|connection refused|connection reset|connection timed out|temporary failure in name resolution/i
 const TIMEOUT_RE = /timed out|timeout|SIGTERM/i
+// Playwright's locator actions already spent their whole budget waiting for
+// the element (30 s by default); a selector that matched nothing clickable or
+// readable then matches nothing again. Retried as a generic timeout, one bad
+// selector cost 3 × 30 s (observed 2026-10-13 on `locator('main')` and a
+// click behind an overlay) — fail fast so the model picks another selector.
+const LOCATOR_TIMEOUT_RE = /\blocator\.\w+: Timeout \d+ms exceeded/
 
 /**
  * Classify a tool's error string so the retry loop knows whether to keep
@@ -193,6 +199,9 @@ export function classifyError(error: string, exitCode?: number | null): ToolErro
   }
   if (NOT_FOUND_RE.test(message)) {
     return { message, retryable: false, category: 'not_found' }
+  }
+  if (LOCATOR_TIMEOUT_RE.test(message)) {
+    return { message, retryable: false, category: 'timeout' }
   }
   if (NETWORK_RE.test(message)) {
     return { message, retryable: true, category: 'network' }

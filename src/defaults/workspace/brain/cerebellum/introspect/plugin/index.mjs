@@ -1697,13 +1697,22 @@ async function conversationRead(args) {
   const detailChars = args?.detail === 'full' ? 4000 : 400
   const textChars = args?.detail === 'full' ? 2400 : 600
   const total = messages.length
-  let from = typeof args?.from === 'number' ? Math.max(0, Math.floor(args.from)) : Math.max(0, total - 15)
-  let to = typeof args?.to === 'number' ? Math.min(total - 1, Math.floor(args.to)) : total - 1
+  if (total === 0) return { success: true, output: `"${parsed.title ?? '(untitled)'}" has no messages yet.` }
+  // Both ends clamped into the transcript: `from` past the end used to swap
+  // with the clamped `to` and walk off the array ("Cannot read properties of
+  // undefined (reading 'timestamp')", from:30 on a 4-message conversation).
+  const clamp = (n) => Math.min(total - 1, Math.max(0, Math.floor(n)))
+  const askedFrom = typeof args?.from === 'number' ? Math.floor(args.from) : null
+  let from = askedFrom !== null ? clamp(askedFrom) : Math.max(0, total - 15)
+  let to = typeof args?.to === 'number' ? clamp(args.to) : total - 1
   if (from > to) [from, to] = [to, from]
 
   const lines = [
     `"${parsed.title ?? '(untitled)'}" [${parsed.channel ?? 'electron'}] — ${total} messages, showing #${from}–#${to}${from > 0 ? ' (earlier available via from/to)' : ''} — excerpts; full bytes: memory_get "file:brain/conversations/${matches[0]}"`
   ]
+  if (askedFrom !== null && askedFrom >= total) {
+    lines.push(`(from:${askedFrom} is past the last message, #${total - 1} — showing the end instead)`)
+  }
   let used = 0
   for (let i = from; i <= to; i++) {
     const m = messages[i]

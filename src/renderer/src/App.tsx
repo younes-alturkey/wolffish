@@ -21,6 +21,7 @@ import { History } from '@pages/History'
 import { Changelog } from '@pages/Changelog'
 import { Library } from '@pages/Library'
 import { Customization } from '@pages/Customization'
+import { Notifications } from '@pages/Notifications'
 import { isWeb } from '@lib/utils/platform'
 import { WebPromptHost } from '@components/common/web-prompt/WebPromptHost'
 import { WebDeeplink } from '@components/common/web-deeplink/WebDeeplink'
@@ -74,6 +75,7 @@ const CHAT_KEEPALIVE_SCREENS = new Set<Screen>([
   'changelog',
   'library',
   'customization',
+  'notifications',
   'ollama-setup'
 ])
 
@@ -102,6 +104,8 @@ function NonChatScreen({ screen }: { screen: Screen }): React.JSX.Element | null
       return <Library />
     case 'customization':
       return <Customization />
+    case 'notifications':
+      return <Notifications />
   }
 }
 

@@ -273,7 +273,8 @@ function FactoryResetModal({
     if (!matches) return
     setResetting(true)
     try {
-      await window.api.app.factoryReset()
+      const result = await window.api.app.factoryReset()
+      if (!result.scheduled) throw new Error('busy')
     } catch {
       setResetting(false)
       toast.show({ tone: 'error', message: t('settings.data.factoryReset.errorToast') })

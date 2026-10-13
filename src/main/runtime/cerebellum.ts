@@ -1791,6 +1791,20 @@ export class Cerebellum {
   }
 
   /**
+   * The global half of getToolsetVersion alone: it moves when the set of
+   * tools that EXIST changes (capability reloads, MCP connects, skill
+   * toggles), never on a per-conversation activation.
+   */
+  getToolsetGeneration(): number {
+    return this.generation
+  }
+
+  /** True once this conversation has activated anything beyond core + pinned. */
+  hasActivations(conversationId?: string | null): boolean {
+    return (this.activeSets.get(this.activeKey(conversationId))?.names.size ?? 0) > 0
+  }
+
+  /**
    * Expose a capability's tools to one conversation. Idempotent; core and
    * pinned capabilities are always exposed. Bounded by an LRU: the least
    * recently USED activation is dropped past ACTIVE_SET_MAX — invisible to

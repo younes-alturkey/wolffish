@@ -1,5 +1,11 @@
 import { ChannelIcon } from '@components/common/channel-icon/ChannelIcon'
 import { hasChannelIcon } from '@components/common/channel-icon/hasChannelIcon'
+import { UnreadBadge } from '@components/core/UnreadBadge'
+import {
+  unreadFor,
+  unreadTotal,
+  useWebNotifications
+} from '@hooks/use-web-notifications/useWebNotifications'
 import { CONVERSATION_CHIP_BASE, conversationChipClasses } from '@lib/conversation-chip'
 import { settleConversationDeletes, usePendingConversationDeletes } from '@lib/conversation-delete'
 import { mapConversationMessages } from '@lib/conversation-open'
@@ -22,6 +28,7 @@ import {
   FileEditIcon,
   LibraryIcon,
   Logout03Icon,
+  Notification03Icon,
   Search01Icon,
   Settings02Icon
 } from 'hugeicons-react'
@@ -83,6 +90,7 @@ export function ConversationsSheet({ onClose }: { onClose: () => void }): React.
   // change on the Projects page propagates; a stamp would go stale).
   const [projects, setProjects] = useState<Project[]>([])
   const [limit, setLimit] = useState(PAGE)
+  const notifications = useWebNotifications()
   // Title search over the conversations below — never over the page rows
   // above, which are the way OUT of chat and must stay where they are.
   const [query, setQuery] = useState('')
@@ -255,6 +263,25 @@ export function ConversationsSheet({ onClose }: { onClose: () => void }): React.
               </span>
             </button>
           ))}
+          {/* Every notification the agent sent, with the count of what is
+              still unanswered across all of them. */}
+          <button
+            type="button"
+            onClick={() => go('notifications')}
+            aria-label={t('notifications.title')}
+            className={cn(
+              'text-fg hover:bg-surface flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-1.5 py-2.5',
+              'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg'
+            )}
+          >
+            <span className="text-muted flex h-6 w-6 shrink-0 items-center justify-center">
+              <Notification03Icon size={17} />
+            </span>
+            <span className="min-w-0 flex-1 truncate text-start text-[13px] font-medium">
+              {t('notifications.title')}
+            </span>
+            <UnreadBadge count={unreadTotal(notifications)} />
+          </button>
           {/* Web only: the way out of this browser's session. The desktop
               has no session to end — closing the window is closing the app. */}
           {isWeb && (
@@ -404,6 +431,7 @@ export function ConversationsSheet({ onClose }: { onClose: () => void }): React.
                         >
                           {row.title}
                         </span>
+                        <UnreadBadge count={unreadFor(notifications, row.conversationId)} />
                       </button>
                     )
                   })}

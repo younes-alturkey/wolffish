@@ -24,6 +24,7 @@ export type Screen =
   | 'changelog'
   | 'library'
   | 'customization'
+  | 'notifications'
 
 export type ChatRole = 'user' | 'assistant'
 
@@ -119,6 +120,12 @@ export type AssistantMessage = {
   stopReason?: SegmentTurnEndReason
   error?: string
   timestamp?: number
+  /**
+   * Written by a mid-turn checkpoint and never closed: the process stopped
+   * (quit, crash, restart, update) before the turn ended, so this answer is
+   * as far as the run got.
+   */
+  interrupted?: boolean
 }
 
 export type ChatMessage = UserMessage | AssistantMessage

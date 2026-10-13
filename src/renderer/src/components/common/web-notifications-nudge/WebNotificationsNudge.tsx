@@ -52,7 +52,9 @@ export function WebNotificationsNudge(): React.JSX.Element | null {
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    registerToastSink(({ message, tone }) => toast.show({ message, tone, durationMs: 8000 }))
+    registerToastSink(({ message, tone, sticky, onClick }) =>
+      toast.show({ message, tone, sticky, onClick, durationMs: 8000 })
+    )
     const off = onNotificationState(setState)
     return () => {
       registerToastSink(null)
@@ -73,17 +75,13 @@ export function WebNotificationsNudge(): React.JSX.Element | null {
   }, [dismissed, state.supported, state.permission, toast, t])
 
   const strip =
-    'pointer-events-auto fixed inset-x-4 top-20 z-30 mx-auto flex max-w-xl items-center gap-3 rounded-2xl px-4 py-3'
+    'pointer-events-auto fixed inset-x-4 top-20 z-30 mx-auto flex max-w-xl rounded-2xl px-4 py-3 bg-surface border-border text-fg border text-sm shadow-lg'
   const dismissButton =
     'text-muted hover:text-fg shrink-0 cursor-pointer rounded-lg px-2 py-1.5 text-xs'
 
   if (needsInstall && !installDismissed) {
     return (
-      <div
-        role="status"
-        data-notifications-nudge
-        className={cn(strip, 'bg-surface border-border text-fg border text-sm shadow-lg')}
-      >
+      <div role="status" data-notifications-nudge className={cn(strip, 'items-center gap-3')}>
         <Notification03Icon size={18} className="text-muted shrink-0" />
         <span className="min-w-0 flex-1 leading-snug">{t('web.notifications.iosInstall')}</span>
         <button
@@ -107,39 +105,43 @@ export function WebNotificationsNudge(): React.JSX.Element | null {
     <div
       role="status"
       data-notifications-nudge
-      className={cn(strip, 'bg-surface border-border text-fg border text-sm shadow-lg')}
+      className={cn(strip, 'flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3')}
     >
-      <Notification03Icon size={18} className="text-muted shrink-0" />
-      <span className="min-w-0 flex-1 leading-snug">{t('web.notifications.nudge')}</span>
-      <button
-        type="button"
-        disabled={busy}
-        onClick={() => {
-          setBusy(true)
-          void requestNotificationPermission()
-            .then((next) => {
-              setState(next)
-              if (next.permission === 'granted') {
-                toast.show({ message: t('web.notifications.enabled'), tone: 'success' })
-              }
-            })
-            .finally(() => setBusy(false))
-        }}
-        className="bg-primary text-primary-fg shrink-0 cursor-pointer rounded-lg px-3 py-1.5 text-xs font-medium hover:brightness-110"
-      >
-        {t('web.notifications.enable')}
-      </button>
-      <button
-        type="button"
-        onClick={() => {
-          setDismissed(true)
-          raise(DISMISSED_KEY)
-        }}
-        aria-label={t('common.dismiss')}
-        className={dismissButton}
-      >
-        {t('common.dismiss')}
-      </button>
+      <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center">
+        <Notification03Icon size={18} className="text-muted mt-px shrink-0 sm:mt-0" />
+        <span className="min-w-0 flex-1 leading-snug">{t('web.notifications.nudge')}</span>
+      </div>
+      <div className="flex shrink-0 items-center justify-end gap-1">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => {
+            setBusy(true)
+            void requestNotificationPermission()
+              .then((next) => {
+                setState(next)
+                if (next.permission === 'granted') {
+                  toast.show({ message: t('web.notifications.enabled'), tone: 'success' })
+                }
+              })
+              .finally(() => setBusy(false))
+          }}
+          className="bg-primary text-primary-fg shrink-0 cursor-pointer rounded-lg px-3 py-1.5 text-xs font-medium hover:brightness-110"
+        >
+          {t('web.notifications.enable')}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setDismissed(true)
+            raise(DISMISSED_KEY)
+          }}
+          aria-label={t('common.dismiss')}
+          className={dismissButton}
+        >
+          {t('common.dismiss')}
+        </button>
+      </div>
     </div>
   )
 }

@@ -72,26 +72,28 @@ export function Library(): React.JSX.Element {
   return (
     <main className={cn('bg-bg flex h-full w-full flex-col', pageTopPadding)}>
       <header className="border-border flex items-center justify-between gap-2 border-b px-3 py-3">
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           <button
             type="button"
             onClick={() => goTo('chat')}
             aria-label={t('common.back')}
             className={cn(
-              'text-muted hover:text-fg flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-2 text-sm',
+              'text-muted hover:text-fg flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-2 text-sm',
               'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg'
             )}
           >
             <BackIcon size={16} />
-            <span>{t('common.back')}</span>
+            <span className="max-sm:hidden">{t('common.back')}</span>
           </button>
 
           {/* Laid out with the document flow, so in Arabic the tabs run
-              right-to-left from the back button without a mirrored class. */}
+              right-to-left from the back button without a mirrored class.
+              On a phone the four tabs outgrow the row; they scroll inside
+              the pill, as Settings' strip does, instead of widening the page. */}
           <div
             role="tablist"
             aria-label={t('library.title')}
-            className="border-border bg-surface inline-flex items-center rounded-lg border p-0.5"
+            className="border-border bg-surface flex min-w-0 items-center overflow-x-auto rounded-lg border p-0.5"
           >
             {TABS.map(({ key, icon: Icon, labelKey }) => {
               const selected = key === active
@@ -103,7 +105,7 @@ export function Library(): React.JSX.Element {
                   aria-selected={selected}
                   onClick={() => setActive(key)}
                   className={cn(
-                    'flex cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium',
+                    'flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium whitespace-nowrap',
                     'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
                     selected ? 'bg-primary text-primary-fg' : 'text-muted hover:text-fg'
                   )}
@@ -122,12 +124,14 @@ export function Library(): React.JSX.Element {
             onClick={() => setView((v) => (v === 'cards' ? 'markdown' : 'cards'))}
             aria-label={view === 'cards' ? t('heartbeat.markdownMode') : t('heartbeat.cardsMode')}
             className={cn(
-              'text-muted hover:text-fg flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-2 text-sm',
+              'text-muted hover:text-fg flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-2 text-sm',
               'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg'
             )}
           >
             {view === 'cards' ? <SourceCodeIcon size={16} /> : <GridViewIcon size={16} />}
-            <span>{view === 'cards' ? t('heartbeat.markdownMode') : t('heartbeat.cardsMode')}</span>
+            <span className="max-sm:hidden">
+              {view === 'cards' ? t('heartbeat.markdownMode') : t('heartbeat.cardsMode')}
+            </span>
           </button>
         ) : null}
       </header>

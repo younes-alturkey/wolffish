@@ -1057,8 +1057,12 @@ async function factoryReset(client) {
     out(c.gray('  nothing changed'))
     return 0
   }
-  await client.invoke('app:factoryReset')
-  out(`${icon.ok()} workspace reset`)
+  const result = await client.invoke('app:factoryReset')
+  if (result && result.scheduled === false) {
+    out(c.yellow('  a restart, reboot or update is already in progress'))
+    return 1
+  }
+  out(`${icon.ok()} resetting the workspace — Wolffish starts again on its own`)
   return 0
 }
 

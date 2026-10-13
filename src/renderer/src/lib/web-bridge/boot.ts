@@ -103,10 +103,14 @@ export async function connectWeb(): Promise<void> {
   transport = t
   window.api = installWebApi(t)
   const bootPid = t.hello?.pid ?? null
+  t.subscribe<{ reason?: string }>('app:closingPending', (event) => {
+    if (event?.reason && event.reason !== 'quit') t.restartExpected = true
+  })
   t.onConnection((state) => {
     if (state === 'signed-out') location.replace('/')
-    // A reconnect to a different process is a reboot or an update: the bundle
-    // this page runs may be stale and its state certainly is, so start over.
+    // A reconnect to a different process is a restart, a device reboot, a
+    // factory reset or an update: the bundle this page runs may be stale and
+    // its state certainly is, so start over.
     if (state === 'open' && bootPid !== null && t.hello && t.hello.pid !== bootPid) {
       location.reload()
     }

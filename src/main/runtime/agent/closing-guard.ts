@@ -139,9 +139,19 @@ export function createClosingGuardState(): ClosingGuardState {
  * two closes, and the guard's job is only to know that the wrap-up has been
  * spoken for.
  */
-export function recordClosingTool(state: ClosingGuardState, toolName: string): void {
-  if (TURN_CLOSING_TOOLS.has(toolName)) state.closingTool = toolName
+export function recordClosingTool(state: ClosingGuardState, toolName: string, stepText = ''): void {
+  // Armed only when the step that called the tool carried a wrap-up. The
+  // doctrine puts send_file BEFORE the wrap-up, so a model that delivered its
+  // files first was told its wrap-up had already gone out — and closed with
+  // no summary at all (2026-10-13, deepseek-flash: three files, notify_web,
+  // close_turn, nothing said). A one-line progress note is not a wrap-up.
+  if (!TURN_CLOSING_TOOLS.has(toolName)) return
+  if (stepText.trim().length < WRAP_UP_MIN_CHARS) return
+  state.closingTool = toolName
 }
+
+/** Prose in the closing tool's step below this is a progress line, not a wrap-up. */
+export const WRAP_UP_MIN_CHARS = 240
 
 /**
  * The notice to ride this call's runtime tail, or undefined when there is

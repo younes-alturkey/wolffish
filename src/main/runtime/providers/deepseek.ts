@@ -285,11 +285,9 @@ function toMessages(messages: ChatMessage[]): Array<Record<string, unknown>> {
       const id = m.toolUseId
       if (!id || !declaredCallIds.has(id) || resultedCallIds.has(id)) continue
       resultedCallIds.add(id)
-      // DeepSeek's API is text-only today, so the thalamus vision gate
-      // strips tool images before they reach this encoder — but the day
-      // DeepSeek ships a vision model, flipping the vision.ts allowlist is
-      // all it takes for screenshots to flow (same shape as every other
-      // OpenAI-compat provider here).
+      // deepseek-flash reads images (verified 2026-10-13: it transcribed the
+      // text+shape probe fixture); v4-pro is text-only. vision.ts decides per
+      // model, so screenshots reach this encoder only for a vision model.
       out.push({
         role: 'tool',
         tool_call_id: id,

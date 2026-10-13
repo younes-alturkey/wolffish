@@ -18,6 +18,8 @@ export type ToastInput = {
    * must not sit over the chat composer.
    */
   placement?: 'top' | 'bottom'
+  /** Runs when the toast body is clicked, before it dismisses. */
+  onClick?: () => void
 }
 
 export type ToastContextValue = {

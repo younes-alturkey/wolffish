@@ -157,11 +157,11 @@ export type ConversationGroupKey =
   | 'lastYear'
   | 'older'
 
-export type ConversationGroup = {
+export type ConversationGroup<T extends { at: number } = ConversationRow> = {
   key: ConversationGroupKey
   /** i18n key — ONE label per bucket, so every surface names it identically. */
   labelKey: string
-  rows: ConversationRow[]
+  rows: T[]
   /**
    * 1-based position of this group's first row in the FLAT list. The number
    * chips run continuously across the headers (…7, 8 · "Yesterday" · 9, 10…)
@@ -176,10 +176,10 @@ export type ConversationGroup = {
  * renders headers for. Empty buckets are dropped, so a header never appears
  * over nothing.
  */
-export function groupConversationRows(
-  rows: readonly ConversationRow[],
+export function groupConversationRows<T extends { at: number } = ConversationRow>(
+  rows: readonly T[],
   now: number = Date.now()
-): ConversationGroup[] {
+): ConversationGroup<T>[] {
   // Calendar boundaries, not rolling windows: something from 11pm last night
   // reads as "Yesterday", not "Today". Both steppers move calendar FIELDS
   // rather than subtracting milliseconds, so neither a DST change nor a leap
@@ -219,7 +219,7 @@ export function groupConversationRows(
     ['lastYear', monthsBack(12)]
   ] as const satisfies ReadonlyArray<readonly [ConversationGroupKey, number]>
 
-  const buckets = new Map<ConversationGroupKey, ConversationRow[]>()
+  const buckets = new Map<ConversationGroupKey, T[]>()
   for (const row of rows) {
     // Bucketed on `at` — the SAME key buildConversationRows sorts by — so each
     // bucket's rows are contiguous in the sorted order. Bucketing on updatedAt
@@ -231,7 +231,7 @@ export function groupConversationRows(
     else buckets.set(key, [row])
   }
 
-  const groups: ConversationGroup[] = []
+  const groups: ConversationGroup<T>[] = []
   let startIndex = 1
   for (const key of [...ladder.map(([k]) => k), 'older' as const]) {
     const bucketRows = buckets.get(key)

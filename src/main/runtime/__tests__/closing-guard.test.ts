@@ -54,6 +54,11 @@ check('the closing tools are the ones that end a turn', () => {
   assert.equal(TURN_CLOSING_TOOLS.has('todo_write'), false)
 })
 
+const WRAP_UP =
+  'Done. The CLI parses the corpus, 34 tests pass, and the real report shows 13,428 events over ' +
+  'the day. Shell calls dominate tool use; web_fetch has the highest failure rate (403s from ' +
+  'publisher sites). LLM calls split across two providers, with DeepSeek Flash the fastest.'
+
 check('no notice before a closing tool lands', () => {
   const state = createClosingGuardState()
   assert.equal(closingNotice(state), undefined)
@@ -61,7 +66,7 @@ check('no notice before a closing tool lands', () => {
 
 check('a landed closing tool arms the notice exactly once', () => {
   const state = createClosingGuardState()
-  recordClosingTool(state, 'notify_phone')
+  recordClosingTool(state, 'notify_phone', WRAP_UP)
   const first = closingNotice(state)
   assert.ok(first, 'the notice must fire after a close')
   assert.ok(first.includes('notify_phone'), 'the notice must name the tool that landed')
@@ -70,10 +75,26 @@ check('a landed closing tool arms the notice exactly once', () => {
   assert.equal(closingNotice(state), undefined, 'the notice must not repeat within a turn')
 })
 
+check('files sent BEFORE the wrap-up do not arm it (the doctrine order)', () => {
+  // send_file comes immediately before the wrap-up: a step that only delivers
+  // files has not said anything yet, and telling the model it had made it
+  // close silently with no summary (2026-10-13).
+  const state = createClosingGuardState()
+  recordClosingTool(state, 'send_file', '')
+  recordClosingTool(state, 'send_file', 'Sending the report now.')
+  assert.equal(closingNotice(state), undefined)
+})
+
+check('a one-line progress note with notify_web does not arm it', () => {
+  const state = createClosingGuardState()
+  recordClosingTool(state, 'notify_web', 'All 34 tests pass. Now running it on the real log.')
+  assert.equal(closingNotice(state), undefined)
+})
+
 check('a non-closing tool never arms the notice', () => {
   const state = createClosingGuardState()
-  recordClosingTool(state, 'file_read')
-  recordClosingTool(state, 'shell_exec')
+  recordClosingTool(state, 'file_read', WRAP_UP)
+  recordClosingTool(state, 'shell_exec', WRAP_UP)
   assert.equal(closingNotice(state), undefined)
 })
 
@@ -81,8 +102,8 @@ check('a send_file then notify_phone sequence still arms (the correct closing or
   // write-up → file → push is ONE close, not two. The guard only needs to know
   // the wrap-up is spoken for, so the later tool simply replaces the earlier.
   const state = createClosingGuardState()
-  recordClosingTool(state, 'send_file')
-  recordClosingTool(state, 'notify_phone')
+  recordClosingTool(state, 'send_file', WRAP_UP)
+  recordClosingTool(state, 'notify_phone', WRAP_UP)
   const notice = closingNotice(state)
   assert.ok(notice)
   assert.ok(notice.includes('notify_phone'))
@@ -90,7 +111,7 @@ check('a send_file then notify_phone sequence still arms (the correct closing or
 
 check('the notice reports and never orders — it offers both honest exits', () => {
   const state = createClosingGuardState()
-  recordClosingTool(state, 'notify_phone')
+  recordClosingTool(state, 'notify_phone', WRAP_UP)
   const text = closingNotice(state) ?? ''
   // Names the new-information exit FIRST, so silence is a choice, not an order.
   // todo-guard's header records the cost of a bare order to stay silent: a model
@@ -102,7 +123,7 @@ check('the notice reports and never orders — it offers both honest exits', () 
 
 check('the notice never prints a stand-in for silence', () => {
   const state = createClosingGuardState()
-  recordClosingTool(state, 'notify_phone')
+  recordClosingTool(state, 'notify_phone', WRAP_UP)
   const text = closingNotice(state) ?? ''
   // control-token-guard and empty-turn-guard both record that PRINTING a
   // stand-in is how the model learns it. The text describes the class only.
@@ -133,14 +154,14 @@ check('the runtime tail carries the closing notice', () => {
 
 function armed(): ReturnType<typeof createClosingGuardState> {
   const state = createClosingGuardState()
-  recordClosingTool(state, 'notify_phone')
+  recordClosingTool(state, 'notify_phone', WRAP_UP)
   return state
 }
 
 check('the agent loop wires the guard (record on success, notice on the tail)', () => {
   const src = read('src/main/runtime/agent/Agent.ts')
   assert.ok(
-    src.includes('if (result.ok) recordClosingTool(closingGuard, call.name)'),
+    src.includes('if (result.ok) recordClosingTool(closingGuard, call.name, parsed.text)'),
     'the tool-result path must record a landed close'
   )
   assert.ok(

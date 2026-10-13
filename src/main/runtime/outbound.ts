@@ -322,7 +322,7 @@ export function formatLastMessageNotice(
 export function shapeOutbound(options: ProviderStreamOptions): ProviderStreamOptions {
   let messages = options.messages
   if (options.truncateOutbound) {
-    messages = truncateSuperseded(messages)
+    messages = truncateSuperseded(messages, { supersede: options.supersedeOutbound !== false })
   }
   if (options.volatileStatus) {
     const tail: ChatMessage = { role: 'user', content: options.volatileStatus, volatile: true }
@@ -363,7 +363,11 @@ export function withVolatileTail(options: ProviderStreamOptions): ProviderStream
  * message is stubbed its outbound bytes never change again — the cache
  * pays for each stub transition exactly once.
  */
-export function truncateSuperseded(messages: ChatMessage[]): ChatMessage[] {
+export function truncateSuperseded(
+  messages: ChatMessage[],
+  opts: { supersede?: boolean } = {}
+): ChatMessage[] {
+  const supersede = opts.supersede !== false
   // tool_use id → args, for browser-session keying. Reads from different
   // sessions never supersede each other.
   const argsById = new Map<string, Record<string, unknown>>()
@@ -395,6 +399,7 @@ export function truncateSuperseded(messages: ChatMessage[]): ChatMessage[] {
 
   // First occurrence of each full (tool, content) pair, for dedup.
   const firstSeen = new Map<string, number>()
+  const repeats = new Map<string, number>()
   let changed = false
 
   const out = messages.map((m, i) => {
@@ -404,6 +409,7 @@ export function truncateSuperseded(messages: ChatMessage[]): ChatMessage[] {
     let next = m
 
     if (
+      supersede &&
       !m.isError &&
       PAGE_STATE_TOOLS.has(m.toolName) &&
       m.content.length >= MIN_STUB_CHARS &&
@@ -413,6 +419,7 @@ export function truncateSuperseded(messages: ChatMessage[]): ChatMessage[] {
     }
 
     if (
+      supersede &&
       next === m &&
       !m.isError &&
       m.toolName === FILE_READ_TOOL &&
@@ -425,14 +432,29 @@ export function truncateSuperseded(messages: ChatMessage[]): ChatMessage[] {
     }
 
     // Dedup only among results that are still full — a stubbed earlier
-    // copy must not become the target of a backward pointer.
-    if (next === m && !m.isError && m.content.length >= MIN_STUB_CHARS) {
-      const key = `${m.toolName} ${m.content}`
-      const first = firstSeen.get(key)
-      if (first === undefined) {
-        firstSeen.set(key, i)
-      } else {
-        next = { ...m, content: duplicateStub(m.toolName, m.content.length), images: undefined }
+    // copy must not become the target of a backward pointer. Counted for
+    // every result (errors and small ones too): from the third identical
+    // answer the model is told the call cannot return anything new. A run
+    // re-called web_design ~100× with ever-different args for the same
+    // 38k-char manual (VPS, 2026-10-13); the args-keyed no-progress guard
+    // never saw a repeat and the bare pointer read as harmless.
+    if (next === m) {
+      const key = `${m.toolName}\0${m.isError ? 'error' : 'ok'}\0${m.content}`
+      const n = (repeats.get(key) ?? 0) + 1
+      repeats.set(key, n)
+      if (!m.isError && m.content.length >= MIN_STUB_CHARS) {
+        const first = firstSeen.get(key)
+        if (first === undefined) {
+          firstSeen.set(key, i)
+        } else {
+          next = {
+            ...m,
+            content: duplicateStub(m.toolName, m.content.length, n),
+            images: undefined
+          }
+        }
+      } else if (n >= REPEAT_NOTICE_AT) {
+        next = { ...m, content: `${m.content}\n\n${repeatNotice(m.toolName, n)}` }
       }
     }
 
@@ -454,7 +476,14 @@ function pageStateKey(
 ): string {
   const args = argsById.get(toolUseId)
   const session = typeof args?.session_id === 'string' ? args.session_id : ''
-  return `${toolName} ${session}`
+  // One session holds many tabs (browser_multi_tab) and a selector read
+  // covers one region, so only a newer read of the same tab and region
+  // shows what an older one showed. Keyed on the session alone, a parallel
+  // batch reading five sites reached the model as one page and four stubs.
+  const tab = args?.tab_id ?? args?.tabId
+  const tabKey = typeof tab === 'string' || typeof tab === 'number' ? String(tab) : ''
+  const selector = typeof args?.selector === 'string' ? args.selector : ''
+  return `${toolName} ${session} ${tabKey} ${selector}`
 }
 
 const FILE_READ_TOOL = 'file_read'
@@ -497,8 +526,19 @@ function supersededStub(tool: string, chars: number): string {
   )
 }
 
-function duplicateStub(tool: string, chars: number): string {
-  return `[duplicate result — byte-identical to an earlier ${tool} result above (${chars.toLocaleString()} chars); refer to that copy.]`
+function duplicateStub(tool: string, chars: number, n: number): string {
+  const base = `[duplicate result — byte-identical to an earlier ${tool} result above (${chars.toLocaleString()} chars); refer to that copy.]`
+  return n >= REPEAT_NOTICE_AT ? `${base} ${repeatNotice(tool, n)}` : base
+}
+
+/** The identical-result count at which the model is told to stop asking. */
+const REPEAT_NOTICE_AT = 3
+
+function repeatNotice(tool: string, n: number): string {
+  return (
+    `[${tool} has now returned this exact result ${n} times this turn — calling it again will not ` +
+    'return anything new. Use the result you have, take a different approach, or answer the user.]'
+  )
 }
 
 function imagesOmittedNote(count: number): string {

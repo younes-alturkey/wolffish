@@ -42,7 +42,8 @@ export function ToastProvider({ children }: { children: ReactNode }): React.JSX.
         durationMs: input.durationMs ?? DEFAULT_DURATION_MS,
         sticky: input.sticky ?? false,
         placement: input.placement ?? 'bottom',
-        message: input.message
+        message: input.message,
+        onClick: input.onClick
       }
       setToasts((prev) => [...prev, toast])
       if (!toast.sticky) {
@@ -133,7 +134,10 @@ function ToastItem({
   return (
     <div
       role="status"
-      onClick={onDismiss}
+      onClick={() => {
+        toast.onClick?.()
+        onDismiss()
+      }}
       className={cn(
         'pointer-events-auto flex max-w-md cursor-pointer items-start gap-2 rounded-xl border px-4 py-2.5 text-sm shadow-md backdrop-blur',
         TONE_STYLES[toast.tone ?? 'info']

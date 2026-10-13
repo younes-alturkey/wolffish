@@ -508,6 +508,12 @@ export type WorkspaceConfig = {
     enabled?: boolean
     truncation?: boolean
   }
+  // Opt-in wire log for diagnosing tool loops: per LLM request/response, the
+  // shape of every item (no text) to ~/.wolffish/logs/llm-wire-<date>.jsonl.
+  // See runtime/providers/wire-log.ts.
+  diagnostics?: {
+    wireLog?: boolean
+  }
   // 0 = Sunday, 1 = Monday. Defaults to Monday (ISO 8601). Drives how the
   // activity heatmap is laid out and how the user thinks about week
   // boundaries. Optional so legacy configs migrate cleanly.
@@ -1472,11 +1478,27 @@ export async function setLaunchAtStartup(value: boolean): Promise<WorkspaceConfi
  * usage data are all deleted; bundled defaults are recreated. Caller is
  * responsible for stopping the agent and relaunching the app afterwards
  * so no stale handles survive.
+ *
+ * `web/` survives too: it holds the signed-in browsers and the TLS
+ * certificate. Wiping it signs out the very browser that asked for the reset,
+ * makes a self-signed install present a new certificate the browser has never
+ * trusted, and spends one of Let's Encrypt's few weekly re-issues.
  */
 export async function factoryReset(): Promise<void> {
   const preserved = await readConfig()
+  const web = path.join(WORKSPACE_ROOT, 'web')
+  const parked = path.join(path.dirname(WORKSPACE_ROOT), '.reset-web')
+  await fs.rm(parked, { recursive: true, force: true })
+  const webParked = await fs.rename(web, parked).then(
+    () => true,
+    () => false
+  )
   await purgeWorkspace()
   await ensureWorkspace()
+  if (webParked) {
+    await fs.rm(web, { recursive: true, force: true })
+    await fs.rename(parked, web)
+  }
   if (preserved) {
     // Default config has been laid down by ensureWorkspace; overwrite it
     // with the preserved one so API keys, model selection, locale, theme,

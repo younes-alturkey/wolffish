@@ -83,7 +83,14 @@ const toolDefinitions = [
       properties: {
         path: { type: 'string', description: 'Absolute path to source spreadsheet' },
         output_path: { type: 'string', description: 'Absolute path for output' },
-        styles: { type: 'string', description: 'JSON array of style operations' }
+        styles: {
+          type: 'string',
+          description:
+            'JSON array of operations, each {type, sheet?, ...}: ' +
+            '{type:"format_cells", range:"A1:D10", font?:{bold,italic,size,color:{argb}}, fill?:{color:"FFFFFF00"}, alignment?:{horizontal,vertical,wrapText}, numFmt?:"0.0"}; ' +
+            '{type:"merge", range}; {type:"freeze", row?, column?}; {type:"border", range, style?:"thin"}; ' +
+            '{type:"conditional", range, rules:[ExcelJS rules]}. Unknown types or keys are rejected, never ignored.'
+        }
       },
       required: ['path', 'output_path', 'styles']
     }
@@ -991,6 +998,50 @@ async function spreadsheetChart(args) {
   }
 }
 
+const STYLE_KEYS = {
+  format_cells: ['range', 'font', 'fill', 'alignment', 'numFmt'],
+  merge: ['range'],
+  freeze: ['row', 'column'],
+  border: ['range', 'style'],
+  conditional: ['range', 'rules']
+}
+const NUMFMT_ALIASES = ['number_format', 'numberFormat', 'num_fmt', 'format']
+
+/** One style operation, normalised — or an error naming what is wrong. */
+function validateStyleOp(style, i) {
+  const where = `styles[${i}]`
+  if (!style || typeof style !== 'object') throw new Error(`${where} must be an object`)
+  const allowed = STYLE_KEYS[style.type]
+  if (!allowed) {
+    throw new Error(`${where}: unknown type "${style.type}" — use one of ${Object.keys(STYLE_KEYS).join(', ')}`)
+  }
+  const op = { ...style }
+  if (op.type === 'format_cells') {
+    for (const alias of NUMFMT_ALIASES) {
+      if (alias in op) {
+        op.numFmt ??= op[alias]
+        delete op[alias]
+      }
+    }
+  }
+  const unknown = Object.keys(op).filter((k) => k !== 'type' && k !== 'sheet' && !allowed.includes(k))
+  if (unknown.length) {
+    throw new Error(`${where} (${op.type}): unknown key(s) ${unknown.join(', ')} — allowed: ${allowed.join(', ')}`)
+  }
+  if (allowed.includes('range') && op.type !== 'freeze') {
+    if (!op.range || !parseRange(op.range)) {
+      throw new Error(`${where} (${op.type}): range is required in A1:D10 form, got ${JSON.stringify(op.range)}`)
+    }
+  }
+  if (op.type === 'format_cells' && !op.font && !op.fill && !op.alignment && !op.numFmt) {
+    throw new Error(`${where} (format_cells): nothing to apply — give font, fill, alignment or numFmt`)
+  }
+  if (op.type === 'conditional' && !Array.isArray(op.rules)) {
+    throw new Error(`${where} (conditional): rules must be an array`)
+  }
+  return op
+}
+
 async function spreadsheetStyle(args) {
   const filePath = resolvePath(args.path)
   const outputPath = resolvePath(args.output_path)
@@ -1006,30 +1057,36 @@ async function spreadsheetStyle(args) {
     const __wb = await readWorkbookFile(filePath, { forWriting: true })
     const workbook = __wb.workbook
 
+    // Every operation is checked before anything is written: an unknown
+    // type, key or range used to be skipped while the call still reported
+    // success (2026-10-13: number formats and fonts sent as `number_format`
+    // never landed, and the model only found out by reading the file back).
+    if (!Array.isArray(styles)) throw new Error('styles must be a JSON array of operations')
+    styles = styles.map((style, i) => validateStyleOp(style, i))
+    const applied = []
+
     for (const style of styles) {
       const ws = style.sheet ? workbook.getWorksheet(style.sheet) : workbook.worksheets[0]
       if (!ws) throw new Error(`Sheet not found: ${style.sheet || 'default'}`)
+      let cells = 0
 
       switch (style.type) {
         case 'format_cells': {
-          if (style.range) {
-            const range = parseRange(style.range)
-            if (range) {
-              for (let r = range.startRow; r <= range.endRow; r++) {
-                for (let c = range.startCol; c <= range.endCol; c++) {
-                  const cell = ws.getCell(r, c)
-                  if (style.font) cell.font = { ...cell.font, ...style.font }
-                  if (style.fill) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: style.fill.color || 'FFFFFF00' } }
-                  if (style.alignment) cell.alignment = style.alignment
-                  if (style.numFmt) cell.numFmt = style.numFmt
-                }
-              }
+          const range = parseRange(style.range)
+          for (let r = range.startRow; r <= range.endRow; r++) {
+            for (let c = range.startCol; c <= range.endCol; c++) {
+              const cell = ws.getCell(r, c)
+              if (style.font) cell.font = { ...cell.font, ...style.font }
+              if (style.fill) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: style.fill.color || 'FFFFFF00' } }
+              if (style.alignment) cell.alignment = style.alignment
+              if (style.numFmt) cell.numFmt = style.numFmt
+              cells++
             }
           }
           break
         }
         case 'merge': {
-          if (style.range) ws.mergeCells(style.range)
+          ws.mergeCells(style.range)
           break
         }
         case 'freeze': {
@@ -1039,9 +1096,9 @@ async function spreadsheetStyle(args) {
           break
         }
         case 'border': {
-          if (style.range) {
+          {
             const range = parseRange(style.range)
-            if (range) {
+            {
               const borderStyle = style.style || 'thin'
               const border = {
                 top: { style: borderStyle },
@@ -1052,6 +1109,7 @@ async function spreadsheetStyle(args) {
               for (let r = range.startRow; r <= range.endRow; r++) {
                 for (let c = range.startCol; c <= range.endCol; c++) {
                   ws.getCell(r, c).border = border
+                  cells++
                 }
               }
             }
@@ -1059,7 +1117,7 @@ async function spreadsheetStyle(args) {
           break
         }
         case 'conditional': {
-          if (style.range && style.rules) {
+          {
             ws.addConditionalFormatting({
               ref: style.range,
               rules: style.rules
@@ -1068,6 +1126,7 @@ async function spreadsheetStyle(args) {
           break
         }
       }
+      applied.push(cells ? { type: style.type, range: style.range, cells } : { type: style.type })
     }
 
     await fs.mkdir(path.dirname(outputPath), { recursive: true })
@@ -1075,7 +1134,7 @@ async function spreadsheetStyle(args) {
 
     return {
       success: true,
-      output: JSON.stringify({ path: outputPath, stylesApplied: styles.length })
+      output: JSON.stringify({ path: outputPath, applied })
     }
   } catch (err) {
     return { success: false, error: `Style operation failed: ${err.message}` }

@@ -1,3 +1,4 @@
+import { truncateSuperseded } from '@main/runtime/outbound'
 import { type ChatMessage, type Thalamus, type ToolDefinition } from '@main/runtime/thalamus'
 import { estimateImageTokens, selectInlineImages } from '@main/runtime/tool-images'
 
@@ -458,7 +459,16 @@ export async function compactOverflow(
 ): Promise<CompactionResult | null> {
   const inputBudget = options?.inputBudget ?? thalamus.getContextBudget()
 
-  const charEstimate = estimatePayloadTokens(systemPrompt, messages, options?.tools)
+  // Sized on what is actually sent: the outbound clone collapses repeated
+  // and superseded payloads to pointers, the internal history does not. A
+  // run that re-read one 38k-char manual 96 times (VPS, 2026-10-13) had a
+  // ~118k-token request but an internal estimate whose 25% floor alone
+  // crossed the threshold — a 97 s summary call that saved nothing.
+  const charEstimate = estimatePayloadTokens(
+    systemPrompt,
+    truncateSuperseded(messages),
+    options?.tools
+  )
 
   const lastKnown = options?.lastKnownInputTokens ?? 0
   const currentTokens = effectivePayloadTokens(charEstimate, lastKnown)
@@ -520,7 +530,8 @@ export async function compactOverflow(
       messages[target.index] = {
         ...m,
         content: truncated,
-        reasoningContent: undefined
+        reasoningContent: undefined,
+        providerReasoning: undefined
       } as ChatMessage
     } else if (m.role === 'user') {
       messages[target.index] = { ...m, content: truncated } as ChatMessage

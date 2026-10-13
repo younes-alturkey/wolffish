@@ -98,6 +98,7 @@ import type {
   ProcessCardSnapshot,
   TodoItem
 } from '@preload/index'
+import { turnProgress } from '@lib/turn-progress/turnProgress'
 import {
   useFlow,
   type ApprovalCardState,
@@ -1218,6 +1219,8 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
           toolTimings: am.toolTimings,
           stopReason: am.stopReason,
           ...(am.status === 'error' && am.error ? { error: am.error } : {}),
+          // A run cut off by a quit/restart stays marked after the next save.
+          ...(am.interrupted ? { interrupted: true } : {}),
           timestamp: am.timestamp ?? Date.now()
         }
       })
@@ -1518,13 +1521,21 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
   useEffect(() => {
     if (!activeConversationId) return
     const targetId = activeConversationId
-    return window.api.conversation.onMessageMirror(({ conversationId, message }) => {
+    return window.api.conversation.onMessageMirror(({ conversationId, message, userMessage }) => {
       if (conversationId !== targetId || conversationIdRef.current !== targetId) return
       // Our OWN in-app turn owns the feed while it streams (chat:segment) —
       // never let a background channel mirror fight it. Same guard sync() uses.
       if (pendingTurnIdRef.current !== null) return
       const mapped = mapConversationMessage(message)
+      // An in-app turn started in another window or browser: its prompt is
+      // on no disk until the turn folds, so it rides the mirror and lands
+      // once, just above the answer.
+      const prompt = userMessage ? mapConversationMessage(userMessage) : null
       setMessages((prev) => {
+        if (prompt && !prev.some((m) => m.id === prompt.id)) {
+          const at = prev.findIndex((m) => m.id === mapped.id)
+          prev = at === -1 ? [...prev, prompt] : [...prev.slice(0, at), prompt, ...prev.slice(at)]
+        }
         const idx = prev.findIndex((m) => m.id === mapped.id)
         // Not seen yet → append. Already present (same stable id) → replace in
         // place; the shared id keeps React reconciling the one growing bubble
@@ -3612,6 +3623,12 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
                       ? handleContinue
                       : undefined
                   }
+                  liveElsewhere={
+                    remoteRunning &&
+                    !streaming &&
+                    i === feedMessages.length - 1 &&
+                    m.role === 'assistant'
+                  }
                 />
               ))}
               {/* Messages sent mid-turn and not yet read: AFTER the streaming
@@ -3783,79 +3800,90 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
               </div>
             )}
           </div>
-          {/* Below 640px the footer wraps into two rows — the chips (model,
-              meter, logs, files) then the action buttons — because seven
-              controls plus a model name never fit one 360px line without
-              squeezing the send button off the end. */}
-          <div className="flex w-full items-center gap-1 px-1.5 pb-1.5 max-sm:flex-wrap">
+          {/* Below 640px the footer becomes two rows via `order` and a
+              full-width break — the model + message actions, then plan mode +
+              meter + logs + files + send — because the controls plus a model
+              name never fit one 360px line without squeezing the send button
+              off the end. Desktop keeps the single DOM-order row. */}
+          <div className="flex w-full items-center gap-1 px-1.5 pb-1.5 max-sm:flex-wrap max-sm:gap-y-1.5">
             {/* Reasoning effort and chat mode ride INSIDE this card's chip
                 rows now (two rows above the model search) — one panel for
                 every model knob instead of three composer pills. */}
-            <ModelSwitch
-              localOnly={localOnly}
-              localModel={currentModel}
-              providers={cloudProviders}
-              ollama={ollama}
-              brain={brain}
-              disabled={savingMode || busy}
-              reasoningModes={reasoningModes}
-              reasoningMode={thinkingMode}
-              chatMode={chatMode}
-              showControls={recPhase === 'idle'}
-              onModeChange={onModeChange}
-              onSelectModel={async (sel) => {
-                await window.api.provider.setBrain(sel)
-                await refreshStatus()
-              }}
-              onSelectLocalModel={async (model) => {
-                // Every model the card offers is already installed, so this
-                // is the no-pull branch of model:select — it just writes the
-                // choice and re-points the local provider.
-                await window.api.model.select(model)
-                await refreshStatus()
-              }}
-              onSelectReasoning={setThinkingMode}
-              onSelectChatMode={async (mode) => {
-                if (mode === chatMode) return
-                await window.api.provider.setMode(mode)
-                await refreshStatus()
-              }}
-            />
-            {recPhase === 'idle' && (
-              <ContextMeter
-                used={contextTokens ?? 0}
-                budget={contextBudget ?? 0}
-                compactionAt={compactionAt}
-                locale={locale}
-                turnStartedAt={turnStartedAt}
-                turnEndedAt={turnEndedAt}
-                turnInputTokens={inputTokens}
-                turnOutputTokens={outputTokens}
-                turnCacheReadTokens={cacheReadTokens}
-                turnCacheWriteTokens={cacheWriteTokens}
-                lastTurn={convStats?.lastTurn ?? null}
-                allTime={convStats?.allTime ?? null}
-                sideSpend={sideSpend}
-                workflow={workflowSpend}
-                lastCall={lastCall}
-                usageUnavailable={usageUnavailable}
-                meterModel={meterModel}
-                activeModel={activeModelName}
-                provider={
-                  lastCall?.provider ??
-                  convStats?.lastTurn?.provider ??
-                  (localOnly ? 'local' : activeCloudProvider)
-                }
+            {/* Zero basis on phones: flex-wrap breaks lines on the item's
+                natural width, so a long model name would push the actions to
+                a line of their own instead of truncating beside them. */}
+            <div className="flex min-w-0 max-sm:order-1 max-sm:flex-1 max-sm:basis-0">
+              <ModelSwitch
+                localOnly={localOnly}
+                localModel={currentModel}
+                providers={cloudProviders}
+                ollama={ollama}
+                brain={brain}
+                disabled={savingMode || busy}
+                reasoningModes={reasoningModes}
+                reasoningMode={thinkingMode}
+                chatMode={chatMode}
+                showControls={recPhase === 'idle'}
+                onModeChange={onModeChange}
+                onSelectModel={async (sel) => {
+                  await window.api.provider.setBrain(sel)
+                  await refreshStatus()
+                }}
+                onSelectLocalModel={async (model) => {
+                  // Every model the card offers is already installed, so this
+                  // is the no-pull branch of model:select — it just writes the
+                  // choice and re-points the local provider.
+                  await window.api.model.select(model)
+                  await refreshStatus()
+                }}
+                onSelectReasoning={setThinkingMode}
+                onSelectChatMode={async (mode) => {
+                  if (mode === chatMode) return
+                  await window.api.provider.setMode(mode)
+                  await refreshStatus()
+                }}
               />
-            )}
-            {/* Logs and files ride beside the meter rather than inside its
-                card: the footer's start edge has the room, and one click
-                opens the sheet instead of hover-card → button. Icon + count
-                only — the count is the label. A chip with nothing behind it
-                is dead weight, so each one stays out of the row entirely until
-                its count is non-zero. */}
+            </div>
             {recPhase === 'idle' && (
-              <>
+              <div className="flex items-center gap-1 empty:hidden max-sm:order-6">
+                <ContextMeter
+                  used={contextTokens ?? 0}
+                  budget={contextBudget ?? 0}
+                  compactionAt={compactionAt}
+                  locale={locale}
+                  // A run another window or browser started still ticks here:
+                  // its start is the lifecycle broadcast's processing stamp.
+                  turnStartedAt={
+                    turnStartedAt ??
+                    (remoteRunning && activeConversationId
+                      ? (runStatuses[activeConversationId]?.at ?? null)
+                      : null)
+                  }
+                  turnEndedAt={turnEndedAt}
+                  turnInputTokens={inputTokens}
+                  turnOutputTokens={outputTokens}
+                  turnCacheReadTokens={cacheReadTokens}
+                  turnCacheWriteTokens={cacheWriteTokens}
+                  lastTurn={convStats?.lastTurn ?? null}
+                  allTime={convStats?.allTime ?? null}
+                  sideSpend={sideSpend}
+                  workflow={workflowSpend}
+                  lastCall={lastCall}
+                  usageUnavailable={usageUnavailable}
+                  meterModel={meterModel}
+                  activeModel={activeModelName}
+                  provider={
+                    lastCall?.provider ??
+                    convStats?.lastTurn?.provider ??
+                    (localOnly ? 'local' : activeCloudProvider)
+                  }
+                />
+                {/* Logs and files ride beside the meter rather than inside its
+                  card: the footer's start edge has the room, and one click
+                  opens the sheet instead of hover-card → button. Icon + count
+                  only — the count is the label. A chip with nothing behind it
+                  is dead weight, so each one stays out of the row entirely
+                  until its count is non-zero. */}
                 <SheetCountButton
                   icon={<ComputerTerminal01Icon size={14} />}
                   count={timelineEventCount}
@@ -3870,9 +3898,9 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
                   countLabel={t('chat.files.fileCount', { count: presentFiles.length })}
                   onOpen={() => setFilesOpen(true)}
                 />
-              </>
+              </div>
             )}
-            <div className="min-w-0 flex-1" />
+            <div className="min-w-0 flex-1 max-sm:hidden" />
             {/* Plan mode, leading the end-edge cluster beside the draft editor
                 button. It renders only while it can actually be toggled: the
                 field is showing (the recorder owns the top row otherwise) and a
@@ -3887,8 +3915,7 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
                 title={planMode ? t('chat.planMode.onTitle') : t('chat.planMode.offTitle')}
                 className={cn(
                   'me-1 flex h-7 shrink-0 cursor-pointer items-center gap-1 rounded-full border px-2 text-xs font-medium',
-                  // Leads the wrapped action row on phones.
-                  'max-sm:ms-auto',
+                  'max-sm:order-5 max-sm:me-0',
                   planMode
                     ? 'border-accent/40 bg-accent/10 text-accent'
                     : 'border-border bg-surface text-muted hover:text-fg'
@@ -3908,27 +3935,55 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
                 label is "Write your message". Sized 16 like every other
                 icon-only control in the cluster — the pencil is a lighter mark
                 than the arrows were, so at 14 it read undersized beside them. */}
-            {recPhase === 'idle' && (
-              <button
-                type="button"
-                onClick={() => setDraftExpanded(true)}
-                title={t('chat.expandDraft')}
-                aria-label={t('chat.expandDraft')}
-                className="text-muted hover:text-fg hover:bg-border/40 flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg"
-              >
-                <Edit02Icon size={16} />
-              </button>
-            )}
-            {/* No button when there is nothing printable, and none while it
+            <div className="flex items-center gap-1 max-sm:order-3">
+              {recPhase === 'idle' && (
+                <button
+                  type="button"
+                  onClick={() => setDraftExpanded(true)}
+                  title={t('chat.expandDraft')}
+                  aria-label={t('chat.expandDraft')}
+                  className="text-muted hover:text-fg hover:bg-border/40 flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg"
+                >
+                  <Edit02Icon size={16} />
+                </button>
+              )}
+              {/* No button when there is nothing printable, and none while it
                 couldn't act — the turn running, the export in flight — since
                 a greyed control in the row reads as broken. Both states are
                 transient; the button returns the moment they end. */}
-            {canExportPdf && !busy && !exportingPdf && (
+              {canExportPdf && !busy && !exportingPdf && (
+                <button
+                  type="button"
+                  onClick={() => void exportChatPdf()}
+                  title={t('chat.downloadPdf')}
+                  aria-label={t('chat.downloadPdf')}
+                  className={cn(
+                    'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg',
+                    'text-muted hover:text-fg hover:bg-border/40',
+                    'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
+                    'cursor-pointer'
+                  )}
+                >
+                  <Download01Icon size={16} />
+                </button>
+              )}
+              {/* Picking a folder stays live mid-turn — it rides the next queued
+                prompt, same as an attachment. Removing is locked while the turn
+                runs so the agent can't lose a folder it's working in. */}
+              <WorkingFolderButton
+                key={activeConversationId ?? 'none'}
+                folders={workingFolders}
+                onAdd={() => void addWorkingFolder()}
+                onRemove={(folder) => void removeWorkingFolder(folder)}
+                removeDisabled={busy}
+              />
+              {/* Attaching stays live mid-turn — staged files ride the next
+                queued prompt instead of the running one. */}
               <button
                 type="button"
-                onClick={() => void exportChatPdf()}
-                title={t('chat.downloadPdf')}
-                aria-label={t('chat.downloadPdf')}
+                onClick={pickUploads}
+                title={t('chat.attachFile')}
+                aria-label={t('chat.attachFile')}
                 className={cn(
                   'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg',
                   'text-muted hover:text-fg hover:bg-border/40',
@@ -3936,109 +3991,94 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
                   'cursor-pointer'
                 )}
               >
-                <Download01Icon size={16} />
+                <Image02Icon size={16} />
               </button>
-            )}
-            {/* Picking a folder stays live mid-turn — it rides the next queued
-                prompt, same as an attachment. Removing is locked while the turn
-                runs so the agent can't lose a folder it's working in. */}
-            <WorkingFolderButton
-              key={activeConversationId ?? 'none'}
-              folders={workingFolders}
-              onAdd={() => void addWorkingFolder()}
-              onRemove={(folder) => void removeWorkingFolder(folder)}
-              removeDisabled={busy}
-            />
-            {/* Attaching stays live mid-turn — staged files ride the next
-                queued prompt instead of the running one. */}
-            <button
-              type="button"
-              onClick={pickUploads}
-              title={t('chat.attachFile')}
-              aria-label={t('chat.attachFile')}
-              className={cn(
-                'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg',
-                'text-muted hover:text-fg hover:bg-border/40',
-                'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
-                'cursor-pointer'
-              )}
-            >
-              <Image02Icon size={16} />
-            </button>
-            {/* Recording stays live mid-turn, like attaching: the take goes
+              {/* Recording stays live mid-turn, like attaching: the take goes
                 to the running turn like a typed message does. */}
-            <button
-              type="button"
-              onClick={recPhase === 'idle' ? () => void startRecording() : undefined}
-              disabled={!micAvailable || recPhase !== 'idle'}
-              title={!micAvailable ? t('chat.voice.noMic') : t('chat.voice.record')}
-              aria-label={t('chat.voice.record')}
-              className={cn(
-                'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg',
-                'text-muted enabled:hover:text-fg enabled:hover:bg-border/40',
-                'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
-                'disabled:cursor-not-allowed disabled:opacity-50',
-                micAvailable && recPhase === 'idle' && 'cursor-pointer'
-              )}
-            >
-              <Mic01Icon size={16} />
-            </button>
-            {/* Mid-turn the send arrow joins the row only once there is
+              <button
+                type="button"
+                onClick={recPhase === 'idle' ? () => void startRecording() : undefined}
+                disabled={!micAvailable || recPhase !== 'idle'}
+                title={!micAvailable ? t('chat.voice.noMic') : t('chat.voice.record')}
+                aria-label={t('chat.voice.record')}
+                className={cn(
+                  'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg',
+                  'text-muted enabled:hover:text-fg enabled:hover:bg-border/40',
+                  'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
+                  'disabled:cursor-not-allowed disabled:opacity-50',
+                  micAvailable && recPhase === 'idle' && 'cursor-pointer'
+                )}
+              >
+                <Mic01Icon size={16} />
+              </button>
+            </div>
+            {/* The second row exists only while send or stop does — the idle
+                recorder hides both (and plan mode, meter, logs, files with
+                them), and an empty line would still cost a row gap. */}
+            {(recPhase === 'idle' || busy) && (
+              <>
+                <div aria-hidden className="hidden h-0 basis-full max-sm:order-4 max-sm:block" />
+                <div className="hidden min-w-0 flex-1 max-sm:order-7 max-sm:block" />
+              </>
+            )}
+            <div className="flex items-center gap-1 max-sm:order-8">
+              {/* Mid-turn the send arrow joins the row only once there is
                 something to send — an empty draft beside a running turn
                 shows nothing but Stop, and the arrow appearing as you type
                 is the sign the message can go through to the running turn
                 (send() branches on `busy`). Enter matches the arrow. */}
-            {recPhase === 'idle' &&
-              busy &&
-              (draft.trim().length > 0 || pendingAttachments.length > 0) && (
+              {recPhase === 'idle' &&
+                busy &&
+                (draft.trim().length > 0 || pendingAttachments.length > 0) && (
+                  <button
+                    type="button"
+                    onClick={() => void send()}
+                    disabled={!hasAnyModel || staging}
+                    title={staging ? t('chat.upload.copyingWait') : t('chat.send')}
+                    aria-label={t('chat.send')}
+                    className={cn(
+                      'flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full max-sm:h-9 max-sm:w-9',
+                      'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
+                      'disabled:cursor-not-allowed disabled:opacity-50',
+                      'bg-primary text-primary-fg enabled:hover:brightness-110'
+                    )}
+                  >
+                    <ArrowUp02Icon size={16} />
+                  </button>
+                )}
+              {/* The recorder hides Send (the review row has its own) but never
+                Stop: a turn you can't stop while you happen to be recording
+                would be a trap. */}
+              {(recPhase === 'idle' || busy) && (
                 <button
-                  type="button"
-                  onClick={() => void send()}
-                  disabled={!hasAnyModel || staging}
-                  title={staging ? t('chat.upload.copyingWait') : t('chat.send')}
-                  aria-label={t('chat.send')}
+                  type="submit"
+                  // While busy this button is Stop, and Stop is gated on
+                  // NOTHING — a turn you can't stop because a file is copying,
+                  // or because the model it is running on just disappeared from
+                  // Ollama, would be a trap. That second case is live now that
+                  // hasAnyModel follows the daemon watch: `ollama rm` mid-turn
+                  // must never cost the user their stop button.
+                  disabled={
+                    !busy &&
+                    (!hasAnyModel ||
+                      staging ||
+                      (draft.trim().length === 0 && pendingAttachments.length === 0))
+                  }
+                  title={!busy && staging ? t('chat.upload.copyingWait') : undefined}
+                  aria-label={busy ? t('chat.stop') : t('chat.send')}
                   className={cn(
                     'flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full max-sm:h-9 max-sm:w-9',
                     'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
                     'disabled:cursor-not-allowed disabled:opacity-50',
-                    'bg-primary text-primary-fg enabled:hover:brightness-110'
+                    busy
+                      ? 'bg-red-600 text-white enabled:hover:bg-red-700'
+                      : 'bg-primary text-primary-fg enabled:hover:brightness-110'
                   )}
                 >
-                  <ArrowUp02Icon size={16} />
+                  {busy ? <StopCircleIcon size={16} /> : <ArrowUp02Icon size={16} />}
                 </button>
               )}
-            {/* The recorder hides Send (the review row has its own) but never
-                Stop: a turn you can't stop while you happen to be recording
-                would be a trap. */}
-            {(recPhase === 'idle' || busy) && (
-              <button
-                type="submit"
-                // While busy this button is Stop, and Stop is gated on
-                // NOTHING — a turn you can't stop because a file is copying,
-                // or because the model it is running on just disappeared from
-                // Ollama, would be a trap. That second case is live now that
-                // hasAnyModel follows the daemon watch: `ollama rm` mid-turn
-                // must never cost the user their stop button.
-                disabled={
-                  !busy &&
-                  (!hasAnyModel ||
-                    staging ||
-                    (draft.trim().length === 0 && pendingAttachments.length === 0))
-                }
-                title={!busy && staging ? t('chat.upload.copyingWait') : undefined}
-                aria-label={busy ? t('chat.stop') : t('chat.send')}
-                className={cn(
-                  'flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full max-sm:h-9 max-sm:w-9',
-                  'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
-                  'disabled:cursor-not-allowed disabled:opacity-50',
-                  busy
-                    ? 'bg-red-600 text-white enabled:hover:bg-red-700'
-                    : 'bg-primary text-primary-fg enabled:hover:brightness-110'
-                )}
-              >
-                {busy ? <StopCircleIcon size={16} /> : <ArrowUp02Icon size={16} />}
-              </button>
-            )}
+            </div>
           </div>
         </div>
       </form>
@@ -4491,11 +4531,12 @@ function WorkingFolderButton({
   const cardVisible = (open || pinned) && hasFolders
 
   return (
-    // Reference folders are a machine act and the phone composer row has no
-    // space for them — desktop widths only.
+    // `max-sm:static`, like the meter and model pills: on a phone the card
+    // positions against the composer and spans it instead of overflowing the
+    // screen edge from a button near the start of the row.
     <div
       ref={rootRef}
-      className="relative max-sm:hidden"
+      className="relative max-sm:static"
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
     >
@@ -4528,7 +4569,7 @@ function WorkingFolderButton({
         <Folder01Icon size={16} />
       </button>
       {cardVisible && (
-        <div className="border-border bg-surface text-fg absolute bottom-full inset-e-0 z-20 mb-2 rounded-lg border px-2 py-2 text-xs shadow-md min-w-50 max-w-70">
+        <div className="border-border bg-surface text-fg absolute bottom-full inset-e-0 z-20 mb-2 rounded-lg border px-2 py-2 text-xs shadow-md min-w-50 max-w-70 max-sm:inset-x-0 max-sm:max-w-none">
           <div className="text-muted mb-1.5 text-[10px] font-medium uppercase tracking-wide whitespace-nowrap">
             {t('chat.workingFolder')}
           </div>
@@ -4962,6 +5003,12 @@ type ChatItemProps = {
   onTryAgain?: (reason: string) => void
   /** Same gate; only the stalled card renders it (see ProviderErrorCard). */
   onContinue?: () => void
+  /**
+   * The last bubble of a run another window, browser or channel is driving:
+   * its mirrored copy is stored as complete (so the end-of-turn sync can
+   * refresh it in place), but it must read as live — status line, no copy.
+   */
+  liveElsewhere?: boolean
 }
 
 // Memoized so a streaming turn (or any parent state tick — token counters,
@@ -4978,7 +5025,8 @@ const ChatItem = memo(
     onApprovalDecision,
     onAskRespond,
     onTryAgain,
-    onContinue
+    onContinue,
+    liveElsewhere
   }: ChatItemProps): React.JSX.Element {
     if (message.role === 'user') {
       return (
@@ -5003,6 +5051,7 @@ const ChatItem = memo(
         onAskRespond={onAskRespond}
         onTryAgain={onTryAgain}
         onContinue={onContinue}
+        liveElsewhere={liveElsewhere}
       />
     )
   },
@@ -5020,6 +5069,7 @@ const ChatItem = memo(
     // "last failed message while idle" status — must invalidate the memo.
     if (prev.onTryAgain !== next.onTryAgain) return false
     if (prev.onContinue !== next.onContinue) return false
+    if (prev.liveElsewhere !== next.liveElsewhere) return false
     // awaitingApproval/awaitingAsk are GLOBAL booleans passed to every row but
     // only drive the streaming bubble's "Awaiting…" placeholder. Ignoring them
     // for non-streaming rows is what stops a mid-turn permission prompt from
@@ -5174,7 +5224,8 @@ function AssistantBubble({
   onApprovalDecision,
   onAskRespond,
   onTryAgain,
-  onContinue
+  onContinue,
+  liveElsewhere
 }: {
   message: AssistantMessage
   todoLists: Map<string, TodoItem[]>
@@ -5184,11 +5235,12 @@ function AssistantBubble({
   onAskRespond: (askId: string, response: AskUserResponse) => void
   onTryAgain?: (reason: string) => void
   onContinue?: () => void
+  liveElsewhere?: boolean
 }): React.JSX.Element {
   const { t } = useTranslation()
   const verbose = useContext(InAppVerboseContext)
   const showReasoning = useContext(InAppReasoningContext)
-  const isStreaming = message.status === 'streaming'
+  const isStreaming = message.status === 'streaming' || !!liveElsewhere
   const isError = message.status === 'error'
   const [typedText, setTypedText] = useState('')
   const wordsRef = useRef<string[]>([])
@@ -5241,9 +5293,19 @@ function AssistantBubble({
     onAskRespond,
     verbose,
     showReasoning,
-    todoLists
+    todoLists,
+    isStreaming
   )
   const showThinking = isStreaming && renderable.empty
+  const progress = useMemo(
+    () => (isStreaming ? turnProgress(message.segments) : null),
+    [isStreaming, message.segments]
+  )
+  const progressText = progress
+    ? progress.kind === 'thought'
+      ? progress.text
+      : t(`chat.progress.${progress.verb}`, { target: progress.target })
+    : null
   const fullText = useMemo(() => collectText(message.segments), [message.segments])
   const showCopy = !isStreaming && !isError && fullText.length > 0
   const timeLabel = useRelativeTime(message.timestamp)
@@ -5295,12 +5357,19 @@ function AssistantBubble({
             ) : awaitingAsk ? (
               <span className="animate-pulse">{t('chat.awaitingAnswer')}</span>
             ) : (
-              <span className="animate-pulse">{typedText}…</span>
+              <span className="animate-pulse">{progressText ?? typedText}…</span>
             )}
           </span>
         </div>
       ) : (
         renderable.blocks
+      )}
+      {message.interrupted && !isStreaming && (
+        <p className="text-muted px-1 text-xs italic">{t('chat.interruptedNote')}</p>
+      )}
+      {/* Clean feed only: verbose already shows every tool card live. */}
+      {isStreaming && !showThinking && !verbose && progressText && (
+        <span className="text-muted animate-pulse px-1 text-xs italic">{progressText}…</span>
       )}
       {showCopy && (
         <div className="flex items-center gap-1.5">
@@ -5342,7 +5411,9 @@ function renderSegments(
   onAskRespond: (askId: string, response: AskUserResponse) => void,
   verbose: boolean,
   showReasoning: boolean,
-  todoLists: Map<string, TodoItem[]> = new Map()
+  todoLists: Map<string, TodoItem[]> = new Map(),
+  /** The turn behind these segments is still running (drives live-only motion). */
+  live = false
 ): RenderResult {
   const blocks: ReactNode[] = []
   let textBuffer = ''
@@ -5528,7 +5599,11 @@ function renderSegments(
       drawnTodoLists.add(seg.turnId)
       flushText()
       blocks.push(
-        <TodoCard key={`todo-${seg.turnId}`} items={todoLists.get(seg.turnId) ?? seg.items} />
+        <TodoCard
+          key={`todo-${seg.turnId}`}
+          items={todoLists.get(seg.turnId) ?? seg.items}
+          live={live}
+        />
       )
     } else if (seg.kind === 'user_message') {
       // A message the user sent mid-turn, at the exact point the agent read

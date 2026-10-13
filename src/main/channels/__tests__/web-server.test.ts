@@ -153,6 +153,7 @@ async function run(): Promise<void> {
   })
 
   let statusChanges = 0
+  const logs: string[] = []
   const server = new WebServer({
     handlers,
     version: '1.2.3',
@@ -181,8 +182,20 @@ async function run(): Promise<void> {
     onStatusChange: () => {
       statusChanges++
     },
-    log: () => undefined,
+    log: (line) => {
+      logs.push(line)
+    },
     warn: (line) => console.error('  warn:', line)
+  })
+
+  // The real web:* handlers, so the notification log is reached exactly as
+  // a browser reaches it.
+  const { registerWebIpc } = await import('@main/channels/web/ipc')
+  registerWebIpc({
+    handle: (channel, listener) => handlers.set(channel, listener as IpcHandler),
+    server,
+    broadcast: () => undefined,
+    syncCapability: () => undefined
   })
 
   console.log('step: disabled / no password')
@@ -817,6 +830,7 @@ async function run(): Promise<void> {
   })
   ok('subscription stored', sub.status === 200, sub.text)
   ok('status counts the subscription', (await server.status()).subscriptions === 1)
+  const logged = next()
   const inband = next()
   const notified = await server.notify({
     title: 'T',
@@ -826,6 +840,16 @@ async function run(): Promise<void> {
     url: '/?conversation=c1',
     conversationId: 'c1'
   })
+  const logFrame = await logged
+  const logItems = logFrame.payload as Array<{ id: string; read: boolean; conversationId: string }>
+  ok(
+    'the notification is logged first, unread, and every browser gets the log',
+    logFrame.channel === 'web:notifications' &&
+      logItems[0]?.id === notified.id &&
+      logItems[0]?.read === false &&
+      logItems[0]?.conversationId === 'c1',
+    JSON.stringify(logFrame)
+  )
   const notifyFrame = await inband
   ok(
     'in-band notify frame',
@@ -834,11 +858,79 @@ async function run(): Promise<void> {
       (notifyFrame.payload as { url: string }).url === '/?conversation=c1',
     JSON.stringify(notifyFrame)
   )
+  const readBroadcast = next()
+  const readReply = await invoke('web:updateNotifications', { kind: 'read', id: notified.id })
+  ok(
+    'a browser marks it read and gets the new log back',
+    readReply.ok === true &&
+      (readReply.value as Array<{ id: string; read: boolean }>)[0]?.read === true,
+    JSON.stringify(readReply)
+  )
+  const readFrame = await readBroadcast
+  ok(
+    'every browser is told',
+    readFrame.channel === 'web:notifications' &&
+      (readFrame.payload as Array<{ read: boolean }>)[0]?.read === true,
+    JSON.stringify(readFrame)
+  )
+  const badAction = await invoke('web:updateNotifications', { kind: 'nuke' })
+  ok('an unknown action is refused', badAction.ok === false)
   ok(
     'notify counts: 1 in-band, push failed (unreachable endpoint)',
     notified.inband === 1 && notified.pushed === 0 && notified.failed === 1,
     JSON.stringify(notified)
   )
+
+  console.log('step: a blocked turn is pushed to its page only while the user is away')
+  // The push service is unreachable here, so each attempt shows up as one
+  // failure line in the log — that is what is counted.
+  const needsPushes = (): number => logs.filter((l) => l.includes('needs-user push failed')).length
+  const settle = async (want: number): Promise<number> => {
+    for (let i = 0; i < 100 && needsPushes() < want; i++)
+      await new Promise((r) => setTimeout(r, 30))
+    return needsPushes()
+  }
+  const needsPage = await openSocket(cookie, 'pageNEED3333')
+  const needsHello = await needsPage.next()
+  ok('hello says the server pushes blocked turns', needsHello.needsUserPush === true)
+  needsPage.ws.send(JSON.stringify({ t: 'invoke', id: 1, channel: 'test:holdSender', args: [] }))
+  await needsPage.next()
+  const needsSender = heldSender as unknown as { send: (c: string, p: unknown) => void }
+  const before = needsPushes()
+  needsPage.ws.send(JSON.stringify({ t: 'attention', attended: true }))
+  needsSender.send('chat:approvalRequest', { id: 'appr1', conversationId: 'c1' })
+  ok(
+    'the page still gets the approval card',
+    (await needsPage.next()).channel === 'chat:approvalRequest'
+  )
+  await new Promise((r) => setTimeout(r, 400))
+  ok('no push while the user is on the page', needsPushes() === before)
+  needsSender.send('chat:segment', { kind: 'text', delta: 'x' })
+  await needsPage.next()
+  ok('ordinary events never push', needsPushes() === before)
+  needsPage.ws.send(
+    JSON.stringify({ t: 'attention', attended: false, copy: { approval: 'A', question: 'Q' } })
+  )
+  // The frame crosses a real socket; let the server read it first.
+  await new Promise((r) => setTimeout(r, 50))
+  needsSender.send('chat:askRequest', { id: 'ask1', conversationId: 'c1' })
+  await needsPage.next()
+  ok('pushed when the page reports itself away', (await settle(before + 1)) === before + 1)
+  needsPage.ws.send(JSON.stringify({ t: 'attention', attended: true }))
+  needsPage.ws.close()
+  await needsPage.closed
+  await new Promise((r) => setTimeout(r, 50))
+  needsSender.send('chat:approvalRequest', { id: 'appr2', conversationId: 'c1' })
+  ok(
+    'pushed when the page has no socket (a locked phone)',
+    (await settle(before + 2)) === before + 2
+  )
+  config = { ...config, notifications: false }
+  needsSender.send('chat:approvalRequest', { id: 'appr3', conversationId: 'c1' })
+  await new Promise((r) => setTimeout(r, 400))
+  ok('notifications off: never pushed', needsPushes() === before + 2)
+  config = { ...config, notifications: true }
+
   await call(`${base}/api/push/unsubscribe`, {
     method: 'POST',
     cookie,

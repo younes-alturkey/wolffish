@@ -13,6 +13,7 @@ import {
   type ReasoningMode
 } from '@main/runtime/reasoning'
 import { openaiResponsesToolContent } from '@main/runtime/tool-images'
+import { wireLogEnabled, wireShape, writeWireLog } from '@main/runtime/providers/wire-log'
 
 // Responses API, not chat/completions. Verified live 2026-10-12: on
 // chat/completions gpt-6-astra and gpt-6.1-sol refuse function tools
@@ -22,6 +23,23 @@ import { openaiResponsesToolContent } from '@main/runtime/tool-images'
 // reasoning summaries, and accepts the top 'max' rung that chat/completions
 // 400s on.
 const OPENAI_ENDPOINT = 'https://api.openai.com/v1/responses'
+
+// The shared doctrine already asks for a line of prose before each stretch
+// of tool work, and DeepSeek/Kimi/Claude follow it; gpt-6.x let a prompt's
+// "execute silently" win and ran whole tasks with an empty feed. Restated
+// at the very end of the instructions it holds: measured 2026-10-13 on
+// gpt-6.1-sol, a progress line on 4/4 tool steps (0/4 without), including
+// under a user prompt demanding silence. Static text, so the cached prefix
+// is unaffected.
+const PROGRESS_NOTES =
+  '\n\n<progress_notes>\nThe user watches this conversation live and sees only your visible ' +
+  'reply text, never your reasoning or tool calls. Before each batch of tool calls, write one ' +
+  'short plain sentence in your visible reply saying what you are about to do (and, after the ' +
+  'first step, what the last step turned up). These progress lines are how the app shows ' +
+  'work in progress, so they apply even when a task asks for no commentary: that request ' +
+  'governs the deliverable and the final message, not these one-line updates. After a ' +
+  'tool result, call a different tool or tell the user what you found: never repeat a call ' +
+  'whose result you already have.\n</progress_notes>'
 
 /**
  * Per-model output ceiling, as reported by the API itself
@@ -86,8 +104,11 @@ export class OpenAIProvider {
   async *stream(options: ProviderStreamOptions): AsyncGenerator<StreamChunk> {
     const body: Record<string, unknown> = {
       model: this.model,
-      instructions: options.system,
-      input: toResponsesInput(options.messages),
+      instructions:
+        options.tools && options.tools.length > 0
+          ? options.system + PROGRESS_NOTES
+          : options.system,
+      input: toResponsesInput(options.messages, this.model),
       stream: true,
       store: false,
       max_output_tokens: openaiMaxOutputTokens(this.model)
@@ -104,9 +125,62 @@ export class OpenAIProvider {
       // the only reasoning text OpenAI exposes; raw chain-of-thought stays
       // server-side.
       body.reasoning = { effort, summary: 'auto' }
+      // store:false keeps nothing server-side, so the model's reasoning is
+      // gone by the next call of the tool loop unless the encrypted items
+      // ride along. Verified live 2026-10-13 on gpt-6.1-sol: without them
+      // it could not recall a value it settled on in its reasoning one tool
+      // call earlier (0/4); echoed back, 4/4 — also with a trailing status
+      // message after the tool outputs.
+      body.include = ['reasoning.encrypted_content']
     }
     if (options.tools && options.tools.length > 0) {
-      body.tools = options.tools.map(toResponsesTool)
+      const universe = options.toolUniverse
+      if (universe && universe.length > options.tools.length) {
+        // The whole tool list stays byte-stable for the turn and the callable
+        // subset moves in tool_choice, which is outside the cached prefix:
+        // verified 2026-10-13, changing the allowed set kept 10,497 of 10,500
+        // tokens cached and still kept non-allowed tools uncallable. A tool
+        // the agent allows but the universe lacks is appended, never dropped.
+        const names = new Set(universe.map((t) => t.name))
+        const extra = options.tools.filter((t) => !names.has(t.name))
+        body.tools = [...universe, ...extra].map(toResponsesTool)
+        body.tool_choice = {
+          type: 'allowed_tools',
+          mode: 'auto',
+          tools: options.tools.map((t) => ({ type: 'function', name: t.name }))
+        }
+      } else {
+        body.tools = options.tools.map(toResponsesTool)
+      }
+    }
+
+    const wire = await wireLogEnabled()
+    const startedAt = Date.now()
+    const outputShapes: string[] = []
+    const logResponse = (status: string, error?: string): void => {
+      if (!wire) return
+      writeWireLog({
+        dir: 'response',
+        provider: 'openai',
+        model: this.model,
+        status,
+        output: outputShapes,
+        usage: { inputTokens, outputTokens, cacheReadTokens, cacheCreationTokens },
+        durationMs: Date.now() - startedAt,
+        ...(error ? { error } : {})
+      })
+    }
+    if (wire) {
+      writeWireLog({
+        dir: 'request',
+        provider: 'openai',
+        model: this.model,
+        cacheKey: options.cacheKey,
+        effort: effort ?? null,
+        tools: Array.isArray(body.tools) ? body.tools.length : 0,
+        allowed: body.tool_choice ? options.tools?.length : undefined,
+        input: (body.input as unknown[]).map(wireShape)
+      })
     }
 
     const response = await fetch(this.endpoint, {
@@ -121,14 +195,18 @@ export class OpenAIProvider {
 
     if (!response.ok || !response.body) {
       const text = await response.text().catch(() => '')
+      logResponse(`http_${response.status}`, text.slice(0, 300))
       throw new Error(`openai responses failed: HTTP ${response.status} ${text}`.trim())
     }
 
     let stopReason: StopReason = 'unknown'
     let sawToolCall = false
+    let sawText = false
     let inputTokens = 0
     let outputTokens = 0
     let cacheReadTokens = 0
+    let cacheCreationTokens = 0
+    const replayItems: unknown[] = []
 
     const applyUsage = (usage: ResponsesUsage | undefined): void => {
       if (!usage) return
@@ -141,6 +219,15 @@ export class OpenAIProvider {
       if (typeof cached === 'number' && cached > 0) {
         cacheReadTokens = cached
         inputTokens = inputTokens - cached
+      }
+      // Prefix tokens written into the cache this call — billed at 1.25× the
+      // input rate on the gpt-6/5.6 lines (pricing page, 2026-10-13) and
+      // reported separately since then. Ignored, every write was billed as
+      // plain input.
+      const written = usage.input_tokens_details?.cache_write_tokens
+      if (typeof written === 'number' && written > 0) {
+        cacheCreationTokens = written
+        inputTokens = Math.max(0, inputTokens - written)
       }
     }
 
@@ -163,6 +250,7 @@ export class OpenAIProvider {
       switch (parsed.type) {
         case 'response.output_text.delta':
           if (typeof parsed.delta === 'string' && parsed.delta.length > 0) {
+            sawText = true
             yield { type: 'text', text: parsed.delta }
           }
           break
@@ -175,6 +263,24 @@ export class OpenAIProvider {
         // complete string — one authoritative source beats reassembly.
         case 'response.output_item.done': {
           const item = parsed.item
+          outputShapes.push(wireShape(item))
+          if (item?.type === 'reasoning') {
+            replayItems.push(item)
+            break
+          }
+          // The model's own message items go back verbatim with their
+          // `phase` (commentary vs final_answer): replayed as a plain
+          // assistant string, a progress note reads to the model as a
+          // finished answer.
+          if (item?.type === 'message') {
+            replayItems.push({
+              type: 'message',
+              role: 'assistant',
+              content: item.content ?? [],
+              ...(item.phase ? { phase: item.phase } : {})
+            })
+            break
+          }
           if (item?.type === 'function_call' && item.name) {
             sawToolCall = true
             const args = item.arguments ? safeParseJSON(item.arguments) : {}
@@ -204,12 +310,20 @@ export class OpenAIProvider {
           applyUsage(parsed.response?.usage)
           const message = parsed.response?.error?.message ?? 'response failed'
           this.corpus?.emit('llm.error', { provider: 'openai', error: message })
+          // Nothing reached the user yet: throw, so thalamus classifies it
+          // like an HTTP failure and retries the transient ones ("Our servers
+          // are currently overloaded" arrives as a stream event, and as a
+          // terminal error chunk it ended a run 11 s in, 2026-10-13).
+          logResponse('failed', message)
+          if (!sawText && !sawToolCall) throw new Error(`openai: ${message}`)
           yield { type: 'error', message: `openai: ${message}`, recoverable: false }
           return
         }
         case 'error': {
           const message = parsed.message ?? parsed.error?.message ?? 'stream error'
           this.corpus?.emit('llm.error', { provider: 'openai', error: message })
+          logResponse('error', message)
+          if (!sawText && !sawToolCall) throw new Error(`openai: ${message}`)
           yield { type: 'error', message: `openai: ${message}`, recoverable: false }
           return
         }
@@ -218,10 +332,24 @@ export class OpenAIProvider {
       }
     }
 
+    logResponse(stopReason)
+
+    if (replayItems.length > 0) {
+      yield {
+        type: 'provider_reasoning',
+        reasoning: { provider: 'openai', model: this.model, items: replayItems }
+      }
+    }
+
     yield {
       type: 'turn_meta',
       stopReason,
-      usage: { inputTokens, outputTokens, cacheReadTokens: cacheReadTokens || undefined }
+      usage: {
+        inputTokens,
+        outputTokens,
+        cacheReadTokens: cacheReadTokens || undefined,
+        cacheCreationTokens: cacheCreationTokens || undefined
+      }
     }
   }
 }
@@ -243,6 +371,8 @@ type ResponsesEvent = {
     call_id?: string
     name?: string
     arguments?: string
+    content?: unknown[]
+    phase?: string
   }
   response?: {
     status?: string
@@ -297,7 +427,7 @@ function userContentToResponses(content: string | UserContentBlock[]): string | 
  * them, so it must round-trip the id the model (or any provider the
  * conversation ran on before) issued.
  */
-function toResponsesInput(messages: ChatMessage[]): Array<Record<string, unknown>> {
+function toResponsesInput(messages: ChatMessage[], model: string): Array<Record<string, unknown>> {
   const out: Array<Record<string, unknown>> = []
   for (const m of messages) {
     if (m.role === 'system') continue
@@ -305,15 +435,36 @@ function toResponsesInput(messages: ChatMessage[]): Array<Record<string, unknown
       out.push({
         type: 'function_call_output',
         call_id: m.toolUseId,
-        output: openaiResponsesToolContent(m.content, m.images, m.toolName)
+        // An empty output reads to the model as "nothing happened" and invites
+        // the same call again; every function_call gets a meaningful answer.
+        output: openaiResponsesToolContent(
+          m.content.trim() ? m.content : '(the tool returned no output)',
+          m.images,
+          m.toolName
+        )
       })
       continue
     }
     if (m.role === 'user') {
-      out.push({ role: 'user', content: userContentToResponses(m.content) })
+      // The per-iteration runtime tail goes as developer, not user: a
+      // trailing user message pins OpenAI's prompt cache to the system
+      // prefix, so every tool-loop iteration re-billed the whole history
+      // uncached (measured 2026-10-13, gpt-6.1-sol: cache frozen at the
+      // instructions with a user tail, growing every call with developer).
+      out.push({
+        role: m.volatile ? 'developer' : 'user',
+        content: userContentToResponses(m.content)
+      })
       continue
     }
-    if (m.content && m.content.length > 0) {
+    const reasoning = m.providerReasoning
+    const replay = reasoning && reasoning.provider === 'openai' && reasoning.model === model
+    if (replay) {
+      for (const item of reasoning.items) out.push(item as Record<string, unknown>)
+    }
+    const replayedText =
+      replay && reasoning.items.some((i) => (i as { type?: string }).type === 'message')
+    if (!replayedText && m.content && m.content.length > 0) {
       out.push({ role: 'assistant', content: m.content })
     }
     for (const use of m.toolUses ?? []) {

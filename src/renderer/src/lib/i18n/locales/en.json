@@ -27,11 +27,29 @@
     "subtitle": "Wolffish is finishing up some background work so nothing is lost.",
     "bodyTitle": "Saving your work",
     "body": "Closes once your work is saved.",
-    "reboot": {
-      "title": "Rebooting Wolffish",
+    "restart": {
+      "title": "Restarting Wolffish",
       "subtitle": "Wolffish is finishing up and will be right back.",
       "bodyTitle": "Saving your work",
       "body": "Starts again once your work is saved."
+    },
+    "reboot": {
+      "title": "Rebooting device",
+      "subtitle": "Wolffish is saving your work, then this device restarts.",
+      "bodyTitle": "Saving your work",
+      "body": "Reconnects once the device and Wolffish are back."
+    },
+    "reset": {
+      "title": "Resetting Wolffish",
+      "subtitle": "Your data is being erased. Wolffish starts fresh in a moment.",
+      "bodyTitle": "Factory reset",
+      "body": "Starts again once the reset is done."
+    },
+    "update": {
+      "title": "Updating Wolffish",
+      "subtitle": "The update is installing. Wolffish starts again on its own.",
+      "bodyTitle": "Installing the update",
+      "body": "Reconnects once the new version is running."
     }
   },
   "onboarding": {
@@ -212,15 +230,28 @@
       "data": "Data",
       "updates": "Updates",
       "knowledge": "Knowledge",
-      "reboot": "Reboot"
+      "restart": "Restart Wolffish",
+      "reboot": "Reboot device"
     },
-    "reboot": {
-      "title": "Reboot Wolffish?",
-      "warning": "Anything running right now is stopped, unsaved replies are saved, and Wolffish starts again on its own. Your settings and conversations are kept.",
-      "confirm": "Reboot",
-      "rebooting": "Rebooting…",
+    "power": {
       "cancel": "Cancel",
-      "errorToast": "Could not reboot. Try again."
+      "restart": {
+        "title": "Restart Wolffish?",
+        "warning": "Anything running right now is stopped, unsaved replies are saved, and Wolffish starts again on its own. Your settings and conversations are kept.",
+        "confirm": "Restart",
+        "working": "Restarting",
+        "errorToast": "Could not restart. Try again."
+      },
+      "reboot": {
+        "title": "Reboot this device?",
+        "warning": "Wolffish saves what is in flight, then the whole machine restarts. Other apps and anyone else using this device are interrupted too.",
+        "noAutostart": "Wolffish is not set to start with this device, so it will not come back on its own. Turn on Launch at startup in Preferences first.",
+        "confirm": "Reboot",
+        "working": "Rebooting",
+        "errorToast": "Could not reboot. Try again.",
+        "permissionToast": "Wolffish is not allowed to reboot this device. On a Mac, allow it to control System Events (Privacy & Security › Automation); on Linux, run it as root or allow passwordless sudo.",
+        "unsupportedToast": "Rebooting is not supported on this system."
+      }
     },
     "wolffish": {
       "title": "Wolffish",
@@ -1914,7 +1945,7 @@
         "disable": "Disable HTTPS",
         "open": "Open HTTPS",
         "restart": "Restart Wolffish",
-        "restarting": "Restarting Wolffish — back in a moment…",
+        "restarting": "Restarting Wolffish",
         "movingIn": "Moving to {{url}} in {{seconds}}s",
         "stay": "Stay here",
         "fixTitle": "How to fix it",
@@ -2049,6 +2080,14 @@
       "settingsLink": "Go to Settings → Models"
     },
     "thinking": "Thinking…",
+    "progress": {
+      "visit": "Visiting {{target}}",
+      "search": "Searching {{target}}",
+      "run": "Running {{target}}",
+      "file": "Working on {{target}}",
+      "load": "Loading {{target}} tools",
+      "use": "Using {{target}}"
+    },
     "thinkingWords": [
       "Pondering",
       "Ruminating",
@@ -2326,9 +2365,11 @@
       "onTitle": "Plan mode is on: this turn only investigates and writes a plan. Click to allow changes.",
       "offTitle": "Plan first: read-only turns that write a plan you approve before anything changes."
     },
+    "interruptedNote": "This run stopped here before it finished: the app closed or restarted mid-turn. Send a message to pick it up.",
     "todoCard": {
       "title": "Tasks",
       "progress": "{{done}}/{{total}} done",
+      "stopped": "{{done}}/{{total}} done · stopped",
       "high": "high"
     },
     "toolCard": {
@@ -3063,7 +3104,9 @@
       "nudge": "Allow notifications so Wolffish can reach you when a run finishes or needs you — even with this tab closed.",
       "enable": "Enable",
       "enabled": "Notifications enabled on this browser.",
-      "iosInstall": "On iPhone and iPad, notifications need Wolffish on your Home Screen: Share → Add to Home Screen, then open it from there."
+      "iosInstall": "On iPhone and iPad, notifications need Wolffish on your Home Screen: Share → Add to Home Screen, then open it from there.",
+      "approval": "A tool call is waiting for your approval.",
+      "question": "Wolffish has a question for you."
     },
     "upload": {
       "uploading": "Uploading {{name}}…",
@@ -3072,8 +3115,41 @@
       "lost": "{{name}} is no longer available — attach it again."
     },
     "connection": {
-      "lost": "Connection lost — reconnecting…",
-      "updating": "Updating Wolffish — this page reloads when it's back…"
+      "lost": "Reconnecting",
+      "updating": "Updating Wolffish"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "subtitle": "Everything the agent sent you, in one place.",
+    "tabs": {
+      "inbox": "Notifications",
+      "archive": "Archive"
+    },
+    "markAllRead": "Mark all read",
+    "archiveAll": "Archive all",
+    "markRead": "Mark as read",
+    "archive": "Archive",
+    "confirmReadAll": {
+      "title": "Mark all as read?",
+      "message": "All {{count}} notifications in this list will be marked as read. Their unread marks go with them."
+    },
+    "confirmArchiveAll": {
+      "title": "Archive all?",
+      "message": "All {{count}} notifications in this list move to the archive, and are marked as read. You can still read them under Archive."
+    },
+    "new": "New",
+    "empty": "No notifications yet.",
+    "emptyHint": "Wolffish tells you here when a run finishes, fails or needs you.",
+    "archiveEmpty": "Nothing archived.",
+    "conversationEmpty": "Nothing left here — everything this conversation sent is archived.",
+    "archiveEmptyHint": "Archived notifications are kept here, out of the list.",
+    "phase": {
+      "started": "Started",
+      "needs_input": "Needs you",
+      "failed": "Failed",
+      "completed": "Done",
+      "info": "Update"
     }
   }
 }

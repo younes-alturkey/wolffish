@@ -14,6 +14,7 @@ import type {
   WebServer,
   WebUiStatus
 } from '@main/channels/web/server'
+import { parseNotificationAction, type WebNotificationRecord } from '@main/channels/web/inbox'
 import type { PublicShare } from '@main/channels/web/public'
 import type { WebSession } from '@main/channels/web/state'
 import type { IpcMainInvokeEvent } from 'electron'
@@ -210,6 +211,17 @@ export function registerWebIpc(deps: WebIpcDeps): void {
     broadcast('web:publicChange', await publicViews())
     return { ok: true, revoked }
   })
+
+  handle('web:notifications', (): Promise<WebNotificationRecord[]> => server.notifications())
+
+  handle(
+    'web:updateNotifications',
+    async (_e, action: unknown): Promise<WebNotificationRecord[]> => {
+      const parsed = parseNotificationAction(action)
+      if (!parsed) throw new Error('unknown notification action')
+      return server.updateNotifications(parsed)
+    }
+  )
 
   handle('web:testNotification', async () => {
     const result = await server.notify({

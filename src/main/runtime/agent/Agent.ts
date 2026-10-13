@@ -158,9 +158,21 @@ import { isInternalToolCall, readConfig } from '@main/workspace/workspace'
  * Only providers with a confirmed, documented limit are listed here.
  * Providers not in this map have no known hard limit — all tools are
  * sent through unfiltered.
+ *
+ * OpenAI is deliberately absent: 128 was the chat/completions limit, and
+ * /v1/responses took 400 tools on every catalog model and 1000 on
+ * gpt-6.1-sol (verified live 2026-10-13). The cap had been dropping
+ * capabilities the model had just activated (pdf-design, web-ui,
+ * close-turn) by relevance score mid-turn.
  */
+/** Tool-universe sizing (toolUniverseFor): JSON schema chars per token, and cap. */
+const UNIVERSE_CHARS_PER_TOKEN = 3.6
+const UNIVERSE_MAX_WINDOW_SHARE = 0.1
+
+/** Share of the context window past which superseded reads are stubbed. */
+const SUPERSEDE_PRESSURE = 0.4
+
 const PROVIDER_TOOL_LIMITS: Record<string, number> = {
-  openai: 128,
   xai: 200
 }
 
@@ -190,8 +202,8 @@ function autonomousRunFraming(opts: {
     `[Scheduled run of the automation "${job}, firing ${now}. The text below is its ` +
     'saved instruction: carry it out now, in this run. The automation already exists and is ' +
     'already scheduled — this run IS it — so do not look for, create, verify, reschedule or edit ' +
-    'it unless the instruction itself asks you to. Nobody watches this run live; the user reads ' +
-    'what it delivers afterwards.]\n\n'
+    'it unless the instruction itself asks you to. The user may open this conversation and ' +
+    'watch the run as it works, and reads what it delivers afterwards.]\n\n'
   )
 }
 
@@ -1356,6 +1368,10 @@ export class Agent {
     // truth from the provider and beats any char-based estimation.
     // Passed to compactOverflow so it can calibrate against reality.
     let lastIterationInputTokens = 0
+    // Superseded-read stubbing rewrites older results, which re-bills every
+    // cached token after them; it pays only near the window. Latched on for
+    // the rest of the turn once reached, so stubs never flip back and forth.
+    let supersedeOutbound = false
     // When a context-overflow 400 fires, we force compaction and retry
     // exactly once. This flag prevents infinite retry loops.
     let contextOverflowRetried = false
@@ -1402,6 +1418,12 @@ export class Agent {
     // on the next iteration — so the new/edited tool is callable in the SAME
     // turn, enabling create→load→test→edit→retest without ending the turn.
     let pinnedGeneration = -1
+    // Full tool list for providers that restrict callable tools per request
+    // (see toolUniverseFor). Null = send the exposed set as before. With a
+    // universe pinned, an activation-only version move keeps the pinned
+    // prompt: only the callable subset changes, so the cached prefix holds.
+    let pinnedUniverse: ToolDefinition[] | null = null
+    let pinnedGlobalGeneration = -1
 
     // Working-folder listing: read ONCE per turn, main-side, and delivered via
     // the outbound volatile tail (after every cache breakpoint) — never baked
@@ -1672,21 +1694,29 @@ export class Agent {
           // conversation's activation never invalidates this pin (or its
           // provider prompt-cache prefix).
           const currentVersion = this.cerebellum.getToolsetVersion(turn.conversationId ?? null)
+          const currentGlobal = this.cerebellum.getToolsetGeneration()
           if (
             pinnedSystemPrompt === null ||
             pinnedTools === null ||
             pinnedGeneration !== currentVersion
           ) {
-            pinnedSystemPrompt = await this.prefrontal.buildSystemPrompt(
-              userContent,
-              runtime,
-              toolRole,
-              {
-                localModel: isLocalProvider,
-                channel: turn.channel,
-                conversationId: turn.conversationId ?? null
-              }
-            )
+            const activationOnly =
+              pinnedSystemPrompt !== null &&
+              pinnedUniverse !== null &&
+              pinnedGlobalGeneration === currentGlobal
+            if (!activationOnly || pinnedSystemPrompt === null) {
+              pinnedUniverse = this.toolUniverseFor(modelSel, toolRole, turn.conversationId ?? null)
+              pinnedSystemPrompt = await this.prefrontal.buildSystemPrompt(
+                userContent,
+                runtime,
+                toolRole,
+                {
+                  localModel: isLocalProvider,
+                  channel: turn.channel,
+                  conversationId: turn.conversationId ?? null
+                }
+              )
+            }
             pinnedTools = this.slimForWindow(
               this.filterToolsForProvider(
                 this.prefrontal.selectTools(toolRole, turn.conversationId ?? null),
@@ -1698,6 +1728,7 @@ export class Agent {
               toolRole
             )
             pinnedGeneration = currentVersion
+            pinnedGlobalGeneration = currentGlobal
           }
           systemPrompt = pinnedSystemPrompt
           filteredTools = pinnedTools
@@ -1735,7 +1766,8 @@ export class Agent {
           messages,
           turn.signal,
           {
-            tools: filteredTools.length > 0 ? filteredTools : undefined,
+            // Sized on what is sent: the whole universe when one is pinned.
+            tools: filteredTools.length > 0 ? (pinnedUniverse ?? filteredTools) : undefined,
             lastKnownInputTokens: lastIterationInputTokens,
             inputBudget: modelSel ? this.thalamus.getContextBudgetFor(modelSel) : undefined,
             onStarted: (targetsCount, currentTokens) => {
@@ -1776,12 +1808,16 @@ export class Agent {
           system: systemPrompt,
           messages,
           tools: filteredTools.length > 0 ? filteredTools : undefined,
+          toolUniverse: filteredTools.length > 0 ? (pinnedUniverse ?? undefined) : undefined,
           signal: turn.signal,
           role: turn.role,
           modelOverride: turn.modelOverride,
           thinkingMode: turn.thinkingMode ?? projectMode ?? undefined,
           cacheKey: turn.conversationId ?? turn.turnId,
           truncateOutbound,
+          supersedeOutbound: (supersedeOutbound ||=
+            lastIterationInputTokens >=
+            this.thalamus.getContextWindowFor(modelSel) * SUPERSEDE_PRESSURE),
           // The live runtime tail (host clock + loop counters) rides at the
           // very end of the outbound clone — omitted on iteration 1 (unless
           // working folders need announcing or the host is offline, both
@@ -1914,7 +1950,7 @@ export class Agent {
               messages,
               turn.signal,
               {
-                tools: filteredTools.length > 0 ? filteredTools : undefined,
+                tools: filteredTools.length > 0 ? (pinnedUniverse ?? filteredTools) : undefined,
                 lastKnownInputTokens: lastIterationInputTokens,
                 inputBudget: modelSel ? this.thalamus.getContextBudgetFor(modelSel) : undefined,
                 force: true,
@@ -2169,6 +2205,7 @@ export class Agent {
         }))
         const assistantMsg: ChatMessage = { role: 'assistant', content: parsed.text, toolUses }
         if (parsed.thinking) assistantMsg.reasoningContent = parsed.thinking
+        if (parsed.providerReasoning) assistantMsg.providerReasoning = parsed.providerReasoning
         messages.push(assistantMsg)
 
         // Parallel read batches: when one assistant message carries several
@@ -2498,7 +2535,7 @@ export class Agent {
           totalToolCalls += 1
           // A turn-closing tool that actually LANDED — a failed send is not a
           // close, so this reads result.ok. See agent/closing-guard.
-          if (result.ok) recordClosingTool(closingGuard, call.name)
+          if (result.ok) recordClosingTool(closingGuard, call.name, parsed.text)
           if (result.ok && MUTATING_FOLDER_TOOLS.has(call.name)) folderFactsStale = true
           // Follow the computer-use screen indicator this run raised: the tail
           // notice, the turn-end nudge and the terminal failsafe all read this
@@ -2804,6 +2841,29 @@ export class Agent {
         await diskWriter.flush().catch(() => undefined)
       }
     }
+  }
+
+  /**
+   * The full tool list to pin for this turn, or null to keep shipping only
+   * the exposed set. OpenAI only (it alone restricts callable tools per
+   * request via `allowed_tools`, which keeps a changing subset out of the
+   * cached prefix). Off until the conversation activates something beyond the
+   * core set — a short chat keeps the lean first request — and off when the
+   * universe would take more than a tenth of the window (~48k tokens for the
+   * 336 bundled tools on 2026-10-13, against 1.05M on gpt-6.x).
+   */
+  private toolUniverseFor(
+    modelSel: WorkflowModelChoice | null,
+    toolRole: 'master' | 'agent' | undefined,
+    conversationId: string | null
+  ): ToolDefinition[] | null {
+    const provider = modelSel?.provider ?? this.thalamus.getActiveProvider()
+    if (provider !== 'openai') return null
+    if (!this.cerebellum.hasActivations(conversationId)) return null
+    const universe = this.prefrontal.selectToolUniverse(toolRole)
+    const chars = universe.reduce((n, t) => n + JSON.stringify(t).length, 0)
+    const window = this.thalamus.getContextWindowFor(modelSel)
+    return chars / UNIVERSE_CHARS_PER_TOKEN <= window * UNIVERSE_MAX_WINDOW_SHARE ? universe : null
   }
 
   /**

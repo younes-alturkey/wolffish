@@ -27,6 +27,8 @@ export type HelloFrame = {
   secure: boolean
   notificationsEnabled: boolean
   vapidPublicKey: string | null
+  /** The server pushes a blocked turn's approval/question to a browser that reported itself away. */
+  needsUserPush?: boolean
   /**
    * Whether the server still held this page's events across the gap. False on
    * a first connect and on a reconnect after the server gave the page up —
@@ -42,6 +44,8 @@ type Pending = { resolve: (value: unknown) => void; reject: (error: Error) => vo
 const INVOKE_TIMEOUT_MS = 10 * 60_000
 const RECONNECT_MIN_MS = 800
 const RECONNECT_MAX_MS = 10_000
+/** While the app is known to be restarting: often enough that the reload follows the new process within a second. */
+const RESTART_POLL_MS = 1_000
 
 function toBase64(bytes: Uint8Array): string {
   let binary = ''
@@ -101,6 +105,12 @@ export class WebTransport {
    */
   private readonly pageId = randomId()
   state: ConnectionState = 'closed'
+  /**
+   * Set when the app announced it is going down to come back (restart,
+   * device reboot, factory reset). The gap is expected, so retries hold a
+   * steady cadence instead of backing off to ten seconds.
+   */
+  restartExpected = false
 
   constructor() {
     // A phone coming back from its lock screen gets its socket back at once
@@ -204,7 +214,7 @@ export class WebTransport {
 
   private scheduleReconnect(): void {
     if (this.reconnectTimer || this.state === 'signed-out') return
-    const delay = this.reconnectDelay
+    const delay = this.restartExpected ? RESTART_POLL_MS : this.reconnectDelay
     this.reconnectDelay = Math.min(RECONNECT_MAX_MS, Math.round(this.reconnectDelay * 1.7))
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null
@@ -277,6 +287,17 @@ export class WebTransport {
     set.add(wrapped)
     return () => {
       set.delete(wrapped)
+    }
+  }
+
+  /** A one-way frame with no reply; dropped while no socket is open. */
+  post(frame: Record<string, unknown>): void {
+    const ws = this.ws
+    if (!ws || ws.readyState !== WebSocket.OPEN) return
+    try {
+      ws.send(JSON.stringify(frame))
+    } catch {
+      // the next open re-sends whatever the caller keeps current
     }
   }
 

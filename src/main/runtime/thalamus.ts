@@ -59,7 +59,13 @@ export type ChatMessage =
        */
       volatile?: boolean
     }
-  | { role: 'assistant'; content: string; toolUses?: ToolUse[]; reasoningContent?: string }
+  | {
+      role: 'assistant'
+      content: string
+      toolUses?: ToolUse[]
+      reasoningContent?: string
+      providerReasoning?: ProviderReasoning
+    }
   | {
       role: 'tool'
       toolUseId: string
@@ -68,6 +74,15 @@ export type ChatMessage =
       isError?: boolean
       images?: ToolResultImage[]
     }
+
+/**
+ * Opaque output items a provider needs echoed back verbatim on the next
+ * call of the same tool chain (OpenAI Responses: `reasoning` items carrying
+ * `encrypted_content`, and the assistant `message` items with their
+ * `phase`). Bound to the model that produced them — another
+ * model, or another provider after a failover, must never receive it.
+ */
+export type ProviderReasoning = { provider: ProviderId; model: string; items: unknown[] }
 
 export type ProviderId =
   | 'anthropic'
@@ -115,6 +130,23 @@ export type ProviderStreamOptions = {
    */
   truncateOutbound?: boolean
   /**
+   * Whether truncation may rewrite OLDER results — superseded page-state and
+   * file reads. Unlike the backward duplicate pointer, a stub there changes
+   * bytes deep in the cached prefix, so every token after it is re-billed
+   * uncached once (a 142k-token, 96 s request on gpt-6.1-sol at 18% of its
+   * window, 2026-10-13). The agent turns it on only under context pressure.
+   * Default true.
+   */
+  supersedeOutbound?: boolean
+  /**
+   * The full, turn-stable tool list. When set, a provider that can restrict
+   * callable tools per request (OpenAI `allowed_tools`) sends THIS as the
+   * tool list and `tools` as the callable subset, so activating a
+   * capability mid-turn no longer changes the cached prefix. Providers
+   * without that ability ignore it and send `tools`.
+   */
+  toolUniverse?: ToolDefinition[]
+  /**
    * Stable per-conversation key passed to providers that support cache
    * routing hints (OpenAI `prompt_cache_key`). Keeps all calls of a task
    * on the same cache shard — without it, sustained tool loops above
@@ -161,6 +193,7 @@ export type NoProviderAvailableInfo = {
 export type StreamChunk =
   | { type: 'text'; text: string }
   | { type: 'reasoning'; text: string }
+  | { type: 'provider_reasoning'; reasoning: ProviderReasoning }
   | { type: 'tool_call'; id: string; name: string; args: Record<string, unknown> }
   // provider/model are stamped by thalamus on relay so the agent can record
   // which model actually served the call (for usage capture and labelling).
@@ -1329,6 +1362,12 @@ const HARD_STATUSES = new Set([400, 401, 403, 404, 413, 422])
 
 function classifyError(err: unknown): { statusCode: number | null; errorClass: ErrorClass } {
   const message = err instanceof Error ? err.message : String(err)
+  // An exhausted account answers every call the same way until someone pays;
+  // OpenAI sends it as HTTP 429 or as an in-stream error event. Retried as
+  // transient, a run sat silent through the whole backoff ladder
+  // (2026-10-13) — fail at once so the error card can say why.
+  if (QUOTA_EXHAUSTED_RE.test(message))
+    return { statusCode: parseHttpStatus(message), errorClass: 'hard' }
   const status = parseHttpStatus(message)
   if (status !== null) {
     if (TRANSIENT_STATUSES.has(status)) return { statusCode: status, errorClass: 'transient' }
@@ -1342,6 +1381,8 @@ function classifyError(err: unknown): { statusCode: number | null; errorClass: E
   }
   return { statusCode: null, errorClass: 'unknown' }
 }
+
+const QUOTA_EXHAUSTED_RE = /insufficient_quota|no credits remaining|exceeded your current quota/i
 
 function parseHttpStatus(message: string): number | null {
   const match = /HTTP\s+(\d{3})/.exec(message)

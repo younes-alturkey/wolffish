@@ -31,6 +31,8 @@ import { DataPanel } from '@pages/settings/DataPanel'
 import { GitHubPanel } from '@pages/settings/GitHubPanel'
 import { GooglePanel } from '@pages/settings/GooglePanel'
 import { prefetchGooglePanel } from '@pages/settings/googleSnapshot'
+import { loadLocalModels } from '@pages/settings/localModelsSnapshot'
+import { refreshProviderList, useProviderList } from '@pages/settings/providerListSnapshot'
 import { CliPanel } from '@pages/settings/CliPanel'
 import { WebUiPanel } from '@pages/settings/WebUiPanel'
 import { InAppPanel } from '@pages/settings/InAppPanel'
@@ -47,9 +49,10 @@ import { UsagePanel } from '@pages/settings/UsagePanel'
 import { VariablesPanel } from '@pages/settings/VariablesPanel'
 import { WhatsAppPanel } from '@pages/settings/WhatsAppPanel'
 import { WolffishPanel } from '@pages/settings/WolffishPanel'
-import { RebootDialog } from '@pages/settings/RebootDialog'
+import { PowerDialog, type PowerAction } from '@pages/settings/PowerDialog'
 import { useFlow } from '@providers/flow/useFlow'
 import { useLocale } from '@providers/locale/useLocale'
+import { useOllama } from '@providers/ollama/useOllama'
 import { useTheme, type ThemeSource } from '@providers/theme/useTheme'
 import {
   AiMagicIcon,
@@ -73,6 +76,7 @@ import {
   Mic01Icon,
   NeuralNetworkIcon,
   PaintBoardIcon,
+  PowerServiceIcon,
   PuzzleIcon,
   ReloadIcon,
   SmartPhone01Icon,
@@ -80,7 +84,7 @@ import {
   VolumeHighIcon,
   WhatsappIcon
 } from 'hugeicons-react'
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { IconType } from 'react-icons'
 
@@ -170,9 +174,9 @@ export function Settings(): React.JSX.Element {
   const [channel, setChannelRaw] = useState<Channel>(snapshot.channel)
   const [service, setServiceRaw] = useState<Service | null>(snapshot.service)
   const [knowledgeTab, setKnowledgeTabRaw] = useState<KnowledgeTab>(snapshot.knowledgeTab)
-  // Reboot sits in the rail like a tab but never becomes one: it opens a
-  // confirmation and leaves the active panel where it was.
-  const [rebootOpen, setRebootOpen] = useState(false)
+  // Restart and Reboot sit in the rail like tabs but never become one: each
+  // opens a confirmation and leaves the active panel where it was.
+  const [power, setPower] = useState<PowerAction | null>(null)
 
   const setActive = useCallback(
     (key: TabKey) => {
@@ -233,12 +237,18 @@ export function Settings(): React.JSX.Element {
     [snapshot]
   )
 
-  const [ollamaReachable, setOllamaReachable] = useState<boolean | null>(null)
+  // The background watch's flag is already settled when Settings opens, so
+  // the Ollama card drills straight into the right view. The on-open probe
+  // still has the last word: it checks the default daemon ModelPicker
+  // manages, where the watch follows the configured endpoint.
+  const ollama = useOllama()
+  const [ollamaDetected, setOllamaDetected] = useState<boolean | null>(null)
+  const ollamaReachable = ollamaDetected ?? ollama.reachable
 
   useEffect(() => {
     let cancelled = false
     void window.api.ollama.detect().then((r) => {
-      if (!cancelled) setOllamaReachable(r.reachable)
+      if (!cancelled) setOllamaDetected(r.reachable)
     })
     return () => {
       cancelled = true
@@ -246,34 +256,24 @@ export function Settings(): React.JSX.Element {
   }, [])
 
   // Cloud providers with a saved key get their cloud badge tinted on the
-  // grid card. provider:updated fires on every save/remove, so the set stays
-  // current while the user edits keys in the panels.
-  const [keyedProviders, setKeyedProviders] = useState<ReadonlySet<string>>(new Set())
+  // grid card, from the provider-list cache so the tint is there on first
+  // paint rather than arriving a round trip later.
+  const providerList = useProviderList()
+  const keyedProviders = useMemo<ReadonlySet<string>>(
+    () => new Set((providerList ?? []).filter((e) => e.apiKey.trim().length > 0).map((e) => e.id)),
+    [providerList]
+  )
 
-  useEffect(() => {
-    let cancelled = false
-    const reload = (): void => {
-      void window.api.provider.list().then((entries) => {
-        if (cancelled) return
-        setKeyedProviders(
-          new Set(entries.filter((e) => e.apiKey.trim().length > 0).map((e) => e.id))
-        )
-      })
-    }
-    reload()
-    const off = window.api.provider.onUpdated(reload)
-    return () => {
-      cancelled = true
-      off()
-    }
-  }, [])
-
-  // Warm up the Google Workspace snapshot and the capability gate the
-  // moment Settings opens, so by the time the user opens a service card
-  // the data is already populated and the panel renders without a flash.
+  // Warm up the Google Workspace snapshot, the capability gate and the
+  // Ollama panel's data the moment Settings opens, so by the time the user
+  // opens a card the data is already populated and the panel renders
+  // without a flash. The provider list is warm from boot; re-reading it here
+  // catches a provider:updated missed while the Web UI socket was down.
   useEffect(() => {
     void prefetchGooglePanel().catch(() => {})
     prefetchCapabilityGate()
+    refreshProviderList()
+    void loadLocalModels().catch(() => {})
   }, [])
 
   // Nested panels (capability gate cards) can ask to jump to another tab.
@@ -332,7 +332,7 @@ export function Settings(): React.JSX.Element {
             })}
             <button
               type="button"
-              onClick={() => setRebootOpen(true)}
+              onClick={() => setPower('restart')}
               className={cn(
                 'flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm whitespace-nowrap',
                 'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
@@ -340,6 +340,18 @@ export function Settings(): React.JSX.Element {
               )}
             >
               <ReloadIcon size={18} />
+              <span>{t('settings.tabs.restart')}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPower('reboot')}
+              className={cn(
+                'flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm whitespace-nowrap',
+                'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
+                'text-muted hover:bg-border/40 hover:text-fg'
+              )}
+            >
+              <PowerServiceIcon size={18} />
               <span>{t('settings.tabs.reboot')}</span>
             </button>
           </div>
@@ -509,7 +521,7 @@ export function Settings(): React.JSX.Element {
           })}
           <button
             type="button"
-            onClick={() => setRebootOpen(true)}
+            onClick={() => setPower('restart')}
             className={cn(
               'flex items-center gap-2 rounded-lg px-3 py-2 text-start text-sm cursor-pointer whitespace-nowrap',
               'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
@@ -517,6 +529,18 @@ export function Settings(): React.JSX.Element {
             )}
           >
             <ReloadIcon size={18} />
+            <span>{t('settings.tabs.restart')}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setPower('reboot')}
+            className={cn(
+              'flex items-center gap-2 rounded-lg px-3 py-2 text-start text-sm cursor-pointer whitespace-nowrap',
+              'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
+              'text-muted hover:bg-border/40 hover:text-fg'
+            )}
+          >
+            <PowerServiceIcon size={18} />
             <span>{t('settings.tabs.reboot')}</span>
           </button>
         </nav>
@@ -639,7 +663,7 @@ export function Settings(): React.JSX.Element {
           <McpPanel />
         </TabPanel>
       </div>
-      <RebootDialog open={rebootOpen} onClose={() => setRebootOpen(false)} />
+      <PowerDialog action={power} onClose={() => setPower(null)} />
     </main>
   )
 }

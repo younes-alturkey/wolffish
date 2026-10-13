@@ -588,6 +588,14 @@ The ONLY exception: the user's own message explicitly asks for something else ("
         : DELEGATION_CAPABILITIES
   }
 
+  /**
+   * Every tool this role may ever be shown — selectTools without the
+   * per-conversation exposure filter. Stable while the installed set is.
+   */
+  selectToolUniverse(role?: 'master' | 'agent'): ToolDefinition[] {
+    return this.cerebellum?.getToolDefinitions(this.excludedCapabilitiesFor(role)) ?? []
+  }
+
   selectTools(role?: 'master' | 'agent', conversationId?: string | null): ToolDefinition[] {
     return (
       this.cerebellum?.getToolDefinitions(this.excludedCapabilitiesFor(role), {

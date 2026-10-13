@@ -213,7 +213,8 @@ export function buildApi(transport: ApiTransport): WolffishApi {
     },
     app: {
       factoryReset: () => transport.invoke('app:factoryReset'),
-      reboot: () => transport.invoke('app:reboot'),
+      restart: () => transport.invoke('app:restart'),
+      rebootDevice: () => transport.invoke('app:rebootDevice'),
       onClosingPending: (listener) => transport.subscribe('app:closingPending', listener)
     },
     data: {
@@ -477,6 +478,9 @@ export function buildApi(transport: ApiTransport): WolffishApi {
       revokePublic: (id) => transport.invoke('web:revokePublic', id),
       revokeAllPublic: () => transport.invoke('web:revokeAllPublic'),
       testNotification: () => transport.invoke('web:testNotification'),
+      notifications: () => transport.invoke('web:notifications'),
+      updateNotifications: (action) => transport.invoke('web:updateNotifications', action),
+      onNotifications: (listener) => transport.subscribe('web:notifications', listener),
       renewCertificate: () => transport.invoke('web:renewCertificate'),
       httpsEnable: (input) => transport.invoke('web:httpsEnable', input),
       httpsDisable: () => transport.invoke('web:httpsDisable'),

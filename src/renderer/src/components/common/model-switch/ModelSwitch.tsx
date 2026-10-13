@@ -340,8 +340,9 @@ export function ModelSwitch({
       ref={rootRef}
       // `max-sm:static` is deliberate: below 640px the card must not be
       // positioned against this pill (it would overflow the phone's edge) but
-      // against the composer, which it then spans edge to edge.
-      className="relative inline-flex shrink-0 max-sm:static"
+      // against the composer, which it then spans edge to edge. It may shrink
+      // there too, truncating the name, so the actions keep its row.
+      className="relative inline-flex shrink-0 max-sm:static max-sm:min-w-0 max-sm:shrink"
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
     >

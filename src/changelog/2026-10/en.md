@@ -1,4 +1,36 @@
-## v1.0.326 — 2026-10-13 `Latest`
+## v1.0.327 — 2026-10-14 `Latest`
+
+### A Notifications Page in the Web UI
+
+Everything a run sends you now lands in **one Notifications page** — finished, failed, needs you — with **Mark as read** and an **Archive**, and one read state shared by the desktop window and every browser. A conversation that has notified you shows a **bell with its own count**. While you are away from the page, what arrives is counted on the **app icon** when Wolffish is installed as an app, on the **tab title** — `(3) Wolffish` — and on the favicon, and coming back clears it. An approval or a question that blocks a run now reaches you as a push **even when the browser is only unfocused or the phone is locked**.
+
+### Restart Wolffish, or Reboot the Device
+
+Settings now has **Restart Wolffish** and, beside it, **Reboot device**, which saves what is in flight and then restarts the whole machine — with a warning if Wolffish is not set to start with it. In the terminal, **`wolffish restart`** restarts the app and **`wolffish reboot` now reboots the machine**: if a script of yours ran `wolffish reboot --yes` to restart Wolffish, change it to `wolffish restart`. A restart, a factory reset or an update now shows **the same overlay in the window and every browser**, and each browser reloads by itself once Wolffish is back.
+
+### See What a Run Is Doing
+
+A run that works without commentary used to show a rotating placeholder word for its whole length. The clean feed now shows **what it is doing right now** — "Visiting example.com", "Searching …", "Running …". A run started in another window, browser or channel **streams live** wherever its conversation is open instead of shimmering until the end. A run cut off by a quit or restart is **marked as stopped**, with a note to send a message to pick it up, and its task list reads **"stopped"** instead of spinning forever.
+
+### OpenAI Models Remember, Report and Cost Less
+
+On the OpenAI models, a run now **keeps its own reasoning from one tool call to the next**, so it no longer forgets a value it settled on a step earlier, and it writes **a short progress line before each stretch of tool work** even when a task asks for silence. The prompt cache now holds across the whole tool loop, so long runs are **much cheaper and faster**. Costs are also right: gpt-6 and gpt-5.6 models, and DeepSeek Flash, were priced at a far more expensive model's rate — one ~$5 run showed **$145.86**. An account with **no credits left** now fails at once with the reason, and "servers overloaded" is retried instead of ending the run.
+
+### Long Runs Stay Smooth in the Browser
+
+Watching a long automation in the Web UI could freeze the feed: every update carried the whole run, megabytes at a time. Updates are now **trimmed and paced to what the connection can carry**, so the feed keeps moving.
+
+### Smaller Fixes
+
+- **Spreadsheet styling** checks every operation first: an unknown style or key is rejected with what to use, instead of being skipped while the call reported success.
+- Commands and servers Wolffish starts no longer inherit its own **`NODE_ENV`**, which made `next build` run React's development build and crash.
+- A browser action on an element that never appears **fails after one wait** instead of three 30-second retries.
+- A run that sends its files before summing up **still writes its summary**.
+- Reading a conversation from **past its last message** shows the end instead of failing.
+- Long conversations no longer pay for a **summary that saves nothing**.
+- The **Ollama and provider settings** open with their last known state at once instead of a blank page.
+
+## v1.0.326 — 2026-10-13
 
 ### Automations Run Their Job Instead of Setting Themselves Up
 

@@ -25,6 +25,20 @@ let processesHost = null
 // model judges the command by what it printed, not by elapsed time alone.
 let progressReporterFactory = null
 
+/**
+ * The environment a command inherits: the app's own, minus NODE_ENV. The
+ * dev runner sets NODE_ENV=development on the app process; passed through,
+ * every `next build` in a user's project ran React's development build and
+ * crashed in prerender (2026-10-13), and a production value would make
+ * `npm install` skip devDependencies. A user who wants it sets it in the
+ * command or their shell profile.
+ */
+function inheritedEnv() {
+  const env = { ...process.env }
+  delete env.NODE_ENV
+  return env
+}
+
 function defaultCwd() {
   try {
     const folders = getWorkingFolders()
@@ -322,7 +336,7 @@ async function ensureElevation() {
     return { ok: false, error: `failed to create askpass helper: ${err?.message ?? String(err)}` }
   }
 
-  const env = { ...process.env, SUDO_ASKPASS: askpassPath }
+  const env = { ...inheritedEnv(), SUDO_ASKPASS: askpassPath }
 
   // Prime sudo's credential cache on first use so the user sees the dialog
   // now rather than mid-command. After this, sudo re-prompts via the askpass
@@ -604,7 +618,7 @@ async function execShell(args, signal) {
   // 2. Inject the -A flag so sudo uses the askpass helper (not a TTY)
   // 3. Pass SUDO_ASKPASS in the environment
   // This guarantees the command never hangs waiting for terminal input.
-  let execEnv = process.env
+  let execEnv = inheritedEnv()
   let execCommand = command
 
   if (needsElevation) {
@@ -614,7 +628,7 @@ async function execShell(args, signal) {
     if (sudoCtx && process.platform !== 'win32') {
       const auth = await sudoCtx.ensurePassword()
       if (auth.ok) {
-        execEnv = { ...process.env, ...sudoCtx.getElevatedEnv() }
+        execEnv = { ...inheritedEnv(), ...sudoCtx.getElevatedEnv() }
         execCommand = injectAskpassFlag(command)
         handled = true
       } else if (!auth.unsupported) {

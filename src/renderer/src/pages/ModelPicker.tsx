@@ -4,6 +4,12 @@ import { useOnline } from '@hooks/use-online/useOnline'
 import { RTL_LOCALES } from '@lib/i18n'
 import { cn } from '@lib/utils/cn'
 import { PanelBackChevron } from '@pages/settings/drillNav'
+import {
+  getCachedLocalModels,
+  loadLocalModels,
+  patchLocalModels,
+  type LocalModelsSnapshot
+} from '@pages/settings/localModelsSnapshot'
 import { formatBytesL, formatDurationL, formatGBL, ltrIsolate } from '@lib/utils/format'
 import type {
   ModelEntry,
@@ -157,15 +163,26 @@ export function ModelPicker(): React.JSX.Element {
 
   const { goTo, status, refreshStatus } = useFlow()
   const online = useOnline()
-  const [system, setSystem] = useState<SystemInfo | null>(null)
-  const [catalog, setCatalog] = useState<readonly ModelEntry[]>([])
-  const [installed, setInstalled] = useState<OllamaTag[]>([])
-  const [catalogLoading, setCatalogLoading] = useState(true)
-  const [availableModels, setAvailableModels] = useState<OllamaModelDetail[]>([])
-  const [modelsFolder, setModelsFolder] = useState<string>('')
-  const [showAvailable, setShowAvailable] = useState(false)
-  const [family, setFamily] = useState<ModelFamily>('gemma')
-  const [selected, setSelected] = useState<string | null>(null)
+  const currentModel = status?.config?.llm.local.model ?? null
+  const restrictModels = status?.config?.llm.restrictPowerfulModels ?? true
+  // Settings prefetches this on open, so the panel usually paints its last
+  // known state at once; the load effect below still re-reads it.
+  const [seed] = useState(() => {
+    const data = getCachedLocalModels()
+    return data ? { data, view: initialView(data, currentModel, restrictModels) } : null
+  })
+  const seededRef = useRef(seed !== null)
+  const [system, setSystem] = useState<SystemInfo | null>(seed?.data.system ?? null)
+  const [catalog, setCatalog] = useState<readonly ModelEntry[]>(seed?.data.catalog ?? [])
+  const [installed, setInstalled] = useState<OllamaTag[]>(seed?.data.installed ?? [])
+  const [catalogLoading, setCatalogLoading] = useState(seed === null)
+  const [availableModels, setAvailableModels] = useState<OllamaModelDetail[]>(
+    seed?.data.available ?? []
+  )
+  const [modelsFolder, setModelsFolder] = useState<string>(seed?.data.modelsFolder ?? '')
+  const [showAvailable, setShowAvailable] = useState(seed?.view.showAvailable ?? false)
+  const [family, setFamily] = useState<ModelFamily>(seed?.view.family ?? 'gemma')
+  const [selected, setSelected] = useState<string | null>(seed?.view.selected ?? null)
   const [phase, setPhase] = useState<PullPhase>('idle')
   // Persisting an already-downloaded model is a config write, not a transfer.
   // It gets its own flag so it never borrows the download UI.
@@ -183,38 +200,27 @@ export function ModelPicker(): React.JSX.Element {
   const speedSampleRef = useRef<{ time: number; completed: number } | null>(null)
   const scrollRef = useRef<HTMLElement>(null)
 
-  const currentModel = status?.config?.llm.local.model ?? null
-  const restrictModels = status?.config?.llm.restrictPowerfulModels ?? true
-
   useEffect(() => {
     let cancelled = false
-    void Promise.all([
-      window.api.system.getInfo(),
-      window.api.workspace.getModelCatalog(),
-      window.api.ollama.listInstalled(),
-      window.api.ollama.scanAvailable(),
-      window.api.ollama.getModelsFolder()
-    ])
-      .then(([info, entries, tags, scanned, folder]) => {
+    void loadLocalModels()
+      .then((data) => {
         if (cancelled) return
-        setSystem(info)
-        setCatalog(entries)
-        setInstalled(tags)
-        setAvailableModels(scanned)
-        setModelsFolder(folder)
+        setSystem(data.system)
+        setCatalog(data.catalog)
+        setInstalled(data.installed)
+        setAvailableModels(data.available)
+        setModelsFolder(data.modelsFolder)
 
-        const hasAvailable = scanned.length > 0
-        if (hasAvailable) setShowAvailable(true)
-
-        const currentEntry = currentModel
-          ? entries.find((e) => e.ollamaName === currentModel)
-          : undefined
-        const initialFamily = currentEntry?.family ?? 'gemma'
-        if (!hasAvailable) setFamily(initialFamily)
-        setSelected(
-          currentModel ??
-            defaultModelForFamily(entries, initialFamily, info.totalRamBytes, restrictModels)
-        )
+        // A seeded panel already placed the selection; re-placing it now
+        // would undo a pick made while this read was in flight.
+        if (seededRef.current) {
+          seededRef.current = false
+          return
+        }
+        const view = initialView(data, currentModel, restrictModels)
+        if (view.showAvailable) setShowAvailable(true)
+        if (!view.showAvailable) setFamily(view.family)
+        setSelected(view.selected)
       })
       .finally(() => {
         if (!cancelled) setCatalogLoading(false)
@@ -321,6 +327,7 @@ export function ModelPicker(): React.JSX.Element {
           .then(([tags, scanned]) => {
             setInstalled(tags)
             setAvailableModels(scanned)
+            patchLocalModels({ installed: tags, available: scanned })
           })
           .catch(() => {})
       } else if (event.aborted) {
@@ -454,6 +461,7 @@ export function ModelPicker(): React.JSX.Element {
     setModelsFolder(folder)
     const models = await window.api.ollama.scanAvailable()
     setAvailableModels(models)
+    patchLocalModels({ modelsFolder: folder, available: models })
     if (models.length > 0) setShowAvailable(true)
   }
 
@@ -1073,6 +1081,26 @@ function FamilyToggle({
       })}
     </div>
   )
+}
+
+/** Where the panel opens: the configured model's family, or the best fit when none is set. */
+function initialView(
+  data: LocalModelsSnapshot,
+  currentModel: string | null,
+  restrictModels: boolean
+): { showAvailable: boolean; family: ModelFamily; selected: string | null } {
+  const hasAvailable = data.available.length > 0
+  const currentEntry = currentModel
+    ? data.catalog.find((e) => e.ollamaName === currentModel)
+    : undefined
+  const initialFamily = currentEntry?.family ?? 'gemma'
+  return {
+    showAvailable: hasAvailable,
+    family: hasAvailable ? 'gemma' : initialFamily,
+    selected:
+      currentModel ??
+      defaultModelForFamily(data.catalog, initialFamily, data.system.totalRamBytes, restrictModels)
+  }
 }
 
 function defaultModelForFamily(

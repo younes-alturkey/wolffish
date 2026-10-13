@@ -403,6 +403,76 @@ check('truncate: latest s1 read kept full', contentOf(truncated[10]), BIG_A)
 check('truncate: internal array untouched', contentOf(trunkHistory[2]), BIG_A)
 check('truncate: internal length unchanged', trunkHistory.length, truncated.length)
 
+// One session, many tabs: a parallel batch reading three sites must reach the
+// model as three pages. Only a newer read of the same tab and selector
+// supersedes an older one.
+const BIG_FDA_LATER = 'F'.repeat(2500)
+const tabHistory: ChatMessage[] = [
+  toolCallMsg('t1', 'browser_page_content', { session_id: 's1', tab_id: 'fda' }),
+  toolResult('t1', 'browser_page_content', BIG_A),
+  toolCallMsg('t2', 'browser_page_content', { session_id: 's1', tab_id: 'ema' }),
+  toolResult('t2', 'browser_page_content', BIG_B),
+  toolCallMsg('t3', 'browser_page_content', { session_id: 's1', tab_id: 'ema', selector: 'main' }),
+  toolResult('t3', 'browser_page_content', BIG_C),
+  toolCallMsg('t4', 'browser_page_content', { session_id: 's1', tab_id: 'fda' }),
+  toolResult('t4', 'browser_page_content', BIG_FDA_LATER),
+  toolCallMsg('t5', 'ext_read_page', { tabId: 7 }),
+  toolResult('t5', 'ext_read_page', BIG_A),
+  toolCallMsg('t6', 'ext_read_page', { tabId: 8 }),
+  toolResult('t6', 'ext_read_page', BIG_C)
+]
+const tabTruncated = truncateSuperseded(tabHistory)
+check(
+  'truncate: older read of the same tab stubbed',
+  contentOf(tabTruncated[1]).startsWith('[superseded page state'),
+  true
+)
+check('truncate: other tab in the same session NOT stubbed', contentOf(tabTruncated[3]), BIG_B)
+check('truncate: other selector on the same tab NOT stubbed', contentOf(tabTruncated[5]), BIG_C)
+check('truncate: latest read of the tab kept full', contentOf(tabTruncated[7]), BIG_FDA_LATER)
+check('truncate: other extension tab NOT stubbed', contentOf(tabTruncated[9]), BIG_A)
+
+// Identical results under different args (the VPS web_design loop): the 2nd
+// copy is a plain pointer, the 3rd+ tells the model the call cannot return
+// anything new. Small results and repeated errors get the same notice.
+const MANUAL = 'M'.repeat(3000)
+const repeatHistory: ChatMessage[] = []
+for (let i = 1; i <= 4; i++) {
+  repeatHistory.push(toolCallMsg(`m${i}`, 'web_design', { page: `try ${i}` }))
+  repeatHistory.push(toolResult(`m${i}`, 'web_design', MANUAL))
+}
+for (let i = 1; i <= 3; i++) {
+  repeatHistory.push(toolCallMsg(`e${i}`, 'ext_browsers', {}))
+  repeatHistory.push(toolResult(`e${i}`, 'ext_browsers', 'not connected', { isError: true }))
+}
+const rep = truncateSuperseded(repeatHistory)
+check('repeat: first copy kept full', contentOf(rep[1]), MANUAL)
+check(
+  'repeat: second copy is a plain pointer',
+  contentOf(rep[3]).includes('this exact result'),
+  false
+)
+check('repeat: third copy says stop', contentOf(rep[5]).includes('3 times this turn'), true)
+check('repeat: fourth copy counts on', contentOf(rep[7]).includes('4 times this turn'), true)
+check('repeat: small error kept until the third', contentOf(rep[11]), 'not connected')
+check(
+  'repeat: third identical error gets the notice',
+  contentOf(rep[13]).startsWith('not connected') && contentOf(rep[13]).includes('3 times'),
+  true
+)
+check('repeat: byte-stable', JSON.stringify(truncateSuperseded(repeatHistory)), JSON.stringify(rep))
+
+// Below context pressure the agent turns superseding off: an older read of the
+// same tab stays byte-identical (no cache re-bill), duplicates still point back.
+const noSupersede = truncateSuperseded(tabHistory, { supersede: false })
+check('no-supersede: older read of the tab kept full', contentOf(noSupersede[1]), BIG_A)
+const dupNoSupersede = truncateSuperseded(repeatHistory, { supersede: false })
+check(
+  'no-supersede: duplicates still collapse',
+  contentOf(dupNoSupersede[3]).startsWith('[duplicate result'),
+  true
+)
+
 // stability: stubbing is idempotent and byte-stable across repeated calls
 const twice = truncateSuperseded(truncateSuperseded(trunkHistory))
 check('truncate: idempotent', JSON.stringify(twice), JSON.stringify(truncated))

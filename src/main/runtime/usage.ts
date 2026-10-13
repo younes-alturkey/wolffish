@@ -115,6 +115,19 @@ const ANTHROPIC_PRICING: Record<string, ModelPricing> = {
 // https://developers.openai.com/api/docs/pricing
 // OpenAI auto-caches prefixes; no write premium. Pro models have no cached tier.
 const OPENAI_PRICING: Record<string, ModelPricing> = {
+  // Standard tier, short context (≤272K input tokens), from the pricing page
+  // 2026-10-13. Cache writes are 1.25× input. Before these rows existed every
+  // gpt-6/5.6 call fell through findPricing to the table's first row
+  // (gpt-5.5-pro: $30/$180, no cached tier) — a gpt-6.1-sol run that cost
+  // ~$5 showed as $145.86. The >272K tier (2× input) is not modelled: cost
+  // is computed on per-turn sums, not per request.
+  'gpt-6.1-sol': { input: 2 / 1e6, output: 10 / 1e6, cacheWrite: 1.25, cacheRead: 0.05 },
+  'gpt-6-sol': { input: 2 / 1e6, output: 10 / 1e6, cacheWrite: 1.25, cacheRead: 0.1 },
+  'gpt-6-luna': { input: 0.1 / 1e6, output: 0.5 / 1e6, cacheWrite: 1.25, cacheRead: 0.1 },
+  'gpt-6-astra': { input: 10 / 1e6, output: 50 / 1e6, cacheWrite: 1.25, cacheRead: 0.1 },
+  'gpt-5.6-luna': { input: 0.2 / 1e6, output: 1.2 / 1e6, cacheWrite: 1.25, cacheRead: 0.1 },
+  'gpt-5.6-terra': { input: 2 / 1e6, output: 12 / 1e6, cacheWrite: 1.25, cacheRead: 0.1 },
+  'gpt-5.6-sol': { input: 4 / 1e6, output: 20 / 1e6, cacheWrite: 1.25, cacheRead: 0.1 },
   'gpt-5.5-pro': { input: 30 / 1e6, output: 180 / 1e6, cacheWrite: 1.0, cacheRead: 1.0 },
   'gpt-5.5': { input: 5 / 1e6, output: 30 / 1e6, cacheWrite: 1.0, cacheRead: 0.1 },
   'gpt-5.4-pro': { input: 30 / 1e6, output: 180 / 1e6, cacheWrite: 1.0, cacheRead: 1.0 },
@@ -137,17 +150,32 @@ const OPENAI_PRICING: Record<string, ModelPricing> = {
 // https://api-docs.deepseek.com/quick_start/pricing
 // DeepSeek auto-caches at ~2% of input rate; no write premium.
 const DEEPSEEK_PRICING: Record<string, ModelPricing> = {
-  // v4-pro cache hit is $0.003625/M (not 2% of input like the rest of the
-  // lineup) — ratio taken from the live pricing page 2026-08-03.
+  // OFF-PEAK rates from the pricing page (2026-10-13); deepseekPeakMultiplier
+  // doubles them in peak hours. deepseek-flash is DeepSeek-V4.1-Flash; the
+  // retired ids below are served by it and billed at its price. Before this
+  // row existed, deepseek-flash fell through findPricing to v4-pro (~4x).
+  'deepseek-flash': { input: 0.15 / 1e6, output: 0.6 / 1e6, cacheWrite: 1.0, cacheRead: 0.02 },
   'deepseek-v4-pro': {
-    input: 0.435 / 1e6,
-    output: 0.87 / 1e6,
+    input: 0.66 / 1e6,
+    output: 1.98 / 1e6,
     cacheWrite: 1.0,
-    cacheRead: 0.003625 / 0.435
+    cacheRead: 0.022 / 0.66
   },
-  'deepseek-v4-flash': { input: 0.14 / 1e6, output: 0.28 / 1e6, cacheWrite: 1.0, cacheRead: 0.02 },
-  'deepseek-chat': { input: 0.27 / 1e6, output: 1.1 / 1e6, cacheWrite: 1.0, cacheRead: 0.02 },
-  'deepseek-reasoner': { input: 0.55 / 1e6, output: 2.19 / 1e6, cacheWrite: 1.0, cacheRead: 0.02 }
+  'deepseek-v4-flash': { input: 0.15 / 1e6, output: 0.6 / 1e6, cacheWrite: 1.0, cacheRead: 0.02 },
+  'deepseek-chat': { input: 0.15 / 1e6, output: 0.6 / 1e6, cacheWrite: 1.0, cacheRead: 0.02 },
+  'deepseek-reasoner': { input: 0.15 / 1e6, output: 0.6 / 1e6, cacheWrite: 1.0, cacheRead: 0.02 }
+}
+
+/**
+ * DeepSeek bills double in peak hours: 01:00–04:00 and 06:00–10:00 UTC,
+ * Monday to Friday (pricing page, 2026-10-13). Cost is recorded as a call
+ * lands, so the clock at record time is the call's.
+ */
+export function deepseekPeakMultiplier(at: Date = new Date()): number {
+  const day = at.getUTCDay()
+  if (day === 0 || day === 6) return 1
+  const h = at.getUTCHours()
+  return (h >= 1 && h < 4) || (h >= 6 && h < 10) ? 2 : 1
 }
 
 // https://platform.xiaomimimo.com/docs/en-US/pricing (overseas USD)
@@ -822,7 +850,8 @@ export function calculateCost(
   inputTokens: number,
   outputTokens: number,
   cacheCreationTokens?: number,
-  cacheReadTokens?: number
+  cacheReadTokens?: number,
+  at?: Date
 ): number {
   if (provider === 'local') {
     return (
@@ -852,11 +881,13 @@ export function calculateCost(
                         ? OPENROUTER_PRICING
                         : OPENAI_PRICING
   const pricing = findPricing(model, table)
+  const peak = provider === 'deepseek' ? deepseekPeakMultiplier(at) : 1
   return (
-    inputTokens * pricing.input +
-    (cacheCreationTokens ?? 0) * pricing.input * pricing.cacheWrite +
-    (cacheReadTokens ?? 0) * pricing.input * pricing.cacheRead +
-    outputTokens * pricing.output
+    peak *
+    (inputTokens * pricing.input +
+      (cacheCreationTokens ?? 0) * pricing.input * pricing.cacheWrite +
+      (cacheReadTokens ?? 0) * pricing.input * pricing.cacheRead +
+      outputTokens * pricing.output)
   )
 }
 

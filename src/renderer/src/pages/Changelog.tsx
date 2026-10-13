@@ -79,19 +79,22 @@ export function Changelog(): React.JSX.Element {
           {t('changelog.empty', 'No changelog entries yet.')}
         </div>
       ) : (
-        <div dir="ltr" className="flex min-h-0 flex-1">
+        <div dir="ltr" className="flex min-h-0 flex-1 max-sm:flex-col">
           <aside
             dir={isRtl ? 'rtl' : 'ltr'}
-            className="border-border w-48 shrink-0 overflow-y-auto border-r p-3"
+            className={cn(
+              'border-border w-48 shrink-0 overflow-y-auto border-r p-3',
+              'max-sm:w-full max-sm:overflow-x-auto max-sm:overflow-y-hidden max-sm:border-r-0 max-sm:border-b max-sm:p-2'
+            )}
           >
-            <ul className="flex flex-col gap-0.5">
+            <ul className="flex flex-col gap-0.5 max-sm:flex-row max-sm:gap-1">
               {months.map((month) => (
-                <li key={month}>
+                <li key={month} className="shrink-0">
                   <button
                     type="button"
                     onClick={() => handleSelect(month)}
                     className={cn(
-                      'w-full rounded-md px-3 py-2 text-start text-sm cursor-pointer',
+                      'w-full rounded-md px-3 py-2 text-start text-sm cursor-pointer whitespace-nowrap',
                       'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
                       selected === month
                         ? 'bg-primary text-primary-fg'
@@ -105,7 +108,7 @@ export function Changelog(): React.JSX.Element {
             </ul>
           </aside>
 
-          <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto px-6 py-6">
+          <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto px-6 py-6 max-sm:px-4 max-sm:py-4">
             <div className="mx-auto w-full max-w-2xl">
               {content ? (
                 <article dir={isRtl ? 'rtl' : 'ltr'} className="prose-sm">

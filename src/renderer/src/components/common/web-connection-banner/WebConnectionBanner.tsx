@@ -41,7 +41,8 @@ export function WebConnectionBanner(): React.JSX.Element | null {
     }
   }, [])
 
-  if (!lost) return null
+  // An announced restart has the closing overlay saying so already.
+  if (!lost || webTransport()?.restartExpected) return null
   return (
     <div
       role="status"
@@ -50,7 +51,7 @@ export function WebConnectionBanner(): React.JSX.Element | null {
     >
       <div className="flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-900 shadow-lg dark:border-amber-700 dark:bg-amber-900/80 dark:text-amber-100">
         <RefreshIcon size={14} className="animate-spin" aria-hidden />
-        <span>
+        <span className="whitespace-nowrap">
           {isWebUpdatePending() ? t('web.connection.updating') : t('web.connection.lost')}
         </span>
       </div>

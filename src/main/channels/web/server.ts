@@ -68,6 +68,12 @@ import {
   shareUrl,
   type PublicShare
 } from '@main/channels/web/public'
+import {
+  WebInbox,
+  type WebNotificationAction,
+  type WebNotificationRecord
+} from '@main/channels/web/inbox'
+import { MirrorPacer } from '@main/channels/web/mirror-pacer'
 import { TlsManager, type AcmeState, type TlsMaterial } from '@main/channels/web/tls'
 import { classifyIdentifier } from '@main/channels/web/x509'
 import {
@@ -77,6 +83,7 @@ import {
   SERVICE_WORKER_PATH,
   SERVICE_WORKER_SOURCE
 } from '@main/channels/web/assets'
+import type { ConversationMessage } from '@main/conversations'
 import type { IpcHandler } from '@main/ipc-registry'
 import { classifyFile, resolveUploadPath, sanitizeFileName } from '@main/uploads/uploads'
 import { workspaceRoot } from '@main/workspace/root'
@@ -171,6 +178,11 @@ export type WebServerDeps = {
   onStatusChange: () => void
   /** One event per HTTPS state change or preflight/issuance step — the panel's live stepper. */
   onProgress: (event: HttpsProgressEvent) => void
+  /**
+   * The notification log changed. The app fans it out to its windows and to
+   * every browser; without it (tests) the browsers alone are told.
+   */
+  onNotifications?: (items: WebNotificationRecord[]) => void
   log: (line: string) => void
   warn: (line: string) => void
 }
@@ -299,6 +311,7 @@ type Client = {
   userAgent: string
   alive: boolean
   sender: { send: (channel: string, payload: unknown) => void; isDestroyed: () => boolean }
+  page: PageLink | null
 }
 
 /**
@@ -319,6 +332,26 @@ type PageLink = {
   /** Gone for good — signed out, away past the grace, or the outbox overflowed. */
   dead: boolean
   reaper: ReturnType<typeof setTimeout> | null
+  /**
+   * Whether the user is looking at the page (on screen, window focused), as
+   * the page last reported. A page with no socket is away whatever this says.
+   */
+  attended: boolean
+  /** The page's own words for a blocked-turn push, in its language. */
+  needsUserCopy: NeedsUserCopy
+}
+
+type NeedsUserCopy = { approval: string; question: string }
+
+const DEFAULT_NEEDS_USER_COPY: NeedsUserCopy = {
+  approval: 'A tool call is waiting for your approval.',
+  question: 'Wolffish has a question for you.'
+}
+
+/** The events that stop a turn until the user answers — pushed to an away page. */
+const NEEDS_USER_CHANNELS: Record<string, keyof NeedsUserCopy> = {
+  'chat:approvalRequest': 'approval',
+  'chat:askRequest': 'question'
 }
 
 /**
@@ -572,7 +605,14 @@ export class WebServer {
   private secure: Listener | null = null
   private wss: WebSocketServer | null = null
   private readonly clients = new Set<Client>()
+  private readonly mirrors = new MirrorPacer<Client>({
+    isOpen: (client) => client.ws.readyState === WebSocket.OPEN,
+    buffered: (client) => client.ws.bufferedAmount,
+    send: (client, frame) => this.write(client, frame),
+    encode: (payload) => this.frame({ t: 'event', channel: 'conversation:messageMirror', payload })
+  })
   private readonly pages = new Map<string, PageLink>()
+  private readonly inbox: WebInbox
   private readonly limiter = new LoginRateLimiter()
   private readonly state: WebStateStore
   /** Public links — records that let a request past the sign-in. See public.ts. */
@@ -604,6 +644,7 @@ export class WebServer {
   constructor(private readonly deps: WebServerDeps) {
     this.state = new WebStateStore(deps.stateFile)
     this.publicShares = new PublicShareStore(path.join(path.dirname(deps.stateFile), 'public.json'))
+    this.inbox = new WebInbox(path.join(path.dirname(deps.stateFile), 'notifications.json'))
     this.tls = new TlsManager(deps.tlsDir, (line) => deps.log(`${TAG} ${line}`))
     this.stagingDir = path.join(workspaceRoot(), 'uploads', '.pending')
     this.preflightDeps = defaultPreflightDeps(() => this.heldPorts())
@@ -1307,7 +1348,7 @@ export class WebServer {
       } catch {
         // already gone
       }
-      this.clients.delete(client)
+      this.forgetClient(client)
     }
     this.sessionCount = (await this.state.listSessions()).length
     this.emitStatus()
@@ -1318,9 +1359,22 @@ export class WebServer {
   /** An app-wide broadcast — index.ts calls this from `broadcast()`. */
   pushBroadcast(channel: string, payload: unknown): void {
     if (this.clients.size === 0) return
+    if (channel === 'conversation:messageMirror') {
+      const mirror = payload as { conversationId?: unknown; message?: ConversationMessage }
+      if (typeof mirror.conversationId === 'string' && mirror.message) {
+        this.mirrors.push(this.clients, mirror.conversationId, mirror.message)
+      }
+      return
+    }
+    if (channel === 'conversation:changed') this.mirrors.drop()
     const frame = this.frame({ t: 'event', channel, payload })
     if (!frame) return
     for (const client of this.clients) this.write(client, frame)
+  }
+
+  private forgetClient(client: Client): void {
+    this.clients.delete(client)
+    this.mirrors.forget(client)
   }
 
   private frame(value: unknown): string | null {
@@ -1383,6 +1437,25 @@ export class WebServer {
     }
     const result: NotifyResult = { id, inband: 0, pushed: 0, gone: 0, failed: 0, errors: [] }
 
+    // Logged before it is sent, so a browser that opens its inbox the moment
+    // the banner lands finds it there.
+    try {
+      const added = await this.inbox.record({
+        id,
+        title: input.title,
+        body: input.body,
+        phase: input.phase,
+        url: input.url,
+        conversationId: input.conversationId,
+        at
+      })
+      if (added) await this.announceNotifications()
+    } catch (err) {
+      this.deps.log(
+        `${TAG} could not log a notification: ${err instanceof Error ? err.message : String(err)}`
+      )
+    }
+
     const frame = this.frame({ t: 'event', channel: 'web:notify', payload })
     if (frame) {
       for (const client of this.clients) {
@@ -1391,36 +1464,123 @@ export class WebServer {
       }
     }
 
-    const config = this.config ?? (await this.deps.getConfig())
-    const vapid = await this.ensureVapid(config)
-    const subscriptions = await this.state.listSubscriptions()
     const ttl =
       input.phase === 'needs_input'
         ? 300
         : input.phase === 'started' || input.phase === 'info'
           ? 900
           : 3600
+    const subscriptions = await this.state.listSubscriptions()
+    const delivery = await this.pushTo(subscriptions, payload, ttl, input.urgency, id)
+    return { ...result, ...delivery }
+  }
+
+  /** The notification log, newest first. */
+  notifications(): Promise<WebNotificationRecord[]> {
+    return this.inbox.list()
+  }
+
+  /** Read or archive from any browser; every browser gets the new log. */
+  async updateNotifications(action: WebNotificationAction): Promise<WebNotificationRecord[]> {
+    if (await this.inbox.apply(action)) await this.announceNotifications()
+    return this.inbox.list()
+  }
+
+  private async announceNotifications(): Promise<void> {
+    const items = await this.inbox.list()
+    if (this.deps.onNotifications) this.deps.onNotifications(items)
+    else this.pushBroadcast('web:notifications', items)
+  }
+
+  /** One encrypted push per subscription; a subscription the push service reports gone is dropped. */
+  private async pushTo(
+    subscriptions: PushSubscriptionRecord[],
+    payload: Record<string, unknown>,
+    ttlSeconds: number,
+    urgency: 'normal' | 'high',
+    topic: string
+  ): Promise<Pick<NotifyResult, 'pushed' | 'gone' | 'failed' | 'errors'>> {
+    const out = { pushed: 0, gone: 0, failed: 0, errors: [] as string[] }
+    if (subscriptions.length === 0) return out
+    const config = this.config ?? (await this.deps.getConfig())
+    const vapid = await this.ensureVapid(config)
     const body = Buffer.from(JSON.stringify(payload))
     await Promise.all(
       subscriptions.map(async (sub: PushSubscriptionRecord) => {
         const delivery = await sendWebPush(
           { endpoint: sub.endpoint, keys: sub.keys },
-          { payload: body, ttlSeconds: ttl, urgency: input.urgency, topic: id },
+          { payload: body, ttlSeconds, urgency, topic },
           vapid,
           'mailto:younes@wolffi.sh'
         )
-        if (delivery.ok) result.pushed++
+        if (delivery.ok) out.pushed++
         else if (delivery.gone) {
-          result.gone++
+          out.gone++
           await this.state.removeSubscription(sub.endpoint)
         } else {
-          result.failed++
-          result.errors.push(delivery.error)
+          out.failed++
+          out.errors.push(delivery.error)
         }
       })
     )
-    if (result.gone > 0) this.emitStatus()
-    return result
+    if (out.gone > 0) this.emitStatus()
+    return out
+  }
+
+  /** The page's report of whether the user is looking at it, plus its copy for a blocked-turn push. */
+  private onAttention(client: Client, frame: { attended?: unknown; copy?: unknown }): void {
+    const link = client.page
+    if (!link || link.client !== client) return
+    link.attended = frame.attended === true
+    const copy = frame.copy as Partial<NeedsUserCopy> | null | undefined
+    const text = (value: unknown, fallback: string): string =>
+      typeof value === 'string' && value.trim() ? value.trim().slice(0, 200) : fallback
+    if (copy && typeof copy === 'object') {
+      link.needsUserCopy = {
+        approval: text(copy.approval, DEFAULT_NEEDS_USER_COPY.approval),
+        question: text(copy.question, DEFAULT_NEEDS_USER_COPY.question)
+      }
+    }
+  }
+
+  /**
+   * A turn this page started is blocked on an approval or a question and the
+   * user is away from it — a locked phone runs no page code, so the page
+   * cannot raise this itself. Only this browser's subscriptions: the other
+   * devices did not start the turn and cannot answer its card.
+   */
+  private async pushNeedsUser(
+    link: PageLink,
+    kind: keyof NeedsUserCopy,
+    event: unknown
+  ): Promise<void> {
+    try {
+      if ((await this.deps.getConfig()).notifications === false) return
+      const { id, conversationId } = (event ?? {}) as { id?: unknown; conversationId?: unknown }
+      if (typeof id !== 'string' || !id) return
+      const cid = typeof conversationId === 'string' && conversationId ? conversationId : null
+      const subscriptions = (await this.state.listSubscriptions()).filter(
+        (sub) => sub.sessionId === link.sessionId
+      )
+      // Same id the page counts it under, so the badge counts it once.
+      const payload = {
+        id: `needs-${id}`,
+        title: 'Wolffish',
+        body: link.needsUserCopy[kind],
+        phase: 'needs_input',
+        urgency: 'high',
+        url: cid ? `/?conversation=${encodeURIComponent(cid)}` : '/',
+        conversationId: cid,
+        at: Date.now()
+      }
+      const topic = randomBytes(8).toString('hex')
+      const result = await this.pushTo(subscriptions, payload, 300, 'high', topic)
+      for (const error of result.errors) this.deps.log(`${TAG} needs-user push failed: ${error}`)
+    } catch (err) {
+      this.deps.log(
+        `${TAG} needs-user push failed: ${err instanceof Error ? err.message : String(err)}`
+      )
+    }
   }
 
   // ─── HTTP ──────────────────────────────────────────────────────────────────
@@ -2403,9 +2563,13 @@ export class WebServer {
           if (!frame) return
           if (link) this.sendToPage(link, frame)
           else this.write(client, frame)
+          const kind = NEEDS_USER_CHANNELS[channel]
+          if (kind && link && (link.client === null || !link.attended))
+            void this.pushNeedsUser(link, kind, payload)
         },
         isDestroyed: () => (link ? pageGone(link) : ws.readyState !== WebSocket.OPEN)
-      }
+      },
+      page: link
     }
     this.clients.add(client)
     ws.on('pong', () => {
@@ -2414,7 +2578,7 @@ export class WebServer {
     ws.on('message', (data) => void this.onFrame(client, data))
     let dropped = false
     const drop = (code?: number): void => {
-      this.clients.delete(client)
+      this.forgetClient(client)
       if (link && !dropped) this.pageLost(link, client, code === 4001)
       dropped = true
       this.emitStatus()
@@ -2430,6 +2594,7 @@ export class WebServer {
       secure: Boolean((req.socket as { encrypted?: boolean }).encrypted),
       notificationsEnabled: this.config?.notifications !== false,
       vapidPublicKey: this.vapid?.publicKey ?? null,
+      needsUserPush: true,
       // False on a reconnect whose page was not kept (away past the grace,
       // signed out, overflowed): its turn's events are gone, so it resyncs.
       resumed
@@ -2459,7 +2624,9 @@ export class WebServer {
       outboxBytes: 0,
       lostAt: null,
       dead: false,
-      reaper: null
+      reaper: null,
+      attended: true,
+      needsUserCopy: DEFAULT_NEEDS_USER_COPY
     }
     this.pages.set(pageId, link)
     return { link, resumed: false }
@@ -2531,7 +2698,7 @@ export class WebServer {
     for (const client of this.clients) {
       if (!client.alive) {
         client.ws.terminate()
-        this.clients.delete(client)
+        this.forgetClient(client)
         continue
       }
       client.alive = false
@@ -2539,7 +2706,7 @@ export class WebServer {
         client.ws.ping()
       } catch {
         client.ws.terminate()
-        this.clients.delete(client)
+        this.forgetClient(client)
       }
     }
   }
@@ -2553,6 +2720,10 @@ export class WebServer {
     }
     if (frame.t === 'ping') {
       this.write(client, '{"t":"pong"}')
+      return
+    }
+    if (frame.t === 'attention') {
+      this.onAttention(client, frame as { attended?: unknown; copy?: unknown })
       return
     }
     if (frame.t !== 'invoke' || typeof frame.id !== 'number' || typeof frame.channel !== 'string')

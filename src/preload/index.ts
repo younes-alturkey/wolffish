@@ -500,6 +500,8 @@ export type ConversationMessage = {
    * but renders as a muted note, never as the person's own bubble.
    */
   systemAside?: boolean
+  /** A mid-turn checkpoint the run never closed (main's conversations.ts). */
+  interrupted?: boolean
 }
 
 export type ConversationChannel =
@@ -784,12 +786,21 @@ export type WorkspaceApi = {
   getModelCatalog: () => Promise<readonly ModelEntry[]>
 }
 
-export type AppClosingPendingEvent = { tasks: number; reason?: 'quit' | 'reboot' }
+/** `restart` is Wolffish starting again; `reboot` is the whole machine going down. */
+export type AppClosingPendingEvent = {
+  tasks: number
+  reason?: 'quit' | 'restart' | 'reboot' | 'reset' | 'update'
+}
+
+export type DeviceRebootError = 'permission' | 'unsupported' | 'busy'
 
 export type AppApi = {
-  factoryReset: () => Promise<void>
-  /** Drain and relaunch. Resolves before the process goes down; the overlay follows by broadcast. */
-  reboot: () => Promise<{ scheduled: boolean }>
+  /** Wipe and relaunch. Resolves before the process goes down; the overlay follows by broadcast. */
+  factoryReset: () => Promise<{ scheduled: boolean }>
+  /** Drain and relaunch Wolffish. Resolves before the process goes down. */
+  restart: () => Promise<{ scheduled: boolean }>
+  /** Drain, then reboot the machine. Refusals (no permission) come back before anything stops. */
+  rebootDevice: () => Promise<{ scheduled: boolean; error?: DeviceRebootError }>
   onClosingPending: (listener: (event: AppClosingPendingEvent) => void) => () => void
 }
 
@@ -1297,14 +1308,20 @@ export type ConversationApi = {
    */
   onChanged: (listener: () => void) => () => void
   /**
-   * Fired repeatedly while a Telegram/WhatsApp turn is IN FLIGHT — a live
-   * snapshot of its in-progress assistant message so an in-app viewer of the
-   * same conversation mirrors the run as it streams, not only at end-of-turn.
-   * The message id is stable for the turn and matches the record the save
-   * later writes, so the renderer upserts by id (never a duplicate).
+   * Fired repeatedly while a turn the viewer did not start is IN FLIGHT — a
+   * Telegram/WhatsApp/phone/automation run, or an in-app turn started in
+   * another window or browser — a live snapshot of its in-progress assistant
+   * message (and, for in-app turns, the prompt it answers) so every viewer of
+   * the conversation mirrors the run as it streams, not only at end-of-turn.
+   * Ids are stable for the turn and match the records the save later writes,
+   * so the renderer upserts by id (never a duplicate).
    */
   onMessageMirror: (
-    listener: (payload: { conversationId: string; message: ConversationMessage }) => void
+    listener: (payload: {
+      conversationId: string
+      message: ConversationMessage
+      userMessage?: ConversationMessage
+    }) => void
   ) => () => void
 }
 
@@ -2622,6 +2639,8 @@ export type WebPublicLinkView = import('@main/channels/web/ipc').WebPublicLinkVi
 export type WebUiConfigPatch = import('@main/workspace/workspace').WebUiConfigPatch
 export type WebUiHttpsMode = import('@main/workspace/workspace').WebUiHttpsMode
 export type WebNotifyResult = import('@main/channels/web/server').NotifyResult
+export type WebNotificationRecord = import('@main/channels/web/inbox').WebNotificationRecord
+export type WebNotificationAction = import('@main/channels/web/inbox').WebNotificationAction
 
 /**
  * The Web UI channel — the desktop app served to a browser. Configured from
@@ -2655,6 +2674,12 @@ export type WebUiApi = {
   revokePublic: (id: string) => Promise<{ ok: true }>
   revokeAllPublic: () => Promise<{ ok: true; revoked: number }>
   testNotification: () => Promise<WebNotifyResult>
+  /** Every notification the Web UI sent, newest first, with its read/archived flags. */
+  notifications: () => Promise<WebNotificationRecord[]>
+  /** Read or archive one, a conversation's, or all; resolves with the new log. */
+  updateNotifications: (action: WebNotificationAction) => Promise<WebNotificationRecord[]>
+  /** The whole log after any change, from any browser. */
+  onNotifications: (listener: (items: WebNotificationRecord[]) => void) => () => void
   /** Force a Let's Encrypt issuance now, outside the renewal schedule. */
   renewCertificate: () => Promise<WebUiStatus>
   /** The one button: preflight, then Let's Encrypt on 443 with port 80 for validation. */

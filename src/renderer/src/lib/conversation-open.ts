@@ -61,6 +61,7 @@ export function mapConversationMessage(m: ConversationMessage): ChatMessage {
     status: (isError ? 'error' : 'complete') as AssistantStatus,
     stopReason: m.stopReason,
     ...(isError ? { error: m.error } : {}),
+    ...(m.interrupted ? { interrupted: true } : {}),
     timestamp: m.timestamp
   }
 }

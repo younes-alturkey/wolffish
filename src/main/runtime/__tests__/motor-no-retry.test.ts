@@ -117,6 +117,25 @@ async function main(): Promise<void> {
     ok('a genuinely transient failure still retries', calls() === 3, `${calls()} attempts`)
   }
 
+  {
+    // A Playwright locator already waited its whole budget for the element;
+    // retrying cost 3 × 30 s per bad selector (2026-10-13).
+    const { motor, calls } = motorReturning({
+      success: false,
+      error:
+        "locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('a:has-text(\\'Consensus\\')').first()"
+    })
+    const task = await motor.createTask('locator')
+    await motor.executeStep(task.id, { id: 'c5', name: 'browser_click', args: {} })
+    ok('a Playwright locator timeout fails fast', calls() === 1, `${calls()} attempts`)
+  }
+  {
+    const { motor, calls } = motorReturning({ success: false, error: 'command timed out' })
+    const task = await motor.createTask('plain-timeout')
+    await motor.executeStep(task.id, { id: 'c6', name: 'shell', args: {} })
+    ok('a plain timeout still retries', calls() === 3, `${calls()} attempts`)
+  }
+
   console.log(`\n${passed} passed, ${failed} failed`)
   if (failed > 0) process.exit(1)
 }

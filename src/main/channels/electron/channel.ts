@@ -492,6 +492,15 @@ export class ElectronChannel {
         foldSegment(acc.segments, segment)
         if (segment.kind === 'turn_end') acc.stopReason = segment.stopReason
         if (segment.kind === 'text') acc.assistantContent += segment.delta
+        // Tool timings ride the mirror like every channel's do: a second
+        // window or browser watching this run otherwise showed no durations
+        // and no ticking clock on its tool rows.
+        if (segment.kind === 'tool_call')
+          acc.toolTimings.set(segment.toolCallId, { startedAt: Date.now() })
+        if (segment.kind === 'tool_result') {
+          const timing = acc.toolTimings.get(segment.toolCallId)
+          if (timing) timing.endedAt = Date.now()
+        }
         // Task snapshots flush the mirror immediately — a card flipping to
         // running/succeeded should not wait out the text throttle. So does a
         // `user_message`: the `delivered` push takes the pending bubble down

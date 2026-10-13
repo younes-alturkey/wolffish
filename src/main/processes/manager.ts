@@ -442,8 +442,12 @@ export class ProcessManager {
     // ── Spawn
     const shell = await detectShell()
     const command = port ? fillPort(record.command, port) : record.command
+    // The app's NODE_ENV (set by the dev runner) is not the user's: a server
+    // started here inherited `development` and ran its framework's dev build.
+    const { NODE_ENV: _appNodeEnv, ...inherited } = process.env
+    void _appNodeEnv
     const env: NodeJS.ProcessEnv = {
-      ...process.env,
+      ...inherited,
       NO_COLOR: process.env.NO_COLOR ?? '1',
       FORCE_COLOR: process.env.FORCE_COLOR ?? '0',
       ...record.env

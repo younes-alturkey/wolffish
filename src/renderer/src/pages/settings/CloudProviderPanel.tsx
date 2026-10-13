@@ -3,6 +3,7 @@ import { Input } from '@components/core/Input'
 import { useToast } from '@components/core/toast/useToast'
 import { cn } from '@lib/utils/cn'
 import { PanelBackChevron } from '@pages/settings/drillNav'
+import { getCachedProviderList } from '@pages/settings/providerListSnapshot'
 import {
   BADGE_STYLES,
   DEFAULT_MODEL,
@@ -49,13 +50,16 @@ export function CloudProviderPanel({ provider }: { provider: ProviderId }): Reac
   const providerLabel = t(`settings.model.providers.${provider}`)
   const Logo = PROVIDER_LOGOS[provider]
 
-  const [stored, setStored] = useState<ProviderListEntry | null>(null)
-  const [apiKey, setApiKey] = useState('')
+  // Seeded from the provider-list cache so the saved key, model list and
+  // Remove button are on the first paint; the mount read below confirms it.
+  const [seed] = useState(() => getCachedProviderList()?.find((e) => e.id === provider) ?? null)
+  const [stored, setStored] = useState<ProviderListEntry | null>(seed)
+  const [apiKey, setApiKey] = useState(seed?.apiKey ?? '')
   const [revealKey, setRevealKey] = useState(false)
   // Fresh result from the most recent successful Test. Takes precedence over
   // stored.models because the user just verified this list.
   const [fetchedModels, setFetchedModels] = useState<string[] | null>(null)
-  const [model, setModel] = useState<string | null>(null)
+  const [model, setModel] = useState<string | null>(seed?.model ?? null)
   const [status, setStatus] = useState<Status>('untested')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -83,8 +87,14 @@ export function CloudProviderPanel({ provider }: { provider: ProviderId }): Reac
     void reloadStored().then((snap) => {
       if (cancelled) return
       setStored(snap.match)
-      setModel(snap.match?.model ?? null)
-      setApiKey(snap.match?.apiKey ?? '')
+      // The fields were already showing the seed — leave them alone if the
+      // user changed one before this read came back.
+      setModel((current) =>
+        current === (seed?.model ?? null) ? (snap.match?.model ?? null) : current
+      )
+      setApiKey((current) =>
+        current === (seed?.apiKey ?? '') ? (snap.match?.apiKey ?? '') : current
+      )
       if (!snap.match) return
       void window.api.provider.test({ id: provider }).then((result) => {
         if (cancelled) return
@@ -458,10 +468,16 @@ function ModelBreakdown({
                     <span className="text-muted/50">{'—'}</span>
                   )}
                 </td>
-                <td className="py-2 px-3 text-end text-muted tabular-nums">{m.context}</td>
-                <td className="py-2 px-3 text-end text-muted tabular-nums">{m.input}</td>
-                <td className="py-2 px-3 text-end text-muted tabular-nums">{m.output}</td>
-                <td className="py-2 ps-3 text-end tabular-nums">
+                <td className="whitespace-nowrap py-2 px-3 text-end text-muted tabular-nums">
+                  {m.context}
+                </td>
+                <td className="whitespace-nowrap py-2 px-3 text-end text-muted tabular-nums">
+                  {m.input}
+                </td>
+                <td className="whitespace-nowrap py-2 px-3 text-end text-muted tabular-nums">
+                  {m.output}
+                </td>
+                <td className="whitespace-nowrap py-2 ps-3 text-end tabular-nums">
                   {m.cached === null ? (
                     <span className="text-muted/50">{'—'}</span>
                   ) : m.cached === 'Free' ? (

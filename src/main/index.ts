@@ -191,6 +191,7 @@ import { Thalamus } from '@main/runtime/thalamus'
 import type { TimeRange as UsageTimeRange } from '@main/runtime/usage'
 import { cloudModelSupportsVision } from '@main/runtime/vision'
 import { detectSystem, type SystemInfo } from '@main/system'
+import { prepareDeviceReboot, type DeviceRebootRefusal } from '@main/device-reboot'
 import {
   checkForUpdatesIfEnabled,
   getUpdaterState,
@@ -1121,6 +1122,8 @@ const webServer = new WebServer({
     syncWebCapability()
   },
   onProgress: (event) => broadcast('web:httpsProgress', event),
+  // The desktop window reads the same log as every browser: one read state.
+  onNotifications: (items) => broadcast('web:notifications', items),
   log: (line) => wlog.info('[web]', line.replace(/^\[web\] /, '')),
   warn: (line) => wlog.warn('[web]', line.replace(/^\[web\] /, ''))
 })
@@ -2069,6 +2072,16 @@ electronChannel.setMessageMirror((conversationId, message, userMessage) => {
   } catch {
     // a broken tunnel must never affect the in-app turn
   }
+  // Every OTHER window and browser on this conversation too: a run started
+  // in the Web UI showed the desktop window (and any second browser) a
+  // shimmer until the end-of-turn save, and vice versa. The window that
+  // started the turn ignores these while its own turn streams (Chat's
+  // pendingTurnId guard), so it keeps its token-level chat:segment feed.
+  try {
+    if (message) broadcast('conversation:messageMirror', { conversationId, message, userMessage })
+  } catch {
+    // a broken renderer bridge must never affect the in-app turn
+  }
 })
 const extensionServer = new ExtensionServer()
 
@@ -2910,6 +2923,7 @@ const MOBILE_CONFIG_SILENT = new Set([
   'mobile:statusChange',
   'web:statusChange',
   'web:httpsProgress',
+  'web:notifications',
   'model:pullProgress',
   'ollama:changed',
   'projects:copyProgress',
@@ -3221,21 +3235,14 @@ function relaunchApp(): void {
 }
 
 /**
- * Reboot: drain like a quit, then come back as a fresh process.
- *
- * Reached from the Settings rail, the Web UI and `wolffish reboot`. The
- * caller's reply is written before this runs (see the handler), so a terminal
- * sees "rebooting" rather than a dropped socket. app.exit() skips before-quit
- * and will-quit, so everything they would have done is done here by hand, in
- * their order: channels and agent down, background saves drained, sockets
- * closed, MCP children gone, lockfile released, then relaunch and exit.
+ * Everything before-quit and will-quit would have done, for the paths that
+ * leave through app.exit() (which skips both): channels and agent down,
+ * background saves drained, sockets closed, MCP children gone, lockfile
+ * released. `reason` is what the window and every browser show meanwhile.
  */
-async function rebootApp(): Promise<void> {
-  if (rebootInProgress || updateInstallInProgress) return
-  rebootInProgress = true
+async function drainForExit(reason: 'restart' | 'reset'): Promise<void> {
   isQuittingFromTray = true
-  wlog.info('[reboot]', 'requested — draining before relaunch')
-  broadcast('app:closingPending', { tasks: pendingBackgroundTasks, reason: 'reboot' })
+  broadcast('app:closingPending', { tasks: pendingBackgroundTasks, reason })
   await shutdownGracefully()
   // A wedged save must not pin the app in a half-stopped state forever.
   await Promise.race([
@@ -3251,7 +3258,63 @@ async function rebootApp(): Promise<void> {
     releaseLockSync(lockfilePath())
     lockAcquired = false
   }
-  wlog.info('[reboot]', 'relaunching')
+}
+
+/**
+ * Restart: drain like a quit, then come back as a fresh process.
+ *
+ * Reached from the Settings rail, the Web UI and `wolffish restart`. The
+ * caller's reply is written before this runs (see the handler), so a terminal
+ * sees "restarting" rather than a dropped socket, and a browser reloads by
+ * itself once the new process answers under a new pid (web-bridge/boot).
+ */
+async function restartApp(): Promise<void> {
+  if (rebootInProgress || updateInstallInProgress) return
+  rebootInProgress = true
+  wlog.info('[restart]', 'requested — draining before relaunch')
+  await drainForExit('restart')
+  wlog.info('[restart]', 'relaunching')
+  relaunchApp()
+  app.exit(0)
+}
+
+/**
+ * Reboot the machine. Drains first, on every platform: macOS asks each app to
+ * quit and a before-quit that held the quit for in-flight work would cancel
+ * the whole restart, and Windows and systemd give a process seconds at most.
+ * The sockets stay up so browsers keep the overlay until the OS takes them
+ * down. A command that fails after the drain brings Wolffish back as a
+ * restart rather than leaving it stopped.
+ */
+async function rebootDeviceApp(
+  run: () => Promise<{ ok: true } | { ok: false; error: string }>
+): Promise<void> {
+  wlog.info('[reboot-device]', 'requested — draining before the machine restarts')
+  isQuittingFromTray = true
+  broadcast('app:closingPending', { tasks: pendingBackgroundTasks, reason: 'reboot' })
+  await shutdownGracefully()
+  await Promise.race([
+    waitForBackgroundDrain(),
+    new Promise<void>((resolve) => setTimeout(resolve, 8_000))
+  ])
+  quitInProgress = false
+  mcpManager.killAllSync()
+  browserTabs.destroyAll('shutdown')
+  if (lockAcquired) {
+    releaseLockSync(lockfilePath())
+    lockAcquired = false
+  }
+  const result = await run()
+  if (result.ok) {
+    wlog.info('[reboot-device]', 'reboot accepted by the OS')
+    return
+  }
+  wlog.warn(
+    '[reboot-device]',
+    `reboot command failed — restarting Wolffish instead: ${result.error}`
+  )
+  await cliServer.stop().catch(() => undefined)
+  await webServer.stop().catch(() => undefined)
   relaunchApp()
   app.exit(0)
 }
@@ -4428,36 +4491,55 @@ app.whenReady().then(async () => {
   handle('workspace:completeOnboarding', () => markOnboardingComplete())
 
   // Wipe all data on disk but preserve API keys, model selection, locale,
-  // theme, and runtime toggles. The relaunch ensures no stale handles
-  // (cortex.db, brainstem watcher, corpus flush timer) survive the wipe.
-  handle('app:factoryReset', async () => {
-    activePull?.abort()
-    electronChannel.abort()
-    telegramChannel.abort()
-    whatsappChannel.abort()
-    await telegramChannel.stop('factory reset').catch(() => undefined)
-    await whatsappChannel.stop('factory reset').catch(() => undefined)
-    // app.exit() below skips before-quit/will-quit, so MCP children must
-    // be torn down here or they survive into the relaunched instance.
-    await mcpManager.stop().catch(() => undefined)
-    await agent.stop().catch(() => undefined)
-    browserTabs.destroyAll('shutdown')
-    if (lockAcquired) {
-      releaseLockSync(lockfilePath())
-      lockAcquired = false
-    }
-    await factoryReset().catch(() => undefined)
-    app.relaunch()
-    app.exit(0)
-  })
-
-  // Reply first, reboot on the next tick: the CLI and Web UI sockets this
-  // answer travels on are closed by the reboot itself.
-  handle('app:reboot', () => {
+  // theme, runtime toggles and the Web UI's sessions and certificates. The
+  // relaunch ensures no stale handles (cortex.db, brainstem watcher, corpus
+  // flush timer) survive the wipe. Replies first, like restart, so the CLI and
+  // the Web UI get an answer instead of a dropped socket.
+  handle('app:factoryReset', () => {
     if (rebootInProgress || updateInstallInProgress) return { scheduled: false }
-    setImmediate(() => void rebootApp())
+    rebootInProgress = true
+    setImmediate(() => {
+      void (async () => {
+        wlog.info('[factory-reset]', 'requested — draining before the wipe')
+        activePull?.abort()
+        await drainForExit('reset')
+        await factoryReset().catch((err) => wlog.error('[factory-reset]', String(err)))
+        relaunchApp()
+        app.exit(0)
+      })()
+    })
     return { scheduled: true }
   })
+
+  // Reply first, restart on the next tick: the CLI and Web UI sockets this
+  // answer travels on are closed by the restart itself. `app:reboot` is the
+  // name a CLI from before the device reboot existed still sends for this.
+  const restartHandler = (): { scheduled: boolean } => {
+    if (rebootInProgress || updateInstallInProgress) return { scheduled: false }
+    setImmediate(() => void restartApp())
+    return { scheduled: true }
+  }
+  handle('app:restart', restartHandler)
+  handle('app:reboot', restartHandler)
+
+  handle(
+    'app:rebootDevice',
+    async (): Promise<{ scheduled: boolean; error?: DeviceRebootRefusal | 'busy' }> => {
+      if (rebootInProgress || updateInstallInProgress) return { scheduled: false, error: 'busy' }
+      rebootInProgress = true
+      const plan = await prepareDeviceReboot()
+      if (!plan.ok) {
+        rebootInProgress = false
+        wlog.warn(
+          '[reboot-device]',
+          `refused: ${plan.error}${plan.detail ? ` — ${plan.detail}` : ''}`
+        )
+        return { scheduled: false, error: plan.error }
+      }
+      setImmediate(() => void rebootDeviceApp(plan.run))
+      return { scheduled: true }
+    }
+  )
 
   handle('data:getAnalytics', (): Promise<DataAnalytics> => getDataAnalytics())
 
@@ -5464,6 +5546,9 @@ app.whenReady().then(async () => {
     // Broadcast 'installing' so a panel remounted during the grace window
     // (page navigation) restores the disabled state instead of re-enabling.
     markInstalling()
+    // The same overlay a restart shows, in the window and every browser; a
+    // browser holds it through the install and reloads on the new pid.
+    broadcast('app:closingPending', { tasks: pendingBackgroundTasks, reason: 'update' })
     await stampPreUpdateVersion()
     void shutdownGracefully()
     // Grace period: let in-flight work finish, then force through
@@ -6012,6 +6097,11 @@ app.whenReady().then(async () => {
     }
     await deleteConversation(id)
     agent.corpus.emit('conversation.deleted', { id })
+    // Its notifications stay readable in the Web UI's log, but they stop
+    // counting: there is no conversation left to open them in.
+    void webServer
+      .updateNotifications({ kind: 'readConversation', conversationId: id })
+      .catch(() => undefined)
     return { ok: true }
   })
   handle(

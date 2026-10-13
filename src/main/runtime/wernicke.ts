@@ -1,5 +1,10 @@
 import type { Corpus } from '@main/runtime/corpus'
-import type { NoProviderAvailableInfo, StopReason, StreamChunk } from '@main/runtime/thalamus'
+import type {
+  NoProviderAvailableInfo,
+  ProviderReasoning,
+  StopReason,
+  StreamChunk
+} from '@main/runtime/thalamus'
 
 /**
  * Wernicke parses the LLM's raw output into something structured.
@@ -26,6 +31,7 @@ export type ParsedResponse = {
   text: string
   toolCalls: ToolCall[]
   thinking?: string
+  providerReasoning?: ProviderReasoning
   inputTokens: number
   outputTokens: number
   stopReason: StopReason
@@ -64,12 +70,15 @@ export class Wernicke {
     let error: string | undefined
     let noProviderAvailable: NoProviderAvailableInfo[] | undefined
     let providerFailures: NoProviderAvailableInfo[] | undefined
+    let providerReasoning: ProviderReasoning | undefined
 
     for await (const chunk of stream) {
       if (chunk.type === 'text') {
         text += chunk.text
       } else if (chunk.type === 'reasoning') {
         reasoning += chunk.text
+      } else if (chunk.type === 'provider_reasoning') {
+        providerReasoning = chunk.reasoning
       } else if (chunk.type === 'tool_call') {
         toolCalls.push({ id: chunk.id, name: chunk.name, args: chunk.args })
       } else if (chunk.type === 'turn_meta') {
@@ -105,6 +114,7 @@ export class Wernicke {
       stopReason
     }
     if (thinking) result.thinking = thinking
+    if (providerReasoning) result.providerReasoning = providerReasoning
     if (error) result.error = error
     if (noProviderAvailable) result.noProviderAvailable = noProviderAvailable
     if (providerFailures) result.providerFailures = providerFailures
