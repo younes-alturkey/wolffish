@@ -12,6 +12,7 @@ import { FileCard } from '@components/common/file-card/FileCard'
 import { ExpandedSheet } from '@components/core/ExpandedSheet'
 import { useUploadText } from '@hooks/use-upload-text/useUploadText'
 import { cn } from '@lib/utils/cn'
+import { canRevealInFolder } from '@lib/utils/platform'
 import type { EChartsType } from 'echarts/core'
 import {
   ArrowExpandIcon,
@@ -146,7 +147,7 @@ export function ChartCard({
       <Download01Icon size={14} />
     </button>
   )
-  const revealButton = (
+  const revealButton = canRevealInFolder ? (
     <button
       type="button"
       onClick={revealInFolder}
@@ -156,7 +157,7 @@ export function ChartCard({
     >
       <FolderOpenIcon size={14} />
     </button>
-  )
+  ) : null
   const expandButton = (
     <button
       type="button"

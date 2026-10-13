@@ -212,6 +212,12 @@ export function installWebApi(transport: WebTransport): WolffishApi {
     const folder = await folderPrompt()
     return folder ? [folder] : null
   }
+  api.ollama.pickModelsFolder = folderPrompt
+  // The install page belongs in THIS browser, not on the server's desktop.
+  api.ollama.openInstallPage = async () => {
+    openInNewTab(await api.ollama.installUrl())
+    return { opened: true }
+  }
   api.projects.pickFiles = async (projectId) => {
     const files = await pickFiles({ multiple: true })
     if (files.length === 0) return null
@@ -293,6 +299,10 @@ export function installWebApi(transport: WebTransport): WolffishApi {
     asDownload((await transport.invoke('voice:download', filePath)) as DownloadAnswer)
   api.chat.exportPdf = async (payload) =>
     asDownload((await transport.invoke('chat:exportPdf', payload)) as DownloadAnswer)
+  // "Save a copy" of a diagnostics bundle is a download of the archive the
+  // server already wrote — there is no save dialog to point anywhere.
+  api.diagnostics.saveCopy = async ({ zipPath }) =>
+    asDownload((await transport.invoke('upload:downloadPath', zipPath)) as DownloadAnswer)
 
   const asOpen = (answer: OpenAnswer): OpenAnswer => {
     if (answer?.openUrl) {

@@ -2,6 +2,7 @@ import { Button } from '@components/core/Button'
 import { Tooltip } from '@components/core/Tooltip'
 import { useToast } from '@components/core/toast/useToast'
 import { cn } from '@lib/utils/cn'
+import { isWeb } from '@lib/utils/platform'
 import type {
   BrowserExtensionConfig,
   DoctorReport,
@@ -431,13 +432,15 @@ export function BrowserExtensionPanel(): React.JSX.Element {
                 <FolderOpenIcon size={16} className="text-muted shrink-0" />
                 {t('settings.services.browserExtension.extensionFolder')}
               </div>
-              <button
-                type="button"
-                onClick={handleOpenFolder}
-                className="text-primary hover:text-primary/80 shrink-0 cursor-pointer text-sm font-medium"
-              >
-                {t(revealKey)}
-              </button>
+              {!isWeb && (
+                <button
+                  type="button"
+                  onClick={handleOpenFolder}
+                  className="text-primary hover:text-primary/80 shrink-0 cursor-pointer text-sm font-medium"
+                >
+                  {t(revealKey)}
+                </button>
+              )}
             </div>
             <div dir="ltr" className="bg-bg flex w-full items-center gap-2 rounded-lg px-3 py-2">
               <code className="text-muted min-w-0 flex-1 truncate text-xs">{extensionPath}</code>
@@ -835,7 +838,14 @@ export function BrowserExtensionPanel(): React.JSX.Element {
                   </span>
                   <span>
                     {t(`settings.services.browserExtension.step${step}`)}
-                    {step === 1 && (
+                    {/* A browser can't open chrome://extensions in another
+                        browser — on the web the address is text to type. */}
+                    {step === 1 && isWeb && (
+                      <code dir="ltr" className="font-mono">
+                        {t('settings.services.browserExtension.step1Link')}
+                      </code>
+                    )}
+                    {step === 1 && !isWeb && (
                       <button
                         type="button"
                         onClick={() => {

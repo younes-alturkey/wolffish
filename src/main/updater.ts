@@ -5,7 +5,7 @@ import { app, BrowserWindow, shell } from 'electron'
 import { handle } from '@main/ipc-registry'
 import { autoUpdater, type UpdateDownloadedEvent, type UpdateInfo } from 'electron-updater'
 import { createHash } from 'node:crypto'
-import { createReadStream, createWriteStream } from 'node:fs'
+import { createReadStream, createWriteStream, readFileSync } from 'node:fs'
 import { mkdir, readdir, rename, rm, stat } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -22,6 +22,33 @@ const tag = '[updater]'
 // quitting so the user can drag the new app over the old one. Windows (NSIS)
 // and Linux (AppImage) install unsigned updates on their own.
 const MANUAL_INSTALL = process.platform === 'darwin'
+// Under our own systemd unit (`wolffish service install` on Linux) the unit
+// restarts the daemon itself. A build the updater launched would sit in the
+// service's cgroup: systemd tears it down with the old main process and starts
+// the unit again five seconds later, so a browser on the Web UI sees the
+// changelog, then "connection lost", then a second reload. There, the relaunch
+// is left to systemd.
+//
+// INVOCATION_ID alone is not proof: it is set on every systemd service and
+// leaks into terminals and anything they start, and an app that skips its
+// relaunch without a unit to restart it just stays closed. The cgroup is
+// assigned by systemd and cannot be inherited by accident, so both must agree.
+// Unreadable means false — a double restart, never an app that stays down.
+export function isOwnSystemdService(env: NodeJS.ProcessEnv, cgroup: string | null): boolean {
+  if (typeof env.INVOCATION_ID !== 'string' || !cgroup) return false
+  return cgroup.split('\n').some((line) => line.trimEnd().endsWith('/wolffish.service'))
+}
+
+function readOwnCgroup(): string | null {
+  try {
+    return readFileSync('/proc/self/cgroup', 'utf8')
+  } catch {
+    return null
+  }
+}
+
+const SERVICE_MANAGED =
+  process.platform === 'linux' && isOwnSystemdService(process.env, readOwnCgroup())
 const UPDATES_DIR = path.join(os.homedir(), '.wolffish', 'updates')
 
 export type UpdateAvailableEvent = {
@@ -384,7 +411,7 @@ export function initUpdater(): void {
 
   autoUpdater.autoDownload = !MANUAL_INSTALL
   autoUpdater.autoInstallOnAppQuit = false
-  autoUpdater.autoRunAppAfterInstall = true
+  autoUpdater.autoRunAppAfterInstall = !SERVICE_MANAGED
   // Always fetch the full artifact and let electron-updater verify its sha512.
   // The NSIS differential/blockmap path is a known source of stalled/corrupt
   // Windows downloads, so opt out.
@@ -545,9 +572,9 @@ export function installUpdate(): boolean {
     app.quit()
     return true
   }
-  wlog.info(tag, 'quitAndInstall(false, true)')
+  wlog.info(tag, `quitAndInstall(false, ${!SERVICE_MANAGED})`)
   try {
-    autoUpdater.quitAndInstall(false, true)
+    autoUpdater.quitAndInstall(false, !SERVICE_MANAGED)
   } catch (err) {
     const info = classifyUpdaterError(err, 'install')
     installFailure = info

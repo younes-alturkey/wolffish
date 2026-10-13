@@ -86,10 +86,34 @@ function openaiSupportsVision(m: string): boolean {
   if (/gpt-3\.5|o1-mini|o1-preview|o3-mini|gpt-4-32k/.test(m)) return false
   // Bare gpt-4 and its dated snapshots predate vision.
   if (/^gpt-4($|-\d)/.test(m)) return false
-  // gpt-6*, gpt-5.6*, chat-latest: image parts verified live 2026-10-12
-  // (every row of the catalogue answered a solid-colour probe; bare gpt-4
-  // is the one 400 — "does not support image inputs").
+  // Every catalogue row verified live on /v1/responses 2026-10-13, as a
+  // user `input_image` AND as an `input_image` inside
+  // `function_call_output` (the path image_view / screenshots take): all
+  // 26 vision rows read the probe on both. gpt-4 and o3-mini 400 on the
+  // user image ("does not support image inputs") but answer HTTP 200 with
+  // a guess when the same image sits inside a tool result — so this gate,
+  // not the API, is what keeps a text-only model from acting on pixels it
+  // never saw.
   return /gpt-4o|gpt-4\.\d|gpt-4-turbo|gpt-5|gpt-6|chat-latest|chatgpt|^o\d/.test(m)
+}
+
+/**
+ * Whether a vision model also takes images *inside tool results*. User
+ * -message vision does not imply it: OpenAI's o1 reads a user
+ * `input_image` but answers a deterministic HTTP 500 ("An error occurred
+ * while processing your request") to an `input_image` inside
+ * `function_call_output` — verified 2026-10-13 across six requests, with
+ * and without `tools`, at every effort. The message carries no modality
+ * wording, so the thalamus reject ladder never catches it; this gate
+ * strips the tool images up front and the model is told what it lost.
+ */
+export function cloudModelSupportsToolResultImages(provider: string, model: string): boolean {
+  if (!cloudModelSupportsVision(provider, model)) return false
+  if (provider === 'openai' || provider === 'openrouter') {
+    const m = (model.toLowerCase().split('/').pop() ?? model).trim()
+    if (/^o1($|-\d)/.test(m)) return false
+  }
+  return true
 }
 
 // OpenRouter ids are namespaced ("anthropic/claude-sonnet-4"); route to

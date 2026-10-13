@@ -1,4 +1,26 @@
-## v1.0.319 — 2026-10-12 `Latest`
+## v1.0.324 — 2026-10-13 `Latest`
+
+### Changing the Password Keeps You Signed In
+
+Setting or regenerating the master password from the Web UI used to sign out the very browser you did it from — so a regenerated passphrase was gone before you could read it. Now **every other browser** is signed out and **the one you changed it from stays in**. A browser that was signed out from elsewhere also stops retrying a connection that can never succeed: it goes straight to the **sign-in page**.
+
+### Deleting a Conversation Is Instant
+
+From History, Projects or the conversations sheet, a deleted conversation now **leaves the list the moment you confirm**, and the dialog closes with it — even from a phone on a slow connection. The deletion finishes behind it, and the row no longer flashes back while the index catches up. If it can't go through — a turn is still running, or the connection dropped — a message says so and **the conversation comes back**.
+
+### The Web UI Stops Offering What Only the Desktop Can Do
+
+In a browser, **"Show in folder" buttons are gone** — the folder would have opened on the computer running Wolffish, out of sight. A diagnostics bundle's **Save a copy** downloads the archive instead, the Ollama install page opens **in your own browser**, and the browser-extension setup shows the address to type. Where only that computer can finish the job, the Web UI says so: an MCP **sign-in** page and the Computer Use permissions open there. On plain HTTP, the microphone now explains that **it needs HTTPS** rather than blaming a system permission, and turning the Web UI **off from the Web UI** asks first, since that page loses its connection.
+
+### o1 No Longer Fails on Tool Screenshots
+
+OpenAI's **o1** reads images you attach, but answers every image inside a tool result — a screenshot, `image_view` — with a bare server error, so the turn failed with nothing to explain it. Wolffish now knows this up front: for o1 those images are **left out of the tool results and the model is told what it missed**, and your own attachments still reach it. Other OpenAI models were re-checked live and keep both.
+
+### Updates Under the Linux Service Restart Once
+
+With `wolffish service install` on Linux, an update used to restart Wolffish twice — once by the updater, again by systemd — so a browser on the Web UI saw the changelog, then "connection lost", then a second reload. Under the service, **systemd now handles the restart alone**.
+
+## v1.0.323 — 2026-10-13
 
 ### The Whole App, in Any Browser
 
@@ -33,6 +55,14 @@ Browsers only allow notifications and the microphone on a trusted HTTPS origin, 
 ### One Install Line, From the Release Itself
 
 The install scripts are back, and they now live where the installers do: every GitHub release carries `install.sh` and `install.ps1` beside the packages and the update manifests, so `curl -fsSL https://github.com/younes-alturkey/wolffish/releases/latest/download/install.sh | sh` (or `irm …/install.ps1 | iex` on Windows) installs the current version on any of the three platforms, checksum-verified. The scripts end with what comes next — the service, the Web UI password, the HTTPS command — and `WOLFFISH_RELEASES_BASE` points them at a mirror.
+
+### The App Port Opens Itself in the Firewall
+
+A fresh VPS used to stop at the first step after the install: the Web UI was listening, but the host firewall was still closed on its port, and nothing said so. The first time the server listens on an address other than loopback, it now opens its own port — 8787 unless you changed it — in `ufw`, `firewalld` or Windows Firewall, the same way the HTTPS preflight already opened 80 and 443. A refusal is logged with the exact command to run by hand, and the listener is up either way.
+
+### `wolffish service install` Starts What It Registers
+
+The install script's own first instruction, `wolffish service install`, refused on a fresh box with "the daemon is not running" — it sat in the group of read-only verbs that never start one. Only `install` changes the machine, so it now starts the daemon it registers; `service status` and `service path` keep refusing to.
 
 ### HTTPS in One Button
 

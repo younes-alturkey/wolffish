@@ -1,4 +1,5 @@
 import { cn } from '@lib/utils/cn'
+import { canRevealInFolder } from '@lib/utils/platform'
 import { File01Icon, Folder01Icon, FolderOpenIcon, LinkSquare02Icon } from 'hugeicons-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -92,22 +93,24 @@ export function PathCard({
           </span>
           <span className="text-muted text-xs">{subtitle}</span>
         </div>
-        <button
-          type="button"
-          onClick={reveal}
-          disabled={!exists}
-          title={exists ? actionLabel : subtitle}
-          className={cn(
-            'flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium',
-            'focus-visible:ring-2 focus-visible:ring-accent',
-            exists
-              ? 'bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer'
-              : 'bg-muted/10 text-muted cursor-not-allowed'
-          )}
-        >
-          {isDir ? <FolderOpenIcon size={14} /> : <LinkSquare02Icon size={14} />}
-          {actionLabel}
-        </button>
+        {canRevealInFolder && (
+          <button
+            type="button"
+            onClick={reveal}
+            disabled={!exists}
+            title={exists ? actionLabel : subtitle}
+            className={cn(
+              'flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium',
+              'focus-visible:ring-2 focus-visible:ring-accent',
+              exists
+                ? 'bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer'
+                : 'bg-muted/10 text-muted cursor-not-allowed'
+            )}
+          >
+            {isDir ? <FolderOpenIcon size={14} /> : <LinkSquare02Icon size={14} />}
+            {actionLabel}
+          </button>
+        )}
       </div>
       <code
         dir="ltr"

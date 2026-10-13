@@ -116,21 +116,28 @@ export function registerWebIpc(deps: WebIpcDeps): void {
   )
 
   /**
-   * A new master password signs every browser out — the sessions were
-   * granted on the old one — and the Web UI keeps running (or starts, if it
-   * was waiting on a password). A password of the user's own is stored
+   * The event a call arrives with. Over the socket the server stamps the
+   * browser session behind it; from the desktop window there is none.
+   */
+  type WebInvokeEvent = { sender?: unknown; webSessionId?: string }
+
+  /**
+   * A new master password signs every OTHER browser out — the sessions were
+   * granted on the old one, but the browser that just typed it stays, or it
+   * would never see the result — and the Web UI keeps running (or starts, if
+   * it was waiting on a password). A password of the user's own is stored
    * hashed only, so the clear generated passphrase is dropped with it.
    */
   handle(
     'web:setPassword',
     async (
-      _e,
+      e: WebInvokeEvent,
       password: string
     ): Promise<{ ok: true; config: WebUiPublicConfig; status: WebUiStatus }> => {
       const invalid = validatePassword(password)
       if (invalid) throw new Error(invalid)
       await setWebUiConfig({ passwordHash: await hashPassword(password), password: null })
-      await server.revokeAllSessions()
+      await server.revokeAllSessions({ except: e.webSessionId })
       const config = await announce()
       await server.applyConfig()
       return { ok: true, config, status: await server.status() }
@@ -146,14 +153,16 @@ export function registerWebIpc(deps: WebIpcDeps): void {
   /** A fresh twelve-word passphrase; like any password change it signs every browser out. */
   handle(
     'web:regeneratePassword',
-    async (): Promise<{
+    async (
+      e: WebInvokeEvent
+    ): Promise<{
       ok: true
       password: string
       config: WebUiPublicConfig
       status: WebUiStatus
     }> => {
       const password = await regenerateWebUiPassword()
-      await server.revokeAllSessions()
+      await server.revokeAllSessions({ except: e.webSessionId })
       const config = await announce()
       await server.applyConfig()
       return { ok: true, password, config, status: await server.status() }

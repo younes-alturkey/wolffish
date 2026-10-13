@@ -1,4 +1,5 @@
 import { cn } from '@lib/utils/cn'
+import { canRevealInFolder } from '@lib/utils/platform'
 import {
   PauseIcon,
   PlayIcon,
@@ -229,17 +230,19 @@ function ActivePlayer({
           {playbackRate}x
         </button>
 
-        <button
-          type="button"
-          onClick={revealInFolder}
-          title="Reveal in folder"
-          className={cn(
-            'text-muted hover:text-fg flex shrink-0 cursor-pointer items-center justify-center rounded p-1',
-            'focus-visible:ring-2 focus-visible:ring-accent'
-          )}
-        >
-          <FolderOpenIcon size={14} />
-        </button>
+        {canRevealInFolder && (
+          <button
+            type="button"
+            onClick={revealInFolder}
+            title="Reveal in folder"
+            className={cn(
+              'text-muted hover:text-fg flex shrink-0 cursor-pointer items-center justify-center rounded p-1',
+              'focus-visible:ring-2 focus-visible:ring-accent'
+            )}
+          >
+            <FolderOpenIcon size={14} />
+          </button>
+        )}
         <button
           type="button"
           onClick={download}

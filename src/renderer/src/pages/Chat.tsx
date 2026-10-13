@@ -1038,7 +1038,13 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
           return
         }
       } else if (access === 'denied' || access === 'restricted') {
-        toast.show({ message: t('chat.voice.permissionDenied'), tone: 'error' })
+        // A browser on plain http: has no microphone API at all — the fix is
+        // HTTPS, not an OS permission, so say that one.
+        const needsHttps = isWeb && !window.isSecureContext
+        toast.show({
+          message: t(needsHttps ? 'chat.voice.needsHttps' : 'chat.voice.permissionDenied'),
+          tone: 'error'
+        })
         return
       }
 

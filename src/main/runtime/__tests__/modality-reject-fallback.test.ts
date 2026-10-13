@@ -373,6 +373,37 @@ async function main(): Promise<void> {
   }
 
   // ---------------------------------------------------------------------------
+  // 6b. per-model tool-image gate pre-strips BEFORE the first attempt: o1
+  //     500s (no modality wording) on an image inside function_call_output,
+  //     so the ladder can't learn it — vision.ts knows it up front.
+  // ---------------------------------------------------------------------------
+
+  {
+    const fake = new FakeProvider(['ok'])
+    const t = new Thalamus(new LocalProvider(), { testProvider: fake })
+    t.setCloudProviders([{ id: 'openai', model: 'o1', apiKey: 'test-key' }])
+    t.setBrain({ providerId: 'openai', model: 'o1' })
+    const out = await drive(t, MIXED_HISTORY)
+    check('6b: o1 is one attempt', fake.calls, 1)
+    check('6b: turn succeeded', out.failed, false)
+    checkTrue('6b: o1 tool images stripped up front', !toolHasImages(fake.payloads[0]))
+    checkTrue('6b: o1 keeps the user image', userHasImage(fake.payloads[0]))
+    const tool = toolOf(fake.payloads[0])
+    checkTrue(
+      '6b: o1 tool note names the tool-result reason',
+      typeof tool?.content === 'string' && tool.content.includes(TOOL_RESULT_MODALITY_STRIP_REASON)
+    )
+  }
+  {
+    const fake = new FakeProvider(['ok'])
+    const t = new Thalamus(new LocalProvider(), { testProvider: fake })
+    t.setCloudProviders([{ id: 'openai', model: 'o3', apiKey: 'test-key' }])
+    t.setBrain({ providerId: 'openai', model: 'o3' })
+    await drive(t, MIXED_HISTORY)
+    checkTrue('6b: o3 still sends tool images', toolHasImages(fake.payloads[0]))
+  }
+
+  // ---------------------------------------------------------------------------
   // 7. stage 2 fires only when stage 1 is also rejected
   // ---------------------------------------------------------------------------
 

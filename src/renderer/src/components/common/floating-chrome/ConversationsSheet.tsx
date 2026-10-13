@@ -1,6 +1,7 @@
 import { ChannelIcon } from '@components/common/channel-icon/ChannelIcon'
 import { hasChannelIcon } from '@components/common/channel-icon/hasChannelIcon'
 import { CONVERSATION_CHIP_BASE, conversationChipClasses } from '@lib/conversation-chip'
+import { settleConversationDeletes, usePendingConversationDeletes } from '@lib/conversation-delete'
 import { mapConversationMessages } from '@lib/conversation-open'
 import {
   buildConversationRows,
@@ -77,6 +78,7 @@ export function ConversationsSheet({ onClose }: { onClose: () => void }): React.
     activeProject
   } = useSessions()
   const [metas, setMetas] = useState<ConversationMeta[]>([])
+  const pendingDeletes = usePendingConversationDeletes()
   // Projects, for resolving a bound conversation's badge emoji LIVE (an icon
   // change on the Projects page propagates; a stamp would go stale).
   const [projects, setProjects] = useState<Project[]>([])
@@ -94,7 +96,7 @@ export function ConversationsSheet({ onClose }: { onClose: () => void }): React.
   useEffect(() => {
     let cancelled = false
     void window.api.conversation.list().then((list) => {
-      if (!cancelled) setMetas(list)
+      if (!cancelled) setMetas(settleConversationDeletes(list))
     })
     void window.api.projects
       .list()
@@ -117,7 +119,13 @@ export function ConversationsSheet({ onClose }: { onClose: () => void }): React.
     let timer: ReturnType<typeof setTimeout> | null = null
     const off = window.api.conversation.onChanged(() => {
       if (timer) clearTimeout(timer)
-      timer = setTimeout(() => void window.api.conversation.list().then(setMetas), 250)
+      timer = setTimeout(
+        () =>
+          void window.api.conversation
+            .list()
+            .then((list) => setMetas(settleConversationDeletes(list))),
+        250
+      )
     })
     return () => {
       if (timer) clearTimeout(timer)
@@ -134,12 +142,14 @@ export function ConversationsSheet({ onClose }: { onClose: () => void }): React.
   }, [onClose])
 
   const rows = useMemo<ConversationRow[]>(() => {
+    // Minus the rows a delete has tombstoned — a run status would otherwise
+    // synthesize the conversation right back until main confirms.
     const all = buildConversationRows({
       metas,
       runStatuses,
       projects,
       untitled: t('chat.conversationsUntitled')
-    })
+    }).filter((r) => !pendingDeletes.has(r.conversationId))
     if (!activeProject) return all
     // Project mode: only this project's conversations. A brand-new one has no
     // indexed projectId until its first end-of-turn save, so the active
@@ -148,7 +158,7 @@ export function ConversationsSheet({ onClose }: { onClose: () => void }): React.
     return all.filter(
       (r) => r.projectId === activeProject.id || r.conversationId === activeConversationId
     )
-  }, [metas, projects, runStatuses, t, activeProject, activeConversationId])
+  }, [metas, projects, runStatuses, t, activeProject, activeConversationId, pendingDeletes])
 
   // What the sheet lists: the rows the typed keywords match, all of them when
   // nothing is typed. Filtering happens BEFORE the window, so a match buried

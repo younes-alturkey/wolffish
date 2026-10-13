@@ -346,13 +346,15 @@ export function UpdatesPanel(): React.JSX.Element {
                       <code dir="ltr" className="truncate font-mono">
                         {installerPath}
                       </code>
-                      <button
-                        type="button"
-                        onClick={() => void window.api.updater.revealInstaller()}
-                        className="hover:text-fg shrink-0 cursor-pointer underline underline-offset-2"
-                      >
-                        {t('settings.updates.manualReveal', 'Show in Finder')}
-                      </button>
+                      {!isWeb && (
+                        <button
+                          type="button"
+                          onClick={() => void window.api.updater.revealInstaller()}
+                          className="hover:text-fg shrink-0 cursor-pointer underline underline-offset-2"
+                        >
+                          {t('settings.updates.manualReveal', 'Show in Finder')}
+                        </button>
+                      )}
                     </p>
                   )}
                 </div>

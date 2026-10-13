@@ -1,6 +1,7 @@
 import { CopyButton } from '@components/core/CopyButton'
 import { MARKDOWN_SANITIZE_SCHEMA } from '@lib/markdown/sanitize'
 import { cn } from '@lib/utils/cn'
+import { canRevealInFolder } from '@lib/utils/platform'
 import { Download01Icon, FolderOpenIcon } from 'hugeicons-react'
 import { createContext, memo, useContext, type ReactNode } from 'react'
 import ReactMarkdown, {
@@ -154,18 +155,20 @@ const components: Components = {
               'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
             )}
           >
-            <button
-              type="button"
-              onClick={() => void window.api.upload.revealInFolder(relativePath)}
-              aria-label="Reveal in folder"
-              className={cn(
-                'flex h-7 w-7 cursor-pointer items-center justify-center',
-                'rounded-md bg-bg/80 text-fg shadow-sm backdrop-blur-sm',
-                'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-transparent'
-              )}
-            >
-              <FolderOpenIcon size={14} />
-            </button>
+            {canRevealInFolder && (
+              <button
+                type="button"
+                onClick={() => void window.api.upload.revealInFolder(relativePath)}
+                aria-label="Reveal in folder"
+                className={cn(
+                  'flex h-7 w-7 cursor-pointer items-center justify-center',
+                  'rounded-md bg-bg/80 text-fg shadow-sm backdrop-blur-sm',
+                  'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-transparent'
+                )}
+              >
+                <FolderOpenIcon size={14} />
+              </button>
+            )}
             <button
               type="button"
               onClick={() => void window.api.upload.download(relativePath)}

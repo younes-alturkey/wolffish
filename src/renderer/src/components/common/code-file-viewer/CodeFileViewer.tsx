@@ -3,6 +3,7 @@ import { CopyButton } from '@components/core/CopyButton'
 import { ExpandedSheet } from '@components/core/ExpandedSheet'
 import { HtmlPreview, type HtmlPreviewHandle } from '@components/common/html-preview/HtmlPreview'
 import { cn } from '@lib/utils/cn'
+import { canRevealInFolder } from '@lib/utils/platform'
 import { formatBytesL } from '@lib/utils/format'
 import hljs from 'highlight.js/lib/common'
 import {
@@ -292,16 +293,17 @@ export function CodeFileViewer({
       <Download01Icon size={14} />
     </button>
   ) : null
-  const revealButton = onReveal ? (
-    <button
-      type="button"
-      onClick={onReveal}
-      title={t('chat.fileCard.reveal')}
-      className={cn(iconButton)}
-    >
-      <FolderOpenIcon size={14} />
-    </button>
-  ) : null
+  const revealButton =
+    onReveal && canRevealInFolder ? (
+      <button
+        type="button"
+        onClick={onReveal}
+        title={t('chat.fileCard.reveal')}
+        className={cn(iconButton)}
+      >
+        <FolderOpenIcon size={14} />
+      </button>
+    ) : null
 
   // Expanded sheet header: copy · download · reveal · open externally (close is
   // appended by ExpandedSheet). The card footer renders the same controls

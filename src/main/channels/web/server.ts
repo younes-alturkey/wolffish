@@ -133,6 +133,7 @@ const GUI_ONLY = new Set([
   'browserExtension:openExtensionsPage',
   'ollama:openInstallPage',
   'ollama:pickModelsFolder',
+  'updater:revealInstaller',
   'computerUse:openSettings',
   'spellcheck:replace',
   'spellcheck:addToDictionary',
@@ -1251,10 +1252,27 @@ export class WebServer {
     this.emitStatus()
   }
 
-  async revokeAllSessions(): Promise<void> {
-    await this.state.revokeAllSessions()
-    this.sessionCount = 0
-    this.disconnectAll('signed out everywhere')
+  /**
+   * Sign every browser out, except — when the change came from a browser —
+   * the one that asked. It proved it held the old password a moment ago, and
+   * signing it out would hand it a new passphrase it never gets to read.
+   *
+   * Signed-out sockets close with 4001, which the bridge takes as final and
+   * sends to the sign-in page. A plain restart code would have them
+   * reconnecting against a 401 forever.
+   */
+  async revokeAllSessions({ except }: { except?: string } = {}): Promise<void> {
+    await this.state.revokeAllSessions({ except })
+    for (const client of this.clients) {
+      if (except !== undefined && client.session.id === except) continue
+      try {
+        client.ws.close(4001, 'signed out')
+      } catch {
+        // already gone
+      }
+      this.clients.delete(client)
+    }
+    this.sessionCount = (await this.state.listSessions()).length
     this.emitStatus()
   }
 
@@ -2442,7 +2460,12 @@ export class WebServer {
     if (!handler) throw new Error(`unknown channel: ${channel}`)
     const stagedArgs = this.stagedPathsIn(channel, args)
     try {
-      return await handler({ sender: ctx.client.sender }, ...args)
+      // `webSessionId` names the browser session behind the call, for the
+      // handlers that sign sessions out and must spare the caller's.
+      return await handler(
+        { sender: ctx.client.sender, webSessionId: ctx.client.session.id },
+        ...args
+      )
     } finally {
       if (stagedArgs.length > 0) await this.consumeStaged(stagedArgs)
     }

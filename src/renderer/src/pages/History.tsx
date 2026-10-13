@@ -2,7 +2,13 @@ import { ChannelIcon } from '@components/common/channel-icon/ChannelIcon'
 import { DiagnosticExportOverlay } from '@components/common/diagnostic-export-overlay/DiagnosticExportOverlay'
 import { Button } from '@components/core/Button'
 import { Modal } from '@components/core/Modal'
+import { useToast } from '@components/core/toast/useToast'
 import { CONVERSATION_CHIP_BASE, conversationChipClasses } from '@lib/conversation-chip'
+import {
+  requestConversationDelete,
+  settleConversationDeletes,
+  usePendingConversationDeletes
+} from '@lib/conversation-delete'
 import {
   buildConversationRows,
   filterConversationRows,
@@ -54,6 +60,8 @@ export function History(): React.JSX.Element {
     runStatuses,
     closeConversation
   } = useSessions()
+  const toast = useToast()
+  const pendingDeletes = usePendingConversationDeletes()
 
   const [conversations, setConversations] = useState<ConversationMeta[]>(
     () => cachedConversations ?? []
@@ -77,10 +85,11 @@ export function History(): React.JSX.Element {
   // the next remount paints instantly. Delete mutates state/cache locally
   // instead of refetching (see handleDelete).
   const refresh = useCallback(async () => {
-    const [list, projectList] = await Promise.all([
+    const [fetched, projectList] = await Promise.all([
       window.api.conversation.list(),
       window.api.projects.list().catch(() => [] as Project[])
     ])
+    const list = settleConversationDeletes(fetched)
     cachedConversations = list
     cachedProjects = projectList
     setConversations(list)
@@ -120,6 +129,10 @@ export function History(): React.JSX.Element {
   // a procedure — shows up here the moment its first turn starts, with the
   // same pulsing number chip the rail gives it, instead of only once the work
   // is over and the cortex has caught up.
+  //
+  // Minus the rows a delete has tombstoned: a conversation that ran this
+  // session has a run status, and that would synthesize it right back as a
+  // ghost between the confirm and main's answer.
   const rows = useMemo(
     () =>
       buildConversationRows({
@@ -127,8 +140,8 @@ export function History(): React.JSX.Element {
         runStatuses,
         projects,
         untitled: t('chat.conversationsUntitled')
-      }),
-    [conversations, runStatuses, projects, t]
+      }).filter((r) => !pendingDeletes.has(r.conversationId)),
+    [conversations, runStatuses, projects, t, pendingDeletes]
   )
 
   // What the page actually lists: the rows the typed keywords match, all of
@@ -164,23 +177,33 @@ export function History(): React.JSX.Element {
     [goTo, openConversation, activateConversation]
   )
 
-  const handleDelete = useCallback(async () => {
+  const handleDelete = useCallback(() => {
     if (!deleteTarget) return
     const id = deleteTarget.conversationId
-    // Main refuses while the conversation has a turn in flight (ok:false) —
-    // the row's disabled state should prevent it, this is the backstop.
-    const result = await window.api.conversation.delete(id)
-    if (result.ok) {
-      closeConversation(id)
-      // Drop the row optimistically. deleteConversation removes the FILE, but
-      // the cortex row lingers until the watcher's removeFile (~500ms) — so a
-      // refresh() here would re-fetch the still-indexed row and flash it back.
-      // The conversation:changed push reconciles the list silently right after.
-      cachedConversations = cachedConversations?.filter((c) => c.id !== id) ?? null
-      setConversations((prev) => prev.filter((c) => c.id !== id))
-    }
+    // The dialog closes and the row goes on the confirm itself; the round
+    // trip runs behind that. Over IPC the two are indistinguishable, over the
+    // Web UI socket the call is the network — and the tombstone the request
+    // sets keeps a conversation:changed refetch from flashing the row back
+    // while the cortex catches up with the vanished file (conversation-delete).
     setDeleteTarget(null)
-  }, [deleteTarget, closeConversation])
+    cachedConversations = cachedConversations?.filter((c) => c.id !== id) ?? null
+    setConversations((prev) => prev.filter((c) => c.id !== id))
+    void requestConversationDelete(id).then((outcome) => {
+      if (outcome === 'deleted') {
+        closeConversation(id)
+        return
+      }
+      // Main refuses while the conversation has a turn in flight (`busy`) —
+      // the row's disabled state should prevent it, this is the backstop —
+      // or the call never completed (`failed`). Either way the row is still
+      // real: say so and put it back.
+      toast.show({
+        tone: 'error',
+        message: t(outcome === 'busy' ? 'history.deleteBusy' : 'history.deleteFailed')
+      })
+      void refresh()
+    })
+  }, [deleteTarget, closeConversation, refresh, toast, t])
 
   const handleNewChat = useCallback(() => {
     newSession()

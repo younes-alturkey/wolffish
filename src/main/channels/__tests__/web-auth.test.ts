@@ -202,6 +202,15 @@ async function run(): Promise<void> {
   await store.revokeAllSessions()
   ok('revokeAll empties', (await store.listSessions()).length === 0)
 
+  const keep = await store.createSession({ userAgent: 'UA/5', address: '9.9.9.9' })
+  await store.createSession({ userAgent: 'UA/6', address: '9.9.9.9' })
+  await store.revokeAllSessions({ except: keep.session.id })
+  const left = await store.listSessions()
+  ok(
+    'revokeAll with except keeps only that session',
+    left.length === 1 && left[0].id === keep.session.id
+  )
+
   console.log(`web-auth: ${passed} passed, ${failed} failed`)
   if (failed > 0) process.exitCode = 1
 }

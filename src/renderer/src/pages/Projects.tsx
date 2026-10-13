@@ -9,6 +9,11 @@ import { useToast } from '@components/core/toast/useToast'
 import { useChatReasoning } from '@hooks/use-chat-reasoning/useChatReasoning'
 import { normalizeReasoningMode, type ReasoningMode } from '@main/runtime/reasoning'
 import { CONVERSATION_CHIP_BASE, conversationChipClasses } from '@lib/conversation-chip'
+import {
+  requestConversationDelete,
+  settleConversationDeletes,
+  usePendingConversationDeletes
+} from '@lib/conversation-delete'
 import { mapConversationMessages } from '@lib/conversation-open'
 import {
   buildConversationRows,
@@ -77,6 +82,7 @@ export function Projects(): React.JSX.Element {
     closeConversation
   } = useSessions()
   const toast = useToast()
+  const pendingDeletes = usePendingConversationDeletes()
   // The chat's reasoning contract, for the card's thinking switch: the modes
   // its selected model honours, and the mode chat is showing right now.
   const reasoning = useChatReasoning()
@@ -156,7 +162,7 @@ export function Projects(): React.JSX.Element {
     const fetchMetas = (): void => {
       void window.api.conversation
         .list()
-        .then(setMetas)
+        .then((list) => setMetas(settleConversationDeletes(list)))
         .catch(() => {})
     }
     fetchMetas()
@@ -269,20 +275,31 @@ export function Projects(): React.JSX.Element {
     [activateConversation, openConversation, goTo]
   )
 
-  const handleDeleteConversation = useCallback(async () => {
+  const handleDeleteConversation = useCallback(() => {
     if (!convDeleteTarget) return
     const id = convDeleteTarget.conversationId
-    const result = await window.api.conversation.delete(id)
-    if (result.ok) {
-      // Drops the lingering run status too, so a live-only row can't survive
-      // its own deletion as a synthesized ghost.
-      closeConversation(id)
-      // Optimistic drop — the cortex row lingers ~500ms after the file goes;
-      // the conversation:changed push re-fetches the reconciled truth.
-      setMetas((prev) => prev.filter((m) => m.id !== id))
-    }
+    // Same contract as History: the dialog closes and the row goes on the
+    // confirm, the round trip runs behind it, and the tombstone keeps a
+    // refetch from flashing the row back while the cortex catches up.
     setConvDeleteTarget(null)
-  }, [convDeleteTarget, closeConversation])
+    setMetas((prev) => prev.filter((m) => m.id !== id))
+    void requestConversationDelete(id).then((outcome) => {
+      if (outcome === 'deleted') {
+        // Drops the lingering run status too, so a live-only row can't
+        // survive its own deletion as a synthesized ghost.
+        closeConversation(id)
+        return
+      }
+      toast.show({
+        tone: 'error',
+        message: t(outcome === 'busy' ? 'history.deleteBusy' : 'history.deleteFailed')
+      })
+      void window.api.conversation
+        .list()
+        .then((list) => setMetas(settleConversationDeletes(list)))
+        .catch(() => {})
+    })
+  }, [convDeleteTarget, closeConversation, toast, t])
 
   return (
     <>
@@ -487,10 +504,11 @@ export function Projects(): React.JSX.Element {
             untitled: t('chat.conversationsUntitled')
           }).filter(
             (r) =>
-              r.projectId === convsProject.id ||
-              (!r.indexed &&
-                activeProject?.id === convsProject.id &&
-                r.conversationId === activeConversationId)
+              !pendingDeletes.has(r.conversationId) &&
+              (r.projectId === convsProject.id ||
+                (!r.indexed &&
+                  activeProject?.id === convsProject.id &&
+                  r.conversationId === activeConversationId))
           )
           if (rows.length === 0) {
             return (

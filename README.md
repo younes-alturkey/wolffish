@@ -319,7 +319,7 @@ npm run build:linux    # Linux AppImage, deb, rpm
 npm run release        # npm version patch, then push main + tags
 ```
 
-Pushing a `v*` tag runs [the release workflow](.github/workflows/release.yml), which builds the macOS, Windows, and Linux installers and attaches them to a GitHub Release along with the update manifests the app reads. No secrets are required: every build is unsigned (macOS is ad-hoc signed so it launches on Apple Silicon).
+Pushing a `v*` tag runs [the release workflow](.github/workflows/release.yml), which builds the macOS, Windows, and Linux installers and attaches them to a GitHub Release along with the update manifests the app reads. No secrets are required: every build is unsigned (macOS is ad-hoc signed so it launches on Apple Silicon). The full procedure, changelog included, is in [RELEASE.md](RELEASE.md).
 
 ---
 

@@ -83,6 +83,8 @@ export class WebTransport {
   private reconnectDelay = RECONNECT_MIN_MS
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private helloWaiters: Array<{ resolve: (h: HelloFrame) => void; reject: (e: Error) => void }> = []
+  /** Whether the CURRENT socket ever got its hello — a close before one is a refused upgrade. */
+  private greeted = false
   hello: HelloFrame | null = null
   state: ConnectionState = 'closed'
 
@@ -138,22 +140,51 @@ export class WebTransport {
     const scheme = location.protocol === 'https:' ? 'wss' : 'ws'
     const ws = new WebSocket(`${scheme}://${location.host}/ws`)
     this.ws = ws
+    this.greeted = false
     ws.onmessage = (event) => this.onFrame(String(event.data))
     ws.onclose = (event) => {
       if (this.ws !== ws) return
       this.ws = null
       this.failPending(new Error('connection lost'))
       if (event.code === 4001 || event.code === 1008) {
-        this.setState('signed-out')
-        for (const w of this.helloWaiters) w.reject(new Error('signed out'))
-        this.helloWaiters = []
+        this.signedOut()
         return
       }
       this.setState('closed')
+      if (!this.greeted) {
+        // Closed before any hello: the upgrade was refused. Either the server
+        // is down (keep trying) or this browser's session is gone — signed
+        // out from elsewhere, a regenerated passphrase — and reconnecting
+        // would only ever meet the same 401. Ask the auth route, which
+        // answers either way.
+        void this.probeSession().then((authenticated) => {
+          if (authenticated === false) this.signedOut()
+          else this.scheduleReconnect()
+        })
+        return
+      }
       this.scheduleReconnect()
     }
     ws.onerror = () => {
       // onclose follows and carries the retry
+    }
+  }
+
+  private signedOut(): void {
+    this.setState('signed-out')
+    for (const w of this.helloWaiters) w.reject(new Error('signed out'))
+    this.helloWaiters = []
+  }
+
+  /** Whether this browser is still signed in; null when the server cannot be asked. */
+  private async probeSession(): Promise<boolean | null> {
+    try {
+      const res = await fetch('/api/auth/status', { cache: 'no-store' })
+      if (!res.ok) return null
+      const body = (await res.json()) as { authenticated?: boolean }
+      return body.authenticated === true
+    } catch {
+      return null
     }
   }
 
@@ -189,6 +220,7 @@ export class WebTransport {
     }
     if (frame.t === 'hello') {
       this.hello = frame as unknown as HelloFrame
+      this.greeted = true
       this.reconnectDelay = RECONNECT_MIN_MS
       this.setState('open')
       for (const w of this.helloWaiters) w.resolve(this.hello)

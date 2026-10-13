@@ -1,6 +1,6 @@
 import type { TouchedFolder } from '@lib/touched-folders/touchedFolders'
 import { cn } from '@lib/utils/cn'
-import { isMac } from '@lib/utils/platform'
+import { canRevealInFolder, isMac } from '@lib/utils/platform'
 import { Folder01Icon } from 'hugeicons-react'
 import { useTranslation } from 'react-i18next'
 
@@ -53,14 +53,19 @@ export function TouchedFolders({
             key={folder.path}
             type="button"
             role="listitem"
-            onClick={() => void window.api.upload.revealPath(folder.path)}
+            // A chip opens its folder on the desktop; in a browser it is a
+            // label of what was touched, with nothing it could open.
+            onClick={
+              canRevealInFolder ? () => void window.api.upload.revealPath(folder.path) : undefined
+            }
             title={`${folder.path}\n${
               folder.files > 0
                 ? t('chat.touchedFolders.chip', { count: folder.files })
                 : t('chat.touchedFolders.attached')
             }`}
             className={cn(
-              'flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium',
+              'flex h-7 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium',
+              canRevealInFolder ? 'cursor-pointer' : 'cursor-default',
               // The card ground, not the chrome's glass: these chips lie over
               // scrolling transcript text, and a translucent chip let code lines
               // ghost through it. bg-surface is the same ground every card below

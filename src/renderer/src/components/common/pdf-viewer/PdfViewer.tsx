@@ -1,6 +1,7 @@
 import { ExpandedSheet } from '@components/core/ExpandedSheet'
 import { useUploadBlob } from '@hooks/use-upload-blob/useUploadBlob'
 import { cn } from '@lib/utils/cn'
+import { canRevealInFolder } from '@lib/utils/platform'
 import {
   ArrowExpandIcon,
   Download01Icon,
@@ -133,17 +134,19 @@ function ActivePdf({
         >
           <LinkSquare02Icon size={14} />
         </button>
-        <button
-          type="button"
-          onClick={revealInFolder}
-          title={t('chat.fileCard.reveal')}
-          className={cn(
-            'text-muted hover:text-fg flex shrink-0 cursor-pointer items-center justify-center rounded p-1',
-            'focus-visible:ring-2 focus-visible:ring-accent'
-          )}
-        >
-          <FolderOpenIcon size={14} />
-        </button>
+        {canRevealInFolder && (
+          <button
+            type="button"
+            onClick={revealInFolder}
+            title={t('chat.fileCard.reveal')}
+            className={cn(
+              'text-muted hover:text-fg flex shrink-0 cursor-pointer items-center justify-center rounded p-1',
+              'focus-visible:ring-2 focus-visible:ring-accent'
+            )}
+          >
+            <FolderOpenIcon size={14} />
+          </button>
+        )}
         <button
           type="button"
           onClick={download}

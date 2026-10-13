@@ -7,7 +7,7 @@ import { SheetGrid } from '@components/common/spreadsheet-viewer/SheetGrid'
 import { useToast } from '@components/core/toast/useToast'
 import { RTL_LOCALES } from '@lib/i18n'
 import { cn } from '@lib/utils/cn'
-import { pageTopPadding } from '@lib/utils/platform'
+import { canRevealInFolder, pageTopPadding } from '@lib/utils/platform'
 import type { ViewerTreeNode } from '@preload/index'
 import { useFlow } from '@providers/flow/useFlow'
 import { useLocale } from '@providers/locale/useLocale'
@@ -476,19 +476,21 @@ export function ViewerPage(): React.JSX.Element {
                       {t('workspace.readOnly')}
                     </Badge>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => void handleReveal()}
-                    aria-label={t('workspace.reveal')}
-                    className={cn(
-                      'inline-flex items-center gap-1 rounded-md text-xs cursor-pointer',
-                      'text-muted hover:text-fg px-1.5 py-0.5',
-                      'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg'
-                    )}
-                  >
-                    <FolderOpenIcon size={14} />
-                    <span className="max-sm:hidden">{t('workspace.reveal')}</span>
-                  </button>
+                  {canRevealInFolder && (
+                    <button
+                      type="button"
+                      onClick={() => void handleReveal()}
+                      aria-label={t('workspace.reveal')}
+                      className={cn(
+                        'inline-flex items-center gap-1 rounded-md text-xs cursor-pointer',
+                        'text-muted hover:text-fg px-1.5 py-0.5',
+                        'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg'
+                      )}
+                    >
+                      <FolderOpenIcon size={14} />
+                      <span className="max-sm:hidden">{t('workspace.reveal')}</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => void handleDownload()}

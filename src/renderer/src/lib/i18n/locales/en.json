@@ -1226,6 +1226,7 @@
           "step6": "It chooses each capture's resolution and format itself — sharper when it must read detail, lighter when it only navigates. Ask for a higher-resolution screenshot any time."
         },
         "openSettings": "Open System Settings",
+        "webHint": "Grant this in System Settings on the computer running Wolffish.",
         "permHint": "Both are one-time grants. Screen Recording takes effect after restarting Wolffish.",
         "linuxTitle": "Desktop session"
       },
@@ -1469,7 +1470,8 @@
       "actions": {
         "test": "Test",
         "remove": "Remove",
-        "signIn": "Sign in"
+        "signIn": "Sign in",
+        "signInWebHint": "The sign-in page opens on the computer running Wolffish — finish it there."
       },
       "toggle": {
         "label": "Enabled",
@@ -1786,6 +1788,11 @@
     },
     "web": {
       "title": "Web UI",
+      "disable": {
+        "title": "Turn off the Web UI?",
+        "body": "This browser is using it. The server stops and this page loses its connection — turn it back on from the desktop app or the wolffish CLI.",
+        "confirm": "Turn off"
+      },
       "subtitle": "The whole app, served to any browser at this machine's address — a phone on the same network, or a VPS reached by its IP. Same chat, same settings, same agent; protected by one master password.",
       "toggle": {
         "on": "On",
@@ -1809,7 +1816,7 @@
       "password": {
         "title": "Master password",
         "set": "Set",
-        "description": "What a browser types once to sign in. Wolffish generated a twelve-word passphrase at first launch, so the Web UI could be on from the start; show it, copy it, regenerate it, or replace it with one of your own. Changing it signs every browser out.",
+        "description": "What a browser types once to sign in. Wolffish generated a twelve-word passphrase at first launch, so the Web UI could be on from the start; show it, copy it, regenerate it, or replace it with one of your own. Changing it signs every browser out, except the one you change it from.",
         "placeholder": "New master password",
         "confirmPlaceholder": "Repeat it",
         "tooShort": "At least {{min}} characters.",
@@ -1818,7 +1825,7 @@
         "setAction": "Set password",
         "saved": "Master password saved.",
         "confirmTitle": "Change the master password?",
-        "confirmBody": "Every browser that is signed in will be signed out and will need the new password.",
+        "confirmBody": "Every other browser that is signed in will be signed out and will need the new password; this one stays signed in.",
         "requirements": "At least {{min}} characters, rated Good or better: mix letters, numbers and symbols, or use a long passphrase.",
         "strength": {
           "label": "Password strength",
@@ -1843,7 +1850,7 @@
         "copied": "Copied",
         "regenerate": "Regenerate",
         "regenerateTitle": "Generate a new master password?",
-        "regenerateBody": "A new twelve-word passphrase replaces the current one. Every browser that is signed in will be signed out and will need the new one.",
+        "regenerateBody": "A new twelve-word passphrase replaces the current one. Every other browser that is signed in will be signed out and will need the new one; this one stays signed in.",
         "regenerated": "New master password generated.",
         "useOwn": "Use a password of my own instead"
       },
@@ -2200,6 +2207,7 @@
       "record": "Record voice message",
       "noMic": "No microphone available",
       "permissionDenied": "Mic access denied — allow in system settings.",
+      "needsHttps": "Browsers only allow the microphone over HTTPS — turn it on in Settings → Web UI.",
       "recording": "Recording",
       "stopRecording": "Stop recording",
       "play": "Play",
@@ -2885,6 +2893,8 @@
     "deleteWarning": "This can't be undone.",
     "deleteConfirm": "Delete",
     "deleteCancel": "Cancel",
+    "deleteBusy": "Couldn't delete — this conversation still has a turn running.",
+    "deleteFailed": "Couldn't delete the conversation. Check the connection and try again.",
     "newChat": "New chat",
     "processing": "Processing…",
     "diagnosticsPending": "Not indexed yet — try again in a moment",

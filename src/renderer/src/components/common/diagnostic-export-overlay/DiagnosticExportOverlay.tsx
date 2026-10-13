@@ -1,5 +1,6 @@
 import { Button } from '@components/core/Button'
 import { cn } from '@lib/utils/cn'
+import { canRevealInFolder } from '@lib/utils/platform'
 import type { DiagnosticProgress, DiagnosticResult, DiagnosticStep } from '@preload/index'
 import {
   Alert02Icon,
@@ -247,10 +248,12 @@ export function DiagnosticExportOverlay({
                 </div>
               </div>
               <div className="mt-3 flex gap-2">
-                <Button variant="outline" size="sm" onClick={reveal} className="flex-1">
-                  <FolderOpenIcon size={14} />
-                  {t('diagnostics.overlay.reveal')}
-                </Button>
+                {canRevealInFolder && (
+                  <Button variant="outline" size="sm" onClick={reveal} className="flex-1">
+                    <FolderOpenIcon size={14} />
+                    {t('diagnostics.overlay.reveal')}
+                  </Button>
+                )}
                 <Button
                   variant="primary"
                   size="sm"

@@ -7,6 +7,13 @@ export const isWeb =
   typeof document !== 'undefined' && document.documentElement.classList.contains('wf-web')
 
 /**
+ * Whether "reveal in folder" means anything here. A browser has no Finder —
+ * the folder would open on the machine running Wolffish, out of sight — so
+ * every reveal control renders only when this is true.
+ */
+export const canRevealInFolder = !isWeb
+
+/**
  * macOS runs the window with titleBarStyle 'hiddenInset' (no native titlebar);
  * content clears the traffic lights and lines up with the sidebar rail at `pt-8`
  * (32px). Windows and Linux draw their own native titlebar above the webview, so

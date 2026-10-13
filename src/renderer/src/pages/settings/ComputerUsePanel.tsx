@@ -1,4 +1,5 @@
 import { Button } from '@components/core/Button'
+import { isWeb } from '@lib/utils/platform'
 import { PanelBackChevron } from '@pages/settings/drillNav'
 import type {
   ComputerUsePermissions,
@@ -72,11 +73,18 @@ export function ComputerUsePanel(): React.JSX.Element {
         <span className={granted ? 'text-green-500' : 'text-red-400'}>{granted ? '●' : '○'}</span>
         <span className="text-fg">{label}</span>
       </div>
-      {!granted && (
-        <Button size="sm" variant="outline" onClick={() => void openPane(pane)}>
-          {t('settings.services.computerUse.openSettings')}
-        </Button>
-      )}
+      {/* The grant lives in the OS of the machine running Wolffish — a
+          browser elsewhere can only say where to go. */}
+      {!granted &&
+        (isWeb ? (
+          <span className="text-muted text-end text-xs">
+            {t('settings.services.computerUse.webHint')}
+          </span>
+        ) : (
+          <Button size="sm" variant="outline" onClick={() => void openPane(pane)}>
+            {t('settings.services.computerUse.openSettings')}
+          </Button>
+        ))}
     </div>
   )
 

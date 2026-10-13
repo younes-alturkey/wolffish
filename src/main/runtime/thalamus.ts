@@ -15,6 +15,7 @@ import { calculateCost } from '@main/runtime/usage'
 import { XAIProvider } from '@main/runtime/providers/xai'
 import { ZaiProvider } from '@main/runtime/providers/zai'
 import {
+  cloudModelSupportsToolResultImages,
   cloudModelSupportsVision,
   hasVisualContent,
   isModalityReject,
@@ -452,6 +453,12 @@ export class Thalamus {
         : cloudModelSupportsVision(entry.id, entry.model)
     if (!vision) {
       return { ...options, messages: stripVisualContent(options.messages) }
+    }
+    if (entry.id !== 'local' && !cloudModelSupportsToolResultImages(entry.id, entry.model)) {
+      return {
+        ...options,
+        messages: stripVisualContent(options.messages, TOOL_RESULT_MODALITY_STRIP_REASON, 'tool')
+      }
     }
     const memoKey = `${entry.id}:${entry.model}`
     const memo = this.toolResultModalityRejects.get(memoKey)

@@ -343,6 +343,80 @@ async function run(): Promise<void> {
     'status: vapid key after sign-in',
     typeof status1.vapidPublicKey === 'string' && status1.vapidPublicKey.length > 80
   )
+  // ── a password change from a browser spares that browser ──────────────────
+  // The server stamps the caller's session on every invoke; a handler that
+  // signs "everyone else" out with it as `except` must keep the caller's
+  // socket and cookie, close every other browser with 4001 — final, so the
+  // bridge goes to the sign-in page instead of reconnecting against a 401
+  // forever — and still deliver the reply to the caller.
+  handlers.set('test:signOutOthers', async (e: { webSessionId?: string }) => {
+    await server.revokeAllSessions({ except: e.webSessionId })
+    return { spared: e.webSessionId ?? null }
+  })
+  const loginB = await call(`${base}/api/auth/login`, {
+    method: 'POST',
+    body: JSON.stringify({ password: 'open sesame 123' }),
+    headers: { 'content-type': 'application/json', origin: base }
+  })
+  const cookieB = (loginB.headers.get('set-cookie') ?? '').split(';')[0]
+  type Frame = Record<string, unknown>
+  type Browser = {
+    ws: InstanceType<typeof WebSocket>
+    next: () => Promise<Frame>
+    closed: Promise<number>
+  }
+  const openSocket = (c: string): Promise<Browser> =>
+    new Promise((resolve, reject) => {
+      const sock = new WebSocket(`ws://127.0.0.1:${port}/ws`, {
+        headers: { origin: base, cookie: c }
+      })
+      const q: Frame[] = []
+      const w: Array<(f: Frame) => void> = []
+      sock.on('message', (d) => {
+        const f = JSON.parse(d.toString()) as Frame
+        const waiter = w.shift()
+        if (waiter) waiter(f)
+        else q.push(f)
+      })
+      const closed = new Promise<number>((r) => sock.on('close', (code) => r(code)))
+      sock.on('error', reject)
+      sock.on('open', () =>
+        resolve({
+          ws: sock,
+          next: () => (q.length > 0 ? Promise.resolve(q.shift()!) : new Promise((r) => w.push(r))),
+          closed
+        })
+      )
+    })
+  const browserA = await openSocket(cookie)
+  const browserB = await openSocket(cookieB)
+  ok(
+    'both browsers greeted',
+    (await browserA.next()).t === 'hello' && (await browserB.next()).t === 'hello'
+  )
+  browserA.ws.send(JSON.stringify({ t: 'invoke', id: 1, channel: 'test:signOutOthers', args: [] }))
+  const spareReply = await browserA.next()
+  ok(
+    'the caller gets the reply, stamped with its own session',
+    spareReply.t === 'result' &&
+      spareReply.ok === true &&
+      typeof (spareReply.value as { spared: unknown }).spared === 'string',
+    JSON.stringify(spareReply)
+  )
+  ok('the other browser is closed with 4001', (await browserB.closed) === 4001)
+  ok('the caller stays connected', browserA.ws.readyState === WebSocket.OPEN)
+  const stA = (await call(`${base}/api/auth/status`, { cookie })).json() as {
+    authenticated: boolean
+  }
+  const stB = (await call(`${base}/api/auth/status`, { cookie: cookieB })).json() as {
+    authenticated: boolean
+  }
+  ok(
+    'caller cookie still signed in, the other one not',
+    stA.authenticated === true && stB.authenticated === false
+  )
+  browserA.ws.close()
+
   for (let i = 0; i < 6; i++) {
     await call(`${base}/api/auth/login`, {
       method: 'POST',

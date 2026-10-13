@@ -156,10 +156,12 @@ export class WebStateStore {
     await this.persist()
   }
 
-  async revokeAllSessions(): Promise<void> {
+  async revokeAllSessions({ except }: { except?: string } = {}): Promise<void> {
     const state = await this.load()
-    state.sessions = []
-    state.subscriptions = []
+    state.sessions = state.sessions.filter((s) => except !== undefined && s.id === except)
+    state.subscriptions = state.subscriptions.filter(
+      (p) => except !== undefined && p.sessionId === except
+    )
     await this.persist()
   }
 

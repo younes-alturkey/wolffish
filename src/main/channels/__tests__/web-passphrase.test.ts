@@ -113,9 +113,11 @@ async function run(): Promise<void> {
   const handlers = new Map<string, (...a: any[]) => any>()
   let revoked = 0
   let applied = 0
+  const spared: Array<string | undefined> = []
   const server = {
-    revokeAllSessions: async () => {
+    revokeAllSessions: async (opts?: { except?: string }) => {
       revoked++
+      spared.push(opts?.except)
     },
     applyConfig: async () => {
       applied++
@@ -141,7 +143,10 @@ async function run(): Promise<void> {
     'regenerate returns a new twelve-word phrase',
     regen.password !== cfg1.password && regen.password.split(' ').length === 12
   )
-  ok('regenerate signs every browser out and re-applies', revoked === 1 && applied === 1)
+  ok(
+    'regenerate from the desktop signs every browser out and re-applies',
+    revoked === 1 && applied === 1 && spared[0] === undefined
+  )
   ok('regenerate persisted', (await getWebUiConfig()).password === regen.password)
   ok(
     'regenerate verifies and reports generated',
@@ -150,7 +155,11 @@ async function run(): Promise<void> {
   )
   ok('config change broadcast', broadcasts.includes('web:configChange'))
 
-  await handlers.get('web:setPassword')!(e, 'correct horse battery staple')
+  // From a browser, the call carries its own session — the one the server
+  // must NOT sign out, or the result never reaches the person who asked.
+  const fromBrowser = { webSessionId: 'sess-1' } as unknown as import('electron').IpcMainInvokeEvent
+  await handlers.get('web:setPassword')!(fromBrowser, 'correct horse battery staple')
+  ok('own password from a browser spares that browser', spared[1] === 'sess-1')
   const cfg3 = await getWebUiConfig()
   ok(
     'own password drops the clear phrase and verifies',

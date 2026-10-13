@@ -3,6 +3,7 @@ import { CopyButton } from '@components/core/CopyButton'
 import { Input } from '@components/core/Input'
 import { useToast } from '@components/core/toast/useToast'
 import { cn } from '@lib/utils/cn'
+import { isWeb } from '@lib/utils/platform'
 import type { McpHeader, McpServerSnapshot, McpServerState } from '@preload/index'
 import {
   Add01Icon,
@@ -673,14 +674,24 @@ export function McpPanel(): React.JSX.Element {
                             )}
                           </span>
                         </span>
-                        <Button
-                          size="sm"
-                          variant="primary"
-                          disabled={rowBusy != null}
-                          onClick={() => void handleSignIn(server.id)}
-                        >
-                          {t('settings.mcp.actions.signIn')}
-                        </Button>
+                        <div className="flex shrink-0 flex-col items-end gap-1">
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            disabled={rowBusy != null}
+                            onClick={() => void handleSignIn(server.id)}
+                          >
+                            {t('settings.mcp.actions.signIn')}
+                          </Button>
+                          {/* The consent page opens on the machine running
+                              Wolffish, and its callback lands there too — a
+                              browser elsewhere only starts the flow. */}
+                          {isWeb && (
+                            <span className="text-muted text-end text-[11px] leading-snug">
+                              {t('settings.mcp.actions.signInWebHint')}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     )}
                     {/* Below the URL: while connecting, the live handshake

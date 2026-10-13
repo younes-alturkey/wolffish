@@ -9,6 +9,7 @@
 
 import type { ChatMessage } from '../thalamus'
 import {
+  cloudModelSupportsToolResultImages,
   cloudModelSupportsVision,
   hasVisualContent,
   isModalityReject,
@@ -358,6 +359,34 @@ check('modality predicate: invalid api key', isModalityReject('invalid api key')
     'limit: deterministic over identical histories',
     JSON.stringify(limitToolResultImages(ten)) === JSON.stringify(limitToolResultImages(ten)),
     true
+  )
+}
+
+// ---------------------------------------------------------------------------
+// cloudModelSupportsToolResultImages — o1 reads user images but 500s on an
+// image inside function_call_output (live 2026-10-13)
+// ---------------------------------------------------------------------------
+
+const TOOL_IMAGE_CASES: Array<[provider: string, model: string, ok: boolean]> = [
+  ['openai', 'o1', false],
+  ['openai', 'o1-2024-12-17', false],
+  ['openai', 'O1', false],
+  ['openrouter', 'openai/o1', false],
+  ['openai', 'o1-mini', false], // text-only anyway
+  ['openai', 'o3', true],
+  ['openai', 'o4-mini', true],
+  ['openai', 'gpt-6-luna', true],
+  ['openai', 'gpt-4o', true],
+  ['openai', 'gpt-4', false], // text-only: no images anywhere
+  ['anthropic', 'claude-fable-5', true],
+  ['xai', 'grok-4.6', true],
+  ['deepseek', 'deepseek-v4-pro', false]
+]
+for (const [provider, model, ok] of TOOL_IMAGE_CASES) {
+  check(
+    `tool images: ${provider}/${model}`,
+    cloudModelSupportsToolResultImages(provider, model),
+    ok
   )
 }
 

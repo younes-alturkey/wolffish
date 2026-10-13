@@ -238,6 +238,11 @@ export function WebUiPanel(): React.JSX.Element {
     }
   }, [])
 
+  // Turning the Web UI off FROM the Web UI ends the session doing it — the
+  // confirm says so, and the socket going away under the call is then the
+  // expected outcome rather than an error.
+  const [disableOpen, setDisableOpen] = useState(false)
+
   const apply = useCallback(
     async (key: string, patch: WebUiConfigPatch): Promise<void> => {
       setBusy(key)
@@ -249,6 +254,7 @@ export function WebUiPanel(): React.JSX.Element {
           toast.show({ message: result.status.error, tone: 'error' })
         }
       } catch (err) {
+        if (isWeb && patch.enabled === false) return
         toast.show({ message: err instanceof Error ? err.message : String(err), tone: 'error' })
       } finally {
         setBusy(null)
@@ -316,9 +322,42 @@ export function WebUiPanel(): React.JSX.Element {
               loaded={loaded}
               disabled={!config?.passwordSet || busy !== null}
               options={toggleOptions}
-              onChange={(value) => void apply('enabled', { enabled: value })}
+              onChange={(value) => {
+                if (isWeb && !value) setDisableOpen(true)
+                else void apply('enabled', { enabled: value })
+              }}
             />
           </div>
+          <Modal
+            open={disableOpen}
+            onClose={() => setDisableOpen(false)}
+            title={t('settings.web.disable.title')}
+            footer={
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => setDisableOpen(false)}
+                >
+                  {t('common.cancel')}
+                </Button>
+                <Button
+                  size="sm"
+                  className="flex-1 border border-transparent bg-red-600 text-white shadow-none hover:bg-red-700"
+                  disabled={busy !== null}
+                  onClick={() => {
+                    setDisableOpen(false)
+                    void apply('enabled', { enabled: false })
+                  }}
+                >
+                  {t('settings.web.disable.confirm')}
+                </Button>
+              </div>
+            }
+          >
+            <p className="text-muted">{t('settings.web.disable.body')}</p>
+          </Modal>
           {!config?.passwordSet && loaded && (
             <Notice tone="warning" text={t('settings.web.needsPassword')} />
           )}
