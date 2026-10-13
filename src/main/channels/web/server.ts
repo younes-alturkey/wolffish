@@ -55,6 +55,7 @@ import {
   checkIdentifier,
   defaultPreflightDeps,
   detectPublicIp,
+  openFirewallPorts,
   runPreflight,
   selfTestReachability,
   type PreflightDeps,
@@ -557,6 +558,8 @@ export class WebServer {
   private statusTimer: ReturnType<typeof setTimeout> | null = null
   private readonly pdfs = new Map<string, { data: Buffer; name: string; expires: number }>()
   private readonly stagingDir: string
+  /** App ports this process already asked the host firewall about. */
+  private readonly firewallAsked = new Set<number>()
   private vapid: VapidKeys | null = null
   private starting: Promise<void> | null = null
   /** Signed-in browsers, cached from the last store read so quickStatus() stays synchronous. */
@@ -637,6 +640,7 @@ export class WebServer {
         this.main.server.on('upgrade', (req, socket, head) =>
           upgrade(req, socket as net.Socket, head)
         )
+        void this.openFirewall(this.main.port, bind)
       }
     } catch (err) {
       this.error = describeListenError(err)
@@ -1766,6 +1770,29 @@ export class WebServer {
     for (const p of paths) {
       if (!this.isStaged(p)) continue
       await fs.rm(path.dirname(p), { recursive: true, force: true }).catch(() => undefined)
+    }
+  }
+
+  /**
+   * The app port, opened in the host firewall the first time it listens on
+   * a public interface — the same helper the HTTPS preflight uses for 80
+   * and 443, so a fresh VPS answers on its port without a ufw line typed by
+   * hand. Loopback binds and macOS have nothing to open; a refusal is
+   * logged with the command, never thrown — the listener is already up.
+   */
+  private async openFirewall(port: number, bind: string): Promise<void> {
+    if (this.firewallAsked.has(port)) return
+    this.firewallAsked.add(port)
+    if (bind === '127.0.0.1' || bind === '::1' || bind === 'localhost') return
+    try {
+      const step = await openFirewallPorts(this.preflightDeps, [port])
+      if (step.status === 'ok') this.deps.log(`${TAG} firewall: ${step.detail}`)
+      else if (step.status === 'warn')
+        this.deps.warn(
+          `${TAG} firewall: ${step.detail}${step.fix ? ` ${step.fix.text} ${step.fix.commands.join(' ; ')}` : ''}`
+        )
+    } catch (err) {
+      this.deps.warn(`${TAG} firewall: ${err instanceof Error ? err.message : String(err)}`)
     }
   }
 

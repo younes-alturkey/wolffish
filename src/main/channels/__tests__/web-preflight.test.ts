@@ -70,6 +70,7 @@ async function run(): Promise<void> {
     describePortOwner,
     privilegedPortFix,
     firewallCommands,
+    openFirewallPorts,
     PROVIDER_FIREWALL_NOTE
   } = await import('@main/channels/web/preflight')
 
@@ -310,6 +311,34 @@ async function run(): Promise<void> {
   ok(
     'firewalld running and writable → ok',
     firewalld.steps[4].status === 'ok' && /firewalld/.test(firewalld.steps[4].detail)
+  )
+  // The app port goes through the same opener, by number rather than service.
+  const appPortCalls: string[][] = []
+  const appPort = await openFirewallPorts(
+    deps({
+      uid: () => 0,
+      exec: async (bin, args) => {
+        if (bin === 'ufw') throw new Error('ENOENT')
+        appPortCalls.push([bin, ...args])
+        if (bin === 'firewall-cmd' && args[0] === '--state')
+          return { code: 0, stderr: '', stdout: 'running\n' }
+        return { code: 0, stderr: '', stdout: 'success\n' }
+      }
+    }),
+    [8787]
+  )
+  ok(
+    'app port on firewalld → --add-port, not a service',
+    appPort.status === 'ok' &&
+      appPortCalls.some((c) => c.includes('--add-port=8787/tcp')) &&
+      !appPortCalls.some((c) => c.includes('--add-service=http'))
+  )
+  ok(
+    'firewall commands name the app port',
+    firewallCommands('linux', [8787])[0] === 'sudo ufw allow 8787/tcp' &&
+      /--add-port=8787\/tcp/.test(firewallCommands('linux', [8787])[1]) &&
+      /Wolffish 8787/.test(firewallCommands('win32', [8787])[0]) &&
+      /Wolffish HTTPS/.test(firewallCommands('win32', [80, 443])[0])
   )
   const noFw = await runPreflight(base, deps({ uid: () => 0 }))
   ok(

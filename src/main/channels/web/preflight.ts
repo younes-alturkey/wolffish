@@ -283,16 +283,38 @@ export function firewallCommands(platform: NodeJS.Platform, ports: number[]): st
   if (platform === 'linux')
     return [
       `sudo ufw allow ${list}/tcp`,
-      `sudo firewall-cmd --permanent --add-service=http --add-service=https && sudo firewall-cmd --reload`
+      `sudo firewall-cmd --permanent ${firewalldArgs(ports).join(' ')} && sudo firewall-cmd --reload`
     ]
   if (platform === 'win32')
     return [
-      `New-NetFirewallRule -DisplayName 'Wolffish HTTPS' -Direction Inbound -Protocol TCP -LocalPort ${list} -Action Allow`
+      `New-NetFirewallRule -DisplayName '${windowsRuleName(ports)}' -Direction Inbound -Protocol TCP -LocalPort ${list} -Action Allow`
     ]
   return []
 }
 
-async function firewallStep(deps: PreflightDeps, ports: number[]): Promise<PreflightStep> {
+/** 80 and 443 by their service names, anything else (the app port) by number. */
+function firewalldArgs(ports: number[]): string[] {
+  return ports.map((p) =>
+    p === 80 ? '--add-service=http' : p === 443 ? '--add-service=https' : `--add-port=${p}/tcp`
+  )
+}
+
+function windowsRuleName(ports: number[]): string {
+  const https = ports.length === 2 && ports.includes(80) && ports.includes(443)
+  return https ? 'Wolffish HTTPS' : `Wolffish ${ports.join(',')}`
+}
+
+/**
+ * Open `ports` in the host firewall, where one is on and lets us. The HTTPS
+ * preflight runs it for 80 and 443; the server runs it for its own app port
+ * the moment it listens on a public interface, so a fresh VPS answers on
+ * 8787 without anyone typing a ufw line. Every outcome is a step: ok, a warn
+ * carrying the exact command, or a skip on a platform with nothing to do.
+ */
+export async function openFirewallPorts(
+  deps: PreflightDeps,
+  ports: number[]
+): Promise<PreflightStep> {
   const id = 'firewall' as const
   const note = ` ${PROVIDER_FIREWALL_NOTE}`
   if (deps.platform === 'darwin') {
@@ -368,7 +390,7 @@ async function firewallStep(deps: PreflightDeps, ports: number[]): Promise<Prefl
       const state = await deps.exec('firewall-cmd', ['--state'])
       if (/running/i.test(state.stdout + state.stderr)) {
         const add = await deps
-          .exec('firewall-cmd', ['--permanent', '--add-service=http', '--add-service=https'])
+          .exec('firewall-cmd', ['--permanent', ...firewalldArgs(ports)])
           .catch(() => ({ code: 1, stdout: '', stderr: '' }))
         const reload =
           add.code === 0
@@ -380,7 +402,7 @@ async function firewallStep(deps: PreflightDeps, ports: number[]): Promise<Prefl
           return {
             id,
             status: 'ok',
-            detail: `firewalld now allows http and https.${note}`,
+            detail: `firewalld now allows ${ports.join(' and ')}.${note}`,
             fix: null
           }
         return {
@@ -578,7 +600,7 @@ export async function runPreflight(
 
   // 5. firewall
   running('firewall')
-  emit(await firewallStep(deps, ports))
+  emit(await openFirewallPorts(deps, ports))
 
   return { ok: true, steps }
 }

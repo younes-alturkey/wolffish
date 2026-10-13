@@ -2010,7 +2010,7 @@
       "vps": {
         "title": "On a server",
         "step1": "Install Wolffish on the box and start it as a background service (Settings → Channels → CLI → Start on its own).",
-        "step2": "The Web UI is already on, behind a master password Wolffish generated — read it with wolffish web password, or Show it here. Open the firewall for the port above (and port 80 for Let's Encrypt).",
+        "step2": "The Web UI is already on, behind a master password Wolffish generated — read it with wolffish web password, or Show it here. Wolffish opens its own port in the machine's firewall (ufw, firewalld, Windows Firewall) when it starts; open the port above, and 80 and 443, in your provider's firewall or security group.",
         "step3": "On the HTTPS card pick Let's Encrypt, check the detected public IP, press Enable HTTPS and watch the steps — the certificate arrives within a minute, HTTPS answers on 443, and it renews itself.",
         "step4": "On your phone, open the address shown above, sign in, allow notifications, and add it to the home screen for a full-screen app."
       }
