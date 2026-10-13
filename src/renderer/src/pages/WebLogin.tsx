@@ -214,7 +214,7 @@ export function WebLogin({
                 className="w-full"
               >
                 <Login03Icon size={18} />
-                {busy ? t('web.login.signingIn') : t('web.login.signIn')}
+                {t('web.login.signIn')}
               </Button>
             </form>
           </section>

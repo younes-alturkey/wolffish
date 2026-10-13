@@ -3013,7 +3013,6 @@
       "noPassword": "No master password is set yet. Set one in the desktop app under Settings → Channels → Web UI.",
       "placeholder": "Master password",
       "signIn": "Sign in",
-      "signingIn": "Signing in…",
       "wrong": "Wrong password.",
       "rateLimited": "Too many attempts — try again in {{seconds}}s.",
       "insecure": {
