@@ -34,6 +34,7 @@ import {
 } from '../lib/ui.mjs'
 import { renderMarkdown } from '../lib/markdown.mjs'
 import { pair } from './pair.mjs'
+import { webHttps, webNotify, webPassword, webRestart, webSessions, webStatus } from './web.mjs'
 import { pathCommand, service } from './service.mjs'
 import { brain, capabilities, manageKeys, variables } from './settings.mjs'
 import { isQuit, outOfRange, usage, USAGE_RANGES } from './workspace.mjs'
@@ -291,6 +292,7 @@ async function mobileStatus(client) {
   heading('Phone')
   if (!status?.paired) {
     out(c.gray('  no phone paired'))
+    out(c.gray('  the app is built from source and needs a relay you run — see "How to set it up"'))
     out(c.gray('  pair one from here, or: wolffish pair phone --code'))
     return 0
   }
@@ -314,6 +316,63 @@ async function mobileStatus(client) {
     ['how', c.gray(p.method === 'qr' ? 'QR code' : 'typed code')]
   ])
   if (tunnel.lastError) out(`  ${icon.warn()} ${c.yellow(String(tunnel.lastError))}`)
+  return 0
+}
+
+/**
+ * The steps before a pairing can exist. The phone app is not in the stores
+ * and the hosted relay is gone, so a terminal user who opens this card with
+ * nothing paired needs the same numbered list the desktop panel shows —
+ * otherwise "Pair a phone" offers a QR nothing can scan.
+ */
+async function mobileSetup() {
+  heading('Set up the phone app')
+  out(
+    wrapText(
+      c.gray(
+        'The phone app is no longer in the App Store or Google Play, and the relay it used to connect through is gone. Everything you need is in the Wolffish repository: a relay you deploy, an app you build and install, and one pairing.'
+      ),
+      2
+    )
+  )
+  out()
+  const steps = [
+    [
+      'Deploy the relay',
+      'Open packages/relay in the repository and follow its README. A free Cloudflare account and about ten minutes give you a wss:// address of your own; any machine that runs Node works too.'
+    ],
+    [
+      'Enter the relay address',
+      'On this card: Relay URL, then paste the wss:// address. The next pairing carries it to your phone, so nothing is typed there.'
+    ],
+    [
+      'Build the app from source',
+      'Open apps/mobile in the repository, run npm install, and put your own app identifier into app.config.ts (plus your Expo account if you build on EAS). The README names the exact lines.'
+    ],
+    [
+      'Install it on your phone',
+      'iPhone: plug it in and run npm run ios:device from a Mac with Xcode. Android: npm run android with USB debugging on, or npm run android:apk on EAS for an APK you sideload.'
+    ],
+    [
+      'Pair',
+      'Pair a phone from this card (or: wolffish pair phone), open the app, tap Connect to Desktop and scan the QR. From then on the phone reconnects by itself.'
+    ]
+  ]
+  steps.forEach(([title, body], index) => {
+    out(`  ${c.bold(`${index + 1}.`)} ${c.bold(title)}`)
+    out(wrapText(c.gray(body), 5))
+    out()
+  })
+  out(
+    wrapText(
+      c.gray(
+        'Push notifications while the app is closed need one more thing: an access token from your Expo account, stored on your relay. The relay README covers it. Without it, notifications still arrive whenever the app is open.'
+      ),
+      2
+    )
+  )
+  out()
+  out(`  ${c.gray('source')}  ${c.cyan('https://github.com/younes-alturkey/wolffish')}`)
   return 0
 }
 
@@ -1160,21 +1219,30 @@ async function updateStatus(client) {
 /**
  * The relay the phone meets the desktop through.
  *
- * Read-only from the terminal until now, which mattered because the one
- * install that needs a different relay is the self-hosted one — a VPS.
+ * Every install needs its own: the built-in address is the hosted relay that
+ * no longer exists, so until this is set to a deployment of packages/relay
+ * nothing can pair.
  */
 async function mobileRelay(client) {
   const status = await client.invoke('mobile:status').catch(() => null)
   heading('Relay')
+  const current = status?.relayUrl ?? null
+  const isBuiltIn = current !== null && current === status?.defaultRelayUrl
   keyValue([
-    ['now', c.cyan(String(status?.relayUrl ?? '—'))],
-    ['default', c.gray(String(status?.defaultRelayUrl ?? '—'))]
+    [
+      'now',
+      isBuiltIn
+        ? c.yellow(`${current} (the retired hosted relay — not online)`)
+        : c.cyan(String(current ?? '—'))
+    ]
   ])
   out()
   if (!interactive()) return 0
   out(
     wrapText(
-      c.gray('A wss:// URL, or blank to keep it. Type "default" to go back to the built-in one.'),
+      c.gray(
+        'The wss:// address of the relay you deployed (see "How to set it up"), or blank to keep it.'
+      ),
       2
     )
   )
@@ -1330,6 +1398,15 @@ async function installUpdate(client) {
     out(c.yellow('  nothing downloaded yet — check for updates first'))
     return 1
   }
+  if (ready.installerPath) {
+    // macOS: unsigned builds cannot replace themselves — the app opens the
+    // image it downloaded and quits; the user drags the new app over the old.
+    out(c.gray(`  saved to ${ready.installerPath}`))
+    if (!(await confirm('  open the installer now? the app quits', false))) return 0
+    await client.invoke('updater:install')
+    out(`${icon.ok()} opening the installer — drag Wolffish into Applications, then relaunch`)
+    return 0
+  }
   if (!(await confirm('  install now? the app restarts', false))) return 0
   await client.invoke('updater:install')
   out(`${icon.ok()} installing — the app will restart`)
@@ -1469,6 +1546,7 @@ export const ACTIONS = [
     run: (client) => service(client, ['install'])
   },
   { section: 'channels.cli', label: 'Remove autostart', run: removeAutostart },
+  { section: 'channels.mobile', label: 'How to set it up', view: true, run: mobileSetup },
   { section: 'channels.mobile', label: 'Paired phone', view: true, run: mobileStatus },
   {
     section: 'channels.mobile',
@@ -1503,6 +1581,62 @@ export const ACTIONS = [
     run: (client) => pair(client, ['whatsapp', '--number'])
   },
   { section: 'channels.whatsapp', label: 'Disconnect', run: whatsappLogout },
+  { section: 'channels.web', label: 'Status and addresses', view: true, run: webStatus },
+  {
+    section: 'channels.web',
+    label: 'Show the master password',
+    view: true,
+    run: (client) => webPassword(client, [])
+  },
+  {
+    section: 'channels.web',
+    label: 'Regenerate the master password',
+    run: (client) => webPassword(client, ['regenerate'])
+  },
+  {
+    section: 'channels.web',
+    label: 'Set my own master password',
+    run: (client) => webPassword(client, ['set'])
+  },
+  {
+    section: 'channels.web',
+    label: 'Signed-in browsers',
+    view: true,
+    run: (client) => webSessions(client, [])
+  },
+  {
+    section: 'channels.web',
+    label: 'Sign a browser out',
+    run: (client) => webSessions(client, ['revoke'])
+  },
+  {
+    section: 'channels.web',
+    label: 'Sign every browser out',
+    run: (client) => webSessions(client, ['revoke', 'all'])
+  },
+  { section: 'channels.web', label: 'Send a test notification', run: webNotify },
+  { section: 'channels.web', label: 'Restart the server', run: webRestart },
+  {
+    section: 'channels.web',
+    label: 'HTTPS status',
+    view: true,
+    run: (client) => webHttps(client, ['status'])
+  },
+  {
+    section: 'channels.web',
+    label: "Enable HTTPS (Let's Encrypt, one button)",
+    run: (client) => webHttps(client, ['enable'])
+  },
+  {
+    section: 'channels.web',
+    label: 'Renew the certificate',
+    run: (client) => webHttps(client, ['renew'])
+  },
+  {
+    section: 'channels.web',
+    label: 'Disable HTTPS',
+    run: (client) => webHttps(client, ['disable'])
+  },
 
   {
     section: 'services.notion',

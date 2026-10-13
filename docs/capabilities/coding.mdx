@@ -1,0 +1,107 @@
+---
+title: "Coding"
+description: "How Wolffish works inside a code project — plan mode, surgical edits, diffs, task lists, and putting it back"
+---
+
+# When the Folder Is a Repository
+
+Point a conversation at a code project and Wolffish stops being an assistant that happens to own a shell. Since **v1.0.288** it reads the project before it touches it, edits surgically instead of rewriting, shows you every change as a diff, checks its own work, and keeps the original bytes so a bad change is one sentence away from being undone.
+
+All of it is conditional. The coding context is attached **only when the working folder really is a code project** — an ordinary conversation carries none of it, and pays nothing for it.
+
+## What It Knows Before It Starts
+
+The runtime hands the model live facts about each of the conversation's working folders, computed once per turn:
+
+| Fact | Where it comes from |
+|---|---|
+| Which folders are actually projects | A manifest or a `.git` directory in the folder |
+| **Branch** and **uncommitted change count** | `git` in that folder, read fresh each turn |
+| **Toolchain** | The manifests present — `npm (package-lock.json) · TypeScript · ESLint`, `Ruff`, `Rust (Cargo.toml)`, `Go (go.mod)`, `Xcode`, Gradle, Maven, Flutter, Docker and the rest |
+| **The project's own check commands** | The scripts the project actually exposes |
+
+And before any of that carries weight, it reads the project's own **`AGENTS.md`** or **`CLAUDE.md`**. A repository's house rules outrank anything Wolffish believes by default — which is the whole point of putting them in the repository.
+
+<Note>
+  `AGENTS.md` and `CLAUDE.md` never both load for one folder, and the nearest one wins. See [AGENTS.md](/configuration/agents-md) for what belongs in it.
+</Note>
+
+## Plan First, Change After
+
+A **Plan chip** sits in the composer beside the draft-editor button. With it on, a turn **cannot change anything**: it reads, searches and investigates, then ends by writing a plan — the recommended approach, the files it will touch, the steps in order, and how the result will be checked — and tells you to turn Plan off to run it.
+
+This is not a request to the model. It is a **read-only gate in the runtime**: a tool call that would write is refused before it executes, with one exception — the plan file itself, at `<workspace>/files/plans/<conversation>.md`. An instruction can be talked around; a gate cannot.
+
+Plan is a **stance you take for a conversation**, not a property of its transcript, so it is held in one place and **shared with your paired phone**: set it from either surface and the other follows at once. A brand-new chat can carry the stance before it even has an id. Turn it off and the next turn is told, once, that the plan is now approved to act on.
+
+<Tip>
+  On [the phone](/integrations/mobile-app#plan-mode) the same stance is a **Plan chip in the composer row**, beside the model chip — the desktop's own placement, since mobile v1.0.59 — and it is a switch there, not just a sign: one tap on, another off. When your desktop is out of reach the chip **stays put and dims**, and a tap says why rather than setting a stance nothing would receive.
+</Tip>
+
+## Edits That Touch Only What They Mean To
+
+Three tools do the work, all documented in full under [filesystem](/capabilities/built-in-capabilities#core-system):
+
+- **`file_edit`** — a surgical, exact-string change. It keeps everything you did not touch byte-identical, **refuses an ambiguous match** rather than guessing which one you meant, and returns a real diff.
+- **`file_grep`** — search file *contents* with ripgrep across a codebase of any size, gitignore-aware.
+- **`file_glob`** — find a file by *name* pattern.
+
+`file_write` still exists for new files and deliberate whole-file replacements. It is not the tool for changing an existing file.
+
+### Two steps you never have to ask for
+
+Every edit is followed by two checks, automatically:
+
+1. **The project's own formatter** runs on the file — when the project demonstrably uses one.
+2. **The project's own TypeScript, ESLint, Ruff or Pyright** is asked what it thinks, and any errors are handed straight back, so they are fixed **in the same turn** rather than surfacing at build time.
+
+And a change is not done until a check passes: the narrowest test first, then the project's full typecheck, lint and tests — with a failure **reported rather than hidden**.
+
+## Every Change Arrives as a Diff
+
+A file edit and a shell run no longer look like every other tool call in the feed. Each gets a **compact activity row**: a short label, the file or the command, and a chip reading `+12 −3` for an edit or `exit 0` for a command, green or red.
+
+Open the row and an edit shows **the real unified diff** — red and green, with true line numbers down both sides; a command shows its output and, when the output was long, **the path of the file holding all of it**.
+
+The diff travels on the result itself, so **a conversation reopened next week renders exactly what it rendered live**.
+
+<Note>
+  These rows draw **whatever the [tool-activity switch](/channels/overview#the-clean-feed) says**, on every surface. A change in your project is not tool mechanics, so a clean feed shows it. Along the transcript's top edge there is also a strip of **folder chips** — every folder this conversation changed files in, and how many — each a click from opening on your desktop.
+</Note>
+
+## The Task List
+
+When a job runs to three steps or more the agent keeps a [task list](/capabilities/built-in-capabilities#core-system), and it appears in the chat as a **checklist card**: exactly one item in progress, an item ticked off only after the check that proves it really ran. The card **updates in place** rather than stacking a new copy on every revision, so a long run leaves one list showing where things stand. It reaches the paired phone and the exported PDF the same way.
+
+## Putting It Back
+
+Before the first change a turn makes to a file, Wolffish **keeps the original bytes**.
+
+- **`changes_list`** — what each recent turn touched
+- **`changes_revert`** — put a turn's files back: the whole turn, or one file of it
+
+It needs no git, works in any folder, and keeps the **last twenty turns** of each conversation. It exists for one sentence you have certainly said before: *that fix made it worse, put it back.*
+
+## Approvals, Narrowed
+
+Two changes make approval cards match the work.
+
+**Allow for this conversation.** The card has a second button. It approves the call in front of you and stops asking about **the same kind of call for the rest of the chat** — the same tool, and for the shell **the same command head**, so allowing `npm install` once never quietly allows `git push` later. Anything blocked outright never reaches this card and never gets the button.
+
+**The rules read the path, not the code.** Writing a file whose *contents* happened to mention a path used to stop the agent and ask about it — an ordinary relative import like `import x from '../lib/x'` raised a red **"Path traversal attempt"** card, and a script beginning `#!/usr/bin/env node` was announced as **"Modifying system files"**. The rules were reading the whole call, text and all. They now read **the path being written, and nothing else**. A genuine traversal such as `../../../etc/hosts`, and a genuine write into `/etc`, `/usr` or `/private`, still stop and ask exactly as before — on a file tool and on a shell command alike. One thing genuinely relaxes: a command that merely walks up a directory, `cd ../sibling && npm test`, no longer counts as an attempted break-out.
+
+## Long Output and Dev Servers
+
+Shell behaviour changed in the same release, for the same reason — see [shell](/capabilities/built-in-capabilities#core-system) for the detail:
+
+- Output keeps the **last** 2000 lines or 50 KB, because a failure is reported at the *end* of a log, with the full text spilled to a file the result names.
+- Commands run in **your working folder** by default, so `npm test` and `git status` land in the project without being told where it is.
+- A command shaped like a **dev server or watcher is refused in the foreground** and started in the background instead, with `shell_jobs` to list what is running and `shell_stop` to end it.
+
+## Seeing the App You Just Built
+
+The [mobile-simulators](/capabilities/built-in-capabilities#desktop-automation) capability puts iOS and Android on the desk — **37 `mobile_` tools**, one vocabulary for both platforms since **v1.0.299**. *"Does the new screen look right?"* becomes a question the agent answers by running the app, looking at it and **touching it**.
+
+Touches go to a **reference from the app's accessibility tree**, not a coordinate guessed off an old screenshot, and every touch returns **proof**: a close-up of the exact spot with a crosshair, and a verdict on whether the screen actually changed. On macOS the [xcode](/capabilities/built-in-capabilities#desktop-automation) capability closes the loop in one call — `xcode_run` **builds, installs and launches with logs streaming**, and a failed build comes back as file and line rather than a thousand lines of `xcodebuild` output.
+
+For a web page, an HTML file in the chat now **runs live** since **v1.0.295**: the card hosts the page in a real browser tab of its own, so scripts run, the canvas draws, and `localStorage` persists between opens, with **Reload** and **Developer tools** in the expanded view.

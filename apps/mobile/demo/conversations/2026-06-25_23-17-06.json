@@ -1,0 +1,622 @@
+{
+  "id": "2026-06-25_23-17-06",
+  "title": "Suggest 3 places to grab lunch near",
+  "model": "qwen3.5:9b",
+  "createdAt": 1782418626131,
+  "updatedAt": 1782418779541,
+  "messages": [
+    {
+      "id": "m_1782418779541_7dd38d",
+      "role": "user",
+      "content": "Suggest 3 places to grab lunch near a generic downtown and let me choose. If I want something different I'll tell you.",
+      "timestamp": 1782418779541
+    },
+    {
+      "id": "m_1782418779541_28855c",
+      "role": "assistant",
+      "content": "Let me grab some current options from around central Riyadh.Good, got some hits. Let me narrow it down with a couple more specific searches.Here are three very different lunch spots around central Riyadh (Olaya / Tahlia / KAFD area):Korean BBQ — let's find the real deal.Let me dig into the details on the top contenders.Solid picks. Here are three Korean BBQ killers in Riyadh:Koyee Korean BBQ — great choice. Here's what you need to know:\n\n- **Where:** The Zone, Al Takhassousi, Al Mohammadiyyah\n- **Hours:** Sun–Wed noon–11:30pm, Thu noon–12:30am, Fri 12:30pm–12:30am, Sat noon–12:30am\n- **The move:** Start with the BBQ (tabletop grill), add the **Dolsot Bibimbap** (stone pot mixed rice — it's their bestseller), and wrap with **Mango Bingsoo** (shaved ice with mango purée and condensed milk). Trust me on that dessert.\n- **IG:** @koyeebbq\n\nWider menu than most K-BBQ spots in Riyadh — you get the grill experience *plus* hearty soups and mains. Go hungry.\n\nEnjoy, and tell me how the Bingsoo hits 🐟",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_td_rt5oj5_1a",
+          "toolCallId": "call_td_rt5oj5_1",
+          "name": "todo_write",
+          "args": {
+            "todos": [
+              {
+                "content": "Search the web for “best lunch restaurants downtown Riyadh 2025…” and 2 more",
+                "status": "in_progress"
+              },
+              {
+                "content": "Ask the user",
+                "status": "pending"
+              },
+              {
+                "content": "Search the web for “best Korean BBQ restaurant Riyadh 2025 2026”",
+                "status": "pending"
+              },
+              {
+                "content": "Read timeoutriyadh.com",
+                "status": "pending"
+              },
+              {
+                "content": "Search the web for “Woo Samgyup Riyadh Korean BBQ location menu…” and 1 more",
+                "status": "pending"
+              },
+              {
+                "content": "Ask the user",
+                "status": "pending"
+              }
+            ]
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_td_rt5oj5_1b",
+          "toolCallId": "call_td_rt5oj5_1",
+          "status": "success",
+          "output": "6 todos (0 completed, 1 in progress)\n[\n  {\n    \"content\": \"Search the web for “best lunch restaurants downtown Riyadh 2025…” and 2 more\",\n    \"status\": \"in_progress\"\n  },\n  {\n    \"content\": \"Ask the user\",\n    \"status\": \"pending\"\n  },\n  {\n    \"content\": \"Search the web for “best Korean BBQ restaurant Riyadh 2025 2026”\",\n    \"status\": \"pending\"\n  },\n  {\n    \"content\": \"Read timeoutriyadh.com\",\n    \"status\": \"pending\"\n  },\n  {\n    \"content\": \"Search the web for “Woo Samgyup Riyadh Korean BBQ location menu…” and 1 more\",\n    \"status\": \"pending\"\n  },\n  {\n    \"content\": \"Ask the user\",\n    \"status\": \"pending\"\n  }\n]"
+        },
+        {
+          "kind": "todo",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_td_rt5oj5_1c",
+          "items": [
+            {
+              "content": "Search the web for “best lunch restaurants downtown Riyadh 2025…” and 2 more",
+              "status": "in_progress"
+            },
+            {
+              "content": "Ask the user",
+              "status": "pending"
+            },
+            {
+              "content": "Search the web for “best Korean BBQ restaurant Riyadh 2025 2026”",
+              "status": "pending"
+            },
+            {
+              "content": "Read timeoutriyadh.com",
+              "status": "pending"
+            },
+            {
+              "content": "Search the web for “Woo Samgyup Riyadh Korean BBQ location menu…” and 1 more",
+              "status": "pending"
+            },
+            {
+              "content": "Ask the user",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_2",
+          "delta": "Let me grab some current options from around central Riyadh."
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_14",
+          "toolCallId": "call_00_diyhjCM3bI2gf4zfOiSW8149",
+          "name": "web_search",
+          "args": {
+            "query": "best lunch restaurants downtown Riyadh 2025 2026",
+            "maxResults": 5
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_15",
+          "toolCallId": "call_00_diyhjCM3bI2gf4zfOiSW8149",
+          "status": "success",
+          "output": "{\"provider\":\"brave\",\"results\":[{\"title\":\"Riyadh's best restaurants: Everywhere you absolutely *must* eat at least once | Time Out Riyadh\",\"snippet\":\"If you’re after bold Nikkei flavours in a vibrant setting among the best restaurants in Riyadh, Chotto Matte is the place to be. This London-born hotspot landed in KAFD in early 2025 and has quickly become a favourite for everything from power lunches to stylish dinners with friends.\",\"url\":\"https://www.timeoutriyadh.com/food-drink/best-restaurants-in-riyadh\"},{\"title\":\"THE 10 BEST Lunch Restaurants in Riyadh (UPDATED 2026)\",\"snippet\":\"<strong>Lusin Restaurant</strong> in Riyadh is one if the best Restaurants offering Armenian...\",\"url\":\"https://www.tripadvisor.com/Restaurants-g293995-zfp30-Riyadh_Riyadh_Province.html\"},{\"title\":\"The 50 best spots for lunch in Riyadh\",\"snippet\":\"2025.02.07 So it was someone special’s birthday. Gotta make sure arrangements were to perfection. After some research got to know about Mamo, and pleasantly it’s a well known fine dine Resturant. About Mamo: Tucked away in the heart of Riyadh, Mamo Michelangelo brings the charm of the French Riviera and Italian countryside to Saudi Arabia.\",\"url\":\"https://wanderlog.com/list/geoCategory/59455/best-spots-for-lunch-in-riyadh\"},{\"title\":\"2026's Best Local Restaurants in Riyadh – Authentic Cuisine, Hidden Gems, and Top Guest Reviews | Trip.Best by Trip.com\",\"snippet\":\"These restaurants offer authentic flavors, traditional cooking methods, and immersive dining experiences. Enjoy local specialties, chef recommendations, and dishes that define Riyadh&#x27;s cuisine.\",\"url\":\"https://us.trip.com/toplist/tripbest/riyadh-best-local-restaurants-100900009563/\"},{\"title\":\"THE 10 BEST Restaurants in Riyadh (Updated June 2026)\",\"snippet\":\"Best Udon &amp; Soba (Wheat &amp; Buckwheat Noodle) in RiyadhBest Bento (Lunch Box) in RiyadhBest Waffles in RiyadhBest Laksa in RiyadhBest Pad Thai in RiyadhBest Bagels in RiyadhBest Crepes in RiyadhBest Meatballs in RiyadhBest Tempura in RiyadhBest Chili in RiyadhBest Fattoush in RiyadhBest Paella in RiyadhBest Dumplings in RiyadhBest Shawarma in RiyadhBest Lobster in RiyadhPopular Restaurant Categories\",\"url\":\"https://www.tripadvisor.com/Restaurants-g293995-Riyadh_Riyadh_Province.html\"}]}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_16",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_17",
+          "delta": "Good, got some hits. Let me narrow it down with a couple more specific searches."
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_35",
+          "toolCallId": "call_00_vcjDDwHmIvlGceiH148L4182",
+          "name": "web_search",
+          "args": {
+            "maxResults": 5,
+            "query": "best casual lunch spots Riyadh Olaya downtown quick"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_36",
+          "toolCallId": "call_01_X3x77JpLdOIyWC8nTCKe2676",
+          "name": "web_search",
+          "args": {
+            "maxResults": 5,
+            "query": "Lusin Riyadh lunch menu Armenian cuisine location"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_37",
+          "toolCallId": "call_00_vcjDDwHmIvlGceiH148L4182",
+          "status": "success",
+          "output": "{\"provider\":\"brave\",\"results\":[{\"title\":\"Riyadh's best restaurants: Everywhere you absolutely *must* eat at least once | Time Out Riyadh\",\"snippet\":\"The outdoor terrace is also one of the top places to enjoy city views. Overall, Yauatcha is a venue that ticks a lot of boxes, so head over to split a meal of small plates. <strong>Al Faisaliah Mall</strong>, Al Olaya, yauatcha.com (092 000 6555).\",\"url\":\"https://www.timeoutriyadh.com/food-drink/best-restaurants-in-riyadh\"},{\"title\":\"The 50 best spots for lunch in Riyadh\",\"snippet\":\"We&#x27;ve collected the most-often-mentioned 50 places from other articles, including favorites like <strong>ROKA Riyadh</strong>, Il Baretto, and MAMO Michelangelo\",\"url\":\"https://wanderlog.com/list/geoCategory/59455/best-spots-for-lunch-in-riyadh\"},{\"title\":\"Best restaurants in Riyadh: 4 places to eat on Tahlia and Olaya\",\"snippet\":\"One quick local meal (lunch or late bite): <strong>Shawarma House</strong>. One reliable mid-range dinner (regional comfort): Tayba Gourmet. Skip unless you are curious (and okay with paying for the setting): Lusin. Riyadh rewards selective travelers. You do not need a long restaurant list.\",\"url\":\"https://dunesatlas.com/food/best-restaurants-in-riyadh/\"},{\"title\":\"The Best Restaurants In Riyadh: A Food Lover’s Guide – CuddlyNest Travel Blog\",\"snippet\":\"We highly recommend visiting this restaurant in Al Olaya. Image Credit: What’s On Saudi Arabia, Beefbar, Riyadh · Beefbar is an absolute must-visit on any steak lover’s list of the best restaurants in Riyadh. Originating in Monte Carlo, Beefbar serves up some of the best cuts of beef you’ll ever taste, accompanied by a stunning atmosphere with aesthetically pleasing design and interiors. BeefBar provides something along the lines of a casual fine dining experience, with the luxury of premium food and impeccable staff service, but without the pretentiousness of luxury dining.\",\"url\":\"https://www.cuddlynest.com/blog/best-restaurants-in-riyadh/\"},{\"title\":\"THE 10 BEST Restaurants Near Olaya Hotel (Updated 2025)\",\"snippet\":\"My experience at the Holiday Inn Hotel was beautiful, with a relaxing atmosphere, making it an ideal spot to unwind. from a ... This is a hotel cafe and perfect to have a casual meeting with someone or a... ... Well done Flamingo restaurant, the team here work hard and achieve really high... ... The best Lebanese food in Riyadh but the main shop in al Takhassusi street is...\",\"url\":\"https://www.tripadvisor.com/RestaurantsNear-g293995-d2440728-Olaya_Hotel-Riyadh_Riyadh_Province.html\"}]}"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_38",
+          "toolCallId": "call_01_X3x77JpLdOIyWC8nTCKe2676",
+          "status": "success",
+          "output": "{\"provider\":\"brave\",\"results\":[{\"title\":\"Lusin Restaurant Best for Armenian Foods in Saudi Arabia\",\"snippet\":\"From Riyadh’s vibrant scene to the heart of Mayfair, every Lusin location reflects our passion for exceptional food and hospitality. ... Discover the taste of elegance – curated with love and tradition. Discover the refined taste of Armenian cuisine at two of Riyadh’s most prestigious destinations.\",\"url\":\"https://lusinrestaurant.com/\"},{\"title\":\"LUSIN, Riyadh - Prince Muhammad Bin Abdulaziz Rd - Menu, Prices & Restaurant Reviews - Tripadvisor\",\"snippet\":\"<strong>Prince Muhammad Bin Abdulaziz Rd Centria Mall, 2nd floor , intersection with Tahlya St, Riyadh Saudi Arabia</strong> ... A slice of Armenia... Prepare yourself to savour an evocative cuisine to celebrate the centuries old tradition of a proud people.\",\"url\":\"https://www.tripadvisor.com/Restaurant_Review-g293995-d3458619-Reviews-Lusin-Riyadh_Riyadh_Province.html\"},{\"title\":\"Lusin Diyafa Plaza - Updated 2025, Middle Eastern Restaurant in Riyadh, Riyadh\",\"snippet\":\"Breakfast Mon–Thu, Sat, Sun 8:30 am–12:00 pm Lunch Daily 12:30 pm–6:00 pm Dinner Daily 6:00 pm–12:00 am ... <strong>Lusin Diyafa Plaza&#x27;s</strong> menu. Beetroot and Halloumi Cheese with Armenian Spices (180.88 KCAL.)\",\"url\":\"https://www.opentable.com/r/lusin-diyafa-plaza-riyadh\"},{\"title\":\"Lusin - Riyadh - Restaurant - 50Best Discovery\",\"snippet\":\"Decked out in earthy tones with an eye-catching honeycomb-style light installation on the ceiling there&#x27;s a slightly rustic sense of modern luxury, which continues out onto the restaurant&#x27;s terrace, offering views across Riyadh. Menu-wise there&#x27;s a selection of hot and cold mezze, with dishes like Armenian toushka bread stuffed with spicy mince and cheese or aubergine rolls filled with cream and walnuts, topped with pomegranate seeds.\",\"url\":\"https://www.theworlds50best.com/discovery/Establishments/Saudi-Arabia/Riyadh/Lusin.html\"},{\"title\":\"Where We Are Going Today: Lusin – Armenian restaurant in Riyadh and Jeddah | Arab News\",\"snippet\":\"Lusin, an Armenian restaurant with branches in <strong>Riyadh and Jeddah</strong>, offers a culinary journey into Armenia’s rich and diverse flavors. Known for its elegant ambiance and carefully curated menu, Lusin is a great option for those seeking a unique ...\",\"url\":\"https://www.arabnews.com/node/2614476/food-health\"}]}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_39",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_40",
+          "delta": "Here are three very different lunch spots around central Riyadh (Olaya / Tahlia / KAFD area):"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_64",
+          "toolCallId": "call_00_e2p0PCsOUHIuq1POEIBo4735",
+          "name": "ask_user",
+          "args": {
+            "question": "Where do you want to grab lunch?",
+            "options": [
+              {
+                "label": "🥩 Lusin — Armenian (Centria Mall, Olaya/Tahlia)",
+                "description": "Upscale Armenian. Hot & cold mezze, toushka bread, eggplant rolls, grilled meats. Terrace views. Great for a sit-down lunch that feels special."
+              },
+              {
+                "label": "🍣 Chotto Matte — Nikkei (KAFD)",
+                "description": "Japanese-Peruvian fusion. Trendy London-born spot. Sushi, robata, bold flavors. Power-lunch vibe — stylish but not stuffy."
+              },
+              {
+                "label": "🥙 Shawarma House — Quick local bite (Tahlia area)",
+                "description": "Casual, fast, legit. Classic shawarma, wraps, quick plates. In-and-out in 20 minutes. If you just want something good without the ceremony."
+              }
+            ],
+            "details": "Three options across different vibes and price points. Pick one or tell me if you want something else entirely (burger, steak, Lebanese, Italian, etc.)."
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_65",
+          "toolCallId": "call_00_e2p0PCsOUHIuq1POEIBo4735",
+          "status": "success",
+          "output": "The user did not pick any of the listed options and instead instructed:\nI love korean bbq any killers in Riyadh?"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_66",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_67",
+          "delta": "Korean BBQ — let's find the real deal."
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_77",
+          "toolCallId": "call_00_NpfnREfkLezZrvT7kgGx0673",
+          "name": "web_search",
+          "args": {
+            "maxResults": 10,
+            "query": "best Korean BBQ restaurant Riyadh 2025 2026"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_78",
+          "toolCallId": "call_00_NpfnREfkLezZrvT7kgGx0673",
+          "status": "success",
+          "output": "{\"provider\":\"brave\",\"results\":[{\"title\":\"THE BEST Korean Food in Riyadh (Updated 2026) - Tripadvisor\",\"snippet\":\"Restaurants ranked by how well they match your selections and traveler reviews. ... Fantastic genuine Korean food (but also Japanese and Chinese menu). Great... ... Great experience. Loved the Thai food, service and ambience. It’s also budget friendly. ... The dishes are all the high class. Overall this is a place you want to return... ... Riyadh TourismRiyadh HotelsRiyadh Bed and BreakfastRiyadh RestaurantsThings to Do in RiyadhRiyadh Travel ForumRiyadh PhotosRiyadh MapHotels\",\"url\":\"https://www.tripadvisor.com/Restaurants-g293995-c10661-Riyadh_Riyadh_Province.html\"},{\"title\":\"7 brilliant Korean restaurants in Riyadh | Time Out Riyadh\",\"snippet\":\"<strong>Woo Samgyup</strong> is another of the Korean restaurants in Riyadh that’s all about barbecue. A cosy spot for a relaxed and memorable meal, <strong>Woo Samgyup</strong> dishes out tender, juicy, and flavourful chicken and meats that are well-marinated.\",\"url\":\"https://www.timeoutriyadh.com/food-drink/korean-restaurants-in-riyadh\"},{\"title\":\"Korean restaurants in Riyadh 2025: All the spots to check out - Destination KSA\",\"snippet\":\"Seoul is one of the Korean restaurants in Riyadh where the food and vibe both shine. Sat-Wed noon-midnight, Thu-Fri noon-1am. As Sulimaniyah, @seoul_ksa. ... Another solid choice for barbecue lovers, Woo Samgyup serves juicy, marinated meats and hearty Korean sides in a laid-back setting. Their mixed BBQ platter is perfect when you want to try a bit of everything.\",\"url\":\"https://destinationksa.com/en/korean-restaurants-in-riyadh-you-have-to-try/\"},{\"title\":\"10 wonderful Korean restaurants in Riyadh\",\"snippet\":\"Another all-new Korean BBQ spot in Riyadh, Koyee recently opened its doors in The Zone.\",\"url\":\"https://whatsonsaudiarabia.com/2026/03/korean-restaurants-in-riyadh/\"},{\"title\":\"MEATIN GRILL'S KOREAN BBQ HOUSE, Riyadh - Restaurant Reviews, Photos & Phone Number - Tripadvisor\",\"snippet\":\"<strong>Meatin Grill&#x27;s Korean Bbq House</strong>, Riyadh: See 7 unbiased reviews of <strong>Meatin Grill&#x27;s Korean Bbq House</strong>, rated 4.4 of 5 on Tripadvisor and ranked #284 of 1,061 restaurants in Riyadh.\",\"url\":\"https://www.tripadvisor.com/Restaurant_Review-g293995-d21505129-Reviews-Meatin_Grill_s_Korean_Bbq_House-Riyadh_Riyadh_Province.html\"},{\"title\":\"The 30 best BBQ restaurants in Riyadh\",\"snippet\":\"If you have never tried Korean BBQ , <strong>Meatin Grill&#x27;s</strong> offers a variety of fine cut beef along with chicken strips and shrimps. The floor manager was very professional keeping us well informed of what to do step by step.\",\"url\":\"https://wanderlog.com/list/geoCategory/775602/best-bbq-restaurants-in-riyadh\"},{\"title\":\"Korean BBQ - Beef Bar, Riyadh - Redro\",\"snippet\":\"<strong>Korean BBQ - Beef Bar, Riyadh</strong>\",\"url\":\"https://beefbar.redro.menu/en/restaurant/riyadh/menu-item/korean-bbq.html\"},{\"title\":\"The Best Korean Restaurant In Riyadh\",\"snippet\":\"We cannot provide a description for this page right now\",\"url\":\"https://www.riyadhreviews.com/korean-restaurant-in-riyadh/\"},{\"title\":\"The best Korean restaurants in Abu Dhabi to try tonight | Time Out Abu Dhabi\",\"snippet\":\"<strong>Manna Land</strong> embraces the traditional cuisine of Korea which often stem from royal origins. The result? Moreish grills, steaming stews and dumplings and, of course, signature BBQ chicken.\",\"url\":\"https://www.timeoutabudhabi.com/food-drink/best-korean-restaurants-in-abu-dhabi\"},{\"title\":\"6 Best Korean Restaurants in Riyadh | Saudi Scoop\",\"snippet\":\"<strong>Meatin Grill</strong> is the go-to place for unlimited Korean BBQ in Riyadh.\",\"url\":\"https://saudiscoop.com/food/best-korean-restaurants-in-riyadh/\"}]}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_79",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_80",
+          "delta": "Let me dig into the details on the top contenders."
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_91",
+          "toolCallId": "call_00_RpFNDKJaDjWexeeezlfa3087",
+          "name": "web_fetch",
+          "args": {
+            "url": "https://www.timeoutriyadh.com/food-drink/korean-restaurants-in-riyadh",
+            "maxLength": 8000
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_92",
+          "toolCallId": "call_01_oYUBWUitSA4so53cOr9l9554",
+          "name": "web_search",
+          "args": {
+            "maxResults": 5,
+            "query": "Woo Samgyup Riyadh Korean BBQ location menu review"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_93",
+          "toolCallId": "call_02_Lz2xbONNsarIYTTlVZHJ0279",
+          "name": "web_search",
+          "args": {
+            "maxResults": 5,
+            "query": "Seoul KSA Riyadh Korean BBQ restaurant location review"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_94",
+          "toolCallId": "call_00_RpFNDKJaDjWexeeezlfa3087",
+          "status": "success",
+          "output": "K-Dramas, K-Pop, K-Beauty…we love all things K, then how can Korean food be left behind?\n\nSay hello (or annyeonghaseyo) to Korean restaurants in Riyadh.\n\nThe Korean food scene in Riyadh is not (yet) huge. But, it has its fan following in the Saudi capital. Think crave-worthy bibimbap, tteokbokki, bulgogi noodles and Korean fried chicken. And you can’t forget about the delicious Korean barbecue.\n\nSo, whether you’re a Korean food-lover, or looking to test the tastes, here are all the top Korean restaurants in Riyadh you need to try. Mashitge deuseyo (Korean for Bon appétit).\n\n## All the brilliant Korean restaurants in Riyadh\n\n### Seoul\n\nBegin your gastronomic journey among Korean restaurants in Riyadh with Seoul. If the name does half the job of convincing you to try it out, a dine-in experience will seal the deal.\n\nThere’s nothing more fun that grilling tender cuts of beef, salmon, or marinated chicken on your own table and eating it fresh off the grill. Korean chicken wings, Red Flame Shrimp, and Bulgogi Beef are a must-try. Add Honey Fig Pana Cotta with Walnuts for dessert and you’re done for the day.\n\nSat-Wed noon-midnight, Thu-Fri noon-1am. As Sulimaniyah, @seoul_ksa\n\n### Koyee Korean BBQ\n\n> View this post on Instagram\n\nA post shared by Ko Yee (@koyeebbq)\n\nA post shared by Ko Yee (@koyeebbq)\n\nKorean BBQ is having its moment and Koyee Korean BBQ is setting out the grills.\n\nKnown for their hearty soups and mains, you want to reach here on an empty stomach to fully enjoy their dishes. Try their best seller Dolsot Bibimbap – Stone Pot Mixed Rice for mains. To finish off, check out the Mango Bingsoo – a refreshing ice dessert of mango purée with condensed milk, topped with shaved ice and chunks of luscious mango. It’s a textural delight.\n\nSun-Wed noon-11.30pm, Thu noon-12.30am, Fri 12.30pm-12.30am, Sat noon-12.30am. The Zone Al, Al Takhassousi, Al Mohammadiyyah. @koyeebbq\n\n### JeJu Samgyupsal\n\nWhile hardcore critics may be picky about authentic Korean restaurants in Riyadh, this one makes the mark.\n\nFlavourful chicken, meat, and shrimp, with the option to grill your meats yourself, while a pot of hearty soup simmers on the side, ensures you have a fun dining experience. It’s a small, cosy and intimate place, perfect for when amazing food is your top priority in a no-frills atmosphere.\n\nOpen daily noon-2am. As Sulimaniyah @jejurestaurantksa\n\n### Korean Palace Restaurant\n\nOne of the oldest Korean restaurants in Riyadh, Korean Palace Restaurant veers more towards the cosy and traditional, instead of the posh and fancy vibes that we have come to associate with the newer ones.\n\nWith large tables covered with thick red tablecloths and even larger plates and bowls served on them, you won’t question why this place is popular in the Saudi capital at all. People come here for one reason only – the food. The eatery serves authentic dishes like bulgogi, black bean noodles and seafood tteokbokki, and even some exclusive menu options, too.\n\nSat-Thu 11.30am-3pm; 5pm-11pm, Fri 12.30pm-3pm, 5pm-11pm. Ar Rahmaniyyah\n\n### Meatin Grill’s Korean Barbecue\n\nMeatin Grill’s is one of the Korean restaurants in Riyadh you need to visit if you’re just after barbecue, barbecue and more barbecue.\n\nIndulge on starters, side dishes and loads of meats. Choose between various different slices of beef, chicken and seafood, which you cook yourself on a hot barbecue plate in the middle of your table. With enormous portions, it’s great for big groups, when you want to dine with friends and family.\n\nOpen Sat-Wed 1pm-midnight, Thu-Fri 1pm-1am. Alyasmin, @meatingrills\n\n### Namu\n\nOne of the first Korean restaurants in Riyadh, Namu came to the city courtesy of celebrity chef Akira Back, the man behind some of our favourite Asian eats.\n\nAlthough veering towards the fine dining side of the spectrum, the eatery is still a fun spot where you barbecue your own meats. Here, the meats are carefully sourced, prime pieces of beef, chicken and seafood, grilled over an authentic coal-fired barbecue.\n\nSun-Thu 6pm-1am, Fri-Sat 6pm-1.30am. The Esplanade Mall, @namu.ksa\n\n### OMO-OMO\n\nOMO-OMO, which means OMG in Korean, started off as a delivery joint. It was no surprise when it turned into a dine-in restaurant, thanks to its tempting food.\n\nThe eatery has all your favourite Korean eats in one place: rabokki (noodles and rice cakes together), japchae noodles, gimbap and more. The spot also serves sandwiches, snacks and even breakfast. Ready to get wowed?\n\nOpen Sun-Wed noon-midnight, Thu noon-1am, Fri-Sat 1pm-1am. Qurtuba, omoomo.sa / @omoomo.sa.\n\n### Woo Samgyup\n\nWoo Samgyup is another of the Korean restaurants in Riyadh that’s all about barbecue.\n\nA cosy spot for a relaxed and memorable meal, Woo Samgyup dishes out tender, juicy, and flavourful chicken and meats that are well-marinated. The side dishes are equally rich in flavour. Go for the mixed BBQ for an ultimate feast.\n\nSat-Wed noon-midnight, Thu-Fri noon-1am. As Sulimaniyah, @wsamgyup.\n\n### Young Jae’s\n\nOne of the newest additions to Korean restaurants in Riyadh, Young Jae’s is popular for Korean takeaways.\n\nThis affordable family-run business specialises in authentic Korean fried chicken that’s hot, juicy, and might we add, addictive. You can find Young Jae’s on all of the regular delivery apps like HungerStation, Jahez and more.\n\nChoose between chicken strips, wings or a half chicken cut into pieces, all covered in the unique, spiced batter. Don’t forget to add the dessert topokki to your order.\n\nSun-Thu noon-2am, Fri 5.30pm-2am, Sat 3.30pm-2am. hungerstation.com / thechefzco / jahez.net.\n\n### HANKKI\n\nIf it’s vouched by Korean expats in the city, you know you don’t need to think twice.\n\nAuthentic and spicy (as spicy as Korean food can be), Hankki dishes out Korean street food unlike any others among Korean restaurants in Riyadh. Their Korean fried chicken, kimchi, and corndog fly off the kitchen on the regular. Dig into some dakgangjeong, ramen and tteokbokki as well. Don’t miss the radish pickles.\n\nSat-Thu 11.30am-11pm, Fri 1.30pm-11pm, Al Olaya. hankkisaudi.com\n\n## More food in Riyadh:\n\n10 of the best juice bars in RiyadhChill your way to health\n\n10 shawarma in Riyadh that will blow your mind: prepare to get addictedWarning: may lead to a ravenous appetite. Proceed with caution.\n\nAll the KAFD restaurants and cafés you need to know aboutFine-dining destinations, specialty coffee and stunning views"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_95",
+          "toolCallId": "call_01_oYUBWUitSA4so53cOr9l9554",
+          "status": "success",
+          "output": "{\"provider\":\"brave\",\"results\":[{\"title\":\"Woo Samgyup | Riyadh | Facebook\",\"snippet\":\"Woo Samgyup, Korean BBQ Restaurant In Riyadh, Saudi Arabia · Page · Korean Restaurant · As Sulimaniyah, Riyadh, Kingdom Of Saudi Arabia, Riyadh, Saudi Arabia · +966 56 365 4724 · wsamgyup@gmail.com · Open now · Not yet rated (2 Reviews)﻿ · See all photos ·\",\"url\":\"https://www.facebook.com/Wsamgyup/\"},{\"title\":\"Woo Samgyup Korean Bbq - As-Sulaimanyah - Riyadh, Riyadh Province\",\"snippet\":\"<strong>The best Korean bbq here in Saudi</strong>!❤️❤️❤️ and the staff very accommodating Efren and Judy!! ... It is my first time to try a Korean cuisine and unfortunately, I didn’t like the food except the dukbouki was good.\",\"url\":\"https://foursquare.com/v/woo-samgyup-korean-bbq/61a233328b593b790b62828a\"},{\"title\":\"Woo Samgyup Reviews - Korean restaurant in As Salamah, Saudi Arabia | Top-Rated.Online\",\"snippet\":\"Each banchan was thoughtfully prepared, ... quality of the ingredients were evident. Overall, Woo Sam Gyup is <strong>a must-visit for anyone craving authentic Korean BBQ</strong>....\",\"url\":\"https://www.top-rated.online/cities/As+Salamah/place/p/10338610/Woo+Samgyup\"},{\"title\":\"7 brilliant Korean restaurants in Riyadh | Time Out Riyadh\",\"snippet\":\"<strong>A cosy spot for a relaxed and memorable meal, Woo Samgyup dishes out tender, juicy, and flavourful chicken and meats that are well-marinated</strong>. The side dishes are equally rich in flavour.\",\"url\":\"https://www.timeoutriyadh.com/food-drink/korean-restaurants-in-riyadh\"},{\"title\":\"11 wonderful Korean restaurants in Riyadh\",\"snippet\":\"<strong>Some of the best Korean barbecue in town</strong>, Woo Samgyup is a popular cosy spot in As Sulimaniyah.\",\"url\":\"https://whatsonsaudiarabia.com/2025/07/korean-restaurants-in-riyadh/\"}]}"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_96",
+          "toolCallId": "call_02_Lz2xbONNsarIYTTlVZHJ0279",
+          "status": "success",
+          "output": "{\"provider\":\"brave\",\"results\":[{\"title\":\"Where We Are Going Today: Seoul in Riyadh | Arab News\",\"snippet\":\"On entering, <strong>the space offers a dim and sleek atmosphere with simple colors and soft lighting</strong>. The restaurant itself is vast, with a bar area, normal seating and tables reserved for on-table barbeque.\",\"url\":\"https://www.arabnews.com/node/2623376/food-health\"},{\"title\":\"THE BEST Korean Food in Riyadh (Updated 2026) - Tripadvisor\",\"snippet\":\"3. Meatin Grill&#x27;s Korean Bbq House · 4.4 · (7 reviews) Barbecue, Asian$$ - $$$ Open now · The dishes are all the high class. Overall this is a place you want to return... A good option for Korean food in Riyadh · 4. Omo-omo · 5.0 · (3 reviews) Asian, Korean · Open now · Menu · Best Korean food in Riyadh · Delicious Korean Restaurant ⁇ 😍 · 5. Seoul Food · (0 reviews) Asian, Korean$ Write a review · 6. Ramen Restaurant (riyadh, Ksa) (0 reviews) Japanese, Asian ·\",\"url\":\"https://www.tripadvisor.com/Restaurants-g293995-c10661-Riyadh_Riyadh_Province.html\"},{\"title\":\"Seoul in Riyadh: South Korean BBQ restaurant opens | Fact Magazines\",\"snippet\":\"Riyadh is home to world-class restaurants, from celebrity chef-fronted concepts to homegrown favourites. Now, it has welcomed a new South Korean restaurant, Seoul. The menu showcases Korean and fusion food, with a BBQ experience at its heart.\",\"url\":\"https://www.factmagazines.com/saudi-arabia/riyadh-saudi-arabia/food-riyadh-saudi-arabia/seoul-in-riyadh-south-korean-bbq-restaurant-opens\"},{\"title\":\"Seoul Restaurant in Riyadh | The Korean BBQ Haven is here!\",\"snippet\":\"<strong>Every dish at Seoul in Riyadh is crafted to deliver a bold, satisfying experience</strong>. From sizzling BBQ options to comforting rice and noodle dishes, there’s something for every craving.\",\"url\":\"https://ffcc.global/seoul-in-riyadh-a-korean-bbq-haven-for-casual-dining-lovers/\"},{\"title\":\"7 brilliant Korean restaurants in Riyadh | Time Out Riyadh\",\"snippet\":\"Sat-Wed noon-midnight, Thu-Fri noon-1am. As Sulimaniyah, @seoul_ksa ... Korean BBQ is having its moment and Koyee Korean BBQ is setting out the grills.\",\"url\":\"https://www.timeoutriyadh.com/food-drink/korean-restaurants-in-riyadh\"}]}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_97",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_98",
+          "delta": "Solid picks. Here are three Korean BBQ killers in Riyadh:"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_111",
+          "toolCallId": "call_00_Kpb70n6r7b2XWQy58fsz1325",
+          "name": "ask_user",
+          "args": {
+            "details": "These are the top 3 Korean BBQ spots in Riyadh right now — all have tabletop grills and solid reputations. Pick one or tell me what else you're craving.",
+            "options": [
+              {
+                "label": "🔥 Seoul — As Sulimaniyah",
+                "description": "Sleek, modern, dim-lit. Tabletop BBQ with bulgogi beef, Korean wings, Red Flame Shrimp. The crowd favorite. Noon–midnight (Thu/Fri till 1am)."
+              },
+              {
+                "label": "🥩 Woo Samgyup — As Sulimaniyah",
+                "description": "Cosy, no-frills, all about the meat. Well-marinated cuts, killer banchan (side dishes). Mixed BBQ platter is the move. Less flashy, more authentic."
+              },
+              {
+                "label": "🍲 Koyee Korean BBQ — The Zone, Al Mohammadiyyah",
+                "description": "Newer spot, broader menu. BBQ plus soups and mains. Dolsot Bibimbap is a bestseller. Mango Bingsoo for dessert. Good if you want more than just grilled meat."
+              }
+            ],
+            "question": "Which Korean BBQ spot you feeling?"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_112",
+          "toolCallId": "call_00_Kpb70n6r7b2XWQy58fsz1325",
+          "status": "success",
+          "output": "The user selected option 3 of 3: \"🍲 Koyee Korean BBQ — The Zone, Al Mohammadiyyah\" — Newer spot, broader menu. BBQ plus soups and mains. Dolsot Bibimbap is a bestseller. Mango Bingsoo for dessert. Good if you want more than just grilled meat."
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_td_rt5oj5_2a",
+          "toolCallId": "call_td_rt5oj5_2",
+          "name": "todo_write",
+          "args": {
+            "todos": [
+              {
+                "content": "Search the web for “best lunch restaurants downtown Riyadh 2025…” and 2 more",
+                "status": "completed"
+              },
+              {
+                "content": "Ask the user",
+                "status": "completed"
+              },
+              {
+                "content": "Search the web for “best Korean BBQ restaurant Riyadh 2025 2026”",
+                "status": "completed"
+              },
+              {
+                "content": "Read timeoutriyadh.com",
+                "status": "completed"
+              },
+              {
+                "content": "Search the web for “Woo Samgyup Riyadh Korean BBQ location menu…” and 1 more",
+                "status": "completed"
+              },
+              {
+                "content": "Ask the user",
+                "status": "completed"
+              }
+            ]
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_td_rt5oj5_2b",
+          "toolCallId": "call_td_rt5oj5_2",
+          "status": "success",
+          "output": "6 todos (6 completed, 0 in progress)\n[\n  {\n    \"content\": \"Search the web for “best lunch restaurants downtown Riyadh 2025…” and 2 more\",\n    \"status\": \"completed\"\n  },\n  {\n    \"content\": \"Ask the user\",\n    \"status\": \"completed\"\n  },\n  {\n    \"content\": \"Search the web for “best Korean BBQ restaurant Riyadh 2025 2026”\",\n    \"status\": \"completed\"\n  },\n  {\n    \"content\": \"Read timeoutriyadh.com\",\n    \"status\": \"completed\"\n  },\n  {\n    \"content\": \"Search the web for “Woo Samgyup Riyadh Korean BBQ location menu…” and 1 more\",\n    \"status\": \"completed\"\n  },\n  {\n    \"content\": \"Ask the user\",\n    \"status\": \"completed\"\n  }\n]"
+        },
+        {
+          "kind": "todo",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_td_rt5oj5_2c",
+          "items": [
+            {
+              "content": "Search the web for “best lunch restaurants downtown Riyadh 2025…” and 2 more",
+              "status": "completed"
+            },
+            {
+              "content": "Ask the user",
+              "status": "completed"
+            },
+            {
+              "content": "Search the web for “best Korean BBQ restaurant Riyadh 2025 2026”",
+              "status": "completed"
+            },
+            {
+              "content": "Read timeoutriyadh.com",
+              "status": "completed"
+            },
+            {
+              "content": "Search the web for “Woo Samgyup Riyadh Korean BBQ location menu…” and 1 more",
+              "status": "completed"
+            },
+            {
+              "content": "Ask the user",
+              "status": "completed"
+            }
+          ]
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_113",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_114",
+          "delta": "Koyee Korean BBQ — great choice. Here's what you need to know:\n\n- **Where:** The Zone, Al Takhassousi, Al Mohammadiyyah\n- **Hours:** Sun–Wed noon–11:30pm, Thu noon–12:30am, Fri 12:30pm–12:30am, Sat noon–12:30am\n- **The move:** Start with the BBQ (tabletop grill), add the **Dolsot Bibimbap** (stone pot mixed rice — it's their bestseller), and wrap with **Mango Bingsoo** (shaved ice with mango purée and condensed milk). Trust me on that dessert.\n- **IG:** @koyeebbq\n\nWider menu than most K-BBQ spots in Riyadh — you get the grill experience *plus* hearty soups and mains. Go hungry.\n\nEnjoy, and tell me how the Bingsoo hits 🐟"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1782418626142_f00mxn",
+          "segmentId": "seg_310",
+          "stopReason": "end_turn",
+          "iterationCount": 7,
+          "reasoningContent": "The user picked Koyee Korean BBQ in The Zone, Al Mohammadiyyah. They might want more info — directions, what to order, opening hours. Let me give a concise wrap-up with the key details they'd need to go for lunch."
+        }
+      ],
+      "toolTimings": {
+        "call_00_diyhjCM3bI2gf4zfOiSW8149": {
+          "startedAt": 1782418634727,
+          "endedAt": 1782418636594
+        },
+        "call_00_vcjDDwHmIvlGceiH148L4182": {
+          "startedAt": 1782418640396,
+          "endedAt": 1782418641715
+        },
+        "call_01_X3x77JpLdOIyWC8nTCKe2676": {
+          "startedAt": 1782418640405,
+          "endedAt": 1782418642679
+        },
+        "call_00_e2p0PCsOUHIuq1POEIBo4735": {
+          "startedAt": 1782418650790,
+          "endedAt": 1782418716553
+        },
+        "call_00_NpfnREfkLezZrvT7kgGx0673": {
+          "startedAt": 1782418719532,
+          "endedAt": 1782418720990
+        },
+        "call_00_RpFNDKJaDjWexeeezlfa3087": {
+          "startedAt": 1782418725115,
+          "endedAt": 1782418725932
+        },
+        "call_01_oYUBWUitSA4so53cOr9l9554": {
+          "startedAt": 1782418725130,
+          "endedAt": 1782418727251
+        },
+        "call_02_Lz2xbONNsarIYTTlVZHJ0279": {
+          "startedAt": 1782418725130,
+          "endedAt": 1782418728254
+        },
+        "call_00_Kpb70n6r7b2XWQy58fsz1325": {
+          "startedAt": 1782418735872,
+          "endedAt": 1782418753637
+        },
+        "call_td_rt5oj5_2": {
+          "startedAt": 1782418754237,
+          "endedAt": 1782418754277
+        },
+        "call_td_rt5oj5_1": {
+          "startedAt": 1782418633327,
+          "endedAt": 1782418633367
+        }
+      },
+      "stopReason": "end_turn",
+      "timestamp": 1782418779541
+    },
+    {
+      "id": "m_1782418779541_9c5699",
+      "role": "user",
+      "content": "Google maps link please",
+      "timestamp": 1782418779541
+    },
+    {
+      "id": "m_1782418779541_ebb3c0",
+      "role": "assistant",
+      "content": "Here you go:\n\n**[Koyee Korean BBQ — Google Maps](https://www.google.com/maps/search/Koyee+Korean+BBQ,+The+Zone,+Al+Takhassousi,+Riyadh)**\n\nIt's in The Zone, Gate 8, Al Takhassousi, Al Mohammadiyyah. Enjoy the grill 🔥🐟",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782418766851_00s5m7",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782418766851_00s5m7",
+          "segmentId": "seg_2",
+          "toolCallId": "call_00_x5DUUGCuJWoHZjtQjLwN3369",
+          "name": "web_search",
+          "args": {
+            "maxResults": 5,
+            "query": "Koyee Korean BBQ The Zone Riyadh Google Maps location"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782418766851_00s5m7",
+          "segmentId": "seg_3",
+          "toolCallId": "call_00_x5DUUGCuJWoHZjtQjLwN3369",
+          "status": "success",
+          "output": "{\"provider\":\"brave\",\"results\":[{\"title\":\"Koyee Korean BBQ - Reviews, Photos & Phone Number - Updated February 2026 - Korean Restaurants in Ad Diriyah, Saudi Arabia - Wheree\",\"snippet\":\"Open 00:00 AM - 11:30 PM See Hours The Zone <strong>Al, Al Takhassousi, Al Mohammadiyyah, Riyadh 12362, Saudi Arabia</strong> +966 5054-998-24 Suggest an edit · Koyee Korean BBQ is a popular dining destination in Riyadh, known for its authentic Korean cuisine ...\",\"url\":\"https://koyee-korean-bbq.wheree.com/\"},{\"title\":\"11 wonderful Korean restaurants in Riyadh\",\"snippet\":\"Location: <strong>The Zone Al, Al Takhassousi, Al Mohammadiyyah</strong> · Timings: Mon to Wed 12am to 12.30pm &amp; 5.30pm to 12am &amp; Thu 12am to 12.30pm &amp; 5.30pm to 1.30am &amp; Fri to Sat 5.30am to 1.30am &amp; 5.30pm to midnight.\",\"url\":\"https://whatsonsaudiarabia.com/2025/07/korean-restaurants-in-riyadh/\"},{\"title\":\"Koyee Bbq | TikTok\",\"snippet\":\"📍Koyee, The Zone, <strong>gate 8 Takhassousi, Riyadh</strong> #koreanBBQ #riyadh #saudiarabia #koyee #explore #foryou #stunningleng #misswow استمتع بتجربة BBQ كوري جديدة في الرياض.\",\"url\":\"https://www.tiktok.com/discover/koyee-bbq\"},{\"title\":\"7 brilliant Korean restaurants in Riyadh | Time Out Riyadh\",\"snippet\":\"Sun-Wed noon-11.30pm, Thu noon-12.30am, Fri 12.30pm-12.30am, Sat noon-12.30am. The Zone <strong>Al, Al Takhassousi, Al Mohammadiyyah</strong>. @koyeebbq · While hardcore critics may be picky about authentic Korean restaurants in Riyadh, this one makes the mark.\",\"url\":\"https://www.timeoutriyadh.com/food-drink/korean-restaurants-in-riyadh\"},{\"title\":\"Bbq Restaurants for Iftar in Riyadh | TikTok\",\"snippet\":\"Korean style fried chicken is available in there menu. 📍Koyee, The Zone, <strong>gate 8 Takhassousi, Riyadh</strong> #koreanBBQ #riyadh #saudiarabia #koyee #explore #foryou #stunningleng #misswow\",\"url\":\"https://www.tiktok.com/discover/bbq-restaurants-for-iftar-in-riyadh\"}]}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782418766851_00s5m7",
+          "segmentId": "seg_4",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782418766851_00s5m7",
+          "segmentId": "seg_5",
+          "delta": "Here you go:\n\n**[Koyee Korean BBQ — Google Maps](https://www.google.com/maps/search/Koyee+Korean+BBQ,+The+Zone,+Al+Takhassousi,+Riyadh)**\n\nIt's in The Zone, Gate 8, Al Takhassousi, Al Mohammadiyyah. Enjoy the grill 🔥🐟"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1782418766851_00s5m7",
+          "segmentId": "seg_80",
+          "stopReason": "end_turn",
+          "iterationCount": 2,
+          "reasoningContent": "The user wants a direct Google Maps link. I can construct it from the address: \"Koyee Korean BBQ, The Zone, Al Takhassousi, Al Mohammadiyyah, Riyadh\". Let me just give them the Google Maps search URL directly — no need for another tool call."
+        }
+      ],
+      "toolTimings": {
+        "call_00_x5DUUGCuJWoHZjtQjLwN3369": {
+          "startedAt": 1782418775260,
+          "endedAt": 1782418776572
+        }
+      },
+      "stopReason": "end_turn",
+      "timestamp": 1782418779541
+    }
+  ],
+  "stats": {
+    "allTime": {
+      "turns": 2,
+      "apiCalls": 2,
+      "toolCalls": 12,
+      "inputTokens": 36,
+      "outputTokens": 7112,
+      "cacheReadTokens": 18932,
+      "cacheCreationTokens": 12400,
+      "cost": 0.013051960000000001,
+      "processingMs": 2000,
+      "elapsedMs": 2000,
+      "apiMs": 1640,
+      "endedAt": 1782418779541,
+      "provider": "local",
+      "model": "qwen3.5:9b"
+    },
+    "lastTurn": {
+      "endedAt": 1782418779541,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "apiCalls": 1,
+      "toolCalls": 3,
+      "inputTokens": 6,
+      "outputTokens": 610,
+      "cacheReadTokens": 18932,
+      "cacheCreationTokens": 0,
+      "provider": "local",
+      "model": "qwen3.5:9b",
+      "cost": 0.0012407599999999998
+    },
+    "meter": {
+      "contextTokens": 19548,
+      "contextBudget": 1000000,
+      "compactionAt": 725424,
+      "model": "qwen3.5:9b"
+    }
+  }
+}

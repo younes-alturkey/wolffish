@@ -1,0 +1,50 @@
+---
+title: "Quickstart"
+description: "Start using Wolffish in 5 minutes"
+---
+
+# Zero to Agent in 5 Minutes
+
+This guide gets you from zero to a working agent in 5 minutes.
+
+## 1. Send a Message
+
+Type anything in the chat box. Wolffish assembles context from your workspace files, calls the LLM, and streams the response. Try:
+
+```
+What files are in my home directory?
+```
+
+If shell capabilities are enabled, the agent will call the `shell_exec` tool, and you'll see an approval dialog for potentially dangerous commands.
+
+## 2. Inspect What Happened
+
+After the conversation, check these files:
+
+| File | What It Shows |
+|---|---|
+| `brain/prefrontal/.debug/context-*.md` | The exact prompt sent to the LLM |
+| `brain/hippocampus/episodes/YYYY-MM-DD.md` | The conversation summary saved to memory |
+| `brain/corpus/YYYY-MM-DD.log.md` | Every event that fired during the pipeline |
+| `brain/motor/tasks/TASK-*.md` | Step-by-step log of any tool executions |
+
+## 3. Add a Capability
+
+Create a new folder in `brain/cerebellum/` with a `SKILL.md` file:
+
+```
+brain/cerebellum/my-skill/
+└── SKILL.md
+```
+
+The SKILL.md frontmatter registers the capability with the system. The markdown body contains instructions the LLM reads at runtime. See [Creating Capabilities](/capabilities/creating-capabilities) for the full guide.
+
+## 4. Edit Your Agent's Personality
+
+Use Wolffish's built-in file viewer to open `brain/identity/soul.md` and edit it directly in the app. You can also use any external text editor. Changes take effect on the next message — no restart needed.
+
+## 5. Configure Providers
+
+In Settings → Models, add API keys for the providers you want. Then pick your **Brain** model (provider + model) from the **model switch beside the chat input** — that's the one that runs. There's no automatic fallback to other providers: the model you pick is the model that answers. To run offline, flip the switch to Local (Ollama).
+
+Want parallel multi-agent work? The same model card carries a **Single / Workflow** chip row above its search — pick [Workflow](/configuration/workflow-mode) and the agent can plan phases and spawn parallel agents on any model you've connected. The **thinking effort** dial lives in that panel too, so every model knob is in one place.

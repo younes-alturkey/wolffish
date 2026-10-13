@@ -1,0 +1,162 @@
+---
+title: "مرجع SKILL.md"
+description: "المرجع الكامل لواجهة YAML ومتن SKILL.md"
+---
+
+# تشريح ملف SKILL.md
+
+تتطلب كل قدرة ملف `SKILL.md`. يتكوّن من جزأين: واجهة YAML العلوية (بيانات وصفية قابلة للقراءة آليًا) ومتن Markdown (تعليمات يقرأها نموذج اللغة).
+
+## حقول الواجهة العلوية
+
+```yaml
+---
+name: my-capability
+version: 1.0.0
+description: A short description of what this capability does
+triggers:
+  - keyword1
+  - keyword2
+  - keyword3
+tools:
+  - name: my_tool
+    description: What this tool does
+    parameters:
+      type: object
+      properties:
+        arg1:
+          type: string
+          description: What arg1 is for
+        arg2:
+          type: number
+          description: What arg2 is for
+      required:
+        - arg1
+danger_patterns:
+  - "rm -rf"
+  - "sudo"
+confirm_patterns:
+  - "npm install"
+  - "git push"
+requires:
+  - shell
+---
+```
+
+### مرجع الحقول
+
+| الحقل | مطلوب | الوصف |
+|---|---|---|
+| `name` | نعم | معرّف فريد للقدرة |
+| `version` | لا | إصدار دلالي لمنطق التحديث |
+| `description` | نعم | وصف قصير يظهر في تعريفات الأدوات |
+| `triggers` | نعم | كلمات مفتاحية لمطابقة الصلة. استخدم `"*"` للتفعيل الدائم (انظر أدناه) |
+| `tools` | لا | تعريفات الأدوات بتنسيق JSON Schema لواجهة استدعاء الأدوات في نموذج اللغة |
+| `danger_patterns` | لا | تعابير نمطية ستقوم amygdala بـ **حجبها** |
+| `confirm_patterns` | لا | تعابير نمطية ستتطلب فيها amygdala **موافقة** |
+| `requires` | لا | قدرات أخرى تعتمد عليها هذه القدرة |
+
+### المشغّلات الدائمة
+
+استخدم الرمز الشامل `"*"` كمشغّل لجعل المهارة تُحقن في **كل رسالة**، بغض النظر عمّا يقوله المستخدم:
+
+```yaml
+triggers:
+  - "*"
+```
+
+لا تُحتسب المهارات الدائمة ضمن حدّ المطابقة — تُحقن أولاً، ثم تُضاف حتى 3 مهارات مطابقة بالكلمات المفتاحية فوقها. هذا مثالي للمهارات النقية التي تُحدد سلوكًا عامًا للوكيل (انضباط التخطيط، تنسيق المخرجات، قواعد الأمان) بدلاً من الاستجابة لمواضيع محددة.
+
+<Info>
+  المشغّلات الدائمة تؤثر فقط على المهارات النقية (بدون `tools`). قدرات الإضافات التي تحتوي أدوات تظهر دائمًا في قسم `<tools>` بغض النظر عن المشغّلات.
+</Info>
+
+## مخطط الأدوات
+
+تتبع مصفوفة `tools` تنسيق JSON Schema القياسي المستخدم في واجهات استدعاء الأدوات في نماذج اللغة. تحتاج كل أداة إلى `name` و`description` وكائن `parameters`.
+
+```yaml
+tools:
+  - name: shell_exec
+    description: Execute a shell command and return stdout/stderr
+    parameters:
+      type: object
+      properties:
+        command:
+          type: string
+          description: The shell command to execute
+        background:
+          type: boolean
+          description: Run the command detached in the background
+      required:
+        - command
+```
+
+<Warning>
+  يجب أن تكون أسماء الأدوات فريدة عبر جميع القدرات المُحمَّلة. إذا عرّفت قدرتان نفس اسم الأداة، فإن الثانية ستستبدل الأولى.
+</Warning>
+
+## أنماط الخطر والتأكيد
+
+هذه تعابير نمطية تُطابق ضد `toolName + " " + JSON.stringify(args)`. تستخدمها amygdala للتحكم في استدعاءات الأدوات.
+
+- **danger_patterns**: تُحجب الاستدعاءات المطابقة. يتلقى نموذج اللغة رسالة رفض.
+- **confirm_patterns**: تُطلق الاستدعاءات المطابقة **مربع حوار موافقة** في واجهة المستخدم. يجب أن يوافق المستخدم قبل التنفيذ.
+
+تُصنَّف الاستدعاءات التي لا تطابق أي نمط على أنها **آمنة** وتُنفَّذ فورًا.
+
+## المهارات النقية (بدون إضافة)
+
+القدرة التي تحتوي `tools: []` (أو بدون حقل `tools`) هي **مهارة نقية**. ليس لها كود إضافة ولا أدوات قابلة للاستدعاء — فقط متن Markdown الذي يُحقن في قسم `<skills>` في موجّه النظام عندما تتطابق مشغّلات المهارة.
+
+تُوجّه المهارات النقية سلوك نموذج اللغة دون إضافة أدوات جديدة. استخدمها لـ:
+
+- **انضباط التخطيط** — إجبار الوكيل على التخطيط قبل تنفيذ المهام متعددة الخطوات
+- **تنسيق المخرجات** — فرض استجابات منظمة أو تفضيلات لغوية أو نبرة معينة
+- **أدلة الإجراءات** — تعليم الوكيل كيف يستخدم الأدوات الحالية لسير عمل محدد (مثل عمليات git عبر `shell_exec`)
+- **قواعد الأمان** — إضافة قيود تنطبق على جميع استخدامات الأدوات
+
+```yaml
+---
+name: planning
+description: Think before acting. Plan multi-step tasks before executing.
+triggers:
+  - "*"
+tools: []
+---
+
+# Planning
+
+Before executing any task that involves 2 or more tool calls, state your
+plan first. Each phase is one line: what you'll do → how you'll verify.
+```
+
+تظهر قدرات الإضافات (مع الأدوات) في قسم `<tools>` تلقائيًا. تظهر المهارات النقية في قسم `<skills>` فقط عند تفعيلها. القسمان مستقلان — يمكن لرسالة واحدة تفعيل كليهما.
+
+## متن Markdown
+
+كل شيء أسفل `---` في الواجهة العلوية هو متن Markdown. يقرؤه نموذج اللغة في وقت التشغيل عندما تكون القدرة ذات صلة. اكتبه كتعليمات مباشرة لنموذج اللغة:
+
+```markdown
+---
+name: git
+triggers:
+  - git
+  - commit
+  - branch
+  - merge
+---
+
+# Git Operations
+
+You have access to git through shell commands. When the user asks about git:
+
+1. Always run `git status` first to understand the current state
+2. Use conventional commit format: `type(scope): description`
+3. Never force-push without explicit confirmation
+4. Show diffs before committing when the user hasn't reviewed changes
+```
+
+<Tip>
+  متن Markdown هو المكان الذي تُرمّز فيه معرفة الخبراء. اكتب التعليمات كأنك تعلّم مطورًا مبتدئًا ذكيًا كيف يستخدم الأداة بشكل صحيح. كلما كانت التعليمات أفضل، كان أداء الوكيل أفضل.
+</Tip>

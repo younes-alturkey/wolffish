@@ -1,0 +1,55 @@
+---
+title: "user.md"
+description: "أخبر وولفيش عن نفسك"
+---
+
+# إخبار وولفيش عنك
+
+يقع في `brain/identity/user.md`، ويخبر هذا الملف وولفيش عنك. كلما قدمت سياقًا أكثر، أصبحت ردود الوكيل أكثر صلة وتخصيصًا.
+
+## ماذا تُضمِّن
+
+- اسمك ودورك
+- الحزمة التقنية والأدوات التي تستخدمها
+- المشاريع التي تعمل عليها
+- التفضيلات (نمط الكود، اتفاقيات الالتزام، إلخ)
+- أي شيء يساعد الوكيل على فهم سياقك
+
+## مثال
+
+```markdown
+# User Profile
+
+## About Me
+- Name: Younes
+- Role: Senior Full-stack Engineer
+- OS: macOS
+- Editor: VS Code
+
+## Tech Stack
+- TypeScript, React, Node.js, Electron
+- Tailwind CSS, Vite
+- Git with conventional commits
+
+## Current Projects
+- Wolffish: Local-first AI desktop agent
+- Using npm, not yarn or pnpm
+
+## Preferences
+- Prefer concise code with clear variable names
+- Always use TypeScript strict mode
+- Prefer explicit imports over barrel exports
+- Test with Vitest
+```
+
+## كيف يُستخدم
+
+يُضمَّن `user.md` في قسم الهوية من نافذة السياق (تخصيص ميزانية 15%). لا يصفّيه RAS — يُضمَّن دائمًا لأن سياق الهوية ذو صلة دائمًا.
+
+يستخدم نموذج اللغة هذه المعلومات لتخصيص الردود: اقتراح مدير الحزم المناسب، واستخدام أنماط الكود المفضلة لديك، وفهم سياق أسئلتك دون الحاجة إلى شرح إعدادك في كل مرة.
+
+## أين تقع في التطبيق
+
+منذ **الإصدار 1.0.282** صارت [`soul.md`](/ar/configuration/soul-md) و[`user.md`](/ar/configuration/user-md) و[`agents.md`](/ar/configuration/agents-md) **صفحةً واحدة اسمها التخصيص بثلاثة تبويبات** — الشكلَ الذي كان [هاتفك](/ar/integrations/mobile-app) يستعمله أصلاً — بدل ثلاثة مداخل في الشريط الجانبيّ تفتح ثلاثة محرِّراتٍ متشابهة. وكلُّ تبويبٍ يقول في سطرٍ **ما الغرض الحقيقيّ من مستنده**، فلم يعد الاختيار متّكئاً على كلمةٍ واحدة.
+
+والمسوَّدة التي تتركها في تبويبٍ **تبقى حين تعود إليه** من آخر، وذلك التبويب **يحمل نقطةً ما دام فيه تغييراتٌ غير محفوظة** — وهي بالضبط المسوَّدة التي لم تعد تراها. والتعديلات التي تُجرى على هاتفك أو في نافذةٍ أخرى ما زالت تصل من تلقائها، وصارت تحطّ على **أيّ تبويبٍ نظيف** لا على الذي تنظر إليه وحده.

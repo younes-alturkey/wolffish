@@ -1,0 +1,167 @@
+{
+  "id": "2026-06-19_06-57-12",
+  "title": "Who are you",
+  "model": "gemma4:e2b",
+  "createdAt": 1781841432325,
+  "updatedAt": 1781841474402,
+  "messages": [
+    {
+      "id": "m_1781841474402_5438a1",
+      "role": "user",
+      "content": "who are you?",
+      "timestamp": 1781841474402
+    },
+    {
+      "id": "m_1781841474402_2c105a",
+      "role": "assistant",
+      "content": "IIHelloWhatIWhatWhat",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781841432327_w388fo",
+          "segmentId": "seg_1",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1781841432327_w388fo",
+          "segmentId": "seg_2",
+          "delta": "I"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781841432327_w388fo",
+          "segmentId": "seg_3",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1781841432327_w388fo",
+          "segmentId": "seg_4",
+          "delta": "I"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781841432327_w388fo",
+          "segmentId": "seg_5",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1781841432327_w388fo",
+          "segmentId": "seg_6",
+          "delta": "Hello"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781841432327_w388fo",
+          "segmentId": "seg_7",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1781841432327_w388fo",
+          "segmentId": "seg_8",
+          "delta": "What"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781841432327_w388fo",
+          "segmentId": "seg_9",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1781841432327_w388fo",
+          "segmentId": "seg_10",
+          "delta": "I"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781841432327_w388fo",
+          "segmentId": "seg_11",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1781841432327_w388fo",
+          "segmentId": "seg_12",
+          "delta": "What"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781841432327_w388fo",
+          "segmentId": "seg_13",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1781841432327_w388fo",
+          "segmentId": "seg_14",
+          "delta": "What"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781841432327_w388fo",
+          "segmentId": "seg_15",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1781841432327_w388fo",
+          "segmentId": "seg_16",
+          "stopReason": "end_turn",
+          "iterationCount": 8
+        }
+      ],
+      "stopReason": "end_turn",
+      "timestamp": 1781841474402
+    }
+  ],
+  "stats": {
+    "allTime": {
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 3,
+      "outputTokens": 10,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "cost": 0.004661899999999999,
+      "processingMs": 1000,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "endedAt": 1781841474402,
+      "provider": "local",
+      "model": "gemma4:e2b"
+    },
+    "lastTurn": {
+      "endedAt": 1781841474402,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 3,
+      "outputTokens": 10,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "provider": "local",
+      "model": "gemma4:e2b",
+      "cost": 0.004661899999999999
+    },
+    "meter": {
+      "contextTokens": 12413,
+      "contextBudget": 131072,
+      "compactionAt": 73728,
+      "model": "gemma4:e2b"
+    }
+  }
+}

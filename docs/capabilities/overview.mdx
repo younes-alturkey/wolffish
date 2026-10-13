@@ -1,0 +1,103 @@
+---
+title: "Capabilities Overview"
+description: "How Wolffish's capability system works"
+---
+
+# What Is a Capability?
+
+A capability is a self-contained folder in `brain/cerebellum/` that gives Wolffish a new ability. Capabilities are how Wolffish learns to do things — run shell commands, read files, interact with git, search the web, send messages.
+
+## Two Types of Capabilities
+
+<CardGroup cols={2}>
+  <Card title="Pure Skills" icon="file-lines">
+    A SKILL.md file only. The markdown body contains instructions the LLM follows using its existing abilities. No code needed. Example: `git/` — the LLM uses shell commands to run git operations based on the SKILL.md instructions.
+  </Card>
+  <Card title="Plugin Capabilities" icon="plug">
+    A SKILL.md file plus a `plugin/` folder with executable code. The plugin exports tools that the LLM can call directly. Example: `shell/` — the plugin wraps `child_process` to provide a `shell_exec` tool.
+  </Card>
+</CardGroup>
+
+## Capability Folder Structure
+
+```
+brain/cerebellum/my-capability/
+├── SKILL.md              # Required: frontmatter + instructions
+└── plugin/               # Optional: executable code
+    └── index.mjs         # Plugin entry point
+```
+
+## How Capabilities Are Loaded
+
+On startup, `cerebellum.ts` scans `brain/cerebellum/` and for each folder:
+
+1. Reads and parses the SKILL.md frontmatter (YAML)
+2. Extracts tool definitions, danger patterns, confirm patterns, and triggers
+3. If a `plugin/` folder exists, dynamic-imports `plugin/index.mjs`
+4. Calls `init(context)` on the plugin, passing `pluginDir` and `workspaceRoot`
+5. Registers the tools in the cerebellum's registry — every capability becomes visible in the capability index, but only a subset of tool schemas ships to the model (see below)
+
+## How Capabilities Reach the Model
+
+Registering a capability is not the same as sending its tools to the model. Wolffish separates **knowing a tool exists** from **carrying its schema** — that's what keeps the system prompt lean no matter how much you install.
+
+### The capability index
+
+Every system prompt contains a `<capabilities>` index: one line per capability — name, a short description (capped at 90 characters), and its tool count, with a `[loaded]` marker on the ones whose tools are callable right now. The whole index costs ~800 tokens, and past 60 capabilities the unloaded remainder collapses to a grouped count, so prompt cost stays flat in the number of installed capabilities. The model always knows what exists; it just doesn't pay for schemas it isn't using.
+
+### Core capabilities — always loaded
+
+A bootstrap set ships its full tool schemas with every request (~31–49 tools): `tool-discovery`, `introspect`, `filesystem`, `shell`, `ask`, `utilities`, `web-search`, `secrets`, `system`, the `operating-manual`, `pdf-design`, `dataviz` and `web-design` manuals (one schema line each — their manual bodies load only when called), [`video`](/integrations/video-generation) (a render request must reach the tool without a discovery hop), plus `workflow` (gated to the [workflow](/configuration/workflow-mode) master — agents never see its tools) and the channel capabilities (`telegram`, `whatsapp`, `electron`, and `phone` for [notifications](/integrations/notifications)) while connected. These are the keys to everything else — discovery, memory retrieval, files, and replying — and must never require a discovery hop.
+
+### Everything else — discoverable on demand
+
+GitHub, Google, Notion, the browsers, computer-use, the media and document tools, and every MCP server load when needed:
+
+- `tool_search(query)` — term search over capability names, descriptions, triggers, and tool names. The best match is auto-loaded and its tools are callable the **same turn**.
+- `tool_activate(capability)` — explicit load by exact name, from the index or a search result.
+
+Activation is **conversation-scoped**: each conversation keeps its own active set, so loading `github` in a heartbeat run never invalidates a live chat's prompt cache. At most 10 non-core capabilities stay loaded per conversation, evicted least-recently-used — and eviction is invisible, because calling an evicted tool auto-reactivates its capability and the call executes normally. The same courtesy applies to any known-but-unloaded tool called directly: it just works. Only a genuinely unknown tool name returns an error, and that error points at `tool_search`.
+
+To make extra capabilities always-loaded, add their names to `pinnedCapabilities` (a string array) in `config.json` — there's no UI for it; hand-edit the file.
+
+### Pure skills
+
+Pure skills (no tools) appear in the index as `(guide)` entries. `tool_search` finds them by name, description, or trigger keywords, and the model reads their instructions on demand with `skill_read_source`. There is no keyword-triggered injection of skill bodies into the prompt — the index line is all a skill costs until it's actually needed.
+
+## Built-In Capabilities
+
+Wolffish ships with these capabilities in the default workspace:
+
+| Capability | Type | Description |
+|---|---|---|
+| `tool-discovery` | Plugin | Find and load any capability on demand via `tool_search` / `tool_activate` |
+| `shell` | Plugin | Execute shell commands via `shell_exec` |
+| `filesystem` | Plugin | Read, write, and patch files |
+| `git` | Pure Skill | Git operations via shell commands |
+| `introspect` | Plugin | Memory retrieval and self-awareness: search everything Wolffish knows, read past conversations, check status and spend |
+| `utilities` | Plugin | `send_file` — deliver files to you as attachments (the only delivery path) — and `show_path`, an openable folder/file location card |
+| `ask` | Plugin | Ask you one or more multiple-choice questions on a single card and wait for your answers |
+| `skills` | Plugin | Manage and author Wolffish's own capabilities at runtime |
+| `projects` | Plugin | Create and manage [projects](/configuration/projects) — standing instructions + files that brief every conversation inside them |
+| `pdf-design` | Plugin | The core **document design manual** — loaded before authoring any PDF or styled document |
+| `dataviz` | Plugin | The core **visualization manual** — when to chart, which chart, and the interactive `.chart.json` cards |
+| `web-design` | Plugin | The core **web design manual** — loaded before writing a line of HTML for any page you'll open in a browser |
+
+## Adding and Removing Capabilities
+
+You can add your own capabilities two ways:
+
+- **Drop them onto Settings → Capabilities** — a single `SKILL.md`, a folder, or a `.zip`. Each drop is validated before anything is written, then loaded immediately. Imported capabilities show an **Unknown** badge (they're yours, not bundled) and can be removed with the trash icon, which cleanly deletes their folder.
+- **Create the folder by hand** under `brain/cerebellum/`, then click **Resync** in the panel (or restart Wolffish) to load it.
+
+See [Creating Capabilities](/capabilities/creating-capabilities) for the full walkthrough, the three import shapes, and the rules an importable capability must follow.
+
+### When a settings page depends on a capability
+
+Most service pages in Settings are the front end of a capability — Computer Use, Memes, Speech-to-Text, Text-to-Speech, GitHub, Notion, Brave, [Video generation](/integrations/video-generation). Turn that capability off (or have it fail to load) and the page used to sit there with controls that quietly did nothing.
+
+Each panel now **checks for itself** and says which of three things is wrong — the capability is **missing**, **switched off**, or **failed to load** (showing the underlying error) — with a button straight through to the **Capabilities** page. The controls underneath go visibly inert rather than pretending to work.
+
+<Card title="Create Your Own" icon="plus" href="/capabilities/creating-capabilities">
+  Learn how to build a new capability from scratch.
+</Card>

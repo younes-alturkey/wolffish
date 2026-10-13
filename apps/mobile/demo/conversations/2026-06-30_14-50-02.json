@@ -1,0 +1,82 @@
+{
+  "id": "2026-06-30_14-50-02",
+  "title": "Hry",
+  "model": "gemma4:e2b",
+  "createdAt": 1782820202469,
+  "updatedAt": 1782820260788,
+  "messages": [
+    {
+      "id": "m_1782820260788_add86b",
+      "role": "user",
+      "content": "hry",
+      "timestamp": 1782820260788
+    },
+    {
+      "id": "m_1782820260788_7a29e0",
+      "role": "assistant",
+      "content": "What did you mean by that? 🐟",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782820202471_ffebap",
+          "segmentId": "seg_1",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782820202471_ffebap",
+          "segmentId": "seg_2",
+          "delta": "What did you mean by that? 🐟"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1782820202471_ffebap",
+          "segmentId": "seg_11",
+          "stopReason": "end_turn",
+          "iterationCount": 1
+        }
+      ],
+      "stopReason": "end_turn",
+      "timestamp": 1782820260788
+    }
+  ],
+  "stats": {
+    "allTime": {
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 1,
+      "outputTokens": 15,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "cost": 0.0046668000000000005,
+      "processingMs": 1000,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "endedAt": 1782820260788,
+      "provider": "local",
+      "model": "gemma4:e2b"
+    },
+    "lastTurn": {
+      "endedAt": 1782820260788,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 1,
+      "outputTokens": 15,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "provider": "local",
+      "model": "gemma4:e2b",
+      "cost": 0.0046668000000000005
+    },
+    "meter": {
+      "contextTokens": 12416,
+      "contextBudget": 131072,
+      "compactionAt": 73728,
+      "model": "gemma4:e2b"
+    }
+  }
+}

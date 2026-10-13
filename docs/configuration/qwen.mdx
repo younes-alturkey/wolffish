@@ -1,0 +1,94 @@
+---
+title: "Qwen"
+description: "Set up Qwen (Alibaba Cloud) — wide model range from budget flash to frontier reasoning"
+---
+
+# Qwen (Alibaba Cloud)
+
+```
+POST https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions
+```
+
+Uses SSE streaming with OpenAI-compatible tool-calling format. Supports vision (base64 images) and reasoning content.
+
+**Qwen offers one of the widest model ranges of any provider** — from the ultra-cheap Qwen 3.5 Flash at $0.06/$0.24 per MTok to the frontier Qwen 3.8 Max. All Qwen3+ models support three reasoning modes (None, High, Max) and up to 1M context. The dedicated Qwen3 Coder Plus model is tuned for code generation tasks.
+
+Since **v1.0.235**, connecting Qwen auto-selects **Qwen 3.8 Max** — the new flagship, and the first Max tier to add **vision**, at a lower price than the 3.7 Max it replaces.
+
+Best for: Cost-efficient agentic workflows, code generation, multilingual tasks, and workloads that benefit from a wide selection of price/performance tiers.
+
+<Note>
+  Qwen 3.5 Flash is one of the cheapest reasoning-capable models available — at $0.06/$0.24 per MTok with 1M context, it's significantly cheaper than DeepSeek V4 Flash while still supporting full reasoning modes. Great for high-volume tasks where cost matters.
+</Note>
+
+## Getting an API Key
+
+1. Go to [qwencloud.com](https://www.qwencloud.com)
+2. Sign up or log in
+3. Navigate to **API Keys** and create a new key
+4. Paste it into Wolffish → Settings → Models → Qwen
+
+## Models
+
+| Model | Context | Modes | Input / Output (per MTok) | Cached | Notes |
+|-------|---------|-------|--------------------------|--------|-------|
+| **qwen3.8-max** | 1M | Off, High, Max | $2.00 / $6.00 | $0.25 | Flagship. Frontier reasoning, with vision. Auto-selected on connect. |
+| qwen3.7-max | 1M | Off, High, Max | $2.50 / $7.50 | $0.25 | Previous flagship. |
+| qwen3.7-plus | 1M | Off, High, Max | $0.40 / $1.60 | $0.064 | Strong reasoning at mid-range price. |
+| qwen3.6-plus | 1M | Off, High, Max | $0.40 / $1.60 | $0.04 | Previous-gen plus. |
+| qwen3.6-flash | 1M | Off, High, Max | $0.25 / $1.50 | $0.025 | Fast reasoning. |
+| qwen3.5-plus | 1M | Off, High, Max | $0.40 / $1.60 | $0.04 | Balanced quality and cost. |
+| qwen3.5-flash | 1M | Off, High, Max | $0.06 / $0.24 | $0.006 | Ultra-cheap reasoning. |
+| qwen3-max | 131K | Off, High, Max | $1.60 / $6.40 | $0.40 | Strong reasoning, smaller context. |
+| qwen3-coder-plus | 131K | Off, High, Max | $0.40 / $1.60 | $0.04 | Code-optimized. |
+| qwen3-coder-flash | 131K | Off, High, Max | $0.40 / $1.60 | $0.04 | Fast code-optimized. |
+| qwq-plus | 131K | On | $0.40 / $1.60 | $0.04 | Reasoning-only (always thinks). |
+| qvq-max | 131K | On | $1.60 / $6.40 | $0.16 | Vision reasoning (always thinks). |
+| qwen-max | 131K | — | $1.60 / $6.40 | $0.16 | Legacy. No reasoning. |
+| qwen-plus | 131K | — | $0.40 / $1.60 | $0.04 | Legacy. Fast, no reasoning. |
+| qwen-turbo | 1M | — | $0.30 / $0.60 | $0.03 | Legacy. Fast, no reasoning. |
+| qwen-flash | 1M | — | $0.06 / $0.24 | $0.006 | Legacy. Ultra-cheap, no reasoning. |
+
+## Reasoning modes
+
+How this model reasons is set in the **model card beside the chat input** — hover the model switch to preview the card, click to pin it open. The top chip row, labelled **Thinking**, is the control: pick a chip and it applies from your next message. Two separate ideas combine here:
+
+### Thinking — *whether* the model reasons
+
+- **Off** — the model answers immediately. Fastest and cheapest; ideal for simple, direct tasks.
+- **On** (the chip reads **Normal**) — the model first works through the problem in a dedicated reasoning pass before replying. Slower and uses more tokens, but markedly more accurate on multi-step, logical, or ambiguous tasks.
+
+### Effort — *how hard* it thinks
+
+Only effort-capable models expose this; it applies once thinking is on.
+
+- **High** — standard reasoning depth. The right default for most agentic work.
+- **Max** — the model reasons longer and deeper for the hardest problems. More tokens and latency in exchange for higher quality on complex work.
+
+### The chip row
+
+| Chip | Icon | Meaning |
+|------|------|---------|
+| Off | lightning | Thinking off — direct answer |
+| Normal | brain | Thinking on — no effort control |
+| High | AI brain | Thinking on, standard effort |
+| Max | flame | Thinking on, maximum effort |
+
+The active chip is tinted; the rest sit quiet. Each model shows only the chips it genuinely supports — a model that always reasons has no **Off**, a model with a single mode shows that one chip inert, and a model that can't reason at all replaces the row with *"Reasoning is not supported by this model."* Wolffish remembers your choice per model. (Before **v1.0.236** this was a colour-coded brain button on the composer; it moved into the model card, beside the Single/Workflow row, so every model knob sits in one panel.)
+
+**On Qwen:** qwen3.x models support Off / High / Max (effort via a thinking-token budget). qwq and qvq reason always-on (locked on). Legacy qwen-max/plus/turbo/flash don't reason.
+
+## Cost Comparison
+
+Qwen spans a wide price range, competing at every tier:
+
+| Tier | Model | Input / Output (per MTok) | Comparable To |
+|------|-------|--------------------------|---------------|
+| Ultra-cheap | qwen3.5-flash | $0.06 / $0.24 | Cheaper than DeepSeek V4 Flash |
+| Budget | qwen3.7-plus | $0.40 / $1.60 | MiMo V2.5 Pro range |
+| Mid-range | qwen3.8-max | $2.00 / $6.00 | Between Kimi K2.6 and Anthropic |
+| Legacy | qwen-max | $1.60 / $6.40 | MiniMax M3 range |
+
+<Tip>
+  Start with Qwen 3.5 Flash for high-volume tasks, Qwen 3.7 Plus for general agentic work, or Qwen 3.8 Max when you need frontier reasoning or vision. The dedicated Qwen3 Coder Plus model is a good pick for code-heavy workflows at a budget price.
+</Tip>

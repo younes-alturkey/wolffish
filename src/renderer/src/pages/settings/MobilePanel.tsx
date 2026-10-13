@@ -39,6 +39,12 @@ import { useTranslation } from 'react-i18next'
 let cachedStatus: MobileStatus | null = null
 let loadPromise: Promise<MobileStatus | null> | null = null
 
+// The app is not in the stores and no hosted relay exists, so the panel's
+// first job is to say what the user has to build and run — the repository
+// holds the phone app, the relay and both READMEs.
+const REPO_URL = 'https://github.com/younes-alturkey/wolffish'
+const SETUP_STEPS = ['relay', 'address', 'build', 'install', 'pair'] as const
+
 function loadStatus(): Promise<MobileStatus | null> {
   if (cachedStatus) return Promise.resolve(cachedStatus)
   const api = window.api?.mobile
@@ -161,7 +167,10 @@ export function MobilePanel(): React.JSX.Element {
     setDraftBase(relayUrl)
     setRelayDraft(relayUrl ?? '')
   }
-  const relayDraftChanged = loaded && relayDraft.trim() !== (relayUrl ?? '')
+  // An empty field is not a relay: with no hosted default left, there is
+  // nothing to fall back to, so applying needs an address.
+  const relayDraftChanged =
+    loaded && relayDraft.trim() !== '' && relayDraft.trim() !== (relayUrl ?? '')
 
   // A countdown the panel can render purely: the deadline is fixed, this ticks.
   const [now, setNow] = useState(() => Date.now())
@@ -224,6 +233,40 @@ export function MobilePanel(): React.JSX.Element {
           </h1>
           <p className="text-muted text-sm leading-relaxed">{t('settings.mobile.description')}</p>
         </header>
+
+        {/* Nothing to pair until the user has built the app and deployed a
+            relay, so the steps come first and disappear once a phone is on. */}
+        {!status?.paired && (
+          <section className="bg-surface border-border flex flex-col gap-5 rounded-2xl border p-6">
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-fg text-sm font-medium">
+                {t('settings.mobile.setup.title')}
+              </span>
+              <ExternalLink href={REPO_URL} label={t('settings.mobile.setup.repo')} />
+            </div>
+            <p className="text-muted text-sm leading-relaxed">{t('settings.mobile.setup.intro')}</p>
+            <ol className="flex flex-col gap-4">
+              {SETUP_STEPS.map((step, index) => (
+                <li key={step} className="flex items-start gap-3">
+                  <span className="bg-border/40 text-fg flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-medium tabular-nums">
+                    {index + 1}
+                  </span>
+                  <div className="flex min-w-0 flex-col gap-1">
+                    <span className="text-fg text-sm font-medium">
+                      {t(`settings.mobile.setup.steps.${step}.title`)}
+                    </span>
+                    <p className="text-muted text-xs leading-relaxed">
+                      {t(`settings.mobile.setup.steps.${step}.body`)}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <p className="text-muted text-xs leading-relaxed">
+              {t('settings.mobile.setup.footer')}
+            </p>
+          </section>
+        )}
 
         {/* Paired: the live link. Unpaired: the way to make one. */}
         {status?.paired ? (
@@ -477,46 +520,15 @@ export function MobilePanel(): React.JSX.Element {
           </section>
         )}
 
-        {/* The stores' permanent links — installing the app is step zero of
-            pairing, so the panel hands them over instead of sending the user
-            hunting. */}
-        <section className="bg-surface border-border flex flex-col gap-5 rounded-2xl border p-6">
-          <div className="flex flex-col gap-1">
-            <span className="text-fg text-sm font-medium">{t('settings.mobile.getApp.title')}</span>
-            <p className="text-muted text-xs leading-relaxed">{t('settings.mobile.getApp.body')}</p>
-          </div>
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex min-w-0 items-center gap-3">
-              <AppleIcon size={18} className="text-muted shrink-0" />
-              <span className="text-fg text-sm font-medium">{t('settings.mobile.getApp.ios')}</span>
-            </div>
-            <ExternalLink
-              href="https://apps.apple.com/us/app/wolffish/id6792797989"
-              label={t('settings.mobile.getApp.appStore')}
-            />
-          </div>
-          <div className="border-border/60 border-t" />
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex min-w-0 items-center gap-3">
-              <AndroidIcon size={18} className="text-muted shrink-0" />
-              <span className="text-fg text-sm font-medium">
-                {t('settings.mobile.getApp.android')}
-              </span>
-            </div>
-            <ExternalLink
-              href="https://play.google.com/store/apps/details?id=sh.wolffi.mobile"
-              label={t('settings.mobile.getApp.googlePlay')}
-            />
-          </div>
-        </section>
-
         {/* The relay, a card of its own — nothing about it hides in code.
-            Power users point this at a self-hosted deployment; the next
-            pairing carries the new address to the phone. */}
+            Every user points this at their own deployment (the built-in
+            address was the hosted relay, since retired); the next pairing
+            carries the address to the phone. */}
         <section className="bg-surface border-border flex flex-col gap-5 rounded-2xl border p-6">
           <div className="flex items-center justify-between gap-4">
             <span className="text-fg text-sm font-medium">{t('settings.mobile.relay')}</span>
-            {relayPageUrl && (
+            {/* The built-in address is the retired hosted relay — nothing to open there. */}
+            {relayPageUrl && !relayIsDefault && (
               <ExternalLink href={relayPageUrl} label={t('settings.mobile.openRelay')} />
             )}
           </div>
@@ -534,7 +546,7 @@ export function MobilePanel(): React.JSX.Element {
               if (e.key === 'Enter' && relayDraftChanged && !busy)
                 setPendingRelay({ url: relayDraft.trim() || null })
             }}
-            placeholder={defaultRelayUrl ?? 'wss://…'}
+            placeholder="wss://wolffish-relay.your-name.workers.dev"
             disabled={busy || !loaded}
             spellCheck={false}
             className="text-left font-mono text-xs"
@@ -548,20 +560,7 @@ export function MobilePanel(): React.JSX.Element {
               >
                 {t('settings.mobile.relayConfig.apply')}
               </Button>
-              {!relayIsDefault && (
-                <Button
-                  variant="outline"
-                  disabled={busy}
-                  onClick={() => setPendingRelay({ url: null })}
-                >
-                  {t('settings.mobile.relayConfig.reset')}
-                </Button>
-              )}
             </div>
-            <ExternalLink
-              href="https://github.com/thewolffish/wolffish-relay"
-              label={t('settings.mobile.relayConfig.repo')}
-            />
           </div>
         </section>
 
@@ -668,7 +667,10 @@ export function MobilePanel(): React.JSX.Element {
             so the two devices tell one story: pinned keys, sealed frames, and
             a relay that can forward but never read. */}
         <section className="bg-surface border-border flex flex-col gap-5 rounded-2xl border p-6">
-          <span className="text-fg text-sm font-medium">{t('settings.mobile.how.title')}</span>
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-fg text-sm font-medium">{t('settings.mobile.how.title')}</span>
+            <ExternalLink href={REPO_URL} label={t('settings.mobile.setup.repo')} />
+          </div>
 
           <HowRow
             icon={<Key01Icon size={18} className="text-muted mt-0.5 shrink-0" />}
@@ -725,17 +727,7 @@ export function MobilePanel(): React.JSX.Element {
             {pendingRelay?.url ?? defaultRelayUrl ?? ''}
           </p>
           {pendingRelay !== null && pendingRelay.url !== null && (
-            <p className="text-muted">
-              {t('settings.mobile.relayConfig.confirmCompat')}{' '}
-              <a
-                href="https://github.com/thewolffish/wolffish-relay"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-fg underline underline-offset-2"
-              >
-                {t('settings.mobile.relayConfig.repo')}
-              </a>
-            </p>
+            <p className="text-muted">{t('settings.mobile.relayConfig.confirmCompat')}</p>
           )}
           {status?.paired && (
             <p className="text-muted">{t('settings.mobile.relayConfig.confirmUnpair')}</p>

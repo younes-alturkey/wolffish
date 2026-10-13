@@ -1,0 +1,4 @@
+{
+  "extends": "@extension/tsconfig/base",
+  "include": ["tailwind.config.ts"]
+}

@@ -26,17 +26,31 @@ let cachedState: {
   version: string | null
   percent: number
   error: UpdaterErrorInfo | null
+  installerPath: string | null
 } = {
   phase: 'idle',
   version: null,
   percent: 0,
-  error: null
+  error: null,
+  installerPath: null
 }
 window.api.updater.onState((s) => {
-  cachedState = { phase: s.phase, version: s.version, percent: s.percent, error: s.error }
+  cachedState = {
+    phase: s.phase,
+    version: s.version,
+    percent: s.percent,
+    error: s.error,
+    installerPath: s.installerPath
+  }
 })
 window.api.updater.onReady((event) => {
-  cachedState = { phase: 'ready', version: event.version, percent: 100, error: null }
+  cachedState = {
+    phase: 'ready',
+    version: event.version,
+    percent: 100,
+    error: null,
+    installerPath: event.installerPath
+  }
 })
 
 export function UpdatesPanel(): React.JSX.Element {
@@ -56,6 +70,9 @@ export function UpdatesPanel(): React.JSX.Element {
   const [downloadPercent, setDownloadPercent] = useState(cachedState.percent)
   const [errorInfo, setErrorInfo] = useState<UpdaterErrorInfo | null>(cachedState.error)
   const [saving, setSaving] = useState(false)
+  // macOS: the app cannot replace itself unsigned, so main saves the installer
+  // and reports where; "Update" then opens it and quits.
+  const [installerPath, setInstallerPath] = useState<string | null>(cachedState.installerPath)
   // Flipped once any live updater:state broadcast lands, so the async getState
   // seed below never clobbers fresher state (e.g. reverting 'ready' back to
   // 'verifying' if its snapshot resolves after the ready broadcast).
@@ -76,6 +93,7 @@ export function UpdatesPanel(): React.JSX.Element {
       setPhase((prev) => (prev === 'installing' && s.phase !== 'error' ? prev : s.phase))
       setUpdateVersion(s.version)
       setDownloadPercent(s.percent)
+      setInstallerPath(s.installerPath)
       setErrorInfo(s.phase === 'error' ? s.error : null)
     })
     return () => {
@@ -102,6 +120,7 @@ export function UpdatesPanel(): React.JSX.Element {
       // download and reset to 0 on a fresh one. Clamping here would pin the bar
       // at the previous peak when a retry restarts the download.
       setDownloadPercent(s.percent)
+      setInstallerPath(s.installerPath)
       // A late 'ready' broadcast must not yank the user out of the install view.
       setPhase((prev) => (prev === 'installing' && s.phase === 'ready' ? 'installing' : s.phase))
       // The error rides along in state and renders as an inline alert (no toast):
@@ -297,18 +316,39 @@ export function UpdatesPanel(): React.JSX.Element {
               </>
             ) : phase === 'ready' || phase === 'installing' ? (
               <div className="flex items-center justify-between gap-4">
-                <div className="flex flex-col gap-1">
+                <div className="flex min-w-0 flex-col gap-1">
                   <span className="text-fg text-sm font-medium">
-                    {t('settings.updates.installReady', 'Install downloaded update')}
+                    {installerPath
+                      ? t('settings.updates.manualReady', 'Installer downloaded')
+                      : t('settings.updates.installReady', 'Install downloaded update')}
                   </span>
                   <div className="flex items-center gap-2">
                     <code className="bg-border/50 text-fg rounded px-2 py-0.5 text-xs font-mono">
                       v{updateVersion}
                     </code>
                     <span className="text-muted text-xs">
-                      {t('settings.updates.updateAvailable', 'Ready to install')}
+                      {installerPath
+                        ? t(
+                            'settings.updates.manualHint',
+                            'Opens it and quits Wolffish — drag the new app into Applications, then relaunch.'
+                          )
+                        : t('settings.updates.updateAvailable', 'Ready to install')}
                     </span>
                   </div>
+                  {installerPath && (
+                    <p className="text-muted flex min-w-0 items-center gap-2 text-xs">
+                      <code dir="ltr" className="truncate font-mono">
+                        {installerPath}
+                      </code>
+                      <button
+                        type="button"
+                        onClick={() => void window.api.updater.revealInstaller()}
+                        className="hover:text-fg shrink-0 cursor-pointer underline underline-offset-2"
+                      >
+                        {t('settings.updates.manualReveal', 'Show in Finder')}
+                      </button>
+                    </p>
+                  )}
                 </div>
                 <button
                   type="button"
@@ -322,7 +362,11 @@ export function UpdatesPanel(): React.JSX.Element {
                   )}
                 >
                   {/* Stays Update while installing — the button only dims. */}
-                  <span>{t('settings.updates.install', 'Update')}</span>
+                  <span>
+                    {installerPath
+                      ? t('settings.updates.manualOpen', 'Open installer')
+                      : t('settings.updates.install', 'Update')}
+                  </span>
                 </button>
               </div>
             ) : phase === 'error' ? (

@@ -1,0 +1,138 @@
+---
+title: "Phone Notifications"
+description: "Every turn ends with one notification carrying the real outcome, and blockers interrupt mid-run — a deliberate tool call every time, riding the tunnel or falling back to platform push"
+---
+
+# A Notification Is a Decision
+
+Nothing in Wolffish notifies you automatically. No event listener fires a push when an automation ends, no watcher pings you when a download lands. When your phone buzzes, it is because **the agent decided you should know** — it composed a title and a body, chose how urgent the moment was, and called a tool. What changed in **v1.0.250** is the default that judgement works from: notifying is now the norm and **silence is what needs a reason** — but every send is still a composed, deliberate call, never a repeat, and never machine-generated noise. A notification that carries no real information is worse than none, and the agent is held to that.
+
+This page is the whole system: the tool the model calls, the guardrails the desktop stamps on every send, where a tap lands, how unread badges stay honest, and exactly what the relay in the middle gets to see. Pairing itself — the QR, the code, the encrypted tunnel — lives on the [Mobile App](/integrations/mobile-app) page.
+
+## The `notify_phone` Tool
+
+With **Phone notifications** on, the agent carries a `phone` capability with one tool in it: `notify_phone`. Since **v1.0.250** the instructions it works under are inverted from the old rationing: **every turn ends with one notification carrying the actual result** — the number, the outcome, what's next — as the closing beat after the work is done and any files are delivered, even for a turn you watched finish, because five minutes later you are somewhere else and the phone is a second surface, not a mirror of the screen you happen to be at. A **blocker, a failure that changes the plan, or a finding worth acting on now** goes out mid-run, the instant it happens; long work announces itself with a `started`; a scheduled digest closes with its own `completed`. The bar for the words rose with the count: **"Task completed" is not a notification** — "Sheet rebuilt — 214 rows, 3 broken dates fixed" is.
+
+Silence still has its places, spelled out just as plainly: small talk and one-line acknowledgments, an answer the notification would repeat word for word, mid-turn narration (prose does that job), **Telegram and WhatsApp turns** — where the reply already reached the same phone as a message with its own notification, so the push is saved for blockers, failures and findings — and whenever you have **asked for quiet**, which outranks all of it. A notification **complements the conversation reply, never replaces any part of it**: it is not shown in the conversation, so the reply must stand complete on its own.
+
+The model chooses the words and the moment; each call also names a **phase**, and the phase decides how long the notification stays relevant before the platforms stop showing it:
+
+| Phase | Meaning | Stays relevant for |
+| --- | --- | --- |
+| `needs_input` | A run is blocked on you | **5 minutes** — a stale approval prompt arriving forty minutes late is worse than no prompt at all |
+| `completed` | A run finished with something to show | 1 hour |
+| `failed` | A run died or hit a wall | 1 hour |
+| `started` | A long run began | 15 minutes |
+| `info` | Anything else worth a line | 15 minutes |
+
+An `urgency` of `high` asks the platform to present the notification promptly; `normal` is the default.
+
+<Note>
+  **Off makes the tool refuse — by removing it.** The switch doesn't ask the agent to hold back; it unregisters the `phone` capability, so `notify_phone` vanishes from the model's tool surface entirely. The same is true when no phone is paired: the tool's presence *is* the availability check, so the agent never drafts a notification that has nowhere to go.
+</Note>
+
+## The `notify_web` Tool — the Web UI
+
+The [Web UI](/channels/https) has the same tool for browsers: `notify_web`, registered as the `web-ui` capability while the Web UI is on, **Notifications** is on in its card, and at least one browser has signed in. It works under the identical instructions — every turn closes with one carrying the actual outcome, a blocker or a failure interrupts mid-turn, never the same news twice — and the agent is reminded of them on every iteration, exactly as it is for the phone. A workflow subagent never holds it; only the master speaks. When a phone is paired *and* a browser is signed in, the turn closes with one call to each: two surfaces, one notification per surface.
+
+What differs is the delivery and the tap. A call becomes an in-app toast in every open tab plus an encrypted **Web Push** to every browser that allowed notifications, which is what reaches a locked phone with the browser closed. Instead of a `deeplink`, the tool takes `open`: `"current"` (the default) opens the run's own conversation, a conversation id opens that one, `"none"` just opens the app. The same phases and `urgency` apply, and a push carries a time-to-live derived from the phase — the table above.
+
+Permission is asked once, on the first tap after signing in — browsers only grant it from a gesture — and a strip offers it again if the prompt was closed. Two platform rules the agent cannot work around: notifications need a trusted **HTTPS** origin (the [HTTPS](/channels/https) page is how a public IP gets one), and on iPhone and iPad they arrive only when Wolffish was added to the Home Screen and opened from there — the strip says so on those devices. A turn that blocks on an approval or a question while the page is hidden raises a notification on its own, the one case where the harness, not the model, decides. `wolffish web notify` and the card's **Send a test** confirm the path end to end.
+
+## What the Model Writes, What the Desktop Stamps
+
+The model is trusted with the words and nothing else. Everything that decides **where** a notification goes and **which** notification it is comes from the desktop:
+
+- **Identity** — the notification id and the phone it routes to are stamped by the harness, never taken from the model. The id is minted fresh per call, and it is what makes retries and duplicate deliveries fold into one banner instead of two.
+- **Clamps** — the title is cut to one line of 60 characters, the body to 180, and control characters are stripped. Model output is sanitized rather than trusted; malformed frames are **rejected outright, never quietly truncated**, so what arrives is always something the desktop actually composed.
+- **The run** — the run id travels with the notification, read from the turn's own scope rather than the model's memory of it.
+- **The link** — a deep link is rejected unless it uses the app's own `wolffish://` scheme and names a screen the phone actually has. A bad link fails **at the tool call**, with the list of real destinations in the error, rather than traveling all the way to the phone to quietly drop you on the home screen.
+
+A send the phone never confirmed is reported to the model as **unconfirmed — and it counts as sent**. The notification is most likely on your lock screen already, so sending it again — reworded, re-phased, or verbatim — is how one buzz becomes three in someone's pocket. Nothing counts or caps the agent's calls, which is exactly why its instructions say it the other way around: **never the same news twice**, one call per moment, never a retry loop.
+
+## Where a Tap Lands
+
+A notification can name a screen, and it can name **this run's own conversation** without knowing its id:
+
+```
+wolffish://chat?id=current
+```
+
+The desktop fills the id in **from the turn scope** — the same place the run's identity already comes from. This matters because a run does not reliably know which conversation it is answering in: the agent used to either go hunting for the id or guess one, and **a guessed id opens someone else's transcript**. `current` removes the guess, and it is the destination the agent is told to prefer almost every time.
+
+The destinations are a fixed list, shared by both apps, and cover every screen the phone actually has:
+
+| Route | Opens |
+| --- | --- |
+| `chat` · `chat?id=…` | The chat screen, optionally a specific conversation |
+| `history` | The conversations list |
+| `settings` | The settings index |
+| `settings/model` · `settings/appearance` · `settings/preferences` | Model, appearance, preferences |
+| `settings/projects` · `settings/automations` · `settings/procedures` · `settings/customization` | The [editable workspace](/integrations/mobile-app#the-workspace-editable) |
+| `settings/channels` · `settings/capabilities` · `settings/knowledge` · `settings/mcp` · `settings/services` · `settings/variables` | The mirrored settings pages |
+| `settings/usage` · `settings/data` · `settings/updates` · `settings/relay` · `settings/changelog` | Usage, data, updates, relay, changelog |
+
+On the phone, a tap does the right thing from either temperature: a tap while the app is **running** pushes the screen so back returns you to where you were, and a tap that **launched** the app is read on the entry screen's first render, so its destination is the boot destination rather than a second navigation racing the redirect. A conversation reached this way waits out a short grace period for the desktop instead of flashing an empty new chat, a link this build can't resolve leaves you exactly where you are, and one tap moves the app exactly once — even when both paths see it.
+
+## Delivery: Tunnel First, Push Second
+
+A notification takes the most private road available, and falls back only when it must:
+
+1. **The live tunnel.** If the phone is connected, the notification rides the encrypted link as a control frame and renders in-app. The relay waits a beat for the phone to acknowledge it.
+2. **Platform push.** If the phone is offline — or the acknowledgment never comes — the relay hands the notification to the platform push service (Expo, in front of APNs on iPhone and FCM on Android), and the OS delivers the banner. Android pushes go out at **FCM high priority**, so a sleeping phone shows them now rather than when it happens to stir — and a relay-side hiccup on this path costs **the notification, never the tunnel** it rides beside.
+3. **Nowhere.** If the phone never registered for push and isn't connected, the send is reported back as dropped — the desktop hears it immediately, and the agent is told rather than left assuming you know.
+
+Because both routes can legitimately fire for the same notification — the in-band render, then a fallback push when the acknowledgment got lost — the phone keeps a short memory of what it has already shown and **folds duplicates into one banner**. And a notification about the conversation you are currently reading is marked handled instead of presented: the phone doesn't buzz about the screen you're looking at.
+
+## Unread Badges
+
+Every notification that names a conversation feeds a **per-conversation unread count**, and the counts surface everywhere a conversation does: on the rows of the conversations sheet, on the History list, summed on the floating menu button, and as the **number on the app icon** — capped at `99+` in the lists, at 999 underneath.
+
+**The conversation is stamped, not inferred** *(v1.0.301)*. The phone used to work out which conversation a notification belonged to by reading its **deeplink** — but a deeplink is where a *tap* goes, and the agent deliberately omits it on most mid-run notifications, so a conversation that had sent five notifications could wear a badge reading **2**. Three of those five named no conversation at all, and nothing counted them, while the [notifications list](#the-notifications-page) — which counts unread records, link or no link — showed all five. Every notification now **carries its own conversation**, stamped by the desktop from the same turn scope the run id comes from and **never taken from the model**. A tap still goes exactly where the deeplink points; only the counting changed. An older desktop paired with a newer phone sends no conversation and the phone falls back to the deeplink exactly as before — and the [relay has to be in on it](#what-the-relay-can-see), because it rebuilds every frame field by field.
+
+Clearing is reading. Opening a conversation zeroes its bucket and dismisses its notifications from the system tray; deleting a conversation — from the phone, or from the desktop with the phone watching — takes its count with it; disconnecting clears everything. There is no "mark as read" chore, because the badge was never a separate ledger — it is a running count of what you haven't looked at.
+
+The subtle part is the app icon when the app is **dead**. A closed app can't count anything, so the relay keeps **one integer per device** — incremented once per notification it routes, stamped onto every platform push so the icon is correct before the app has even woken. The moment the app runs again, the phone reports its true total and **overwrites the relay's number absolutely** — the phone's count is authoritative, the relay's is a stand-in for when nobody's home, and a lost or reordered frame can never make them drift apart.
+
+<Note>
+  The **notifications page** on the phone is the record of what was sent, independent of badges: it lists every notification with an **archive**, and its own count answers back to the tray. Since mobile **v1.0.64** it counts **every one** of a conversation's notifications rather than some of them — the same deeplink-versus-conversation confusion described above, seen from the other side.
+</Note>
+
+## What the Relay Can See
+
+The [blind relay](/integrations/mobile-app#the-blind-relay) carries conversation traffic as sealed frames it cannot read. Notifications are **the one deliberate exception**, and you should know its exact shape.
+
+A platform push has to leave your devices in the clear eventually — Apple and Google render the banner, so Apple and Google see its text. That makes sealing the relay leg alone a false comfort, and Wolffish doesn't pretend otherwise: a notification travels to the relay as a **readable control frame**, is acted on there, and is never forwarded as tunnel traffic.
+
+What that means concretely:
+
+- **The relay sees, in the moment**: the title and body the model wrote, the deep link — including the conversation id when the tap targets a chat — the phase, urgency, run id, and the phone it's addressed to.
+- **The relay stores none of it.** Titles and bodies are never written down and never logged. What persists is bookkeeping: the device's push token, platform and app version, the badge integer, and short-lived delivery records that age out on their own — minutes for delivery tickets, a day for the duplicate-folding ids.
+- **Conversation content never rides this path.** Your transcripts, files and settings cross the relay only as sealed frames it cannot open. The agent's own instructions say the same thing from the other side: a notification is a headline, not a transcript.
+
+<Warning>
+  Word notifications knowing they take the platform-push road. The agent is instructed to keep them terse headlines — "Digest ready", "Run failed, needs a look" — and the 60/180-character clamps enforce the spirit. If a run's *result* is sensitive, the place to read it is the conversation, over the sealed tunnel — the notification should only tell you it's worth opening.
+</Warning>
+
+## Registration, and Leaving No Trace
+
+The phone registers for push under a **random device id** — minted once, kept in the OS keystore, and deliberately unrelated to the tunnel's cryptographic identity, so the registration can't leak the keys. Registration refreshes itself on every pairing, every reconnect, every return to the foreground, and every push-token rotation; the OS permission prompt appears the first time the phone connects after install. Decline it and nothing breaks — notifications simply arrive only while the app is connected, over the tunnel. The introduction is prompt in both directions: an iPhone registers **within seconds, with a token or without one** — lock-screen delivery switches itself on the moment iOS hands the token over — rather than stalling on a question the system is free to leave unanswered.
+
+Leaving reverses all of it, in the right order. **Disconnecting the phone** clears every badge — buckets, tray, app icon — tells the relay to zero its copy, then sends `unregister_push`, and the relay **deletes the device registration on the spot**: the push token is forgotten, and every later notification addressed to that phone is answered *dropped*, not rerouted. Only then does the phone drop the link and wipe itself. Pairing again starts from a clean slate — new registration, badge at zero.
+
+<Info>
+  The desktop itself shows **no OS notifications**. Its job is deciding to send them; the phone is where they land. If you are at the desktop, the conversation is already in front of you.
+</Info>
+
+## The Switches
+
+Two settings, both living in one place on each device — and the master switch is **the same setting on both**, not two that can disagree:
+
+| Switch | Where | What it does |
+| --- | --- | --- |
+| **Phone notifications** | Desktop: **Settings → Channels → Mobile** · Phone: **Settings → Channels → This phone** | On lets the agent call `notify_phone`; Off removes the tool entirely. Flip it on either device and the other follows. Default **On**. |
+| **Task results** | Same panels | Off — the default — keeps the phone's feed clean: replies, files, errors. On relays every tool call and activity. Separate from notifications, and connection logging is always on. |
+
+<Note>
+  Underneath, `phone` is an ordinary capability — switching it off, whether you do it or the agent does, removes `notify_phone` the same way. The **Phone notifications** switch is the intended control; the capability toggle is just the same lever further down.
+</Note>

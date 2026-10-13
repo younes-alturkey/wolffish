@@ -47,8 +47,15 @@ export type FileProcessorOptions = {
 // content is inlined: small files get a short "read it with X" note, big
 // files get the full traversal workflow plus the no-skip contract.
 const PDF_SMALL_MAX_PAGES = 15
-/** Above this, even the page-count probe (a full read into RAM) is skipped. */
-const PDF_PROBE_MAX_BYTES = 256 * 1024 * 1024
+/**
+ * Above this the pdf.js probe is skipped. That probe reads the whole file
+ * into RAM and parses it on the main thread, and a V8 fatal in there (a
+ * 250 MB upload did it) takes the entire app down — nothing catches it.
+ * Bigger files get a streaming count of their page objects instead, which
+ * allocates one buffer and cannot fail that way.
+ */
+const PDF_PROBE_MAX_BYTES = 32 * 1024 * 1024
+const PDF_HEADER = '%PDF-'
 /** Text/office files at or below this size count as "small" for note tier. */
 const DOC_SMALL_MAX_BYTES = 64 * 1024
 
@@ -225,9 +232,11 @@ async function processPdf(absPath: string, originalName: string): Promise<Proces
   // Probe the page count even for huge files (the note should say "3,012
   // pages", not shrug) — but not above the RAM-spike ceiling.
   const probeSkipped = stat.size > PDF_PROBE_MAX_BYTES
-  const pageCount = probeSkipped ? null : await probePdfPageCount(absPath)
+  const pageCount = probeSkipped
+    ? await countPdfPageObjects(absPath)
+    : await probePdfPageCount(absPath)
 
-  if (pageCount !== null && pageCount <= PDF_SMALL_MAX_PAGES) {
+  if (pageCount !== null && !probeSkipped && pageCount <= PDF_SMALL_MAX_PAGES) {
     return {
       originalName,
       fileType: 'pdf',
@@ -255,6 +264,9 @@ async function probePdfPageCount(absPath: string): Promise<number | null> {
   }
   let parser: LazyParser | null = null
   try {
+    // Garbage with a .pdf name must never reach pdf.js: it is what crashed
+    // the main process, and a try/catch does not catch a V8 fatal.
+    if (!(await hasPdfHeader(absPath))) return null
     const raw = await fs.readFile(absPath)
     const { PDFParse } = await import('pdf-parse')
     parser = new PDFParse({ data: new Uint8Array(raw) }) as unknown as LazyParser
@@ -267,6 +279,52 @@ async function probePdfPageCount(absPath: string): Promise<number | null> {
   }
 }
 
+async function hasPdfHeader(absPath: string): Promise<boolean> {
+  const handle = await fs.open(absPath, 'r')
+  try {
+    const head = Buffer.alloc(PDF_HEADER.length)
+    const { bytesRead } = await handle.read(head, 0, head.length, 0)
+    return bytesRead === head.length && head.toString('latin1') === PDF_HEADER
+  } catch {
+    return false
+  } finally {
+    await handle.close()
+  }
+}
+
+/**
+ * Page count for a PDF too big to hand to pdf.js: a streaming scan for the
+ * page objects' `/Type /Page` markers, one megabyte at a time with a short
+ * overlap so a marker split across two reads is seen exactly once. Exact
+ * for the classic layout, an undercount when the catalog sits in compressed
+ * object streams — null then, and the note says the tools will report it.
+ */
+export async function countPdfPageObjects(absPath: string): Promise<number | null> {
+  if (!(await hasPdfHeader(absPath))) return null
+  const handle = await fs.open(absPath, 'r')
+  try {
+    const chunk = Buffer.alloc(1024 * 1024)
+    const marker = /\/Type\s*\/Page(?![A-Za-z])/g
+    let carry = ''
+    let count = 0
+    for (;;) {
+      const { bytesRead } = await handle.read(chunk, 0, chunk.length, null)
+      if (bytesRead === 0) break
+      const text = carry + chunk.toString('latin1', 0, bytesRead)
+      for (const match of text.matchAll(marker)) {
+        // A marker lying entirely inside the carried tail was counted last round.
+        if (match.index + match[0].length > carry.length) count++
+      }
+      carry = text.slice(-24)
+    }
+    return count > 0 ? count : null
+  } catch {
+    return null
+  } finally {
+    await handle.close()
+  }
+}
+
 function pdfReferenceNote(
   absPath: string,
   originalName: string,
@@ -276,7 +334,9 @@ function pdfReferenceNote(
 ): ProcessedAttachment {
   const pagesLabel =
     pageCount !== null
-      ? `${pageCount.toLocaleString()} pages`
+      ? probeSkipped
+        ? `about ${pageCount.toLocaleString()} pages (counted from the file's page objects; pdf_info has the exact number)`
+        : `${pageCount.toLocaleString()} pages`
       : probeSkipped
         ? 'page count not probed at this size (pdf_info reports it)'
         : 'page count unreadable (possibly encrypted or corrupt — the PDF tools will report the exact error)'

@@ -50,15 +50,25 @@ export function reasoningModesFor(
       return m.includes('haiku') ? ['off', 'high'] : ['off', 'high', 'max']
 
     // ── OpenAI ─────────────────────────────────────────────────────────
-    // reasoning_effort none|high|max(xhigh); none = off (verified: 0 / 61 / 84
-    // reasoning_tokens on gpt-5.5). The non-reasoning *-chat-latest variants do
-    // not reason. NOTE: chat/completions rejects reasoning_effort + tools (400),
-    // so the provider strips effort on tool turns — effort applies to tool-less
-    // turns only until/unless the Responses API is adopted.
+    // Responses API `reasoning.effort`. Verified live 2026-10-12 by sweeping
+    // none|low|high|xhigh|max on every model in the catalogue:
+    //   gpt-6-astra / gpt-6.1-sol   low…max, 400 on 'none' → ALWAYS-ON [on,high,max]
+    //   gpt-6-sol / gpt-6-luna      none…max                 → [off,high,max]
+    //   gpt-5.6-* / 5.5 / 5.4* / 5.2 none…xhigh (5.6 adds max) → [off,high,max]
+    //   gpt-5.1                     none…high (400 on xhigh) → [off,high]
+    //   gpt-5 / -mini / -nano       low…high, 400 on 'none'  → ALWAYS-ON [on,high]
+    //   o1 / o3 / o3-mini / o4-mini low…high, 400 on 'none'  → ALWAYS-ON [on,high]
+    //   chat-latest / gpt-4.1 / gpt-4o / gpt-4 reject the field outright → []
+    // The provider maps 'max' to the top rung the family accepts (max or
+    // xhigh) and 'on' to the provider default (medium).
     case 'openai':
       if (m.includes('chat-latest')) return []
-      if (/^gpt-5/.test(m)) return ['off', 'high', 'max']
-      if (/^(o1|o3|o4)/.test(m)) return ['off', 'high', 'max']
+      if (/^gpt-6/.test(m))
+        return /astra|^gpt-6\.1/.test(m) ? ['on', 'high', 'max'] : ['off', 'high', 'max']
+      if (/^gpt-5\.[2-9]/.test(m)) return ['off', 'high', 'max']
+      if (/^gpt-5\.1/.test(m)) return ['off', 'high']
+      if (/^gpt-5/.test(m)) return ['on', 'high']
+      if (/^(o1|o3|o4)/.test(m)) return ['on', 'high']
       return []
 
     // ── xAI (Grok) ─────────────────────────────────────────────────────

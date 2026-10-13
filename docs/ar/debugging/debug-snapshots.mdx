@@ -1,0 +1,162 @@
+---
+title: "لقطات التصحيح"
+description: "فحص السياق الدقيق المُرسل إلى النموذج اللغوي في كل دور"
+---
+
+# شاهد ما يراه النموذج اللغوي بالضبط
+
+لقطات التصحيح هي أكثر أداة تصحيح مفيدة في وولفيش. تُظهر لك **بالضبط** موجه النظام الذي جُمّع وأُرسل إلى النموذج اللغوي في كل دور — بدون تجريد، بدون تلخيص، النص الحرفي.
+
+## الموقع
+
+```
+brain/prefrontal/.debug/{timestamp}.md
+```
+
+تُكتب لقطة جديدة بواسطة `prefrontal.buildContext()` في كل دور. اسم الملف هو الطابع الزمني بصيغة `YYYY-MM-DD_HH-MM-SS.mmm` (بدقة الميلي ثانية)، لذا فإن الترتيب الأبجدي هو الترتيب الزمني.
+
+<Note>
+لقطات التصحيح تتناوب: يحتفظ مجلد `.debug/` بأحدث **50 لقطة** ويحذف الأقدم منها. إذا كنت بحاجة للاحتفاظ بواحدة، انسخها خارج المجلد.
+</Note>
+
+## ما بداخلها
+
+موجه النظام **رشيق بالتصميم** — موجه المحادثة الجديدة يبلغ نحو 5,000 رمز. يحمل الأساسيات فقط؛ فالذاكرة والسجل والملفات وكتالوج الأدوات الكامل مفهرسة على القرص وتُسترجع عند الطلب (`memory_search`، `tool_search`)، ولا تُفرَّغ في الموجه أبداً. كل لقطة تحتوي على:
+
+- **الترويسة** — الطابع الزمني، الرموز المقدّرة، ميزانية التجميع، وقائمة الأقسام المُضمّنة
+- **الرسالة** — رسالة المستخدم التي بُني هذا السياق من أجلها
+- **المصادر** — كل ملف غذّى الموجه، مع فئته وكلفته التقريبية بالرموز
+- **الموجه** — موجه النظام الكامل المُجمّع، حرفياً
+
+الموجه نفسه يُبنى من هذه الأقسام:
+
+| القسم | المحتويات |
+|---|---|
+| `<identity>` | `soul.md` (الشخصية) + `user.md` (من أنت) |
+| `<device>` | حقائق الجهاز الثابتة — نظام التشغيل، shell، المسارات، الموارد (~40 رمزاً) |
+| `<variables>` | المتغيرات المعرّفة من المستخدم في الإعدادات → المتغيرات (إن وُجدت) |
+| `<prefrontal>` | عقد التشغيل `agents.core.md` (~1.4 ألف رمز) + تجاوزاتك في `agents.md` + موجز التفضيلات المتعلَّمة |
+| `<capabilities>` | سطر واحد لكل قدرة مثبّتة — الاسم، عدد الأدوات، وصف ≤90 حرفاً، وعلامة `[loaded]` للقدرات القابلة للاستدعاء الآن |
+| `<memory_map>` | خريطة تغطية لكل ما يمكن استرجاعه — عدد السجلات لكل مصدر، نطاقات التواريخ، مواضيع المعرفة. **خريطة** لما هو موجود، وليست المحتوى أبداً |
+| `<runtime>` | عدادات الحلقة الحية (عند عرضها داخل الموجه) |
+
+تُلحق طبقات شرطية عند تفعيلها: الدور الوظيفي (`<workflow_mode>` لقائد [سير العمل](/ar/configuration/workflow-mode) — متضمّنةً كتالوج `<workflow_models>` بالنماذج القابلة للإطلاق — و`<workflow_agent>` للوكلاء)، وتنسيق `<channel>` (واتساب)، و`<local_model>` (طبقة الصدق للنماذج المُشغَّلة محلياً).
+
+سجل المحادثة **ليس** جزءاً من موجه النظام — فهو ينتقل في مصفوفة الرسائل، والمحادثات الطويلة تُعاد كملخص متدحرج بالإضافة إلى الذيل الحرفي.
+
+## قراءة لقطة تصحيح
+
+إليك مثال مُشرح:
+
+```markdown
+# Prefrontal context snapshot
+
+- timestamp: 2026-07-03T14:30:22.847Z
+- estimated tokens: 5121
+- budget: 963000
+- sections: identity, device, prefrontal, capabilities, memory_map, runtime
+
+## message
+
+Can you check if the server is running?
+
+## sources
+
+- (identity, score=1.00, ~610t) brain/identity/soul.md
+- (identity, score=1.00, ~180t) brain/identity/user.md
+- (prefrontal, score=1.00, ~1420t) brain/prefrontal/agents.core.md
+- (prefrontal, score=1.00, ~85t) brain/prefrontal/agents.md
+- (prefrontal, score=1.00, ~490t) synthesized: learned preferences
+
+## prompt
+
+<identity>
+<source path="brain/identity/soul.md">
+You are Wolffish, a personal AI assistant...
+</source>
+
+<source path="brain/identity/user.md">
+Name: Younes
+Preferences: ...
+</source>
+</identity>
+
+<device>
+OS: macOS 15.5 (arm64), shell: zsh, home: /Users/younes, ...
+</device>
+
+<prefrontal>
+<source path="brain/prefrontal/agents.core.md">
+# Operating contract
+...
+</source>
+
+<source path="brain/prefrontal/agents.md">
+[Your overrides — win on any conflict with the core contract]
+</source>
+</prefrontal>
+
+<capabilities>
+Installed capabilities ([loaded] = callable right now; anything else is
+one tool_search/tool_activate away):
+- shell (1 tools) — Execute shell commands on the local system [loaded]
+- filesystem (3 tools) — Read, write, and patch files [loaded]
+- introspect (12 tools) — Search memory, read conversations, ... [loaded]
+- github (61 tools) — GitHub repos, issues, PRs, Actions, releases
+- pdf (8 tools) — Read, create, merge, and modify PDF files
+...
+</capabilities>
+
+<memory_map>
+Everything you have ever done, said, produced, or spent is indexed on
+disk — this is the coverage map, NOT the content. ...
+- episode: ~450 records (2026-01-12 → 2026-07-03)
+- conversation: ~1200 records (2026-01-12 → 2026-07-03)
+- knowledge topics — projects: Wolffish, ... (memory_get the file for details)
+</memory_map>
+
+<runtime>
+  Tool iteration this turn: 1
+  Tools called this turn: 0
+</runtime>
+```
+
+## ما الذي تبحث عنه
+
+<AccordionGroup>
+  <Accordion title="قدرة مفقودة؟">
+    تحقق من قسم `<capabilities>`. كل قدرة مثبّتة ينبغي أن يكون لها سطر واحد هناك — `[loaded]` تعني أن مخططات أدواتها أُرسلت مع الطلب؛ وأي شيء آخر يُحمّل عند الطلب عندما يستدعي النموذج `tool_search` أو `tool_activate` (أو يستدعي إحدى أدواتها مباشرة، وهو ما يفعّل القدرة تلقائياً).
+
+    إذا كانت قدرتك غائبة عن الفهرس كلياً، فقد فشل تحليل ملف SKILL.md الخاص بها — تحقق من الواجهة الأمامية (frontmatter). وإذا كانت مُدرجة لكن النموذج لا يختارها أبداً، فاجعل حقول `name` و`description` و`triggers` أكثر وصفية: `tool_search` يطابق بناءً على هذه المصطلحات. ولإبقاء قدرة محمّلة دائماً، أضفها إلى `pinnedCapabilities` في `config.json`.
+  </Accordion>
+
+  <Accordion title="النموذج لم يتذكر شيئاً كان ينبغي أن يعرفه؟">
+    محتوى الذاكرة لا يُحقن في الموجه أبداً — قسم `<memory_map>` يخبر النموذج فقط بما هو موجود. الاسترجاع يحدث عندما يستدعي النموذج `memory_search` / `memory_get` / `conversation_read` أثناء الدور.
+
+    تحقق من قسم `<memory_map>` أولاً: إذا كان المصدر المعني (الحلقات، المعرفة، المحادثات) يُظهر سجلات في نطاق التواريخ الصحيح، فالبيانات مفهرسة وكان البحث سيجدها — النموذج ببساطة لم يبحث. وإذا لم تُظهر الخريطة شيئاً لذلك المصدر، فتحقق من الملفات الأساسية تحت `brain/`.
+  </Accordion>
+
+  <Accordion title="سلوك غير متوقع؟">
+    اقرأ قسمي `<identity>` و`<prefrontal>` بعناية. يتبع النموذج اللغوي هذه التعليمات حرفياً. إذا كان السلوك غير متوقع، فقد تكون التعليمات غامضة أو متناقضة. عدّل `soul.md` أو `agents.md` للتوضيح — ولا تعدّل `agents.core.md` أبداً، فهو مُدار من التطبيق ويُستبدل عند كل تشغيل. ملفك `agents.md` يفوز في أي تعارض.
+  </Accordion>
+
+  <Accordion title="موجه أكبر من المتوقع؟">
+    تُظهر الترويسة `estimated tokens` مقابل ميزانية التجميع. الموجه الجديد ينبغي أن يكون حول 5 آلاف رمز. إذا كان أكبر بكثير، فابحث عن مصدر متضخم في قائمة `## sources` — ملف `soul.md` أو `user.md` أو `agents.md` منتفخ يظهر في كل موجه. فهرس `<capabilities>` يبقى محدوداً من تلقاء نفسه (ينهار إلى عدّادات مجمّعة بعد 60 قدرة)، وقسم `<memory_map>` هو جذع ثابت الحجم.
+
+    لاحظ أن الموجه ليس سوى جزء من الطلب: مخططات أدوات القدرات الأساسية والمفعّلة تنتقل في معامل tools الخاص بالواجهة البرمجية، وسجل المحادثة ينتقل في مصفوفة الرسائل.
+  </Accordion>
+
+  <Accordion title="أداة غير متاحة؟">
+    مخططات الأدوات ليست نصاً في الموجه — تُرسل عبر معامل tools لدى المزود لـ**القدرات الأساسية بالإضافة إلى ما فعّلته هذه المحادثة** (حتى 10 تفعيلات غير أساسية، تُزاح بأسلوب LRU بشكل غير مرئي). فهرس `<capabilities>` يخبرك بما هو `[loaded]`.
+
+    إذا واجه النموذج خطأ "أداة غير معروفة"، فهذا يعني أنها لم تُحمّل بعد، لا أنها معطّلة — الخطأ نفسه يوجّه النموذج إلى `tool_search`. الأداة المعروفة غير المحمّلة تعمل مباشرة عند استدعائها. وإذا لم تظهر أداة على الإطلاق، فتحقق من تصريحات `tools:` في SKILL.md الخاص بقدرتها ومن صادرات `plugin/index.mjs`.
+  </Accordion>
+</AccordionGroup>
+
+## قاعدة الـ 90%
+
+<Tip>
+إذا فعل وولفيش شيئاً خاطئاً، ففي 90% من الحالات الإجابة في لقطة التصحيح. النموذج لا يمكنه التصرف إلا بناءً على ما يراه — إذا لم تكن المعلومات الصحيحة في السياق، لم يكن بإمكان النموذج استخدامها. وفي ظل التصميم الرشيق، "ما يراه" يشمل ما يمكنه *جلبه*: تحقق مما إذا كان النموذج قد أُخبر بوجود البيانات (`<memory_map>`، `<capabilities>`) ولم يذهب لجلبها فحسب.
+</Tip>
+
+ابدأ من هنا. دائماً.

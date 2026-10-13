@@ -1,0 +1,100 @@
+---
+title: "Debugging Wolffish"
+description: "How to understand what Wolffish is doing and fix problems"
+---
+
+# Everything Is a Markdown File
+
+Wolffish is designed to be debuggable. Every layer of the system produces human-readable markdown artifacts that you can open in any text editor. There are no binary logs, no proprietary formats, no special tools required.
+
+<Note>
+If you can't debug it by reading a markdown file, it's a bug in Wolffish.
+</Note>
+
+## Four Sources of Truth
+
+When something goes wrong, the answer lives in one of these four places:
+
+<CardGroup cols={2}>
+  <Card title="Debug Snapshots" icon="camera" href="/debugging/debug-snapshots">
+    The exact context sent to the LLM on every turn. Shows what the model actually saw.
+  </Card>
+  <Card title="Event Logs" icon="list-timeline" href="/debugging/event-logs">
+    Chronological record of every event that fired in the system.
+  </Card>
+  <Card title="Task Files" icon="list-check" href="/debugging/task-files">
+    Step-by-step logs of tool execution — what ran, what returned, what failed.
+  </Card>
+  <Card title="Episode Files" icon="brain" href="/memory/episodes">
+    What Wolffish remembered from conversations. Stored as markdown in hippocampus.
+  </Card>
+</CardGroup>
+
+## File Locations
+
+| Artifact | Path | Written By |
+|---|---|---|
+| Debug snapshots | `brain/prefrontal/.debug/{timestamp}.md` | `prefrontal.buildContext()` |
+| Event logs | `brain/corpus/YYYY-MM-DD.log.md` | `corpus` event bus |
+| Task files | `brain/motor/tasks/TASK-{id}.md` | `motor.createTask()` |
+| Episode files | `brain/hippocampus/episodes/*.md` | `hippocampus.save()` |
+
+All paths are relative to your workspace root (`~/.wolffish/workspace/` by default).
+
+<Tip>
+All four sources are indexed in `cortex.db`, and Wolffish can search them itself via `memory_search`. Often the fastest first move is simply asking Wolffish: "search your logs for what happened when I asked you to restart the server."
+</Tip>
+
+## Quick Diagnostic Flow
+
+Follow this sequence when something goes wrong:
+
+```
+Problem observed
+    │
+    ▼
+┌─────────────────────────────────┐
+│ 1. Check the debug snapshot     │
+│    Was the right context sent?  │
+└─────────────┬───────────────────┘
+              │
+              ▼
+┌─────────────────────────────────┐
+│ 2. Check the event log          │
+│    Did events fire correctly?   │
+└─────────────┬───────────────────┘
+              │
+              ▼
+┌─────────────────────────────────┐
+│ 3. Check the task file          │
+│    Did tool execution succeed?  │
+└─────────────────────────────────┘
+```
+
+Most issues resolve at step 1 — the debug snapshot shows you exactly what the LLM received, so you can immediately see if something was missing or wrong.
+
+## Sending a Conversation to Someone Else
+
+When the problem is someone else's to look at, you don't have to gather these files by hand. The **diagnostic export** button in any chat bundles a single conversation — its transcript, its slice of the event log, the task files it spawned, the memory and prompts behind it, and your redacted settings — into one zip, with credentials replaced by length markers and attachment media left out.
+
+<Card title="Diagnostic Export" icon="file-zipper" href="/debugging/diagnostic-export">
+  One button, one archive: what goes in, what stays out, and where it lands.
+</Card>
+
+## Tools
+
+You don't need anything special to debug Wolffish. The app includes a built-in file viewer and markdown editor that lets you browse all debug artifacts without leaving Wolffish. For most debugging, it's all you need.
+
+<Tip>
+For power users, VS Code is also useful because of its markdown preview and file watcher. Open the `brain/` directory as a workspace and you can watch debug artifacts appear in real time.
+</Tip>
+
+Recommended setup:
+- **VS Code** with the workspace open at `~/.wolffish/workspace/brain/`
+- **Markdown Preview** side panel for reading debug snapshots
+- **File Explorer** sorted by date modified to see the latest artifacts
+- **Terminal** with `tail -f` on the daily event log for live monitoring:
+
+```bash
+tail -f ~/.wolffish/workspace/brain/corpus/$(date +%Y-%m-%d).log.md
+```

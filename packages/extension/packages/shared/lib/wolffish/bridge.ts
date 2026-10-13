@@ -1,0 +1,131 @@
+import { LOG_PREFIX, CONTENT_SCRIPT_PING_TIMEOUT_MS } from './constants.js';
+import type { InternalMessage, TabTarget, WolffishResponse } from './types.js';
+
+const api = globalThis.chrome ?? (globalThis as Record<string, unknown>).browser;
+
+const log = (...args: unknown[]): void => {
+  console.log(LOG_PREFIX, ...args);
+};
+
+const logError = (...args: unknown[]): void => {
+  console.error(LOG_PREFIX, ...args);
+};
+
+const isFirefox = (): boolean => typeof (globalThis as Record<string, unknown>).browser !== 'undefined';
+
+const sendToServiceWorker = (message: InternalMessage): void => {
+  api?.runtime?.sendMessage(message);
+};
+
+const sendToServiceWorkerAsync = async (message: InternalMessage): Promise<unknown> =>
+  api?.runtime?.sendMessage(message);
+
+const sendToContentScript = async (tabId: number, message: InternalMessage): Promise<unknown> =>
+  api?.tabs?.sendMessage(tabId, message);
+
+const pingContentScript = async (tabId: number): Promise<boolean> => {
+  try {
+    const msg: InternalMessage = {
+      source: 'service-worker',
+      target: 'content-script',
+      payload: { type: 'ping' },
+    };
+    const response = await Promise.race([
+      api?.tabs?.sendMessage(tabId, msg),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), CONTENT_SCRIPT_PING_TIMEOUT_MS)),
+    ]);
+    return response && (response as { type?: string }).type === 'pong';
+  } catch {
+    return false;
+  }
+};
+
+const ensureContentScriptInjected = async (tabId: number): Promise<void> => {
+  const alive = await pingContentScript(tabId);
+  if (alive) return;
+
+  await api?.scripting?.executeScript({
+    target: { tabId },
+    files: ['content/all.iife.js'],
+  });
+
+  await new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error('Content script injection timed out')), 5000);
+    const listener = (message: InternalMessage) => {
+      if (
+        message?.source === 'content-script' &&
+        'type' in message.payload &&
+        (message.payload as { type: string }).type === 'pong'
+      ) {
+        clearTimeout(timeout);
+        api?.runtime?.onMessage?.removeListener(listener);
+        resolve();
+      }
+    };
+    api?.runtime?.onMessage?.addListener(listener);
+  });
+};
+
+let tabFallback: ((session?: string) => Promise<number>) | null = null;
+
+/**
+ * Replace what `resolveTabId` falls back to when no usable `tabId` was passed.
+ * The background registers the Wolffish workspace tab here, so no command can
+ * default onto a tab the user opened. It is handed the command's session, since
+ * each conversation has a workspace tab of its own. Left unset the fallback
+ * stays the active tab, which is what non-background contexts want.
+ */
+const setTabFallback = (fn: ((session?: string) => Promise<number>) | null): void => {
+  tabFallback = fn;
+};
+
+const resolveTabId = async (params: TabTarget): Promise<number> => {
+  // A provided tabId is verified before use. Agents routinely pass a guessed
+  // or stale id (observed live: `tabId: 1`, which never exists — Chrome ids
+  // are large integers), and the resulting "No tab with id: N" classifies as
+  // retryable-unknown, so the motor burned three attempts before surfacing it.
+  // Falling back to the active tab matches what the agent meant ("the current
+  // tab") and turns a dead-end into a no-op.
+  if (params.tabId !== undefined) {
+    const exists = await api?.tabs
+      ?.get(params.tabId)
+      .then(() => true)
+      .catch(() => false);
+    if (exists) return params.tabId;
+  }
+  if (tabFallback) return tabFallback(params.__wfSession);
+  const tabs = await api?.tabs?.query({ active: true, currentWindow: true });
+  if (!tabs?.length) throw new Error('No active tab found');
+  return tabs[0].id!;
+};
+
+// Command execution is intentionally unbounded. Long operations — chiefly
+// humanized typing of large text — must never be killed by a timer. This is
+// safe because a stalled command can't strand silently: the service worker
+// pings the content script before every dispatch, and the app server rejects
+// all pending commands when the socket closes. So the only thing removed here
+// is the arbitrary "took too long" cap that used to truncate legitimate work.
+const withTimeout = <T>(promise: Promise<T>): Promise<T> => promise;
+
+const makeResponse = (id: string, data: unknown): WolffishResponse => ({ id, success: true, data });
+
+const makeErrorResponse = (id: string, error: string): WolffishResponse => ({ id, success: false, error });
+
+const generateId = (): string => crypto.randomUUID();
+
+export {
+  log,
+  logError,
+  isFirefox,
+  sendToServiceWorker,
+  sendToServiceWorkerAsync,
+  sendToContentScript,
+  pingContentScript,
+  ensureContentScriptInjected,
+  resolveTabId,
+  setTabFallback,
+  withTimeout,
+  makeResponse,
+  makeErrorResponse,
+  generateId,
+};

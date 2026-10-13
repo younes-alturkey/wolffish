@@ -1,0 +1,116 @@
+{
+  "name": "wolffish-mobile",
+  "version": "1.0.77",
+  "license": "MIT",
+  "description": "The companion phone app for Wolffish, the personal AI agent that runs on your machine. Build it from source and install it on your own device.",
+  "main": "expo-router/entry",
+  "author": "Younes Alturkey <younes@wolffi.sh>",
+  "homepage": "https://github.com/younes-alturkey/wolffish",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "expo start",
+    "ios": "LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 expo run:ios",
+    "ios:device": "LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 expo run:ios --device",
+    "ios:device:release": "LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 expo run:ios --device --configuration Release",
+    "ios:ipa": "node scripts/fix-fingerprint-drift.js && EAS_BUILD_NO_EXPO_GO_WARNING=true eas build -p ios --profile preview",
+    "android": "expo run:android",
+    "android:apk": "node scripts/fix-fingerprint-drift.js && EAS_BUILD_NO_EXPO_GO_WARNING=true eas build -p android --profile preview",
+    "web": "expo start --web",
+    "ts:check": "tsc --noEmit",
+    "fix:fingerprint": "node scripts/fix-fingerprint-drift.js",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,css,json}\"",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@expo/ui": "~57.0.7",
+    "@noble/ciphers": "^2.2.0",
+    "@noble/curves": "^2.2.0",
+    "@noble/hashes": "^2.2.0",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@tanstack/query-async-storage-persister": "^5.101.2",
+    "@tanstack/react-query": "^5.101.2",
+    "@tanstack/react-query-persist-client": "^5.101.2",
+    "expo": "~57.0.7",
+    "expo-audio": "~57.0.3",
+    "expo-blur": "~57.0.2",
+    "expo-build-properties": "~57.0.6",
+    "expo-camera": "~57.0.3",
+    "expo-clipboard": "~57.0.1",
+    "expo-constants": "~57.0.6",
+    "expo-crypto": "~57.0.1",
+    "expo-device": "~57.0.1",
+    "expo-document-picker": "~57.0.1",
+    "expo-file-system": "~57.0.1",
+    "expo-font": "~57.0.1",
+    "expo-glass-effect": "~57.0.1",
+    "expo-image": "~57.0.1",
+    "expo-image-picker": "~57.0.7",
+    "expo-linking": "~57.0.3",
+    "expo-localization": "~57.0.1",
+    "expo-network": "~57.0.1",
+    "expo-notifications": "~57.0.8",
+    "expo-router": "~57.0.7",
+    "expo-secure-store": "~57.0.1",
+    "expo-sharing": "~57.0.7",
+    "expo-splash-screen": "~57.0.4",
+    "expo-sqlite": "~57.0.1",
+    "expo-status-bar": "~57.0.1",
+    "expo-symbols": "~57.0.1",
+    "expo-system-ui": "~57.0.1",
+    "expo-updates": "~57.0.8",
+    "expo-video": "~57.0.2",
+    "expo-web-browser": "~57.0.1",
+    "i18next": "^26.3.6",
+    "jest": "~29.7.0",
+    "jest-expo": "~57.0.2",
+    "nativewind": "^4.2.6",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-i18next": "^17.0.10",
+    "react-native": "0.86.0",
+    "react-native-gesture-handler": "~2.32.0",
+    "react-native-get-random-values": "~1.11.0",
+    "react-native-markdown-display": "^7.0.2",
+    "react-native-reanimated": "4.5.0",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "4.25.2",
+    "react-native-svg": "15.15.4",
+    "react-native-web": "~0.21.0",
+    "react-native-webview": "13.16.1",
+    "react-native-worklets": "0.10.0",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@testing-library/react-native": "^14.0.1",
+    "@types/jest": "~29.5.14",
+    "@types/react": "~19.2.2",
+    "prettier": "^3.9.5",
+    "reactotron-react-native": "^5.2.0",
+    "tailwindcss": "^3.4.19",
+    "typescript": "~6.0.3"
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "testMatch": [
+      "**/__tests__/**/*.test.[jt]s?(x)"
+    ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/node_modules/react-native-gesture-handler/jestSetup.js"
+    ],
+    "moduleNameMapper": {
+      "\\.webjs$": "<rootDir>/jest/webjsAsset.js",
+      "^@/assets/(.*)$": "<rootDir>/assets/$1",
+      "^@/(.*)$": "<rootDir>/src/$1"
+    },
+    "transformIgnorePatterns": [
+      "node_modules/(?!(?:.pnpm/)?((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|@noble/.*|standard-navigation))"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/younes-alturkey/wolffish.git",
+    "directory": "apps/mobile"
+  }
+}

@@ -1,0 +1,67 @@
+---
+title: "xAI"
+description: "Set up xAI (Grok) — strong reasoning and vision with competitive pricing"
+---
+
+# xAI (Grok)
+
+```
+POST https://api.x.ai/v1/chat/completions
+```
+
+Uses SSE streaming with OpenAI-compatible tool-calling format. Supports vision (base64 images) and reasoning content.
+
+**xAI offers Grok models with strong reasoning capabilities and competitive pricing.** Since **v1.0.251**, **Grok 4.6** is the flagship and the default picked when you connect xAI — frontier-class, 500K context, vision, at the same price as the 4.5 it succeeds. Grok 4.3 stays the value pick with a full 1M of context, and the Grok Build model is purpose-built for code generation at an attractive price point.
+
+Best for: Reasoning-heavy workflows, code generation, vision tasks, and agentic automations where you want a balance of capability and cost.
+
+## Getting an API Key
+
+1. Go to [console.x.ai](https://console.x.ai)
+2. Sign up or log in
+3. Navigate to **API Keys** and create a new key
+4. Paste it into Wolffish → Settings → Models → xAI
+
+## Models
+
+| Model | Modes | Context | Input / Output (per MTok) | Cached |
+|-------|-------|---------|---------------------------|--------|
+| **grok-4.6** | On, High, Max | 500K | $2.00 / $6.00 | $0.50 |
+| grok-4.5 | On, High, Max | 500K | $2.00 / $6.00 | $0.30 |
+| grok-4.3 | Off, High, Max | 1M | $1.25 / $2.50 | $0.20 |
+| grok-4.20-0309-reasoning | On | 1M | $1.25 / $2.50 | $0.20 |
+| grok-4.20-0309-non-reasoning | — | 1M | $1.25 / $2.50 | $0.20 |
+| grok-build-0.1 | On | 256K | $1.00 / $2.00 | $0.20 |
+
+## Reasoning modes
+
+How this model reasons is set in the **model card beside the chat input** — hover the model switch to preview the card, click to pin it open. The top chip row, labelled **Thinking**, is the control: pick a chip and it applies from your next message. Two separate ideas combine here:
+
+### Thinking — *whether* the model reasons
+
+- **Off** — the model answers immediately. Fastest and cheapest; ideal for simple, direct tasks.
+- **On** (the chip reads **Normal**) — the model first works through the problem in a dedicated reasoning pass before replying. Slower and uses more tokens, but markedly more accurate on multi-step, logical, or ambiguous tasks.
+
+### Effort — *how hard* it thinks
+
+Only effort-capable models expose this; it applies once thinking is on.
+
+- **High** — standard reasoning depth. The right default for most agentic work.
+- **Max** — the model reasons longer and deeper for the hardest problems. More tokens and latency in exchange for higher quality on complex work.
+
+### The chip row
+
+| Chip | Icon | Meaning |
+|------|------|---------|
+| Off | lightning | Thinking off — direct answer |
+| Normal | brain | Thinking on — no effort control |
+| High | AI brain | Thinking on, standard effort |
+| Max | flame | Thinking on, maximum effort |
+
+The active chip is tinted; the rest sit quiet. Each model shows only the chips it genuinely supports — a model that always reasons has no **Off**, a model with a single mode shows that one chip inert, and a model that can't reason at all replaces the row with *"Reasoning is not supported by this model."* Wolffish remembers your choice per model. (Before **v1.0.236** this was a colour-coded brain button on the composer; it moved into the model card, beside the Single/Workflow row, so every model knob sits in one panel.)
+
+**On xAI:** Grok's effort knob is a **five-rung ladder, not a low/high pair** — a fact established in v1.0.251 by sweeping the parameter against the live API, which found a rung above High that had never been used. The three settings now land on distinct rungs, with **Max reaching the top of the ladder**. grok-4.6 and 4.5 reason always-on with High and Max as real, different depths; grok-4.3 adds Off; grok-4.20-reasoning and grok-build reason always-on with no effort control; the non-reasoning 4.20 variant has none.
+
+<Tip>
+  Grok 4.6 is competitively priced against Anthropic and OpenAI while offering 500K context, vision, and frontier-class reasoning — and Grok 4.3 keeps a full 1M context at half the price. If you need a mid-tier provider with strong reasoning that's cheaper than Claude or GPT, xAI is a solid choice.
+</Tip>

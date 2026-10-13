@@ -3,6 +3,7 @@ import type { WaitSnapshot, WaitStatus } from '@preload/index'
 import { Clock01Icon, SentIcon } from 'hugeicons-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { randomId } from '@lib/utils/randomId'
 
 /**
  * The blocking-wait card. Fully DETERMINISTIC: the reason, the deadline and
@@ -81,7 +82,7 @@ export function WaitCard({ snapshot }: { snapshot: WaitSnapshot }): React.JSX.El
       // the message would appear twice.
       const { status } = await window.api.chat.interject({
         conversationId: snapshot.conversationId,
-        messageId: crypto.randomUUID(),
+        messageId: randomId(),
         text,
         attachments: []
       })

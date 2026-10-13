@@ -1,0 +1,166 @@
+---
+title: "Context Lifecycle"
+description: "How Wolffish keeps every conversation inside the model's context window — a lean start, rolling prefix summaries, recovery-pointer stubs, model-led attachments, and an in-turn safety net"
+---
+
+# The Context Window Problem
+
+Wolffish is stateless — every LLM call replays the conversation history. That creates two distinct pressures:
+
+1. **Within a turn**: tool results (email bodies, web pages, shell output, screenshots) pile up and can push a single turn past the model's input budget.
+2. **Across turns**: a long-lived conversation's replay grows with every message. Left alone, an old conversation costs more on every send and eventually can't be replayed at all.
+
+The old design answered both with one blunt tool: in-turn compaction. Once a conversation crossed the threshold, every subsequent message re-paid an in-memory compaction pass — including a fresh LLM summary call — because the mutations were never persisted. v1.0.203 replaces that with a lifecycle:
+
+| Stage | Mechanism | Cost |
+|---|---|---|
+| Start lean | ~5K-token system prompt, core tools only | Free — it's what's *not* sent |
+| Fold history | Persisted rolling prefix summary | One LLM call per ~120K chars of growth, **ever** |
+| Stub stale payloads | Recovery-pointer stubs at replay time | Free — deterministic string replacement |
+| Attachments as notes | Reference note only — content is read on demand, never injected | Free |
+| Crisis only | In-turn compaction at 75% of budget | One LLM call, rare in practice |
+
+## Starting Lean
+
+Compaction is a symptom of context you didn't need. The largest win in v1.0.203 is what never enters the request in the first place. A fresh conversation's system prompt is **~5,000 tokens** (was ~44,000), and with core tool schemas the whole first request is **~9.4K tokens** — down from ~94K, a 10× reduction. Gone from prompt assembly:
+
+- The `<memory>` whole-file injection and the two-day episode dump — replaced by a compact `<memory_map>` coverage stub and on-demand retrieval tools (`memory_search`, `memory_get`)
+- The ~16K-token prose tool catalog — replaced by a one-line-per-capability `<capabilities>` index plus `tool_search`/`tool_activate` discovery
+- Keyword-triggered skill-body injection
+
+The prompt prefix is byte-stable (the memory map is cached per calendar day), which is what makes provider prompt caching work: ~99% cache hits measured across 50 conversations. Measured live, an hourly automation dropped from 96,442 input tokens ($0.046/run) to ~5.1K prompt tokens ($0.019/run).
+
+What grows from that lean floor is the conversation itself — which is what the rest of this page manages.
+
+## The Rolling Prefix Summary
+
+After every persisted turn, a fire-and-forget summarizer (`conversation-summarizer.ts`) checks the conversation. When the **unsummarized** region of the transcript exceeds ~120,000 characters, it folds everything before a turn boundary into **one persisted summary**, stored inside the conversation file itself as `{summary, summarizedThroughMessage, summarizedThroughMessageId}` — the id pins the boundary to the exact first uncovered message, so a concurrent writer merging messages in ahead of it can't shift what the summary claims to cover.
+
+| Constant | Value | Purpose |
+|---|---|---|
+| `SUMMARIZE_THRESHOLD_CHARS` | 120,000 | Unsummarized replay content that triggers a fold |
+| `KEEP_TAIL_MESSAGES` | 8 | Most recent messages always replayed verbatim |
+| `SUMMARY_MAX_CHARS` | 6,000 | Hard ceiling on the stored summary |
+| `SUMMARY_INPUT_PER_MESSAGE` | 2,000 | Per-message excerpt cap fed to the summary prompt |
+
+The mechanics:
+
+- **One LLM call per fold.** The fold sends capped excerpts of the region being folded to `thalamus.summarize()` and stores the result. That is one summarization call per ~120K characters of conversation growth — total, forever. The old system paid a summary call on *every message* of a large conversation.
+- **Turn-boundary snapping.** The fold mark keeps the last 8 messages verbatim, then walks back to the nearest user message — providers reject a replay that doesn't start on a user turn.
+- **Recursive.** Each fold's prompt includes the previous summary and instructs the model to fold it in, so a conversation always has exactly one summary no matter how many folds have happened.
+- **Never blocks a turn.** The summarizer runs after the turn is saved, allows one in-flight run per conversation, and re-loads the conversation before writing — if a new turn landed while the LLM call ran, the summary is written onto the freshest copy and never clobbers messages.
+
+### What replay looks like
+
+Both rebuild paths — the main-process channel replay and the renderer's chat history — replay `summary preamble + verbatim tail` instead of the whole transcript. The preamble is a standing recovery pointer:
+
+```
+[Conversation summary — the first 214 messages of this conversation were
+compressed; conversation_read("conv-abc123") retrieves any of them verbatim]
+
+<the ≤6,000-char summary>
+```
+
+followed by a synthetic assistant acknowledgment, then the last 8+ messages verbatim.
+
+### Originals are never touched
+
+The summary is a **read-time lens**, not an edit. The original messages are never modified or deleted: the History page shows the complete transcript untouched, the cortex index covers every folded message, and `conversation_read` retrieves any folded turn — including turns of the *current* conversation that have been summarized away mid-session.
+
+## The Sawtooth
+
+Replay cost now follows a sawtooth instead of a ramp:
+
+```
+replay size (chars)
+ ~126K ┤     ╱|        ╱|        ╱|
+       │   ╱  |      ╱  |      ╱  |
+       │ ╱    |    ╱    |    ╱    |
+  ~6K  ┤╱     |___╱     |___╱     |___ …
+       └───────────────────────────────▶ conversation age
+          fold #1     fold #2    fold #3
+```
+
+Each turn adds messages to the verbatim tail; when the unsummarized region crosses ~120K chars, one fold collapses it back to a ≤6K-char summary plus the last 8 messages. An infinite conversation converges to `summary + tail` and **can never outgrow the context window** — the replayable size is bounded by the threshold, not by the conversation's age. (Channels still rotate idle conversations after 3 hours, unchanged — but rotation is now hygiene, not a survival mechanism.)
+
+## Stale Tool-Result Stubs
+
+Even inside the verbatim region, old tool results are dead weight: a 40KB page dump from ten exchanges ago is almost never needed again, but it used to ride every subsequent request. At replay time, tool results that are both:
+
+- **≥ 2,000 characters**, and
+- **older than the last 2 user exchanges**
+
+are replaced with a self-describing recovery stub:
+
+```
+[web_fetch result from earlier in this conversation, 41,203 chars —
+memory_search or conversation_read("conv-abc123") retrieves it verbatim]
+```
+
+This is a deterministic string replacement — no LLM call — applied in both rebuild paths. The full bytes stay persisted in the conversation file and indexed by the cortex; the stub names the exact call that retrieves them. Replay cost stops growing with every old page dump while nothing is actually lost.
+
+## Model-Led Attachments
+
+Attachments used to be the silent killer twice over: full content blocks (base64 images, extracted PDF text) rode along with recent messages and were re-paid on every request — and a genuinely huge file could choke a turn outright, since a 3,000-page PDF extracts to megabytes of text no window survives. As of v1.0.224 the injection path is gone entirely:
+
+- **No attachment content is ever auto-injected.** Every file you attach — any size, any type — becomes a compact **reference note**: its name, its absolute path, and real facts about it (a PDF's page count is probed lazily from the file's own index, so even an enormous scan gets an accurate note without a full parse).
+- **Wolffish reads on demand.** The note names the right tool for the type: `pdf_info` / `pdf_search` / `pdf_read` walk thousand-page documents a page range at a time, `file_read` streams line ranges of giant text files, spreadsheet and document tools handle their formats, and vision models pull an image's actual pixels with `image_view` only when they need to look. The arbitrary plugin size caps (100 MB documents/spreadsheets, 500 MB audio) fell with the redesign — the note tier varies with file size, never whether content is available.
+- **Nothing is ever silently unknown.** The operating contract forbids answering about a file that hasn't been read or searched this conversation — and because deep reads of big files take real time, Wolffish narrates them ("first search of this 3,000-page book — may take a minute") instead of going quiet.
+
+The same policy powers [project files](/configuration/projects): a project's file list is injected as names and facts, and content is always pulled through tools.
+
+## The In-Turn Safety Net
+
+The rolling summary manages growth *across* turns. A single monster turn — reading 40 emails, scraping a dozen pages — can still blow the budget *within* a turn, and the in-turn compactor remains for exactly that. It is now a crisis mechanism, not routine operation.
+
+### Trigger: 75% of budget, provider-calibrated
+
+Before each LLM call, the compactor estimates the payload at a conservative 1.5 chars/token and takes the **higher** of that estimate and the actual `inputTokens` the provider reported for the previous call. When the effective count exceeds **75%** of the input budget (context window minus output reserve), compaction fires and compacts down to **50%**, leaving headroom to keep working.
+
+| Constant | Value | Purpose |
+|---|---|---|
+| `CHARS_PER_TOKEN` | 1.5 | Conservative chars-to-token ratio |
+| `COMPACTION_THRESHOLD` | 0.75 | Trigger fraction of the input budget |
+| `COMPACTION_TARGET` | 0.50 | Compact down to this fraction |
+| `PROTECT_RECENT` | 3 | Most recent messages per role protected |
+| `MIN_COMPACTION_SIZE` | 500 | Minimum chars worth compacting |
+
+### What a pass does
+
+1. **Strip images** from tool results across the turn (base64 screenshots never need to outlive the iteration that analyzed them).
+2. **Truncate targets proportionally** — largest tool results first, then older assistant messages, then older user messages; head+tail excerpts with a clear `[TRUNCATED — …]` label. Instant, no LLM call. `messages[0]` (the original task prompt), the last 3 messages per role, and error results are always protected.
+3. **One LLM summary call** over the saved originals, producing a structured state — `TASK` / `PROGRESS` / `REMAINING` / `DATA` / `DECISIONS` — with exact IDs and counts for batch work.
+4. **Inject the summary plus a continuation nudge** telling the model to resume from `REMAINING` and not to re-do or prematurely finish. Without the nudge, models reliably treat shortened context as "done" and silently drop remaining batch work.
+
+### The last two lines of defense
+
+- **Overflow-400 forced retry.** If the estimate and the calibration both miss and the provider returns a context-overflow 400, the agent forces compaction (bypassing the threshold) and retries the call — exactly once.
+- **The context-full guard.** A `max_tokens` stop normally means the reply was cut off, so the agent asks the model to continue. But when the *input* already fills the context window (within 512 tokens of it), there is no room to generate into — the continue loop would spin forever emitting ~1 token per call. The agent detects that case and ends the turn with what it has.
+
+### In-flight only
+
+In-turn compaction mutates only the turn's in-memory message array. The conversation file on disk keeps the full content — persistence-side folding is the rolling summarizer's job, and the two never fight: the compactor shrinks a live turn, the summarizer folds saved history.
+
+## The Honest Trade
+
+The folded prefix is **lossy in-context but fully recoverable**:
+
+- In the request, old turns exist only as a ≤6K-char summary and stubs. The model does not see them verbatim — that's the point.
+- On disk and in the index, everything survives byte-for-byte. The summary preamble and every stub carry an explicit `conversation_read` / `memory_search` pointer, and the recall doctrine tells the model to reach for them the moment a definite reference ("that file", "the flight plan") lands.
+- For the user, nothing changes: the History page renders the complete, untouched transcript.
+
+Wolffish trades always-resident history for cheap requests plus deliberate retrieval — the same trade it makes for memory and tools.
+
+## Supporting Fixes
+
+Smaller changes that ride the same lifecycle:
+
+- **Agent segments don't double-replay.** In [workflow mode](/configuration/workflow-mode), agent-tagged segments never replay into the master's next turn a second time.
+- **Streaming deltas are coalesced at save.** A streamed reply used to persist as thousands of one-word text segments per message; they now collapse into one at save time, shrinking both the file and its replay weight.
+
+## Observing It
+
+- **Compaction cards** in the chat UI: a pulsing `compaction_started` card while a crisis pass runs, replaced by a `compaction` card with targets, tokens saved, duration, and per-target details. If you rarely see one, the lifecycle is working.
+- **Corpus events**: `compaction.started` and `compaction.applied` land in the daily corpus log at `brain/corpus/YYYY-MM-DD.log.md`.
+- **Prompt snapshots** in `brain/prefrontal/.debug/` show each request's token count against the budget (capped at 50 snapshots with rotation).
+- **The summary itself** is visible in the conversation file (`summary` / `summarizedThroughMessage` / `summarizedThroughMessageId`) — and `conversation_read` on any old conversation proves nothing was lost.

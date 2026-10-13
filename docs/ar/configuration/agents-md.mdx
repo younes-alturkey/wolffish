@@ -1,0 +1,72 @@
+---
+title: "agents.md"
+description: "تعريف إجراءات الوكيل وقواعد استخدام الأدوات"
+---
+
+# تجاوزاتك على دليل التشغيل
+
+يقع هذا الملف في `brain/prefrontal/agents.md`، ويحمل قواعدك **أنت** لكيفية تعامل الوكيل مع المهام واستخدامه للأدوات واتباعه للإجراءات. يجلس فوق عقد التشغيل المشحون مع التطبيق ويتغلب عليه عند أي تعارض — هذا هو الملف الذي تحرّره عندما تريد تغيير طريقة عمل وولفيش.
+
+## ملفان، دليل واحد
+
+يقرأ الـ prefrontal ملفين جنبًا إلى جنب في كل دور:
+
+| الملف | المالك | ما هو |
+|---|---|---|
+| `agents.core.md` | **وولفيش** — يُعاد كتابته عند كل إقلاع | عقد التشغيل المشحون (~1.4 ألف رمز): عقيدة الذاكرة والاسترجاع (ابحث قبل ادعاء الجهل)، واكتشاف الأدوات (`tool_search` قبل الحلول الالتفافية)، وانضباط الحلقات، وتسليم الملفات ("أنت ساعي البريد" — `send_file` لكل ملف مُنتَج)، وقواعد السلوك |
+| `agents.md` | **أنت** — لا يُعاد كتابته أبدًا | إضافاتك وتجاوزاتك. يتغلب صراحةً على العقد الأساسي عند أي تعارض |
+
+لا تحرّر `agents.core.md` — تعديلاتك تُستبدل عند الإقلاع التالي. أي شيء تريد له البقاء فمكانه `agents.md`.
+
+## ماذا تُضمِّن
+
+- **قواعد استخدام الأدوات** — متى تُستخدم أي أدوات، وبأي ترتيب
+- **الإجراءات** — تدفقات عمل خطوة بخطوة للمهام الشائعة
+- **القيود** — أشياء لا ينبغي للوكيل أن يفعلها أبدًا
+- **أطر اتخاذ القرار** — كيفية الاختيار بين المقاربات
+- **التجاوزات** — أي سلوك في العقد الأساسي تريد تغييره (مثلًا "لا ترسل لي ملفات لم أطلبها كمرفقات")
+
+## مثال
+
+```markdown
+# Agent Procedures
+
+## General Rules
+- Always confirm destructive operations before executing
+- When asked to modify code, read the file first to understand context
+- Run tests after making code changes if a test suite exists
+- Use git status before any git operations
+
+## Task Approach
+1. Understand what's being asked
+2. Check if you have enough context (read files if needed)
+3. Plan the steps
+4. Execute one step at a time
+5. Verify each step succeeded before moving on
+
+## Code Modifications
+- Read the target file first with file_read
+- Make targeted changes with file_patch, not full file_write
+- If the change is complex, explain the plan before executing
+
+## Shell Commands
+- Prefer single-purpose commands over chains
+- Always check command output before proceeding
+- If a command fails, diagnose before retrying
+```
+
+## كيف يُستخدم
+
+يُقرأ الملفان معًا في قسم `<prefrontal>` من موجّه النظام مع كل رسالة، إلى جانب خلاصة التفضيلات المتعلَّمة. يبقى القسم كله صغيرًا بحكم التصميم — فموجّه النظام يحمل أساسيات التشغيل لا الأدلة المطوّلة، لذا كل سطر تضيفه هنا يُقرأ في كل دور بلا استثناء. أبقِه مقتضبًا.
+
+هذا يختلف عن `soul.md` (الشخصية) وملفات SKILL.md (تعليمات خاصة بالقدرات). يغطي `agents.md` الاهتمامات الشاملة التي تنطبق بغض النظر عن القدرة المستخدمة.
+
+<Tip>
+  إذا وجدت نفسك تكرر التعليمات لـ وولفيش عبر محادثات متعددة، فمن المحتمل أن تلك التعليمة تنتمي إلى agents.md.
+</Tip>
+
+## أين تقع في التطبيق
+
+منذ **الإصدار 1.0.282** صارت [`soul.md`](/ar/configuration/soul-md) و[`user.md`](/ar/configuration/user-md) و[`agents.md`](/ar/configuration/agents-md) **صفحةً واحدة اسمها التخصيص بثلاثة تبويبات** — الشكلَ الذي كان [هاتفك](/ar/integrations/mobile-app) يستعمله أصلاً — بدل ثلاثة مداخل في الشريط الجانبيّ تفتح ثلاثة محرِّراتٍ متشابهة. وكلُّ تبويبٍ يقول في سطرٍ **ما الغرض الحقيقيّ من مستنده**، فلم يعد الاختيار متّكئاً على كلمةٍ واحدة.
+
+والمسوَّدة التي تتركها في تبويبٍ **تبقى حين تعود إليه** من آخر، وذلك التبويب **يحمل نقطةً ما دام فيه تغييراتٌ غير محفوظة** — وهي بالضبط المسوَّدة التي لم تعد تراها. والتعديلات التي تُجرى على هاتفك أو في نافذةٍ أخرى ما زالت تصل من تلقائها، وصارت تحطّ على **أيّ تبويبٍ نظيف** لا على الذي تنظر إليه وحده.

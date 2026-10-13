@@ -3,7 +3,9 @@
 .SYNOPSIS
     Wolffish installer for Windows.
 .DESCRIPTION
-    Downloads and installs the latest version of Wolffish from releases.wolffi.sh.
+    Downloads and installs the latest Wolffish from the GitHub release that
+    holds it, verifying the installer against the release manifest.
+    One line:  irm https://github.com/younes-alturkey/wolffish/releases/latest/download/install.ps1 | iex
 .PARAMETER Help
     Show help message.
 .PARAMETER Version
@@ -15,10 +17,13 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$ReleasesBase = "https://releases.wolffi.sh"
+# Every GitHub release carries the installer and the electron-updater manifest
+# (latest.yml); this URL redirects to the newest release's copy of a file.
+# WOLFFISH_RELEASES_BASE overrides it: a mirror, or a local copy under test.
+$ReleasesBase = if ($env:WOLFFISH_RELEASES_BASE) { $env:WOLFFISH_RELEASES_BASE } else { "https://github.com/younes-alturkey/wolffish/releases/latest/download" }
 
 # Force TLS 1.2+ for every web call. Older Windows/.NET defaults to TLS 1.0,
-# which Cloudflare/R2 reject — and this must run BEFORE the first request
+# which GitHub rejects — and this must run BEFORE the first request
 # (the manifest fetch), or the install dies before it starts.
 try {
     [Net.ServicePointManager]::SecurityProtocol =
@@ -224,11 +229,26 @@ function Install-Wolffish {
         Write-Ok "Wolffish v$latestVersion installed successfully!"
         Write-Host ""
         Add-WolffishCliPath
+        Write-WebUiNotice
     } finally {
         if (Test-Path $tempDir) {
             Remove-Item -Recurse -Force $tempDir -ErrorAction SilentlyContinue
         }
     }
+}
+
+# The Web UI is on from the first launch behind a master password the app
+# generates; the phone is the interface and these three commands, in this
+# order, are the whole setup.
+function Write-WebUiNotice {
+    Write-Host ""
+    Write-Host "  The Web UI is on from the first launch, behind a master password Wolffish generates."
+    Write-Host "  Once the app is running, in a new terminal:"
+    Write-Host ""
+    Write-Host "    wolffish web password        the password to type on your phone, once" -ForegroundColor White
+    Write-Host "    wolffish web                 the address to open - http://<this-ip>:8787" -ForegroundColor White
+    Write-Host "    wolffish web https enable    a trusted certificate for this PC, HTTPS on 443" -ForegroundColor White
+    Write-Host ""
 }
 
 # The `wolffish.cmd` shim is written by the app on first launch (idempotent,

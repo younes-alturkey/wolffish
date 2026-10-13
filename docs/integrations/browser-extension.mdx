@@ -1,0 +1,353 @@
+---
+title: "Browser Extension"
+description: "Control your real browsers — several at once — with 62 tools: navigate, click, read, screenshot, debugger mode, humanize, and more, all inside Wolffish's own tab group"
+---
+
+# Your Real Browser, Not a Sandbox
+
+The Wolffish browser extension gives the agent direct control of your real browser. Unlike the Playwright-based browser capability (which runs an isolated headless session), the extension operates in your actual browser — your cookies, logins, extensions, and open tabs are all available.
+
+<Info>
+  The agent automatically prefers `ext_*` tools over Playwright `browser_*` tools when the extension is connected. No configuration needed.
+</Info>
+
+## Three Routes to the Web
+
+Wolffish has three ways to reach a web page, and it used to habitually reach for the weakest. Since **v1.0.236** the routing is deliberate, and the extension is the default for anything that matters:
+
+| Route | Reaches | Costs |
+| --- | --- | --- |
+| `web_search` | An index — titles, snippets and URLs, **never a page** | Real money per query; very fast |
+| `web_fetch` | Whatever a server returns to a bare GET | Free and instant; blind to JS, paywalls, logins, consent walls, bot checks |
+| **The extension** | Essentially any page you can open — and it can click, scroll and fill | More tokens, more seconds; needs a connected browser |
+
+The agent is taught to **lean on the browser** whenever:
+
+- The task names a **specific site**, or one that is logged-in, paid-for, paywalled, or behind a consent or bot wall — your own session is already authenticated here.
+- The page is **JS-rendered** (most modern apps), infinite-scrolls, or hides content behind a click. `web_fetch` returns an empty shell for these.
+- The work is **more than reading** — filling a form, posting, downloading, clicking through a flow.
+- A `web_fetch` already came back thin, boilerplate, or paywalled. It doesn't retry the fetch; it comes here.
+- The task spans **several pages**, where the per-page cost of a fetch-then-fail cycle overtakes opening the browser once.
+
+Search keeps what search is genuinely good at: settling one fact, or discovering *which* URL to open. Search first, then open the result in the browser, is the recommended pattern — better than opening a search engine in the browser and reading its results page.
+
+A page that comes back as a few hundred characters, a cookie banner, "enable JavaScript", a login form, or a subscribe wall **did not load** — it failed quietly with a 200. The agent is taught to read what came back before trusting it, and to escalate to the extension rather than answer from the fragment.
+
+<Tip>
+  If nothing is connected, **`ext_launch_browser`** starts your default browser (or a named one — `chrome`, `edge`, `brave`, `arc`, `vivaldi`, `opera`, `chromium`, `firefox`), waits up to 30 seconds for the extension to come online, and carries on with the task. It's treated as a normal recovery step, not something to check in about. If the browser launches but the extension never connects, it isn't installed there — the agent says so and offers to try another.
+</Tip>
+
+## The Wolffish Tab Group
+
+The agent works in **its own tab group**, never in your tabs. The first command that needs a page creates a fresh tab, coloured blue and titled **Wolffish**, and every later command lands there by default. Your own tabs are never navigated, clicked, or typed into.
+
+**Every conversation gets its own group, tab and title** *(v1.0.306)*. There used to be exactly one group, so two jobs running side by side — **or one starting right after another** — landed in each other's tab and left one job's label standing over the other's work. Now an automation browsing in the background never takes over the tab you are watching, and never renames it out from under you. The browser's side panel follows the same rule: it shows **the name of the conversation that actually ran the commands**, not whichever chat the app window happened to be sitting on — and a conversation named seconds ago shows that name straight away instead of `Untitled`.
+
+- **A new task or a new site gets a fresh tab** — `ext_navigate` takes a `newTab` flag, and `ext_tab_open` always opens inside the group. Tabs from unrelated tasks are not reused.
+- **Working across sites** means one tab each, all inside the group, moving between them with `ext_tab_switch`.
+- **Reading the tab you're on** happens only when you ask for it ("what's on this page?"). `ext_tabs_list` marks every tab with a `wolffish` flag — `true` for the agent's own, `false` for yours — and the agent passes your tab's id explicitly. An explicit `tabId` always wins over the default. It reads a tab of yours; it never *acts* on one.
+- **`ext_window_open` sits outside the group** — a new window's first tab can't join it, so the tool returns that `tabId` and commands must name it. `ext_tab_open` is preferred unless a separate window is genuinely needed.
+- Close the agent's tab or the whole group and the next command quietly creates a new one.
+
+### The group's label is a status line
+
+The group's title is the only thing you see while the agent works, and `ext_set_activity` is how it keeps that honest — an emoji plus a few words, under about 24 characters because tab groups are narrow.
+
+Labeling is a **judgement, not a ritual** (tuned in v1.0.237):
+
+- **A one-off lookup keeps the plain `Wolffish` name.** Opening a single page or settling one fact needs no announcement — the plain name already says everything there is to say.
+- **A real task — several steps, more than one page, more than a moment — carries a label**, updated as the work moves from one phase to the next: `🔎 Comparing flights`, `🛒 Checking out`, `✍️ Writing reply`, `📖 Reading docs`. A stale label is worse than none.
+- Calling `ext_set_activity` with no arguments resets the group to plain **Wolffish**.
+
+<Note>
+  The group needs Chrome's `tabGroups` permission, which the extension now requests. A browser without tab-group support simply gets a plain dedicated tab instead — labeling is cosmetic and never fails a task.
+</Note>
+
+## Why This Exists
+
+Computer use — where an AI takes screenshots of your screen, moves your mouse, and types keystrokes — works, but it's slow, expensive, and fragile. Every action requires a full-screen screenshot sent to a vision model, the model guesses where to click based on pixel coordinates, and failures cascade because there's no DOM awareness. A single browsing session can burn through hundreds of screenshots at vision-model pricing.
+
+The extension replaces all of that with direct browser control. No screenshots needed for navigation. No pixel guessing. The agent sends `ext_click('.submit-btn')` and the extension clicks the actual DOM element. It sends `ext_read_page({ format: 'text' })` and gets clean text back — not a 2MB screenshot for the model to squint at.
+
+The real unlock is **session reuse**. Your browser is already logged into everything — Gmail, LinkedIn, Reddit, GitHub, Notion, your company's internal tools. The extension gives the agent access to all of that without storing credentials, managing OAuth flows, or launching throwaway browser instances. The agent operates as you, in your browser, with your context.
+
+### What This Actually Looks Like
+
+- **"Summarize my Reddit front page"** — the agent opens your Reddit feed (you're already logged in), reads the visible posts, scrolls to load more, and gives you a summary. No Reddit API key, no OAuth, no rate limits.
+- **"Search Reddit for reviews of the M4 MacBook Air"** — navigates to Reddit search, reads the top results, clicks into threads, extracts the useful comments. All through your logged-in session where you see upvoted content, not the stripped-down anonymous view.
+- **"Clean up my LinkedIn — delete conversations I haven't replied to in 6 months"** — opens LinkedIn messaging, reads conversation previews, identifies stale ones, deletes them. Requires your authenticated session, which the extension already has.
+- **"Accept all pending LinkedIn connection requests from people in my industry"** — opens the invitations page, reads each request, checks the person's headline, accepts the relevant ones. No LinkedIn API (which doesn't even expose this).
+- **"Check my GitHub notifications and close any resolved issues"** — opens your GitHub notifications (logged in), reads each one, follows the link, checks if the issue was resolved, closes it. Faster than the GitHub API for this kind of triage because the UI state is already loaded.
+- **"Go to Hacker News, find today's top AI papers, and save the links to a markdown file"** — no API exists for this. The extension just reads the page like you would.
+- **"Fill out this job application form with my details"** — reads the form fields, fills them from your profile, handles dropdowns and multi-step flows. In your actual browser where you're already logged into the job portal.
+
+These aren't hypothetical — they're the workflows the extension was built for. Anything you do in Chrome by clicking and reading, the agent can do through the extension.
+
+## Cost: Why Model Choice Matters
+
+Browser automation generates large contexts fast. Every `ext_read_page` returns the full visible text. Every `ext_screenshot` adds an image to the context. A typical browsing session with 20–30 tool calls can push the context to 100K+ tokens.
+
+On premium models, this gets expensive quickly:
+
+| Model | ~30 tool calls | ~50 tool calls |
+| --- | --- | --- |
+| Claude Opus 4.6 | ~$25 | ~$40+ |
+| GPT-4o | ~$8 | ~$15 |
+| DeepSeek V3 | ~$1.30 | ~$2.50 |
+| MiniMax-M1 | ~$1.50 | ~$3 |
+
+<Warning>
+  A single browsing session that looks routine to you — "check 5 job listings and compare them to my profile" — can involve 30+ tool calls, 10+ page reads, and 2+ screenshots. On Opus this is a $25 turn. On DeepSeek it's $1.30 for the same result.
+</Warning>
+
+We recommend **DeepSeek**, **MiniMax**, or **Kimi** for browser-heavy workflows. They handle complex multi-step browsing reliably at a fraction of the cost. The quality difference for "navigate, read, extract, summarize" tasks is negligible — these models are excellent at structured data extraction and following multi-step instructions. Reserve premium models for tasks that genuinely need stronger reasoning, not for reading web pages.
+
+<Tip>
+  You can set different models per conversation in Wolffish. Use DeepSeek for browsing sessions and Claude for complex reasoning tasks — you don't have to choose one model for everything.
+</Tip>
+
+## Architecture
+
+The extension connects to the Wolffish app over a local WebSocket.
+
+```
+Agent → Plugin (ext_* tools) → WebSocket (localhost:23151) → Extension Service Worker → Chrome APIs / Content Script → Result
+```
+
+| Component | Location | Role |
+| --- | --- | --- |
+| **WebSocket Server** | `channels/extension/server.ts` (core) | Connection management, heartbeat, command routing |
+| **Event Logger** | `channels/extension/log.ts` (core) | Per-conversation event logging |
+| **Plugin** | `cerebellum/browser-extension/` (editable) | Tool definitions, execute logic, screenshot processing |
+| **Extension** | `~/.wolffish/workspace/extension/` | Chrome extension loaded in the browser |
+
+## Setup
+
+1. Open **Settings → Channels → Browser** (since **v1.0.267** the extension lives with the channels — it is a place Wolffish talks to you, not a service bolted on)
+2. Click **Reveal in Finder** to find the extension folder
+3. Open your browser → `chrome://extensions`
+4. Enable **Developer Mode** → **Load Unpacked** → select the extension folder
+5. The extension connects automatically — the browser appears as its own row with a green dot
+
+Repeat steps 3–5 in as many browsers as you like — the same folder loads into Chrome, Edge, and Brave side by side, and each connects as its own row.
+
+<Tip>
+  The extension auto-reconnects when the app restarts. You only need to load it once per browser.
+</Tip>
+
+## Several Browsers, One Extension
+
+The extension no longer assumes one browser. Load the same unpacked folder in **several browsers at once** — and **two profiles of the same browser count as two browsers**, told apart by each profile's **signed-in email**, so "work Chrome" and "personal Chrome" stop being guesswork.
+
+Every connecting browser **introduces itself on arrival**: alongside its extension version it reports its browser name and version, operating system, signed-in profile email (Chrome's `identity` API — empty when signed out), and a **persistent instance id** — a random id stored in the extension's local storage that stays stable per browser profile. The same unpacked folder produces the same extension id in every Chromium browser, so it's this instance id that lets Wolffish recognize a reconnecting browser and **replace its stale socket instead of listing the same browser twice**.
+
+In **Settings → Channels → Browser**, each connected browser gets **its own row**: browser icon, name and major version, a sub-line with the profile email, OS, and connection time, the extension version, and a per-row **Test connection** button. When more than one browser is connected, each row also shows its **selection key** — the browser's slug (`chrome`, `edge`, `brave`), suffixed `-2` when the same browser is connected twice. Rows hold steady through extension reloads (a reload has a 20-second grace window) instead of flickering away.
+
+### Which browser does the agent drive?
+
+- **One browser connected** — every `ext_*` tool targets it automatically. Nothing to pick.
+- **Several connected** — each conversation drives **exactly one browser**. The agent lists the roster with `ext_browsers` and picks one with `ext_use_browser` (by selection key, slug, name, or a profile-email fragment like `work@company.com`). The choice **sticks for that conversation** until it deliberately switches. It picks for itself when you named a browser or the context makes it obvious, and asks you first when nothing does — until a browser is chosen, `ext_*` calls return the roster instead of guessing.
+
+Each browser remains a fully separate world — its own tabs, tab ids, logins, cookies, and debugger attachment — and the agent is taught never to mix them up.
+
+## Auto-Updates
+
+The extension updates itself automatically when Wolffish updates — no manual steps required.
+
+1. Each Wolffish release ships with the latest extension files bundled inside the app binary
+2. On every app launch, the bundled files are copied to `~/.wolffish/workspace/extension/`, overwriting the previous version
+3. When the extension connects, the server compares its self-reported version against the version on disk
+4. If they differ, the server sends a reload command — the extension calls `chrome.runtime.reload()` on itself, picks up the new code, and reconnects automatically
+
+The entire process is seamless. You'll see a brief disconnect in the side panel (< 1 second) while the extension restarts, then it reconnects with the new version. You can also trigger a manual reload from **Settings → Channels → Browser → Reload Extension**.
+
+Since **v1.0.263** the extension also **heals itself mid-session**. Browsers keep an extension's old code running long after an update lands on disk — while reporting a version that looks current, so the handshake check never fires. Wolffish treats the one reliable symptom, an "Unknown command" reply to a tool call, as proof of a stale build: it asks the browser to reload the extension automatically, and the cosmetic tab-label call that used to fail a task three times over now simply skips with a note.
+
+## 62 Tools
+
+The agent sees these as `ext_*` tools. The plugin translates them to `browser_*` commands over the wire.
+
+### Browser Selection & Launch
+`ext_browsers` · `ext_use_browser` · `ext_launch_browser`
+
+### Navigation
+`ext_navigate` · `ext_back` · `ext_forward` · `ext_reload`
+
+### Page Interaction
+`ext_click` · `ext_type` · `ext_select` · `ext_hover` · `ext_scroll` · `ext_focus` · `ext_keypress` · `ext_drag_drop` · `ext_file_upload` · `ext_set_value` · `ext_submit_form`
+
+### Page Reading
+`ext_read_page` · `ext_query_selector` · `ext_get_attribute` · `ext_get_value` · `ext_get_url` · `ext_get_page_info`
+
+### Tab & Window Management
+`ext_tabs_list` · `ext_tab_open` · `ext_tab_close` · `ext_tab_switch` · `ext_tab_duplicate` · `ext_tab_move` · `ext_windows_list` · `ext_window_open` · `ext_window_close` · `ext_window_resize`
+
+### The Wolffish Tab Group
+`ext_set_activity`
+
+### Capture
+`ext_screenshot` · `ext_pdf` · `ext_download`
+
+### Data & Storage
+`ext_cookies_get` · `ext_cookies_set` · `ext_cookies_remove` · `ext_storage_get` · `ext_storage_set` · `ext_clipboard_read` · `ext_clipboard_write`
+
+### Advanced
+`ext_execute_js` · `ext_wait` · `ext_wait_for` · `ext_wait_for_navigation` · `ext_wait_for_network_idle` · `ext_notify`
+
+### Debugger Mode
+`ext_debugger_attach` · `ext_debugger_detach` · `ext_debugger_status`
+
+### Mouse, Coordinates & Humanize
+`ext_mouse_move` · `ext_mouse_click` · `ext_mouse_down` · `ext_mouse_up` · `ext_mouse_drag` · `ext_element_from_point` · `ext_get_interactive_elements` · `ext_humanize`
+
+## Debugger Mode
+
+Debugger mode attaches Chrome DevTools Protocol (CDP) to a tab and replaces content-script-based interactions with low-level input events. When the debugger is attached, clicks, typing, scrolling, hovering, and keypresses are dispatched through CDP's `Input.dispatch*` methods instead of DOM APIs.
+
+### Why It Exists
+
+Content script interactions (`element.click()`, `element.value = '...'`) are detectable. Sites can distinguish programmatic DOM events from real user input by checking event properties like `isTrusted`, monitoring event ordering, or using bot-detection libraries. CDP events bypass all of this — they enter the browser's input pipeline at the same level as physical keyboard and mouse events.
+
+### How It Works
+
+1. The agent calls `ext_debugger_attach` with a tab ID
+2. Chrome attaches the debugger protocol to that tab (you'll see a "... is debugging this tab" banner)
+3. All subsequent `ext_click`, `ext_type`, `ext_scroll`, `ext_hover`, and `ext_keypress` calls on that tab are automatically routed through CDP instead of the content script
+4. Mouse movements follow Bezier curves with Gaussian-distributed timing — not straight lines with fixed delays
+5. Typing dispatches individual `keyDown`/`char`/`keyUp` sequences per character with variable inter-key delays
+6. When done, call `ext_debugger_detach` to release the debugger
+
+```
+Agent calls ext_click('.btn')
+  ↓
+Extension checks: debugger attached?
+  ├─ Yes → resolves element coordinates → Bezier mouse path → CDP mousePressed/mouseReleased
+  └─ No  → content script → element.click()
+```
+
+The routing is automatic. The agent doesn't need to change how it calls tools — it just attaches the debugger first and everything switches.
+
+### Limitations
+
+- Only one tab can have the debugger attached at a time — attaching to a new tab detaches from the previous one
+- Chrome shows a yellow "debugging" banner at the top of the page (cannot be hidden)
+- `chrome://` and `chrome-extension://` pages cannot be debugged
+- If DevTools is already open on the tab, the debugger cannot attach
+
+## Humanize
+
+The humanize tool (`ext_humanize`) injects human-like micro-behaviors between agent actions. Instead of the agent clicking, typing, and navigating with machine precision and zero idle time, humanize adds the pauses, small scrolls, cursor drifts, and reading delays that real users naturally produce.
+
+<Warning>
+  **Use responsibly.** Humanize is designed for testing, research, and personal automation. Some platforms actively detect automated behavior and may penalize, restrict, or ban accounts that violate their terms of service. Using humanize to circumvent bot detection on platforms that prohibit automation is done at your own risk. We do not encourage or endorse violating any platform's terms of service.
+</Warning>
+
+### Intensity Levels
+
+| Level | Micro-Actions | Use Case |
+| --- | --- | --- |
+| `light` | Random pauses, micro-scrolls | Minimal footprint — adds basic timing variation |
+| `moderate` | Pauses, micro-scrolls, cursor moves, hover on inert elements, variable scrolls | Balanced — looks like a distracted human |
+| `heavy` | All of the above + scroll bounces, idle drift, long pauses | Full simulation — reading pauses, scroll-then-scroll-back, cursor wander |
+
+### Micro-Actions
+
+Each `ext_humanize` call picks one random action from the intensity pool and executes it:
+
+- **Random pause** — waits 0.8–2s (simulates thinking or reading)
+- **Micro-scroll** — scrolls a tiny amount up or down, sometimes scrolls back
+- **Cursor move** — moves the cursor to a random non-interactive element via Bezier path
+- **Hover inert** — moves to a non-interactive element and hovers briefly
+- **Variable scroll** — 2–4 small scroll steps in sequence with variable timing
+- **Scroll bounce** — scrolls down then back up (like overshooting while reading)
+- **Idle drift** — tiny random cursor movements around the current position
+- **Long pause** — waits 2–5s (simulates reading a paragraph)
+
+All timing uses Gaussian distributions — no fixed delays. Mouse movements follow cubic Bezier curves with randomized control points.
+
+### With Debugger Mode
+
+Humanize works with or without the debugger attached. When the debugger is active, scroll and cursor actions use CDP events. When it's not, they fall back to content script execution. The agent doesn't need to coordinate — humanize checks the debugger state automatically.
+
+## Screenshots
+
+Screenshots are processed through **sharp** before being sent to the LLM:
+
+1. Extension captures the visible tab via `chrome.tabs.captureVisibleTab()`
+2. Plugin strips the data URL prefix, decodes to buffer
+3. Sharp resizes to the configured max width (default 1280px)
+4. Converts to the configured format (default JPEG, quality 80)
+5. Returns clean base64 inline — displayed automatically in chat
+
+Configure resolution and format in **Settings → Channels → Browser**.
+
+### The moments that matter reach you
+
+Until **v1.0.259**, every screenshot the agent took mid-task was for its own eyes — on your phone, on Telegram or WhatsApp, a long browser task was a wall of silence with an answer at the end. Now the agent **sends the milestone shots into the conversation you're actually in, as they happen**: the results page it was hunting for, a form filled just before an important submit, the confirmation right after, the final state that proves the job is done — an image in the app, a real photo on Telegram and WhatsApp, each with a one-line caption. Surprises get the same treatment — an error page, a login wall — so when it reports a blocker, you **see** the blocker. It is deliberately not a firehose: routine navigation and scrolling stay private. In a [workflow](/configuration/workflow-mode) run, agents flag their milestone shots as worth seeing and the master relays the telling ones as the run progresses.
+
+## Side Panel
+
+The extension includes a side panel that shows:
+
+- **Connection status** — connected, waiting, or disconnected
+- **Live event feed** — every tool call appears in real-time as the agent browses
+- **Conversation history** — browse events from past conversations
+
+Events are logged per-conversation to `~/.wolffish/workspace/logs/extension/{conversationId}.jsonl`, tagged with the browser that ran them — so with several browsers connected, **each browser's side panel lists only the conversations that browser drove**.
+
+## Customization
+
+### Editing Agent Instructions
+
+Edit `~/.wolffish/workspace/brain/cerebellum/.browser-extension/SKILL.md`:
+
+- Change tool descriptions to guide the agent differently
+- Add or modify trigger keywords
+- Add safety patterns (`danger_patterns`, `confirm_patterns`)
+- Edit the body text for custom browsing procedures
+
+### Editing the Plugin
+
+Edit `~/.wolffish/workspace/brain/cerebellum/.browser-extension/plugin/index.mjs`:
+
+- Add pre/post processing to tool calls
+- Compose multiple commands into higher-level tools
+- Customize screenshot processing
+- Add new tools that combine existing commands
+
+### Building a Custom Extension
+
+The WebSocket server is command-agnostic — it pipes any `{ id, type, params }` to the extension and resolves when a matching response arrives. You can fork the extension, add new commands, and update the plugin to match.
+
+The full extension source lives in `packages/extension/` in the app repository; `npm run extension:bundle` at the repo root rebuilds it into `src/defaults/workspace/extension/`, the copy the app ships.
+
+## Supported Browsers
+
+| Browser | Status |
+| --- | --- |
+| Chromium | Supported |
+| Chrome | Supported |
+| Brave | Supported |
+| Edge | Supported |
+| Safari | Not supported |
+| Firefox | Not supported |
+
+<Warning>
+  The extension uses Manifest V3 APIs. Safari and Firefox are not supported because the extension relies on Chrome-specific APIs (`chrome.tabs.captureVisibleTab`, `chrome.debugger` for CDP input and PDF, `chrome.sidePanel`, direct WebSocket in the service worker).
+</Warning>
+
+## Safety
+
+The extension inherits the standard capability safety system:
+
+- `ext_execute_js` with `document.cookie` or `navigator.sendBeacon` → **blocked**
+- `ext_execute_js` (any) → **requires approval**
+- `ext_download` → **requires approval**
+- `ext_cookies_set` → **requires approval**
+- Navigation to financial sites → **requires approval**
+
+These patterns are defined in the SKILL.md frontmatter and enforced by the amygdala module. You can customize them.
+
+<Warning>
+  **Debugger mode and humanize carry additional risk.** These features make automated browsing less distinguishable from human browsing. While useful for testing and personal automation, using them to bypass bot detection or CAPTCHA systems on platforms that prohibit automation may result in account suspension or permanent bans. The responsibility lies with the user. Use these tools ethically and in compliance with each platform's terms of service.
+</Warning>

@@ -1,0 +1,345 @@
+{
+  "id": "2026-06-29_14-27-22",
+  "title": "I'm deciding whether to move our Node.js backend's",
+  "model": "gemma4:e2b",
+  "createdAt": 1782732442823,
+  "updatedAt": 1782732622399,
+  "messages": [
+    {
+      "id": "m_1782732622399_9a3763",
+      "role": "user",
+      "content": "I'm deciding whether to move our Node.js backend's background jobs off Redis/BullMQ onto a Postgres-backed queue. Produce a one-page decision brief. Work it in parallel with separate workers, and spend reasoning effort where the difficulty is — go deep on the hard analysis, keep the easy parts cheap:\n\nHard: analyze the correctness/operational risks of a Postgres SELECT … FOR UPDATE SKIP LOCKED queue at ~5M jobs/day — lock contention, long-running-txn bloat/vacuum, visibility timeouts, exactly-once vs at-least-once, poison messages. Reason hard about the real failure modes.\nMedium: compare BullMQ-on-Redis vs pg-boss vs AWS SQS across delivery guarantees, throughput/latency, ops burden, and cost at that scale.\nEasy: produce a tight glossary of ~8 key terms (idempotency key, visibility timeout, DLQ, backpressure, etc.), one line each.\nThen synthesize all three into a single brief with a clear recommendation for a small team that values low ops overhead — your reasoning, not just the verdict. If any worker comes back thin or fails, re-run it before you finalize.",
+      "timestamp": 1782732622399
+    },
+    {
+      "id": "m_1782732622399_9c4eab",
+      "role": "assistant",
+      "content": "Three workers, one decision brief. Spawning now — hard analysis, medium comparison, easy glossary, all running in parallel.All three workers running. Let me start collecting — glossary should land first, then I'll grab the rest.Glossary is clean. Closing that worker, collecting the next.Solid comparison from w2. Closing it, collecting the hard analysis.All three workers delivered. Closing the hard analysis and synthesizing.Here's the synthesis — all three workers, one decision.\n\n---\n\n# Decision Brief: Queue Backend for 5M Jobs/Day\n\n**Context:** Node.js backend, 5M background jobs/day (~58/sec avg, ~290/sec peaks), small team (2-4 engineers), currently on BullMQ + Redis.\n\n---\n\n## The Real Question\n\nYou're not asking \"which queue is best\" — you're asking **\"should we trade Redis for Postgres to reduce operational surface area?\"** The answer depends on whether you understand what you're trading _into._\n\n---\n\n## Comparison at a Glance\n\n| | **BullMQ (stay)** | **pg-boss (move to PG)** | **SQS (move to AWS)** |\n|---|---|---|---|\n| Throughput ceiling | 10,000+/sec | ~3,000/sec tuned | Unlimited |\n| Latency P99 | 5–15ms | 200ms–2s | 100–500ms |\n| Ops burden | Medium (Redis) | Medium-high (PG table health) | Near zero |\n| Cost/month | ~$100 | $0–400 | ~$200 |\n| DLQ | Built-in (failed queue) | DIY | Best-in-class |\n| Retry/backoff | First-class | Built-in | Consumer-side DIY |\n| Migration effort | Zero | 2–4 weeks | 3–6 weeks |\n| Scheduling/repeat jobs | Built-in | Built-in | Missing (needs EventBridge) |\n\n---\n\n## Deep Dive: PG-as-Queue\n\npg-boss uses `SELECT … FOR UPDATE SKIP LOCKED`, which handles 5M/day throughput fine. Lock contention is not the bottleneck. The real operational risks are subtler:\n\n1.  **Vacuum bloat is the silent killer.** At 5M rows/day, dead tuples accumulate fast. With 20 workers holding 30s transactions, autovacuum's global xmin is pinned 30s in the past — it can't clean fast enough. A table that's 500MB grows to 12GB in 2-3 weeks without aggressive tuning. Index scans degrade from 2ms to 200ms. **You discover this at 2 AM when deploys start timing out.**\n\n2.  **No native visibility timeout.** Workers that crash mid-job leave rows locked forever unless you build a heartbeat column + sweeper process. The sweeper adds 60s of latency to crash recovery, and if the sweeper itself dies during a deploy, stuck jobs sit until it restarts.\n\n3.  **At-least-once, always.** The window between `COMMIT` (job marked taken) and final `DELETE` is ~30s per job. At 58 jobs/sec, ~1,740 jobs are in that window at any moment. A crash = duplicates. Every handler must be idempotent. This is true of SQS too — but BullMQ's stalled-job checker gives you faster recovery.\n\n4.  **One bad job type blocks everything.** A misbehaving PDF generator that takes 120s instead of 5s saturates all 20 workers, dropping throughput 340x. All other job types freeze. **Fix:** separate tables (or partitions) per job type. This adds complexity BullMQ handles natively with separate queues.\n\n5.  **Connection pool must be split.** If you hold a row lock for 30s, you need 1,740 connections — which melts PostgreSQL. The correct pattern is `claimed_by` + heartbeat (commit before processing), needing only ~15-25 connections. But you **must** separate the job pool from the API pool or a traffic spike starves both.\n\n**The PG verdict:** Works at 5M/day IF you commit to DELETE (not UPDATE) for completion, weekly partitioning, aggressive autovacuum tuning, per-type worker isolation, a separately-deployed sweeper, and idempotent handlers everywhere. That's six non-negotiable commitments. PG is not _better_ at being a queue — it's _adequate_ if eliminating Redis is worth the new operational surface.\n\n---\n\n## Recommendation\n\n### Stay on BullMQ + Redis.\n\nFor 5M jobs/day on a small team, **BullMQ is the correct answer unless Redis is actively causing you pain.** You're using 0.6% of a single small Redis node's throughput. Latency is 5-15ms. Redis memory management is the only real operational concern, and that's solvable with `removeOnComplete` cleanup and ElastiCache (~$90/mo).\n\nThe alternative paths each trade one set of problems for another:\n\n- **pg-boss:** Trades Redis memory management for Postgres vacuum/bloat management. Net operational burden: neutral or worse. You gain ACID consistency in exchange for building your own monitoring, sweeper, and DLQ. The \"we already have Postgres\" pitch is seductive but misleading — you're adding 15-20M row operations/day to a database that's already serving your API.\n\n- **SQS:** Trades operational burden for migration cost. The operational relief is real — you never think about the queue again. But you lose built-in scheduling, repeatable jobs, and rate-limiting. You accept 100-500ms latency. Migration is 3-6 weeks, and you must rearchitect worker patterns. **Only do this if Redis ops overhead is actively hurting you today.**\n\n### What to fix in BullMQ instead:\n\n- Set `removeOnComplete` with an age/limit cap if you haven't already\n- Move Redis to ElastiCache (c6g.large, ~$90/mo) if self-hosted\n- Set `maxRetries` on every queue — unlimited retries is the default, and that's how failed queues silently balloon\n- Monitor Redis memory and set alerts at 70%\n\n---\n\n## Glossary\n\n- **Idempotency key** — A unique identifier embedded in each message so the consumer can detect and discard duplicate processing attempts.\n- **Visibility timeout** — A period during which a consumed message is hidden from other workers, extended or released if the worker fails or needs more time.\n- **Dead letter queue (DLQ)** — A holding queue for messages that repeatedly fail processing, preserving them for manual inspection instead of retrying indefinitely.\n- **Backpressure** — A signal-driven mechanism where a downstream service or queue pushes back on upstream producers to slow down when capacity is exhausted.\n- **At-least-once delivery** — A delivery guarantee that ensures every message is processed one or more times, trading the possibility of duplicates for the certainty of no data loss.\n- **Poison message** — A message that consistently causes consumer failures (malformed payload, missing resource, infinite retry loop) and typically ends up in a DLQ.\n- **Connection pool saturation** — The state where every database/queue connection in the pool is in use, causing new consumers to block or time out until a connection is released.\n- **Job deduplication** — The act of discarding a newly enqueued job that duplicates an existing one (by ID or content hash) before it ever reaches a consumer.\n\n---\n\n**Bottom line:** BullMQ stays. If something specific is hurting you with Redis, name it and I'll fix it directly. Don't move to Postgres just because it's already in the stack — that's how you end up with a 12GB bloated jobs table and a 3 AM page you didn't sign up for. 🐟",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_2",
+          "delta": "Three workers, one decision brief. Spawning now — hard analysis, medium comparison, easy glossary, all running in parallel."
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_27",
+          "toolCallId": "call_00_7t4ps7wH55HgSl9TBp5T0813",
+          "name": "spawn_worker",
+          "args": {
+            "label": "hard-pg-queue-risks",
+            "prompt": "You are analyzing the correctness and operational risks of using a PostgreSQL-backed job queue with SELECT … FOR UPDATE SKIP LOCKED at a scale of ~5 million jobs per day for a Node.js backend. This is the HARD analysis — go deep. Do not do shallow work.\n\nCover these dimensions rigorously:\n\n1. **Lock contention at 5M/day**: 5M jobs/day is ~58 jobs/second average, with peaks likely 3-5x that. Analyze what happens under contention when multiple workers compete via FOR UPDATE SKIP LOCKED. How does pg's row-level locking scale here? What are the practical limits before you need partitioning or sharding? What happens to queue latency under load?\n\n2. **Long-running transaction bloat and vacuum**: If a worker picks up a job, starts a transaction, does 30 seconds of work, then commits — that's a long-running tx from Postgres's perspective. Explain the real downstream effects: bloat in the job table, vacuum unable to clean up dead tuples, transaction ID wraparound risk. How bad does this get at 5M/day with, say, 20 concurrent workers?\n\n3. **Visibility timeouts**: Redis/BullMQ and SQS have native visibility timeouts — if a worker crashes mid-job, the job reappears. Postgres has no native timeout. Walk through how you'd implement one (heartbeat column + a sweeper process). What are the failure modes? What happens if the sweeper itself dies? What about clock skew between workers?\n\n4. **Exactly-once vs at-least-once**: Is true exactly-once possible with this pattern? Under what failure scenarios do you get duplicates? Be precise about the window between SELECT FOR UPDATE and the DELETE/UPDATE that marks completion — what happens if the worker crashes in that window?\n\n5. **Poison messages**: A job that crashes every worker that picks it up. How do you detect poison messages in this pattern? How do you implement a retry count + dead-letter mechanism? Compare to Redis/SQS built-in redrive policies.\n\n6. **Connection pool saturation**: If every worker holds a connection open for the duration of job processing (30s+), how many connections do you need? What happens when the pool is exhausted? How does this interact with your main API's connection pool?\n\n7. **Real failure modes**: Walk through 3 concrete disaster scenarios — (a) the DB primary fails over mid-job-processing, (b) a deploy rolls while hundreds of jobs are in-flight, (c) a misbehaving job type saturates all workers.\n\nFor each dimension, give the real answer — not \"it depends.\" If it breaks at this scale, say so. If it works but with sharp edges, name the edges. Be precise about numbers: connections, latency impact, bloat rates.\n\nOutput as structured markdown with clear sections. No fluff. This analysis will be combined with two other workers' output into a decision brief."
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_28",
+          "toolCallId": "call_01_Tc4Rtzu5sFwyyP6ABoUy2358",
+          "name": "spawn_worker",
+          "args": {
+            "label": "medium-queue-compare",
+            "prompt": "Compare three queue backends for a Node.js background job system processing ~5 million jobs per day. The team is small (2-4 engineers) and values low operational overhead. The current setup is BullMQ on Redis.\n\nCompare:\n\n1. **BullMQ on Redis** (current)\n2. **pg-boss** (Postgres-backed Node.js job queue)\n3. **AWS SQS** (managed queue service)\n\nFor each, evaluate across these axes with concrete numbers where possible:\n\n- **Delivery guarantees**: at-most-once, at-least-once, exactly-once? How does each handle worker crashes mid-job?\n- **Throughput & latency**: At 5M jobs/day (~58/sec average, peaks 200-300/sec). What's the practical throughput ceiling for each? What's typical end-to-end latency (enqueue → start processing)?\n- **Operational burden**: What ongoing maintenance does each require? Backups, upgrades, scaling, monitoring, failure recovery. Consider a small team.\n- **Cost at scale**: Estimate monthly cost at 5M jobs/day. Assume moderate AWS region pricing. For Redis, consider managed Redis (ElastiCache) vs self-hosted. For pg-boss, assume you already have a Postgres instance.\n- **Visibility timeout & retry mechanics**: How does each handle worker crashes, stuck jobs, and retries?\n- **Dead letter / poison message handling**: How does each deal with jobs that repeatedly fail?\n- **Monitoring & observability**: What metrics/dashboards come built-in vs what you'd need to build?\n- **Migration complexity**: If moving from BullMQ, how painful is the migration to each alternative?\n\nGive a summary verdict for each: \"best for ______, worst for ______.\"\n\nOutput as structured markdown with clear sections. Be opinionated — this is for a decision brief, not an academic survey."
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_29",
+          "toolCallId": "call_02_Mq97ERm41oRLARgrb4mr9745",
+          "name": "spawn_worker",
+          "args": {
+            "label": "easy-glossary",
+            "prompt": "Produce a tight glossary of exactly 8 key terms related to background job queues and message processing. Each term gets exactly ONE line — a crisp, practical definition a senior engineer would appreciate. No fluff, no examples, no elaboration.\n\nTerms to cover:\n1. Idempotency key\n2. Visibility timeout\n3. Dead letter queue (DLQ)\n4. Backpressure\n5. At-least-once delivery\n6. Poison message\n7. Connection pool saturation\n8. Job deduplication\n\nOutput as a simple markdown list: **Term** — one-line definition. Nothing else. No intro, no outro."
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_30",
+          "toolCallId": "call_00_7t4ps7wH55HgSl9TBp5T0813",
+          "status": "success",
+          "output": "Spawned worker w1 (hard-pg-queue-risks). It's running in the background. Call await_workers to collect its result when you're ready — it won't block until then."
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_31",
+          "toolCallId": "call_01_Tc4Rtzu5sFwyyP6ABoUy2358",
+          "status": "success",
+          "output": "Spawned worker w2 (medium-queue-compare). It's running in the background. Call await_workers to collect its result when you're ready — it won't block until then."
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_32",
+          "toolCallId": "call_02_Mq97ERm41oRLARgrb4mr9745",
+          "status": "success",
+          "output": "Spawned worker w3 (easy-glossary). It's running in the background. Call await_workers to collect its result when you're ready — it won't block until then."
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_33",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_34",
+          "delta": "All three workers running. Let me start collecting — glossary should land first, then I'll grab the rest."
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_56",
+          "toolCallId": "call_00_J4Ti2WcTZkudCbgUOvcL4943",
+          "name": "await_workers",
+          "args": {}
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_57",
+          "toolCallId": "call_00_J4Ti2WcTZkudCbgUOvcL4943",
+          "status": "success",
+          "output": "Worker w3 (easy-glossary) finished. [finished: end_turn, 0 tool calls]\n\n- **Idempotency key** — A unique identifier embedded in each message so the consumer can detect and discard duplicate processing attempts.\n- **Visibility timeout** — A period during which a consumed message is hidden from other workers, extended or released if the worker fails or needs more time.\n- **Dead letter queue (DLQ)** — A holding queue for messages that repeatedly fail processing, preserving them for manual inspection instead of retrying indefinitely.\n- **Backpressure** — A signal-driven mechanism where a downstream service or queue pushes back on upstream producers to slow down when capacity is exhausted.\n- **At-least-once delivery** — A delivery guarantee that ensures every message is processed one or more times, trading the possibility of duplicates for the certainty of no data loss.\n- **Poison message** — A message that consistently causes consumer failures (malformed payload, missing resource, infinite retry loop) and typically ends up in a DLQ.\n- **Connection pool saturation** — The state where every database/queue connection in the pool is in use, causing new consumers to block or time out until a connection is released.\n- **Job deduplication** — The act of discarding a newly enqueued job that duplicates an existing one (by ID or content hash) before it ever reaches a consumer.\n\nStill running: w1 (hard-pg-queue-risks), w2 (medium-queue-compare). w3 is now idle (awaiting) — send_to_worker to follow up, or close_worker when done. Call await_workers again for the next landing."
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_58",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_59",
+          "delta": "Glossary is clean. Closing that worker, collecting the next."
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_72",
+          "toolCallId": "call_00_qCg0zitYffm037G8uHeM1895",
+          "name": "close_worker",
+          "args": {
+            "worker_id": "w3"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_73",
+          "toolCallId": "call_01_Co7IvfFYieWTswEraer00755",
+          "name": "await_workers",
+          "args": {}
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_74",
+          "toolCallId": "call_00_qCg0zitYffm037G8uHeM1895",
+          "status": "success",
+          "output": "Closed w3. It will accept no more work."
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_75",
+          "toolCallId": "call_01_Co7IvfFYieWTswEraer00755",
+          "status": "success",
+          "output": "Worker w2 (medium-queue-compare) finished. [finished: end_turn, 0 tool calls]\n\n# Queue Backend Decision Brief: BullMQ vs pg-boss vs AWS SQS\n\n*5M jobs/day · ~58/sec avg · 200–300/sec peaks · 2–4 person team*\n\n---\n\n## 1. BullMQ on Redis (Current)\n\n### Delivery Guarantees\n**At-least-once by default.** BullMQ uses Redis to track job state — a job moves through `waiting → active → completed/failed`. If a worker crashes while processing, the job stays in `active` state. BullMQ's **stalled job checker** (a timer-based process within the worker) detects these after a configurable `stallInterval` (default 30s) and moves them back to `waiting` for retry.\n\nThe gap: if a worker completes the job *in code* but crashes before Redis receives the `completed` ACK, the job runs twice. This is the classic at-least-once window. BullMQ offers no dedup for this at the queue level — you'd build idempotency keys into your job handlers.\n\n**At-most-once is possible** by setting `removeOnComplete: true, removeOnFail: true` aggressively, but this is an anti-pattern for most production use.\n\n### Throughput & Latency\n| Metric | BullMQ on Redis (single instance) |\n|---|---|\n| **Sustained throughput** | 5,000–10,000 jobs/sec on a c6g.large ElastiCache node |\n| **Peak headroom** | 50,000+ jobs/sec with Redis Cluster |\n| **P99 end-to-end latency** | 5–15ms (enqueue → worker receives) |\n| **At 5M/day** | You're at 0.6% of what a single small Redis node can do — **vast headroom** |\n\nBullMQ is absurdly fast at your volume. The bottleneck will never be throughput.\n\n### Operational Burden\n| Task | BullMQ self-hosted Redis | BullMQ + ElastiCache |\n|---|---|---|\n| Setup | Install Redis, configure persistence | Click \"create cluster\" in AWS |\n| Backups | Redis RDB/AOF, S3/snapshot scripts | Auto (ElastiCache) |\n| Scaling | Vertical (bigger instance) or Redis Cluster (complex) | Vertical — modify node type |\n| Memory pressure | **Real concern.** Each job object lives in Redis until completed/removed. At 5M/day, if jobs linger, memory climbs fast | Same concern, but easier to resize |\n| Upgrades | Manual: dump/restore, version compatibility | Automated maintenance windows |\n| Visibility into stuck jobs | BullMQ Board (OSS) or Arena | Same |\n\n**The real operational cost is memory management.** At 5M jobs/day, if you're not aggressively cleaning up completed jobs, Redis memory balloons. You need `removeOnComplete` with a sane age/limit, or a TTL-based cleanup strategy.\n\n**For a small team:** Self-hosted Redis is one more thing to wake up for at 3 AM. ElastiCache reduces the pain but doesn't fully eliminate it — you still need to monitor memory, set sane eviction policies, and handle OOM scenarios.\n\n### Cost at Scale\n**Self-hosted Redis on EC2 (c6g.large, 2 vCPU, 4 GB RAM):** ~$70/month + EBS. Fine for your volume.\n\n**ElastiCache (c6g.large, ~$80/mo reserved) + data transfer (~$10/mo):** ~$90/month. Total cost: **~$100/mo**.\n\nCost is trivial — not a decision factor.\n\n### Visibility Timeout & Retry\nConfigurable per queue:\n- **Stalled job checker** runs in-worker, detects jobs stuck in `active` state beyond `stallInterval`\n- **Backoff**: built-in with `exponential`, `fixed`, or custom strategies\n- **Max retries**: per-job or per-queue config, default is unlimited (stall forever) which is dangerous — always set a cap\n- **Rate limiting**: per-worker and per-queue, built-in via `Limiter` class\n\n### Dead Letter Handling\nBullMQ has a separate \"failed\" queue that stores failed jobs with the error. You can:\n- Keep last N failed jobs per queue\n- Set a TTL on failed jobs to auto-clean\n- Manually retry failed jobs\n- No native DLQ → failed queue *is* the DLQ\n\nIt works but gets unwieldy at volume — the failed queue can accumulate fast.\n\n### Monitoring & Observability\n- **BullMQ Board**: basic web UI, shows queue status, retry buttons, job counts. Good enough for 2-4 engineers.\n- **Arena**: similar but less maintained.\n- **Custom metrics**: you'll want to emit Redis metrics (memory, hit rate, connected clients) to CloudWatch/Datadog.\n- **What you're missing**: per-job tracing, latency histograms, stalled-job alerts — you build these.\n\n### Migration Complexity (from BullMQ)\n**Zero.** You're already on it.\n\n---\n\n## 2. pg-boss (Postgres-backed)\n\n### Delivery Guarantees\n**At-least-once.** pg-boss uses `SKIP LOCKED` on a dedicated `pgboss.job` table to safely dequeue jobs. A job is marked `active` when a worker picks it up. If the worker crashes, the job stays `active` until the **expiry** time elapses (default 60s, configurable), then moves back to `created` for retry.\n\nSame gap as BullMQ: crash between job completion and state update → double execution. No exactly-once.\n\nThe `SKIP LOCKED` mechanism is row-level and ACID — you get strong consistency guarantees from Postgres itself. No split-brain scenarios, no race conditions between workers.\n\n### Throughput & Latency\n| Metric | pg-boss on a db.r6g.large Postgres |\n|---|---|\n| **Sustained throughput** | ~500–1,000 jobs/sec |\n| **Peak throughput** | ~2,000–3,000/sec with tuned Postgres (proper `work_mem`, connection pooling) |\n| **P99 end-to-end latency** | 50–200ms (polling interval dependent) |\n| **At 5M/day (58/sec avg)** | Fine. But **peaks of 300/sec** are 85-90% of a tuned instance's practical limit |\n\npg-boss polling behavior is the bottleneck. It uses a polling interval (default 2s) — so a job can sit in the queue for up to 2s before a worker picks it up even at zero load. You can lower this to 200-500ms, but that increases Postgres query load. Realistically:\n\n- **Base latency floor**: ~1s due to polling interval. You can tune down to ~200ms but at the cost of higher query load.\n- **At 300/sec peaks**: you need a beefy Postgres instance and connection pooling (PgBouncer). You'll feel the pressure.\n\nAt your peak (300/sec), pg-boss is workable but you're in optimization territory — proper indexing, monitoring query performance, connection pool sizing. Not a trivial \"it just works\" setup.\n\n### Operational Burden\n**The pitch:** \"you already have Postgres, just use it.\"\n\n**The reality:** If your existing Postgres instance is already under load from application queries, adding 5M queue operations/day is noticeable. Each job insert, dequeue via SKIP LOCKED, completion update, and archival is a row write + index update. That's ~15-20M additional row operations/day.\n\n| Task | pg-boss |\n|---|---|\n| Schema | `pgboss.create()` on startup — auto-creates tables |\n| Backups | Covered by your existing Postgres backup strategy |\n| Archival | **Mandatory.** pg-boss keeps completed jobs forever — you need `pgboss.archive` (built-in) to move them to an archive table, then a cron job to prune old archive rows |\n| Index maintenance | `pgboss.job` table needs regular `VACUUM` — completed jobs leave dead tuples. Auto-vacuum handles it if tuned, but you need to monitor |\n| Connection pressure | Each worker needs a DB connection. With 4 workers × 2-3 processes each, that's 8-12 connections just for pg-boss. Add PgBouncer or accept connection limits |\n| Migration bumps | Postgres upgrade → pg-boss must be compatible. Minor versions usually fine, major versions need verification |\n\n**The hidden cost is table bloat.** At 5M jobs/day, the `pgboss.job` table grows fast. You *must* archive aggressively. If something breaks the archiver, that table bloats, indexes degrade, and query performance tanks silently. For a 2-4 person team, this is the kind of thing you discover at 2 AM when deploys start timing out.\n\n**For a small team:** Higher operational vigilance than BullMQ — you own the table health, not just the runtime.\n\n### Cost at Scale\n**Incremental cost:** ~$0 if you already have a capable Postgres instance with headroom.\n\n**If you need a dedicated instance (db.r6g.large, ~$200/mo reserved):** ~$200/month for Postgres + $30/mo for storage (500GB gp3).\n\n**If you're on RDS:** ~$200–$400/month depending on instance size + storage.\n\n**If self-hosted Postgres:** ~$70/mo EC2 + ~$100/mo EBS for performance.\n\n**Verdict:** Free-ish if you have headroom. $200-400/mo if you don't. Not the differentiator.\n\n### Visibility Timeout & Retry\n- **`expireInSeconds`**: configurable per queue or per job (default 60s). If a worker doesn't complete within this window, the job is released back to `created`.\n- **`retryLimit`**: max retry attempts (default 0 = infinite). **Always set this.**\n- **`retryBackoff`**: exponential backoff is built-in.\n- **`onComplete`**: you can set `keepDays` to auto-clean completed jobs.\n\n**One advantage over BullMQ:** pg-boss's visibility timeout is per-job configurable, not a global stall interval. Different job types can have different timeouts cleanly.\n\n### Dead Letter Handling\npg-boss doesn't have a dedicated DLQ. Failed jobs stay in the `job` table with state `failed`. You can:\n- Archive failed jobs separately with `pgboss.archive`\n- Query and retry failed jobs manually\n- Build your own DLQ logic (move failed jobs to a separate table on Nth failure via `onComplete` handler)\n\nLess polished than BullMQ's failed queue. You'll want to build a small dashboard or hook to monitor failures.\n\n### Monitoring & Observability\n**Built-in:** near-zero. pg-boss provides a `pgboss.countJobs()` method you can call to get job counts by state. That's it.\n\n**What you must build:**\n- Dashboard showing queue depth, active jobs, failed count, latency (age of oldest pending job)\n- Alerts for stuck jobs (jobs stuck in `active` for > N minutes)\n- Table size monitoring (pgboss.job + archive)\n- Auto-vacuum health monitoring\n\n**For a small team:** The observability gap is real. Expect 2-3 days to build and tune monitoring before you trust it in production.\n\n### Migration Complexity (from BullMQ)\n**Medium.** The interface pattern is similar (job definitions, handlers, concurrency settings), but:\n\n1. **New schema**: pg-boss needs its own Postgres schema — you need migration scripts\n2. **Different job API**: `pgboss.send()` instead of `queue.add()`, `pgboss.complete()` instead of `job.updateProgress()`. Every call site changes\n3. **No scheduler built-in**: BullMQ's `QueueScheduler` (delayed jobs, repeatable jobs) is separate — pg-boss handles these natively but differently\n4. **In-flight jobs during cutover**: You need to drain BullMQ before switching, or run both concurrently and route new jobs to pg-boss\n5. **Monitoring replacement**: BullMQ Board → custom dashboard\n\n**Estimate:** 2-4 weeks for a focused engineer to migrate, test, and stabilize.\n\n---\n\n## 3. AWS SQS\n\n### Delivery Guarantees\n**Standard queues:** At-least-once. Amazon's docs explicitly warn about occasional duplicates (1 in 100,000 messages). The visibility timeout mechanic means crash → message reappears after timeout → at-least-once delivery.\n\n**FIFO queues:** Exactly-once, thanks to a content-based deduplication window (5-minute dedup ID). At 300/sec, FIFO throughput can be a problem without batching. FIFO messages are processed in order within a message group, which adds head-of-line blocking.\n\n**For your use case:** You almost certainly want **standard queues** — you're processing 5M/day, the duplicate rate is negligible, and you should be writing idempotent handlers anyway.\n\n### Throughput & Latency\n| Metric | SQS Standard | SQS FIFO |\n|---|---|---|\n| **Sustained throughput** | **Unlimited** — SQS auto-scales | 3,000/sec with batching, 300/sec without |\n| **Peak throughput** | Effectively unlimited | Hard-capped |\n| **P99 end-to-end latency** | 100–500ms (polling dependent) | 100–500ms |\n| **At 5M/day (58/sec)** | Trivial | Also trivial, but batch to stay under 3,000/sec |\n\nSQS has no throughput ceiling for standard queues — that's the whole point. You could 10x your volume tomorrow and SQS wouldn't flinch.\n\nLatency is dominated by the polling interval. With **long polling** (`WaitTimeSeconds=20`), messages arrive in near-real-time but you pay for idle time. With short polling, you might see 500ms-1s latency. You can get down to ~100ms with short polling + high poll frequency at the cost of more API calls (more cost).\n\n### Operational Burden\n**Near zero.** This is SQS's killer feature:\n- No servers, no databases, no Redis clusters\n- No backups, no upgrades, no failover\n- No memory management, no table bloat, no VACUUM\n- Auto-scaling — it just handles load\n- Multi-AZ by default\n- 99.9% uptime SLA\n\n**The operational work:**\n- Setting up IAM permissions (one-time)\n- Configuring DLQs (one-time)\n- Alarm thresholds (one-time)\n- That's it.\n\n**For a small team:** This is the least operational burden of any option. You sleep better.\n\n### Cost at Scale\n**SQS pricing (us-east-1, standard):**\n- **First 1M requests/month:** free\n- **$0.40 per million requests after**\n\n**At 5M jobs/day × 30 days = 150M jobs/month:**\n\n- **Requests**: Each job is one `SendMessage` + one `ReceiveMessage` + one `DeleteMessage` = 3 API calls → **450M requests/month**\n- **Cost**: 450M × $0.40/1M = **$180/month**\n- **Data transfer (out to EC2)**: ~$20/mo (trivial for 1KB messages)\n- **SQS Extended Client** (if messages > 256KB): S3 storage costs — irrelevant for typical job payloads\n\n**Total: ~$200/month.**\n\nIf you use FIFO: same pricing, but each message request is $0.50/1M instead of $0.40 — ~$245/mo. Not worth it.\n\n### Visibility Timeout & Retry\n- **Visibility timeout**: 0s to 12h per queue. Set it to your expected max job duration. Worker receives message → SQS hides it from other workers. Worker crashes → message reappears after timeout. Simple and reliable.\n- **ChangeMessageVisibility**: worker can extend the timeout mid-flight for long-running jobs (call this regularly in a heartbeat pattern).\n- **ApproximateReceiveCount**: SQS tracks how many times a message has been received.\n- **Redrive policy**: after N receives, the message is automatically sent to the DLQ.\n\n**What SQS doesn't do:** exponential backoff, rate limiting, or delayed retries at the queue level. You implement these in the consumer:\n```js\n// Pseudo: after processing failure\nconst delaySeconds = Math.min(\n  Math.pow(2, receiveCount) * 30,\n  3600\n);\n// Don't delete the message — let it become visible again\n// OR: Send a new message with the delay and delete the original\nawait sqs.sendMessage({\n  QueueUrl: dlqUrl, // send to DLQ or delay queue\n  MessageBody: body,\n  DelaySeconds: Math.min(delaySeconds, 900) // SQS max delay\n});\n```\n\n### Dead Letter Handling\n**Best-in-class.** SQS DLQ is a first-class concept:\n- Set a **redrive policy**: maxReceiveCount (e.g., 5) + deadLetterTargetArn\n- SQS auto-moves messages to DLQ after N failed receives\n- DLQ is a standard SQS queue — you can monitor it, alert on depth, replay messages, anything\n- **Redrive**: SQS has a built-in \"Redrive to source\" button in the console (and API) to move DLQ messages back to the source queue\n\n**For a small team:** This is a 10-minute setup that works forever. BullMQ and pg-boss both require manual scripts for equivalent functionality.\n\n### Monitoring & Observability\n**Built-in (CloudWatch):**\n- `ApproximateNumberOfMessagesVisible` (queue depth)\n- `ApproximateNumberOfMessagesNotVisible` (in-flight)\n- `NumberOfMessagesReceived`, `Sent`, `Deleted`\n- `ApproximateAgeOfOldestMessage`\n- Per-queue and per-DLQ metrics by default\n- CloudWatch alarms are a few clicks\n\n**What you need to add:**\n- Custom application metrics (how long each job took, failure reason distribution)\n- Distributed tracing (X-Ray integration exists but needs setup)\n- Consumer-side heartbeats for long-running jobs\n\n**Verdict:** SQS gives you the best out-of-the-box operational visibility of the three. Your 4-person team can set up dashboards in an afternoon.\n\n### Migration Complexity (from BullMQ)\n**Medium-high.** The patterns are *different* — not better or worse, just different:\n\n1. **Pull vs push**: BullMQ handles worker assignment internally. With SQS, you poll — you need `sqs.receiveMessage()` loops in your workers. Popular libraries (`@aws-sdk/client-sqs`, `sqs-consumer`) simplify this but it's more boilerplate than BullMQ.\n\n2. **No built-in worker pool**: BullMQ manages concurrency and worker lifecycle. With SQS, you manage your own polling loops, concurrency control, and graceful shutdown.\n\n3. **Message size limit**: 256KB max. For large job payloads, you need SQS Extended Client (stores payload in S3, puts the S3 pointer in SQS). BullMQ handles larger payloads natively via Redis.\n\n\n… [truncated for demo: 20,588 chars total]"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_76",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_77",
+          "delta": "Solid comparison from w2. Closing it, collecting the hard analysis."
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_91",
+          "toolCallId": "call_00_bcnpVWP9CwPo3ZBUtBe16244",
+          "name": "close_worker",
+          "args": {
+            "worker_id": "w2"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_92",
+          "toolCallId": "call_01_XCeY3oSeEgr6yxAmozu09484",
+          "name": "await_workers",
+          "args": {}
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_93",
+          "toolCallId": "call_00_bcnpVWP9CwPo3ZBUtBe16244",
+          "status": "success",
+          "output": "Closed w2. It will accept no more work."
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_94",
+          "toolCallId": "call_01_XCeY3oSeEgr6yxAmozu09484",
+          "status": "success",
+          "output": "Worker w1 (hard-pg-queue-risks) finished. [finished: end_turn, 0 tool calls]\n\n# PostgreSQL Job Queue at 5M/day: Deep Analysis\n\n## 1. Lock Contention at 5M/day\n\n**The short version:** FOR UPDATE SKIP LOCKED handles this scale fine — the bottleneck isn't row locks, it's index scan cost and vacuum overhead. You hit one of those first.\n\n**Throughput math:**\n- 5,000,000 / 86,400 = **58 jobs/sec** sustained\n- Peaks 3-5x = **175–290 jobs/sec**\n- At peak, a single `SELECT ... FOR UPDATE SKIP LOCKED LIMIT 10` grabs ~10 rows. At 200 jobs/sec with a batch size of 10, that's 20 SELECTs per second. The lock acquisition per row is microseconds — the total lock overhead at this rate is in the noise.\n\n**Why SKIP LOCKED specifically works here:**\nUnlike a blocking `FOR UPDATE` (where contention causes queueing), `SKIP LOCKED` makes contention *invisible* — workers that encounter locked rows simply skip them and pick other rows. No wait, no queueing, no deadlock risk. The limiting factor is the rate at which available (unlocked, not-yet-processed) rows enter the visible range of your index scan.\n\n**Where it actually breaks:**\n\n| Factor | Practical Limit | At 5M/day |\n|--------|----------------|-----------|\n| Index scan for available jobs | ~500-800 jobs/sec on a HOT index with 10M+ rows | ✅ Fine — ~200/sec peak |\n| Row-lock CPU overhead | Millions/sec | ✅ Noise |\n| Vacuum keeping up with dead tuples | Depends on autovacuum config | ⚠️ See §2 |\n| Table scan when available jobs are deep in a cold index | Drops to ~50-100 jobs/sec | 🔴 **Real risk** |\n\n**The real contention problem — \"tail latency\":**\n`SKIP LOCKED` only works well when there are enough *unlocked* rows to feed all workers. If your queue runs near-empty (jobs arrive and are picked up immediately), most SELECTs find available rows. But if there's a backlog of locked-but-incomplete jobs (workers are slow, many 30s transactions), workers scan past locked rows, find nothing, and re-query. The query becomes: scan index → skip N locked rows → find zero unlocked → retry. This burns CPU and increases average latency from microseconds to 50-200ms per failed scan.\n\nAt 5M/day with 20 workers processing 30s jobs, peak concurrency is:\n> 58 jobs/sec × 30s average processing = **~1,740 jobs in-flight simultaneously**\n\nThat's 1,740 locked rows at any given moment. An index scan that needs to find unlocked rows past the 1,740th entry starts degrading. **The fix:** index on `(status, created_at)` where `status = 'pending'` filters to a small portion, and `created_at` orders for FIFO. This keeps the scan to the first few pages regardless of total table size.\n\n**Partitioning trigger:** Not at 5M/day. You don't need partitioning until the active-pending rows exceed ~10M or the table surpasses ~50GB. At 5M/day with 30s processing, you have ~1,740 pending rows at any time — tiny. Partitioning only helps if jobs accumulate (e.g., a weekend backlog of 5M unprocessed jobs). At steady state, skip it.\n\n---\n\n## 2. Long-Running Transaction Bloat and Vacuum\n\nThis is **the most underestimated problem** with this pattern. It doesn't break immediately, but it degrades silently over days to weeks.\n\n**How bloat happens:**\n\nEvery job starts life as a row insertion. When processed, it's either DELETEd or UPDATED to `status = 'completed'`. Both create **dead tuples**. At 5M/day:\n\n> 5,000,000 dead tuples per day → **35M dead tuples per week**\n\nPostgreSQL's MVCC means a dead tuple can only be cleaned up (VACUUM'd) when it's not visible to *any* open transaction — including your 30s-long worker transactions.\n\n**The 30s transaction window:**\n\n20 workers × 30s = each worker transaction is open for ~30 seconds. During that window:\n- The worker holds a `pg_snapshot` that includes the moment-of-read.\n- Any DEAD tuple that was created *before* that snapshot's earliest xmin cannot be cleaned until ALL snapshots from that era close.\n- In practice, with continuous worker starts, the **global xmin** (oldest active transaction's xid) never advances significantly — it's constantly pinned ~30s in the past.\n\n**Consequence:** Vacuum can only clean dead tuples that were created more than ~30s ago. For a table with continuous insert/delete at 5M/day, vacuum stays perpetually behind. The table grows faster than vacuum can shrink it.\n\n**Bloat rate estimate:**\n\n| Scenario | Daily dead tuples | Vacuum throughput (avg) | Net bloat/day |\n|----------|------------------|------------------------|---------------|\n| 20 workers @ 30s txns, default autovacuum | 5M new dead/day | ~2-3M cleaned/day | **+2-3M dead/day** |\n| Same with aggressive `autovacuum_vacuum_scale_factor = 0.01` | 5M | ~4M cleaned/day | **+1M dead/day** |\n| With dedicated `VACUUM` scheduled off-peak | 5M | ~5M cleaned in burst | ⚠️ Depends on window |\n\n**Real numbers from practice:**\nAt 1M dead/day (moderate scale), with 20 concurrent workers running 10s transactions and default vacuum, I've seen the job table grow from 500MB to **12GB in 3 weeks** — a 24x bloat ratio. Index scans that took 2ms now take 200ms. `SKIP LOCKED` queries time out. The fix is a blitz VACUUM during maintenance, which itself locks out writes.\n\nAt 5M/day, you reach this point in **4-5 days** without aggressive vacuum tuning.\n\n**Required vacuum config (minimum):**\n```sql\nALTER TABLE jobs SET (autovacuum_vacuum_scale_factor = 0.01);\nALTER TABLE jobs SET (autovacuum_vacuum_threshold = 10000);\nALTER TABLE jobs SET (autovacuum_vacuum_cost_limit = 2000);  -- Higher IO budget\n```\n\n**Transaction ID wraparound risk:**\nAt 5M jobs/day = 5M txids/day. PostgreSQL's xid space is 2^32 (4.3B wraparound). At 5M/day:\n> 5M × 365 = 1.825B txids/year → wraparound in **~2.4 years**\n\nThis is not an immediate risk, but you **must** monitor `age(datfrozenxid)` and schedule aggressive freezing during low-traffic windows. If you ever do a bulk insert (millions of backfill jobs), you can burn 100M xids in hours — that's when wraparound becomes real.\n\n**Mitigation strategy that works:**\n\n1. **DELETE completed jobs immediately**, don't UPDATE to 'completed'. DELETE creates dead tuples that vacuum can clean from the heap page immediately (pages become all-visible). UPDATE leaves a dead tuple *in place* until index cleanup.\n2. **Use `fillfactor = 70`** on the job table. This leaves 30% space on each page for HOT updates (if you must update), reducing index bloat.\n3. **Partition by creation date** (daily or weekly). Old partitions can be `TRUNCATE`d instead of vacuumed. At 5M/day, weekly partitions ~35M rows — manageable. Monthly partitions ~150M — getting large.\n4. **Separate \"active\" and \"archive\" tables.** Move completed jobs to a secondary `jobs_archive` table via a background process. The active `jobs` table stays small (<10K rows at any time), vacuum runs instantly.\n\n**Without partitioning or archiving, you will hit bloat problems within 1-2 weeks at this scale.** This is not hypothetical — it's the most common PG-as-queue failure I've seen in production.\n\n---\n\n## 3. Visibility Timeouts\n\n**No native timeout.** If a worker crashes mid-job, that row stays locked forever (or until the TCP connection drops and Postgres rolls back the transaction). Two things can happen:\n\n- **Best case:** Worker process dies, TCP FIN/RST reaches Postgres → transaction rolls back → row unlocked → 5-30 seconds delay. Row reappears.\n- **Worst case:** Worker process hangs (not crash), holds the connection open → transaction never rolls back → row locked *indefinitely* → job is lost.\n\n**Implementing visibility timeouts:**\n\n```sql\n-- Add to schema\nALTER TABLE jobs ADD COLUMN heartbeat_at TIMESTAMPTZ;\nALTER TABLE jobs ADD COLUMN claimed_by TEXT;  -- worker ID\nALTER TABLE jobs ADD COLUMN retry_count INT DEFAULT 0;\n```\n\n**Worker flow:**\n1. `BEGIN; SELECT ... FOR UPDATE SKIP LOCKED`\n2. Set `heartbeat_at = NOW()`, `claimed_by = $worker_id`\n3. `COMMIT;` ← **critically, commit first**\n4. Process job (30s)\n5. `DELETE FROM jobs WHERE id = $id AND claimed_by = $worker_id`\n\nWait — if you commit before processing, you release the lock. This changes the semantics: you're using `claimed_by` + `heartbeat_at` as an *advisory* lock, not a Postgres row lock. This is actually the correct approach for long-running jobs (30s). Holding a row lock for 30s is what causes all the vacuum/bloat problems in §2.\n\n**Revised pattern:**\n1. `SELECT ... FOR UPDATE SKIP LOCKED LIMIT 1` (short transaction, ~5ms)\n2. Set `status = 'processing'`, `claimed_by = 'worker-A'`, `heartbeat_at = NOW()`, `retry_count`\n3. `COMMIT` (lock released)\n4. Process job (30s), with periodic `UPDATE jobs SET heartbeat_at = NOW() WHERE id = $id`\n5. `DELETE FROM jobs WHERE id = $id AND claimed_by = 'worker-A'`\n\n**Sweeper process:**\n```sql\n-- Runs every 30s on a cron\nUPDATE jobs SET status = 'pending', claimed_by = NULL\nWHERE status = 'processing'\n  AND heartbeat_at < NOW() - INTERVAL '60 seconds'\n  AND retry_count < 3;\n\n-- Or move to DLQ\nUPDATE jobs SET status = 'dead_letter'\nWHERE status = 'processing'\n  AND heartbeat_at < NOW() - INTERVAL '60 seconds'\n  AND retry_count >= 3;\n```\n\n**Failure modes of the sweeper:**\n\n| Failure | Impact | Mitigation |\n|---------|--------|------------|\n| Sweeper crashes | All \"stuck\" jobs stay stuck until sweeper restarts | Monitor sweeper health; secondary sweeper on different schedule with staggered timeout |\n| Sweeper runs too fast | Grabs jobs from workers that are still processing but slow to heartbeat | Set heartbeat timeout to 2× the expected heartbeat interval (e.g., timeout=60s if heartbeat every 15s) |\n| Sweeper and original worker race | Both try to process the same job (duplicate) | Use `claimed_by` check: `UPDATE ... WHERE id = $id AND claimed_by = 'worker-A'`. If it returns 0 rows, the sweeper already reclaimed it. |\n| Network partition | Worker can't send heartbeat, sweeper reclaims the job, original worker finishes and deletes it, sweeper gets nothing | At-least-once anyway — the job gets processed once or twice. Acceptable. |\n\n**The sweeper-is-dead scenario:**\nIf the sweeper itself dies for, say, 10 minutes:\n- All jobs held by workers that crashed during that window are stuck\n- Workers that are still alive keep heartbeating — they're fine\n- When sweeper restarts, it sweeps all jobs whose heartbeat is 60s+ stale. For a 10-minute outage, that's all crashed workers' jobs from that 10-minute window. They get re-queued.\n\n**Clock skew:**\nIf a worker's clock is 5s behind the sweeper's clock: the worker's `heartbeat_at` is 5s in the past. If the sweeper uses `heartbeat_at < NOW() - 60s`, a worker that last heartbeated 57s ago (by its own clock) appears as 62s ago to the sweeper. **Result:** the sweeper wrongly reclaims an active job. Mitigation: set the sweeper timeout to 2-3x the heartbeat interval (e.g., heartbeat every 15s, timeout at 60s). At 60s, 5s of skew is <10% error — safe.\n\n---\n\n## 4. Exactly-Once vs At-Least-Once\n\n**True exactly-once is NOT achievable** with this pattern without external coordination.\n\n**Why it's at-least-once by default:**\n\nThe critical window:\n```\nWorker A:\n  1. BEGIN; SELECT ... FOR UPDATE SKIP LOCKED  -- job is locked\n  2. UPDATE status = 'processing', claimed_by = 'A'  -- or DELETE to complete\n  3. COMMIT;\n  [CRASH HERE]\n```\n\nIf the worker crashes **between step 3 and when the completion is durably recorded** (e.g., the DELETE ran but the worker crashed before confirming externally), the sweeper will reclaim the job and another worker processes it. Result: **duplicate processing**.\n\n**The duplicate windows, precisely:**\n\n| Crash timing | Result | Duplicate? |\n|-------------|--------|------------|\n| Before SELECT FOR UPDATE | Job stays pending | No — it's unowned |\n| After SELECT, before UPDATE status | TX rolls back, job unlocked | No — clean retry |\n| After UPDATE status, before COMMIT | TX rolls back, status reverts | No — clean retry |\n| After COMMIT, before sweeper notices | Job is \"processing\" but worker is dead | **Yes** — sweeper reclaims it, duplicate |\n| After DELETE/complete, before cleanup | Job gone, nothing to reclaim | No — clean |\n| During DELETE (crash mid-DELETE) | TX rolls back, job reappears as \"processing\" | **Yes** — sweeper reclaims, duplicate |\n\n**The window for duplicates is exactly:** from `COMMIT` of the processing transaction (which marks the job as taken) to the completion `DELETE` (which removes it). For a 30s job, that window is **~30 seconds** per job. For 58 jobs/sec, that's ~1,740 jobs in the vulnerable window at any moment. If a worker crashes, ~1 of those 1,740 becomes a duplicate (proportional to crash rate).\n\n**Can you make it exactly-once?**\n\nOnly with:\n1. **Idempotency keys on the job's external effect** — if processing a job means \"charge $10 to user X\" and the system checks `idempotency_key` before charging, then at-least-once is de facto exactly-once from the caller's perspective.\n2. **Two-phase commit** — distributed transaction between Postgres and the external system (rarely practical).\n3. **Outbox pattern** — write the result to a local table in the same transaction as the job DELETE, then asynchronously publish it. If the worker crashes after the DELETE but before publishing, the outbox has the result and a publisher will retry it.\n\n**Bottom line:** Accept at-least-once. Design all job handlers to be idempotent. This is the same tradeoff every queue system makes (SQS is at-least-once too, unless you use FIFO queues + deduplication).\n\n---\n\n## 5. Poison Messages\n\n**No built-in detection** — must be manual via retry counter.\n\n**Implementation (in the sweeper or in the job completion handler):**\n\n```sql\n-- Schema additions\nALTER TABLE jobs ADD COLUMN retry_count INT DEFAULT 0;\nALTER TABLE jobs ADD COLUMN last_error TEXT;\nALTER TABLE jobs ADD COLUMN status TEXT DEFAULT 'pending'; \n-- 'pending' | 'processing' | 'failed' | 'dead_letter'\n\n-- When a job fails:\nUPDATE jobs \nSET retry_count = retry_count + 1, \n    last_error = 'Worker crashed processing order #1234',\n    status = 'pending',\n    claimed_by = NULL\nWHERE id = $id;\n\n-- Sweeper also increments retry_count for timed-out jobs:\nUPDATE jobs \nSET status = CASE WHEN retry_count >= 3 THEN 'dead_letter' ELSE 'pending' END,\n    claimed_by = NULL,\n    retry_count = retry_count + 1,\n    last_error = 'Timed out (claimed by ' || claimed_by || ')'\nWHERE status = 'processing' \n  AND heartbeat_at < NOW() - INTERVAL '60 seconds';\n```\n\n**Dead letter queue patterns:**\n\n| Approach | Pros | Cons |\n|----------|------|------|\n| **Same table, `status = 'dead_letter'`** | Simple, no schema changes | Table grows; dead letters pollute index scans |\n| **Separate `dead_letters` table** | Clean separation; can analyze without affecting live | Extra write per poison job; need to manage TTL |\n| **Archive to cold storage** (S3/Parquet) | Cheap retention | Not queryable in SQL |\n\n**At 5M/day with a 0.1% poison rate:**\n> 5,000 jobs/day → 35,000/week in the dead letter queue\n\nThis is small enough to keep in the same table for at least a month. But if a bug causes 10% poison rate (500K/day), you want them out of the active table immediately. **Design for the second scenario.**\n\n**Comparison: Redis/BullMQ vs SQS vs PG:**\n\n| Feature | BullMQ/Redis | SQS | PG (DIY) |\n|---------|-------------|-----|----------|\n| Max retries | Configurable per queue | Configurable (redrive policy) | Manual — implement in sweeper |\n| DLQ | Separate queue automatically | Separate queue (redrive) | Manual — separate table or status |\n| Poison detection | Automatic after N attempts | Automatic | Manual — sweeper checks retry_count |\n| Delay between retries | Built-in (`backoff`) | Built-in (`delay_seconds`) | Manual — compute from `retry_count` in sweeper |\n| Exponential backoff | Built-in | Built-in | `UPDATE ... SET next_retry_at = NOW() + (2^retry_count * 60)::interval` |\n\n**PG requires more code for the same behavior**, but it's not complicated — about 30 lines of SQL in the sweeper. The real complexity is handling the edge case where a job keeps crashing faster than the sweeper can check it (i.e., a worker picks it up, crashes within 1s, and another worker picks it up immediately). Each crash = one more retry. If retry increments happen *before* the job is re-queued (in the crash handler), you can burn through all 3 retries in 3 seconds and the job never reaches \"pending\" for the sweeper to see. **Fix:** always increment retry_count in the sweeper, not\n… [truncated for demo: 28,597 chars total]"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_95",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_96",
+          "delta": "All three workers delivered. Closing the hard analysis and synthesizing."
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_109",
+          "toolCallId": "call_00_nDQxNQpN82SLv6jOXJwt1776",
+          "name": "close_worker",
+          "args": {
+            "worker_id": "w1"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_110",
+          "toolCallId": "call_00_nDQxNQpN82SLv6jOXJwt1776",
+          "status": "success",
+          "output": "Closed w1. It will accept no more work."
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_111",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_112",
+          "delta": "Here's the synthesis — all three workers, one decision.\n\n---\n\n# Decision Brief: Queue Backend for 5M Jobs/Day\n\n**Context:** Node.js backend, 5M background jobs/day (~58/sec avg, ~290/sec peaks), small team (2-4 engineers), currently on BullMQ + Redis.\n\n---\n\n## The Real Question\n\nYou're not asking \"which queue is best\" — you're asking **\"should we trade Redis for Postgres to reduce operational surface area?\"** The answer depends on whether you understand what you're trading _into._\n\n---\n\n## Comparison at a Glance\n\n| | **BullMQ (stay)** | **pg-boss (move to PG)** | **SQS (move to AWS)** |\n|---|---|---|---|\n| Throughput ceiling | 10,000+/sec | ~3,000/sec tuned | Unlimited |\n| Latency P99 | 5–15ms | 200ms–2s | 100–500ms |\n| Ops burden | Medium (Redis) | Medium-high (PG table health) | Near zero |\n| Cost/month | ~$100 | $0–400 | ~$200 |\n| DLQ | Built-in (failed queue) | DIY | Best-in-class |\n| Retry/backoff | First-class | Built-in | Consumer-side DIY |\n| Migration effort | Zero | 2–4 weeks | 3–6 weeks |\n| Scheduling/repeat jobs | Built-in | Built-in | Missing (needs EventBridge) |\n\n---\n\n## Deep Dive: PG-as-Queue\n\npg-boss uses `SELECT … FOR UPDATE SKIP LOCKED`, which handles 5M/day throughput fine. Lock contention is not the bottleneck. The real operational risks are subtler:\n\n1.  **Vacuum bloat is the silent killer.** At 5M rows/day, dead tuples accumulate fast. With 20 workers holding 30s transactions, autovacuum's global xmin is pinned 30s in the past — it can't clean fast enough. A table that's 500MB grows to 12GB in 2-3 weeks without aggressive tuning. Index scans degrade from 2ms to 200ms. **You discover this at 2 AM when deploys start timing out.**\n\n2.  **No native visibility timeout.** Workers that crash mid-job leave rows locked forever unless you build a heartbeat column + sweeper process. The sweeper adds 60s of latency to crash recovery, and if the sweeper itself dies during a deploy, stuck jobs sit until it restarts.\n\n3.  **At-least-once, always.** The window between `COMMIT` (job marked taken) and final `DELETE` is ~30s per job. At 58 jobs/sec, ~1,740 jobs are in that window at any moment. A crash = duplicates. Every handler must be idempotent. This is true of SQS too — but BullMQ's stalled-job checker gives you faster recovery.\n\n4.  **One bad job type blocks everything.** A misbehaving PDF generator that takes 120s instead of 5s saturates all 20 workers, dropping throughput 340x. All other job types freeze. **Fix:** separate tables (or partitions) per job type. This adds complexity BullMQ handles natively with separate queues.\n\n5.  **Connection pool must be split.** If you hold a row lock for 30s, you need 1,740 connections — which melts PostgreSQL. The correct pattern is `claimed_by` + heartbeat (commit before processing), needing only ~15-25 connections. But you **must** separate the job pool from the API pool or a traffic spike starves both.\n\n**The PG verdict:** Works at 5M/day IF you commit to DELETE (not UPDATE) for completion, weekly partitioning, aggressive autovacuum tuning, per-type worker isolation, a separately-deployed sweeper, and idempotent handlers everywhere. That's six non-negotiable commitments. PG is not _better_ at being a queue — it's _adequate_ if eliminating Redis is worth the new operational surface.\n\n---\n\n## Recommendation\n\n### Stay on BullMQ + Redis.\n\nFor 5M jobs/day on a small team, **BullMQ is the correct answer unless Redis is actively causing you pain.** You're using 0.6% of a single small Redis node's throughput. Latency is 5-15ms. Redis memory management is the only real operational concern, and that's solvable with `removeOnComplete` cleanup and ElastiCache (~$90/mo).\n\nThe alternative paths each trade one set of problems for another:\n\n- **pg-boss:** Trades Redis memory management for Postgres vacuum/bloat management. Net operational burden: neutral or worse. You gain ACID consistency in exchange for building your own monitoring, sweeper, and DLQ. The \"we already have Postgres\" pitch is seductive but misleading — you're adding 15-20M row operations/day to a database that's already serving your API.\n\n- **SQS:** Trades operational burden for migration cost. The operational relief is real — you never think about the queue again. But you lose built-in scheduling, repeatable jobs, and rate-limiting. You accept 100-500ms latency. Migration is 3-6 weeks, and you must rearchitect worker patterns. **Only do this if Redis ops overhead is actively hurting you today.**\n\n### What to fix in BullMQ instead:\n\n- Set `removeOnComplete` with an age/limit cap if you haven't already\n- Move Redis to ElastiCache (c6g.large, ~$90/mo) if self-hosted\n- Set `maxRetries` on every queue — unlimited retries is the default, and that's how failed queues silently balloon\n- Monitor Redis memory and set alerts at 70%\n\n---\n\n## Glossary\n\n- **Idempotency key** — A unique identifier embedded in each message so the consumer can detect and discard duplicate processing attempts.\n- **Visibility timeout** — A period during which a consumed message is hidden from other workers, extended or released if the worker fails or needs more time.\n- **Dead letter queue (DLQ)** — A holding queue for messages that repeatedly fail processing, preserving them for manual inspection instead of retrying indefinitely.\n- **Backpressure** — A signal-driven mechanism where a downstream service or queue pushes back on upstream producers to slow down when capacity is exhausted.\n- **At-least-once delivery** — A delivery guarantee that ensures every message is processed one or more times, trading the possibility of duplicates for the certainty of no data loss.\n- **Poison message** — A message that consistently causes consumer failures (malformed payload, missing resource, infinite retry loop) and typically ends up in a DLQ.\n- **Connection pool saturation** — The state where every database/queue connection in the pool is in use, causing new consumers to block or time out until a connection is released.\n- **Job deduplication** — The act of discarding a newly enqueued job that duplicates an existing one (by ID or content hash) before it ever reaches a consumer.\n\n---\n\n**Bottom line:** BullMQ stays. If something specific is hurting you with Redis, name it and I'll fix it directly. Don't move to Postgres just because it's already in the stack — that's how you end up with a 12GB bloated jobs table and a 3 AM page you didn't sign up for. 🐟"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1782732442840_h3yrti",
+          "segmentId": "seg_1670",
+          "stopReason": "end_turn",
+          "iterationCount": 6,
+          "reasoningContent": "Now I need to synthesize all three worker outputs into a single tight decision brief. Let me write it as a markdown file, then deliver it.\n\nKey points:\n- BullMQ stays — it's the correct answer unless something is broken\n- PG-as-queue: works but requires 6 specific commitments, trades one ops surface for another\n- SQS: best alternative if operational simplicity is the goal\n- Clear recommendation: stay on BullMQ, fix whatever's actually hurting, consider SQS only if Redis ops is the pain point\n\nLet me write this as a clean decision brief."
+        }
+      ],
+      "toolTimings": {
+        "call_00_7t4ps7wH55HgSl9TBp5T0813": {
+          "startedAt": 1782732476955,
+          "endedAt": 1782732477034
+        },
+        "call_01_Tc4Rtzu5sFwyyP6ABoUy2358": {
+          "startedAt": 1782732476975,
+          "endedAt": 1782732477108
+        },
+        "call_02_Mq97ERm41oRLARgrb4mr9745": {
+          "startedAt": 1782732476975,
+          "endedAt": 1782732477179
+        },
+        "call_00_J4Ti2WcTZkudCbgUOvcL4943": {
+          "startedAt": 1782732480495,
+          "endedAt": 1782732485470
+        },
+        "call_00_qCg0zitYffm037G8uHeM1895": {
+          "startedAt": 1782732489111,
+          "endedAt": 1782732489151
+        },
+        "call_01_Co7IvfFYieWTswEraer00755": {
+          "startedAt": 1782732489128,
+          "endedAt": 1782732552615
+        },
+        "call_00_bcnpVWP9CwPo3ZBUtBe16244": {
+          "startedAt": 1782732556656,
+          "endedAt": 1782732556713
+        },
+        "call_01_XCeY3oSeEgr6yxAmozu09484": {
+          "startedAt": 1782732556668,
+          "endedAt": 1782732580116
+        },
+        "call_00_nDQxNQpN82SLv6jOXJwt1776": {
+          "startedAt": 1782732587991,
+          "endedAt": 1782732588056
+        }
+      },
+      "stopReason": "end_turn",
+      "timestamp": 1782732622399
+    }
+  ],
+  "stats": {
+    "allTime": {
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 9,
+      "inputTokens": 269,
+      "outputTokens": 13494,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "cost": 0.0195741,
+      "processingMs": 1000,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "endedAt": 1782732622399,
+      "provider": "local",
+      "model": "gemma4:e2b"
+    },
+    "lastTurn": {
+      "endedAt": 1782732622399,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "apiCalls": 1,
+      "toolCalls": 9,
+      "inputTokens": 269,
+      "outputTokens": 13494,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "provider": "local",
+      "model": "gemma4:e2b",
+      "cost": 0.0195741
+    },
+    "meter": {
+      "contextTokens": 26163,
+      "contextBudget": 131072,
+      "compactionAt": 73728,
+      "model": "gemma4:e2b"
+    }
+  }
+}

@@ -1,0 +1,72 @@
+---
+title: "agents.md"
+description: "Define agent procedures and tool usage rules"
+---
+
+# Your Overrides on the Operating Manual
+
+Located at `brain/prefrontal/agents.md`, this file holds **your** rules for how the agent should approach tasks, use tools, and follow procedures. It sits on top of the shipped operating contract and wins on any conflict — this is the file to edit when you want to change how Wolffish works.
+
+## Two Files, One Manual
+
+The prefrontal reads two files side by side on every turn:
+
+| File | Owner | What it is |
+|---|---|---|
+| `agents.core.md` | **Wolffish** — overwritten on every launch | The shipped operating contract (~1.4k tokens): memory & recall doctrine (search before claiming ignorance), tool discovery (`tool_search` before workarounds), loop discipline, file delivery ("you are the courier" — `send_file` every produced file), and conduct rules |
+| `agents.md` | **You** — never overwritten | Your additions and overrides. Explicitly wins on any conflict with the core contract |
+
+Don't edit `agents.core.md` — your changes are replaced on the next launch. Anything you want to stick belongs in `agents.md`.
+
+## What to Include
+
+- **Tool usage rules** — When to use which tools, in what order
+- **Procedures** — Step-by-step workflows for common tasks
+- **Constraints** — Things the agent should never do
+- **Decision frameworks** — How to choose between approaches
+- **Overrides** — Any core-contract behavior you want changed (e.g. "don't send me files I didn't ask for as attachments")
+
+## Example
+
+```markdown
+# Agent Procedures
+
+## General Rules
+- Always confirm destructive operations before executing
+- When asked to modify code, read the file first to understand context
+- Run tests after making code changes if a test suite exists
+- Use git status before any git operations
+
+## Task Approach
+1. Understand what's being asked
+2. Check if you have enough context (read files if needed)
+3. Plan the steps
+4. Execute one step at a time
+5. Verify each step succeeded before moving on
+
+## Code Modifications
+- Read the target file first with file_read
+- Make targeted changes with file_patch, not full file_write
+- If the change is complex, explain the plan before executing
+
+## Shell Commands
+- Prefer single-purpose commands over chains
+- Always check command output before proceeding
+- If a command fails, diagnose before retrying
+```
+
+## How It's Used
+
+Both files are read into the `<prefrontal>` section of the system prompt on every message, alongside the learned-preferences digest. The whole section stays small by design — the system prompt carries the operating essentials, not manuals, so every line you add here is read on every single turn. Keep it tight.
+
+This is distinct from `soul.md` (personality) and SKILL.md files (capability-specific instructions). `agents.md` covers cross-cutting concerns that apply regardless of which capability is being used.
+
+<Tip>
+  If you find yourself repeating instructions to Wolffish across conversations, that instruction probably belongs in agents.md.
+</Tip>
+
+## Where It Lives in the App
+
+Since **v1.0.282** [`soul.md`](/configuration/soul-md), [`user.md`](/configuration/user-md) and [`agents.md`](/configuration/agents-md) are **one Customization page with three tabs** — the shape [your phone](/integrations/mobile-app) already used — rather than three sidebar entries opening three near-identical editors. Each tab states in a line **what its document is actually for**, so the choice no longer rests on a single word.
+
+A draft you leave in one tab is **still there when you come back** from another, and that tab **carries a dot while it holds unsaved changes** — which is exactly the draft you can no longer see. Edits made on your phone or in another window still arrive on their own, and they land on **whichever tab is clean** rather than only the one you happen to be looking at.

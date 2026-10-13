@@ -62,6 +62,9 @@
  */
 export const TURN_CLOSING_TOOLS: ReadonlySet<string> = new Set([
   'notify_phone',
+  // The browser twin closes a turn the same way — same doctrine, same latent
+  // double-close.
+  'notify_web',
   'voice_respond',
   'send_file'
 ])

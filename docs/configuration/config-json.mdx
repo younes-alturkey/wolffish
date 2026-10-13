@@ -1,0 +1,65 @@
+---
+title: "config.json"
+description: "Application configuration reference"
+---
+
+# What config.json Stores
+
+Located at `brain/config.json`, this file stores application-level settings. It's read on startup and can be modified via the Settings UI or by editing the file directly.
+
+## Configuration Fields
+
+```json
+{
+  "mind": {
+    "provider": "deepseek",
+    "model": "deepseek-v4-pro"
+  },
+  "providers": {
+    "deepseek": {
+      "apiKey": "",
+      "model": "deepseek-v4-pro"
+    },
+    "anthropic": {
+      "apiKey": "",
+      "model": "claude-sonnet-4-20250514"
+    },
+    "openai": {
+      "apiKey": "",
+      "model": "gpt-4o"
+    },
+    "ollama": {
+      "host": "http://localhost:11434",
+      "model": "gemma3:4b"
+    }
+  },
+  "pinnedCapabilities": ["github"],
+  "language": "en"
+}
+```
+
+## Field Reference
+
+| Field | Description |
+|---|---|
+| `mind.provider` | Active LLM provider: `deepseek`, `anthropic`, `openai`, or `ollama` |
+| `mind.model` | Active model name |
+| `providers.deepseek.apiKey` | DeepSeek API key |
+| `providers.anthropic.apiKey` | Anthropic API key |
+| `providers.openai.apiKey` | OpenAI API key |
+| `providers.ollama.host` | Ollama server URL (default: `http://localhost:11434`) |
+| `mcp.servers[]` | Connected [MCP servers](/integrations/mcp) — id, name, transport (`stdio`/`http`), command or URL, env vars, enabled flag, and OAuth tokens for signed-in remote servers. Managed by Settings → MCP and the `mcp_*` chat tools |
+| `pinnedCapabilities` | Extra capabilities whose tool schemas ship on **every** request, on top of the built-in core set. The tuning knob for the lean tool surface — everything else is one `tool_search` away. No UI; hand-edit this array (e.g. `["github", "google"]`) |
+| `language` | UI language: `en` (English) or `ar` (Arabic) |
+
+## Model Selection
+
+Wolffish runs on an explicitly selected model — there is no automatic fallback. You choose your **Brain** model (provider + model) from the model switch beside the chat input, and that's the model that runs. The model you pick is the one that answers; if it fails, the turn fails rather than silently routing to another provider.
+
+Optionally, switch the chat into **workflow mode** (`llm.mode: "workflow"`, toggled from the **Mode** chip row inside the model card beside the chat input) — each turn can then plan phases and spawn parallel agents, with the master picking every agent's model from your connected providers. See [Workflow Mode](/configuration/workflow-mode) for how that works. Even then there's no cascade — every model that runs was explicitly chosen, by you or by the master.
+
+All providers are optional — you only need the ones you actually select. To use Ollama, select it as your Brain model; there's no automatic fall-through to local.
+
+<Info>
+  API keys are stored in plain text in config.json. This is by design — Wolffish is a local-first app and your workspace is your own. If you version-control your workspace with git, add `brain/config.json` to `.gitignore`.
+</Info>

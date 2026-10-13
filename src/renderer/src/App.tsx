@@ -21,6 +21,12 @@ import { History } from '@pages/History'
 import { Changelog } from '@pages/Changelog'
 import { Library } from '@pages/Library'
 import { Customization } from '@pages/Customization'
+import { isWeb } from '@lib/utils/platform'
+import { WebPromptHost } from '@components/common/web-prompt/WebPromptHost'
+import { WebDeeplink } from '@components/common/web-deeplink/WebDeeplink'
+import { WebNotificationsNudge } from '@components/common/web-notifications-nudge/WebNotificationsNudge'
+import { WebUploadProgress } from '@components/common/web-upload-progress/WebUploadProgress'
+import { WebConnectionBanner } from '@components/common/web-connection-banner/WebConnectionBanner'
 
 // The one-time cortex reindex (after an app update) blocks every turn, so
 // while it runs the chat screen is swapped for its own overlay. (Background
@@ -194,6 +200,17 @@ function App(): React.JSX.Element {
               <Screens />
               <ClosingOverlay />
               <InputContextMenu />
+              {/* Web only: the folder-path prompt the bridge raises, the
+                  notification-tap deeplink, and the permission nudge. */}
+              {isWeb && (
+                <>
+                  <WebPromptHost />
+                  <WebDeeplink />
+                  <WebNotificationsNudge />
+                  <WebUploadProgress />
+                  <WebConnectionBanner />
+                </>
+              )}
             </ChatSessionsProvider>
           </FlowProvider>
         </ToastProvider>

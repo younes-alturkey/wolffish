@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { CapabilityGateBody, CapabilityGateCard, useCapabilityGate } from './capabilityGate'
+import { randomId } from '@lib/utils/randomId'
 
 const NOTION_CONNECTIONS_URL = 'https://app.notion.com/developers/connections'
 
@@ -29,7 +30,7 @@ type Row = NotionConnection & { tokenVisible: boolean; busy: boolean; testError:
 
 function newRow(): Row {
   return {
-    id: crypto.randomUUID(),
+    id: randomId(),
     label: '',
     token: '',
     name: '',

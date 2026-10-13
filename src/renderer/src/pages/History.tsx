@@ -189,7 +189,7 @@ export function History(): React.JSX.Element {
 
   return (
     <main className={cn('bg-bg flex h-full w-full flex-col', pageTopPadding)}>
-      <div className="flex items-center gap-3 px-6 pb-4 pt-3">
+      <div className="flex items-center gap-3 px-6 pb-4 pt-3 max-sm:px-3">
         <button
           type="button"
           onClick={() => goTo('chat')}
@@ -236,7 +236,7 @@ export function History(): React.JSX.Element {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto px-6 pb-6">
+      <div className="flex-1 overflow-y-auto px-6 pb-6 max-sm:px-2">
         <div className="mx-auto flex h-full max-w-5xl flex-col">
           {loading && (
             <div className="grid grid-cols-1 gap-x-3 gap-y-1 pb-8 md:grid-cols-2">
@@ -282,7 +282,7 @@ export function History(): React.JSX.Element {
                 <section key={group.key} className="flex flex-col gap-1.5">
                   {/* The header sits at the row padding's inset so it lines up
                       with the titles under it, not with the number chips. */}
-                  <h2 className="text-muted px-4 text-[11px] font-medium tracking-wide uppercase">
+                  <h2 className="text-muted px-4 text-[11px] font-medium tracking-wide uppercase max-sm:px-2.5">
                     {t(group.labelKey)}
                   </h2>
                   <div className="grid grid-cols-1 gap-x-3 gap-y-1 md:grid-cols-2">
@@ -307,15 +307,15 @@ export function History(): React.JSX.Element {
                         disabled
                           ? isActive
                             ? 'opacity-40'
-                            : 'opacity-0 group-hover:opacity-40'
+                            : 'opacity-0 group-hover:opacity-40 max-sm:opacity-40'
                           : isActive
                             ? 'opacity-100'
-                            : 'opacity-0 group-hover:opacity-100'
+                            : 'opacity-0 group-hover:opacity-100 max-sm:opacity-100'
                       return (
                         <div
                           key={row.conversationId}
                           className={cn(
-                            'group flex items-center gap-3 rounded-xl px-4 py-3',
+                            'group flex items-center gap-3 rounded-xl px-4 py-3 max-sm:gap-2 max-sm:px-2.5',
                             'hover:bg-surface cursor-pointer',
                             isActive && 'bg-surface border-border border'
                           )}

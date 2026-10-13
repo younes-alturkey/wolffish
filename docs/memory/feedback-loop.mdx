@@ -1,0 +1,179 @@
+---
+title: "The Feedback Loop"
+description: "How basal ganglia learns from outcomes — approvals, denials, successes, and failures"
+---
+
+# What Worked, Not Just What Happened
+
+Memory tells Wolffish what happened. The feedback loop tells it what *worked*. The `basalganglia` module records the outcome of every tool call — whether it succeeded, whether you approved or denied flagged operations, and what got blocked outright. Over time, this builds learned behavioral preferences without explicit programming.
+
+## Location
+
+```
+~/.wolffish/workspace/brain/basalganglia/YYYY-MM-DD.md
+```
+
+Feedback entries are written to one file per day, append-only. Each day's outcomes accumulate in that day's file, and older files are preserved. The raw files never enter the prompt — they feed a compact digest (below) and stay fully searchable on disk.
+
+## Five Outcome Types
+
+| Outcome | Trigger | Meaning |
+|---|---|---|
+| `success` | Tool call completed without error | This approach worked |
+| `failed` | Tool call threw an error or returned an error state | This approach didn't work |
+| `approved` | User approved a flagged tool call (amygdala `confirm` level) | User trusts this operation |
+| `denied` | User rejected a flagged tool call | User doesn't want this |
+| `blocked` | The amygdala refused the call outright | This operation is off-limits |
+
+## How Feedback Is Recorded
+
+After every tool call, `basalganglia.recordOutcome()` appends an entry:
+
+```typescript
+// Simplified from src/main/runtime/basalganglia.ts
+async recordOutcome(entry: FeedbackEntry): Promise<void> {
+  const file = join(this.dir, `${formatDate(entry.timestamp)}.md`)
+  const lines = [`- ${formatTime(entry.timestamp)} | ${entry.tool} | ${entry.outcome}`]
+  lines.push(`  - Args: ${truncate(JSON.stringify(entry.args), 200)}`)
+  if (entry.outcome === 'denied' || entry.outcome === 'blocked') {
+    if (entry.reason) lines.push(`  - Reason: ${entry.reason}`)
+  } else if (entry.outcome === 'failed') {
+    if (entry.error) lines.push(`  - Error: ${truncate(entry.error, 200)}`)
+  } else if (entry.output) {
+    lines.push(`  - Output: ${truncate(entry.output, 200)}`)
+  }
+  await diskWriter.appendLine(file, lines.join('\n') + '\n\n')
+  this.corpus.emit('feedback.recorded', { action: entry.tool, outcome: entry.outcome })
+}
+```
+
+Each entry captures:
+- **Timestamp** — when it happened
+- **Tool name** — which capability was invoked
+- **Outcome** — success, failed, denied, approved, or blocked
+- **Truncated args** — what was passed (capped at ~200 characters; the full-fidelity copy lives in `brain/conversations/*.json`)
+- **Detail** — the denial reason, the error, or an output preview, depending on outcome
+
+## Example Feedback Entries
+
+```markdown
+# 2026-05-15
+
+- 09:12 | shell_exec | success
+  - Args: `{"command":"pnpm test","cwd":"/Users/you/project"}`
+  - Output: `Test Files  14 passed (14) … Duration 6.2s`
+
+- 09:30 | shell_exec | approved
+  - Args: `{"command":"git push origin feat/server-actions"}`
+
+- 11:45 | shell_exec | denied
+  - Args: `{"command":"rm -rf node_modules","cwd":"/Users/you/project"}`
+  - Reason: user denied recursive delete in project root
+
+- 14:20 | web_search | failed
+  - Args: `{"query":"site:internal.company.com deployment docs"}`
+  - Error: search returned no results, internal site not indexed
+```
+
+## How Feedback Influences Behavior
+
+Raw feedback files used to be concatenated into every prompt — tens of thousands of tokens of transcript, most of it noise. That's gone. `basalganglia.getPreferences()` now collapses the last 7 days into a bounded **preference digest** (~500 tokens, hard-capped at 2,400 characters) with three size-capped parts:
+
+1. **Reliability line** — total tool calls, success rate, most-used tools
+2. **Recently-denied line** — tools you rejected (don't repeat unless asked)
+3. **Recent corrections** — the latest failures and denials with their reason, so the planner doesn't walk into a known dead end (at most 12, newest first)
+
+Successful calls are deliberately *not* enumerated — that was the firehose. The digest ends with a pointer: the full step-by-step history of any day is one `wolffish_recall` away, and `memory_search` with `sources: "feedback"` searches every entry ever recorded.
+
+```markdown
+## Learned preferences (last 7 days)
+
+- Reliability: 214 tool calls, 96% success. Most used: shell_exec (74), file_read (38), web_search (22), …
+- Recently denied (don't repeat unless the user asks again): shell_exec ×2.
+
+### Recent corrections & failures (avoid repeating)
+- 2026-05-15 shell_exec denied — user denied recursive delete in project root
+- 2026-05-14 web_search failed — search returned no results, internal site not indexed
+
+(Summary only. For the full step-by-step history of any day, use wolffish_recall.)
+```
+
+<Info>
+  The digest fills one of only two ambient memory slots in the system prompt — the other is the `<memory_map>` coverage stub. Since v1.0.233 that first slot belongs to the [reflection playbook](/memory/reflection) once one exists; the digest remains the bootstrap fallback until the first nightly reflection has run. Everything else is retrieved on demand. Today's file is excluded from the digest (today's actions are already visible in the live thread), which keeps the block byte-stable across a turn's tool loop so providers can reuse the cached prompt prefix.
+</Info>
+
+### The Interface
+
+`basalganglia` exposes two methods:
+
+```typescript
+// The bounded preference digest folded into every system prompt (~500 tokens)
+getPreferences(days?: number): Promise<string>
+
+// Aggregate stats — success rate, top tools, top denied — for the
+// insula ("how am I doing?") and the brain settings UI
+getFeedbackSummary(): Promise<FeedbackSummary>
+```
+
+### What the LLM Learns
+
+Over time, patterns emerge from accumulated feedback:
+
+<AccordionGroup>
+  <Accordion title="Commit style preferences">
+    After several `success` outcomes on commits with conventional format (`feat:`, `fix:`, `chore:`), the LLM learns to always use this format. If a non-conventional commit was ever `denied`, that correction rides in the digest.
+  </Accordion>
+  <Accordion title="Safe operations">
+    If you consistently approve git pushes to feature branches, Wolffish learns that these are low-risk. If you consistently deny force pushes, the denied-tools line teaches it to avoid suggesting them — or to flag them more prominently.
+  </Accordion>
+  <Accordion title="Error recovery">
+    After a `failed` outcome from a specific approach (e.g., searching an internal site that isn't indexed), the correction — with its error detail — tells the LLM to try alternative approaches next time (e.g., asking you for the URL directly).
+  </Accordion>
+  <Accordion title="Tool preferences">
+    If `pnpm` commands always succeed but an `npm` command was denied once, the LLM learns your package manager preference from outcomes — not just from `preferences.md`.
+  </Accordion>
+</AccordionGroup>
+
+## Growing With You
+
+This is the mechanism that makes Wolffish adaptive over time. It's not just remembering facts (knowledge files do that) — it's remembering what *worked in practice*. The combination creates an agent that:
+
+1. **Knows your preferences** (knowledge) — what you said you want
+2. **Knows what actually works** (feedback) — what produced good outcomes
+3. **Avoids past mistakes** (corrections) — what went wrong before
+4. **Reviews whole conversations** ([reflection](/memory/reflection)) — nightly lessons distilled into a playbook, anchored by your own words in the transcript
+
+<Tip>
+  The feedback loop is most powerful for tool-use patterns. If you find Wolffish repeatedly suggesting an approach you don't like, deny it once explicitly and explain why. The denial + reason gets recorded, surfaces in the corrections list, and shapes future behavior.
+</Tip>
+
+## Inspecting and Editing Feedback
+
+The feedback files are plain markdown. You can:
+
+- **Read them** to understand why Wolffish behaves a certain way
+- **Delete entries** to "unlearn" a pattern (e.g., remove old denials that no longer apply)
+- **Add entries** to seed behavior (e.g., add a denial for `rm -rf /` even if it never happened)
+
+```bash
+# View today's feedback
+cat ~/.wolffish/workspace/brain/basalganglia/$(date +%Y-%m-%d).md
+
+# View recent days
+ls -la ~/.wolffish/workspace/brain/basalganglia/
+```
+
+<Warning>
+  Deleting all files in the basalganglia folder resets all learned behavioral preferences. Wolffish will still have knowledge files and episodes, but it loses its sense of what worked and what didn't. This is a clean slate for the reward system only.
+</Warning>
+
+## Feedback vs. Knowledge
+
+| Aspect | Knowledge Files | Feedback Loop |
+|---|---|---|
+| Stores | Facts and preferences | Outcomes and patterns |
+| Written by | Nightly curation + `memory_save` | Automatic after every tool call |
+| Answers | "What does the user want?" | "What actually works?" |
+| Example | "User prefers pnpm" | "214 calls, 96% success; rm -rf denied — don't repeat" |
+| In the prompt | Topics only (via `<memory_map>`) | Bounded digest (~500 tokens) |
+| Editing | Common and encouraged | Rare, mostly for corrections |

@@ -126,6 +126,30 @@ export function openaiCompatToolContent(
   return parts
 }
 
+/**
+ * OpenAI Responses `function_call_output.output`: a plain string, or
+ * `input_text` + `input_image` parts when images fit the cap. Same
+ * selection as the chat-completions encoder, different part names.
+ */
+export function openaiResponsesToolContent(
+  content: string,
+  images?: ToolResultImage[],
+  toolName?: string
+): string | unknown[] {
+  const { inline, omitted } = selectInlineImages(images ?? [], toolName, true)
+  const text = omitted > 0 ? content + inlineOmittedNote(omitted) : content
+  if (inline.length === 0) return text
+  const parts: unknown[] = [{ type: 'input_text', text }]
+  for (const img of inline) {
+    parts.push({
+      type: 'input_image',
+      image_url: `data:${img.mediaType};base64,${img.data}`,
+      detail: 'auto'
+    })
+  }
+  return parts
+}
+
 /** Anthropic `tool_result.content`: text + `image` source blocks. */
 export function anthropicToolContent(
   content: string,

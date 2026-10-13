@@ -1,0 +1,111 @@
+---
+title: 'HTTPS on a Public IP'
+description: "One button: Wolffish checks the box, gets a Let's Encrypt certificate for its bare IP address, serves it on 443 and renews it every few days"
+---
+
+# HTTPS on a Public IP
+
+The Web UI is useful on a VPS only if the phone that opens it gets a padlock: browsers allow notifications, the microphone and home-screen installation on a trusted HTTPS origin and nowhere else. Wolffish gets that certificate itself — no domain, no Docker, no reverse proxy, no other binary. Its own Node server is the ACME client and the TLS terminator.
+
+Open **Settings → Channels → Web UI → HTTPS**, choose **Let's Encrypt**, check the detected public address, press **Enable HTTPS**. From a terminal: `wolffish web https enable`.
+
+## What happens when you press the button
+
+Every step is shown as it settles, and a failed step comes with the exact fix for the OS it was found on.
+
+1. **Public address** — detected from the internet (api.ipify.org, then icanhazip.com), or the address or domain you typed. Private, loopback and link-local addresses are refused: a public CA can only certify what it can reach.
+2. **Bound to this machine** — the address should be on a local interface. If it is not, the machine is behind NAT: forward ports 80 and 443 to it, or expect the next steps to tell you what the internet sees. A warning, not a stop.
+3. **Ports 80 and 443 free** — each is bound and released. A port in use names its owner (`lsof`, `ss`, `netstat`) and the fix is to stop or move that service.
+4. **Allowed to bind low ports** — see the per-OS notes below. Measured by binding, never assumed.
+5. **Firewall** — `ufw` and `firewalld` on Linux and Windows Firewall are opened for 80 and 443 when Wolffish may; otherwise the command is shown. A cloud provider's own firewall is outside the machine: open 80 and 443 there too.
+6. **Reachable on port 80** — once the challenge listener is up, Wolffish fetches its own challenge path at the public address. A miss behind NAT is only a warning; Let's Encrypt validates from outside regardless.
+7. **Let's Encrypt account, order and challenge, certificate** — the ACME order, the HTTP-01 proof served on port 80, the certificate request with the IP as an IP-type SAN, the download.
+
+Then the browser that pressed the button moves to `https://<address>` after a three-second countdown.
+
+## Listeners
+
+| Port                | Serves                        | After HTTPS is active                                                                     |
+| ------------------- | ----------------------------- | ----------------------------------------------------------------------------------------- |
+| 443                 | the whole app over TLS        | —                                                                                         |
+| 80                  | the ACME challenge path       | everything else 301s to HTTPS                                                             |
+| 8787 (the app port) | the whole app over plain HTTP | browsers arriving by address 301 to HTTPS; an open page keeps its socket until it follows |
+
+Both TLS ports are configurable (**Advanced** on the card, or `channels.web.httpsPort` and `channels.web.httpPort`). The app port is never taken down by anything HTTPS does: it is the port the browser that pressed Enable is connected to, and the one the panel explaining a failure is served on.
+
+## The six-day certificate
+
+Let's Encrypt issues IP-address certificates only under its **short-lived** profile: about 160 hours of validity. Wolffish therefore renews on its own:
+
+- a check every **6 hours**, and once at boot;
+- renewal when under **72 hours** remain (or under a third of the lifetime, which for a 90-day domain certificate is 30 days);
+- after a failure, retries at 15 minutes doubling to 6 hours, with jitter;
+- the new certificate is swapped into the running listener (`setSecureContext`) — never a restart;
+- every attempt is recorded (time, outcome, duration, error), the last 20 shown on the card and by `wolffish web https`.
+
+A domain in the optional field gets a normal 90-day certificate from the same code path, without the profile.
+
+The feature keeps a small state machine, persisted beside the certificate under `~/.wolffish/workspace/web/tls/`: `disabled → preflight → issuing → active ⇄ renewing`, with `error` meaning no trusted certificate is being served (the self-signed fallback is, so the panel stays reachable). A renewal that fails while the current certificate is still valid is not an error: the box keeps serving and the next check comes sooner.
+
+Wolffish has to be running at least every three days for renewal to happen. **Settings → Channels → CLI → Start on its own** registers it with the OS supervisor: systemd (user unit, `Restart=always`, lingering so it starts at boot), launchd (`KeepAlive`), Task Scheduler (at logon, restarted on failure). **Restart Wolffish** on the card drains the running turns, relaunches the process and comes back under that supervisor.
+
+## Per-OS prerequisites
+
+<Tabs>
+  <Tab title="Linux (VPS)">
+    Ports below 1024 need a capability. As **root** nothing is needed. As another user, one of:
+
+    ```bash
+    sudo sysctl -w net.ipv4.ip_unprivileged_port_start=80 && echo 'net.ipv4.ip_unprivileged_port_start=80' | sudo tee /etc/sysctl.d/60-wolffish-ports.conf
+    ```
+
+    ```bash
+    sudo setcap 'cap_net_bind_service=+ep' /opt/Wolffish/wolffish   # repeat after an update
+    ```
+
+    The installer writes a per-user systemd unit, where `AmbientCapabilities=CAP_NET_BIND_SERVICE` cannot be applied; that line is for a system-wide unit you manage yourself. Open 80 and 443 in `ufw` or `firewalld` (the preflight tries), and in the provider's firewall or security group.
+
+  </Tab>
+  <Tab title="macOS">
+    Recent macOS lets only root bind ports below 1024 (the preflight measures this rather than assuming). Forward them with pf to ports Wolffish can bind, and point Wolffish at those:
+
+    ```bash
+    printf 'rdr pass inet proto tcp from any to any port 80 -> 127.0.0.1 port 8080\nrdr pass inet proto tcp from any to any port 443 -> 127.0.0.1 port 8443\n' | sudo tee /etc/pf.anchors/wolffish
+    printf 'rdr-anchor "wolffish"\nload anchor "wolffish" from "/etc/pf.anchors/wolffish"\n' | sudo tee -a /etc/pf.conf && sudo pfctl -ef /etc/pf.conf
+    wolffish settings set channels.web.httpsPort 8443 && wolffish settings set channels.web.httpPort 8080
+    ```
+
+    pf is off by default and the application firewall asks once when Wolffish first listens.
+
+  </Tab>
+  <Tab title="Windows">
+    No privileged-port rule. The preflight adds a Windows Firewall rule when run from an elevated shell; otherwise it prints the `New-NetFirewallRule` line to run as Administrator. The scheduled task is registered through PowerShell with restart-on-failure.
+  </Tab>
+</Tabs>
+
+## From the terminal
+
+```bash
+wolffish web https                      # state, address, issuer, expiry, next check, history
+wolffish web https enable               # the button; --ip A, --domain D, --staging
+wolffish web https renew                # now, once a minute at most
+wolffish web https disable              # back to plain HTTP on the app port
+wolffish web restart                    # apply the configuration again
+wolffish reboot                         # relaunch the whole process
+wolffish settings set channels.web.acmeDirectory staging   # the hidden test toggle
+```
+
+`--staging` (and the directory setting) uses Let's Encrypt's staging environment: untrusted certificates with generous rate limits, for trying the flow without spending production quota. Production allows five identical certificates a week.
+
+## Troubleshooting
+
+| Symptom                                                    | Cause                                    | Fix                                                                                                                                             |
+| ---------------------------------------------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| "port 80 is already in use (nginx …)"                      | another web server                       | stop it, or let it proxy to Wolffish and use **My certificate**                                                                                 |
+| "binding port 443 was refused (EACCES)"                    | privileged ports                         | the per-OS notes above; the step shows the exact commands                                                                                       |
+| "validation failed — the CA could not reach the challenge" | port 80 not reachable from the internet  | NAT forward, host firewall, provider firewall; `curl http://<ip>/.well-known/acme-challenge/x` from elsewhere should answer `no such challenge` |
+| `is a private address`                                     | detected or typed a LAN address          | use the public one, or a hostname that points here                                                                                              |
+| `too many certificates already issued`                     | production rate limit                    | wait, or test with `--staging`                                                                                                                  |
+| browser still warns after Enable                           | the self-signed fallback is being served | the card shows **Error** with the reason; fix and **Retry**                                                                                     |
+| certificate expired                                        | Wolffish was not running for three days  | start it; it renews at boot. Register the service so it does not happen again                                                                   |
+| `wait a minute between attempts`                           | enable/renew are rate-limited            | wait 60 seconds                                                                                                                                 |

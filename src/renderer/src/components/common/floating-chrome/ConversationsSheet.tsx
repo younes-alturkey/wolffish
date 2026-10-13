@@ -10,7 +10,8 @@ import {
   type ConversationRow
 } from '@lib/conversation-rows'
 import { cn } from '@lib/utils/cn'
-import { isMac } from '@lib/utils/platform'
+import { isMac, isWeb } from '@lib/utils/platform'
+import { signOut } from '@lib/web-bridge/boot'
 import type { ConversationMeta, Project } from '@preload/index'
 import { useFlow, type Screen } from '@providers/flow/useFlow'
 import { useSessions } from '@providers/sessions/useSessions'
@@ -19,6 +20,7 @@ import {
   Clock01Icon,
   FileEditIcon,
   LibraryIcon,
+  Logout03Icon,
   Search01Icon,
   Settings02Icon
 } from 'hugeicons-react'
@@ -243,6 +245,27 @@ export function ConversationsSheet({ onClose }: { onClose: () => void }): React.
               </span>
             </button>
           ))}
+          {/* Web only: the way out of this browser's session. The desktop
+              has no session to end — closing the window is closing the app. */}
+          {isWeb && (
+            <button
+              type="button"
+              onClick={() => void signOut()}
+              aria-label={t('web.signOut')}
+              className={cn(
+                'flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-1.5 py-2.5',
+                'text-red-600 hover:bg-red-500/10 dark:text-red-400',
+                'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg'
+              )}
+            >
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center">
+                <Logout03Icon size={17} />
+              </span>
+              <span className="min-w-0 flex-1 truncate text-start text-[13px] font-medium">
+                {t('web.signOut')}
+              </span>
+            </button>
+          )}
         </nav>
         {/* The rule between the pages and the conversations. */}
         <div aria-hidden className="border-border/60 mx-4 mt-2 shrink-0 border-t" />

@@ -1,0 +1,184 @@
+---
+title: "Telegram Channel"
+description: "Connect Wolffish to Telegram as a personal bot"
+---
+
+# Your Personal Telegram Bot
+
+The Telegram channel turns Wolffish into a personal bot that responds to your private messages. Same brain, same capabilities, accessible from any device with Telegram installed.
+
+## Setup
+
+<Tabs>
+  <Tab title="Step 1: Create Bot">
+    Open Telegram and message [@BotFather](https://t.me/BotFather):
+
+    ```
+    /newbot
+    ```
+
+    Follow the prompts to name your bot. BotFather will give you a token like:
+
+    ```
+    7123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw
+    ```
+
+    Copy this token.
+  </Tab>
+  <Tab title="Step 2: Configure Wolffish">
+    In Wolffish, open **Settings → Channels → Telegram** and paste your bot token. Click **Connect**.
+
+    Wolffish will verify the token and confirm the connection. Your bot is now live.
+  </Tab>
+  <Tab title="Step 3: Start Chatting">
+    Open your bot in Telegram (search for its username) and send any message. Wolffish will respond through the same brain pipeline as the desktop UI.
+  </Tab>
+</Tabs>
+
+<Warning>
+  Keep your bot token secret. Anyone with the token can receive messages sent to your bot. If compromised, revoke it via BotFather with `/revoke` and reconfigure in Wolffish.
+</Warning>
+
+## Commands
+
+The bot recognizes these slash commands:
+
+| Command | Action |
+|---|---|
+| `/stop` | Stop the task running in this chat. Anything queued still runs after it — the reply tells you how many messages are waiting. |
+| `/cancel` | Drop every message waiting in the queue. The running task is left alone. |
+| `/new` | Start a fresh conversation |
+| `/resume` | Pick any conversation to continue — a numbered list of every conversation, from every channel, newest first (reply `next` for the following page) |
+| `/delete` | Pick a conversation to delete, from the same numbered list |
+| `/current` | Show which conversation is active |
+| `/status` | System report (model, memory usage, uptime) |
+| `/mode` | Switch chat mode: `/mode single` or `/mode workflow` |
+| `/model` | List connected cloud models — reply with a number, or type part of a name to filter |
+| `/project` | Show your [projects](/configuration/projects) as a numbered picker — reply with a number to start a conversation inside one; `/project close` leaves the current project |
+| `/local` | Switch to local model (Ollama) |
+| `/cloud` | Switch to cloud model (Claude/OpenAI) |
+
+<Note>
+  On Telegram, `/cancel` is **not** a synonym for `/stop`. `/stop` stops the running task; `/cancel` clears the waiting queue. If you send `/cancel` with an empty queue, the reply points you at `/stop` for stopping the run.
+</Note>
+
+## Queued Messages
+
+Message the bot while it's still working on your last request and the message is **queued**, not declined — exactly like the desktop composer. A short reply confirms it landed and tells you where it sits in line, and it runs on its own turn the moment the current task finishes, **in the order you sent it**:
+
+```
+📥 Queued. It's next in line. I'll get to it as soon as the
+current task finishes. Send /cancel to drop everything queued.
+```
+
+- **Files and voice notes queue too.** They're downloaded and transcribed the instant they arrive — nothing goes stale while it waits — and the queued turn is byte-identical to one you'd sent when the chat was idle.
+- **`/cancel`** drops everything waiting and leaves the running task alone. **`/stop`** stops the run and lets the queue carry on.
+- **Switching conversations clears the queue.** `/new`, `/resume`, `/delete`, and a `/project` switch or close each drop the pending messages along with the conversation they were typed into — a message meant for one conversation never lands in another — and say so in their reply.
+
+## Approval Flow
+
+When the amygdala flags a tool call as potentially dangerous, Wolffish sends an inline keyboard in Telegram:
+
+```
+Wolffish wants to execute:
+  shell_exec: rm -rf ./build/
+
+[Approve] [Deny]
+```
+
+Tap **Approve** to proceed or **Deny** to abort. The turn pauses until you respond — no timeout, no automatic approval.
+
+<Info>
+  Approval requests include the full tool name and arguments so you can make an informed decision. Dangerous commands (file deletion, network calls, system modifications) always require approval.
+</Info>
+
+## Conversation Management
+
+Each Telegram chat points at one active Wolffish conversation at a time — every message you send continues it. The commands manage which one that is:
+
+- **`/new`** starts a fresh conversation (the previous one is preserved in memory).
+- **`/resume`** opens a numbered picker over **every conversation Wolffish has** — Telegram, WhatsApp, in-app, procedure runs — newest first, 25 to a page, each row tagged with its origin so you know what you're about to continue. Reply with a number to resume it, or `next` for the following page. Numbering is continuous across pages, so a number from a page you've scrolled past still selects.
+- **`/delete`** opens the same picker and deletes the number you reply with. Deleting the chat's active conversation rotates it to a fresh one; a conversation that's mid-turn refuses to delete until it finishes.
+
+Scheduled automation runs are **hidden from `/resume` by default** — they outnumber real chats and would bury them. Flip **Settings → Channels → Telegram → Hide automations from /resume** to include them; they always remain in `/delete` and in the app.
+
+### Chatting inside a project
+
+`/project` lists your [projects](/configuration/projects) by number — reply with one to start a fresh conversation **inside that project**, briefed with its instructions and files. The binding lives on the conversation itself, so it survives restarts and can't drift: while you're in a project, `/new` deliberately starts the next conversation **in the same project**, and `/project close` is the way out (it rotates the chat to a fresh conversation outside it). `/project` with no reply needed also shows which project you're currently in.
+
+### Replies land where they belong
+
+When Wolffish messages you out of band — an automation reporting a finished job, an in-app conversation dropping you a note — the chat re-points itself at the conversation that did the sending. Your reply continues **that** conversation, not whatever the chat was last on.
+
+### Fully two-way with the app
+
+Conversations are shared across channels, in both directions. A conversation started in Telegram appears in the desktop app's conversations list — and it's **continuable there**: open it and keep typing with a real keyboard. Messages that land on your phone while the same conversation is open on your desktop appear in place, and voice notes survive the round-trip untouched.
+
+## File Handling
+
+The bot can receive and process:
+
+- **Images** — screenshots, photos, diagrams (vision-capable models pull the pixels on demand with `image_view`; text-only models get the file's name and path and can still operate on it with tools)
+- **Documents** — PDFs, text files, code files (attached as a [reference note](/architecture/context-compaction#model-led-attachments) — Wolffish reads the content through its tools when it matters, so even huge files land safely)
+- **Voice notes** — transcribed via STT and processed as text input
+
+Send a file with or without a caption. If you include a caption, it becomes the user message with the file as context. If no caption, Wolffish infers intent from the file content.
+
+In the other direction, files Wolffish produces reach you as real Telegram uploads — sent deliberately by the agent via its `send_file` tool as a document, photo, audio, or video message. Nothing auto-attaches: a tool writing a file to disk never sends it by itself, and the agent's operating contract requires it to `send_file` the result of any file-producing task the moment the work is done.
+
+## Response Formatting
+
+Wolffish formats responses using Telegram's HTML subset:
+
+```html
+<b>bold</b>
+<i>italic</i>
+<code>inline code</code>
+<pre>code block</pre>
+<a href="url">link text</a>
+```
+
+Long responses are split at logical boundaries (paragraph breaks, list items) to stay within Telegram's message length limits. Code blocks are preserved intact where possible.
+
+A **format gate** validates every outgoing send, and raw Markdown is refused outright — `**bold**`, `# headings`, `[text](url)` links, `| tables |`, `---` rules — along with malformed or unsupported HTML, entity-escaped tags, bare `&`, and drawn divider lines (`━━━━━` and friends): the send bounces back to the model, which rewrites it in clean HTML before anything reaches your chat. The guards keep honest text flowing: everything inside `<code>` and `<pre>` is exempt (quoting Markdown is legal), and expressions like `x**2` or `f(**kwargs)` read as math and code, not bold. When markup genuinely *is* the content the agent can deliver it verbatim, and repeated bounces force delivery rather than losing the message — worst case you see raw symbols, never silence.
+
+Live narration between tool steps is delivered the instant it's written — too fast to gate — so it is **watched instead of blocked**: when a delivered line carries raw markup, a **format notice** hands the agent exactly what you received, with the delivered message's id, so it can quietly repair it in place with `telegram_edit_message` and keep the rest of the turn clean.
+
+## Verbose Task Results
+
+By default, Telegram receives a **clean feed** — the agent's replies, any files it sends, and errors. The step-by-step tool activity stays in the desktop UI so your chat doesn't fill up with internal steps.
+
+Toggle this in **Settings → Channels → Telegram → Show all tool activity** (called *Verbose task results* until v1.0.288):
+
+- **Off (default)** — agent messages, files the agent sends, and errors only.
+- **On** — every tool call, result, and activity is relayed to the chat as it happens.
+
+A [workflow-mode](/configuration/workflow-mode) run additionally reports deterministic progress regardless of verbose — its phase plan at start, each phase's completion, and a closing summary — with the switch on adding a landing line per agent (name, model, duration, tool calls).
+
+<Note>
+  Verbose changes only what is **sent** to Telegram. The full turn — every tool call and result — is still saved to history and memory regardless of the setting.
+</Note>
+
+## Under the Hood
+
+The Telegram channel is built on the [grammy](https://grammy.dev/) library — a modern, TypeScript-first framework for building Telegram bots. Grammy handles:
+
+- Long polling for message updates
+- Inline keyboard management for approvals
+- File upload/download
+- Message formatting and splitting
+- Error recovery and reconnection
+
+## Sensitive Data Filter
+
+Wolffish includes an optional filter that discards messages containing credentials before they reach the agent. It is **off by default** — discussing secrets is a legitimate part of many workflows (setting up integrations, debugging auth, rotating keys).
+
+**Enable it:** Settings → Preferences → Block sensitive data in messages
+
+When enabled, any incoming message matching a credential pattern is immediately discarded in its entirety. The turn does not process, nothing is stored, and the user receives a short notification. This applies equally to Desktop, Telegram, and WhatsApp.
+
+**Patterns detected:** passwords (`password:`, `my password is...`), API keys (`api_key:`, `secret_key:`), access tokens (`access_token:`, `bearer_token:`), SSH/RSA/PGP private keys (`-----BEGIN PRIVATE KEY-----`), private key phrases (`private_key:`, `ssh_key:`).
+
+<Note>
+  When the filter is off (default), messages are processed normally regardless of content. If you work with credentials frequently, this is expected behavior — store secrets in Settings → Variables instead of pasting them in chat.
+</Note>

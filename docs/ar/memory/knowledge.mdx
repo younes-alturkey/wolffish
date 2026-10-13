@@ -1,0 +1,161 @@
+---
+title: "ملفات المعرفة"
+description: "حقائق طويلة المدى عن الأشخاص والمشاريع والتفضيلات والقرارات"
+---
+
+# الذاكرة الدائمة للوكيل
+
+ملفات المعرفة هي الذاكرة الدائمة للوكيل — حقائق طويلة المدى تبقى إلى أجل غير مسمى. بينما تلتقط الأحداث ما حدث ويضغط التجميع الجدول الزمني، تُخزّن ملفات المعرفة ما *يعرفه* وولفيش عنك وعن عالمك وتفضيلاتك.
+
+## الموقع
+
+```
+~/.wolffish/workspace/brain/hippocampus/knowledge/
+├── people.md
+├── projects.md
+├── preferences.md
+├── technical.md
+└── decisions.md
+```
+
+## الملفات الخمسة الافتراضية
+
+| الملف | الغرض |
+|---|---|
+| `people.md` | الأشخاص الذين تتعامل معهم — الأسماء، الأدوار، العلاقات، السياق |
+| `projects.md` | المشاريع الحالية والسابقة — التقنيات، الحالة، القرارات الرئيسية |
+| `preferences.md` | تفضيلاتك الشخصية — الأدوات، سير العمل، أسلوب التواصل |
+| `technical.md` | حقائق تقنية — البيئات، API، مواقع بيانات الاعتماد، الاتفاقيات |
+| `decisions.md` | القرارات التي اتخذتها — المبررات، القيود، النتائج |
+
+<Info>
+  تُنشأ هذه الملفات الخمسة عند أول تشغيل. يمكنك إضافة المزيد من ملفات المعرفة — كل شيء في مجلد `knowledge/` يُفهرَس ويصبح قابلاً للبحث. أنشئ `books.md` أو `health.md` أو أي تصنيفات تناسب حياتك.
+</Info>
+
+## كيف تُكتب المعرفة
+
+تدخل المعرفة إلى النظام عبر ثلاثة مسارات:
+
+### 1. التنقيح التلقائي (بقيادة LLM)
+
+أثناء [تمريرة الضغط الليلية](/ar/memory/consolidation)، يعمل LLM عمل **المنقِّح** لا المستخرِج: يقرأ سجلَّ اليوم **إلى جوار المحتوى الحالي لملفات المعرفة الخمسة** ويعيد كتابة ما تغيّر منها كاملاً — قسم `##` مرتَّب واحد لكل شخص ومشروع وموضوع؛ وشبه المكرر يُدمَج في سطر واحد؛ والتناقضات تُحسَم لأحدث الأدلة؛ والحشو يُحذَف فور رؤيته. وبنية الأقسام يفرضها التطبيق نفسه (فترويسات `##` هي بالضبط ما تعرضه `<memory_map>`)، وكل ملف يُعاد كتابته يحتفظ بنسخته السابقة باسم `<file>.md.bak` بجواره، وتحريراتك اليدوية تنجو من التنقيح. واليوم الذي لا يحمل شيئاً دائماً ينتهي بلا أي تغيير. ومرة كل شهر تدقّق [المراجعة العميقة](/ar/memory/reflection) في هذه الملفات نفسها تدقيقاً خصامياً — تطارد البنود البالية والأحكام التي انقلبت الأدلة عليها.
+
+### 2. `memory_save` — مسار الكتابة الخاص بالنموذج
+
+عندما تقول شيئاً مثل «تذكّر أنني أفضّل conventional commits» أو «اسم مديرتي سارة»، يستدعي الوكيل أداة `memory_save`:
+
+```
+memory_save(fact, { type: projects | people | preferences | technical | decisions })
+```
+
+عقد التشغيل يوجّه وولفيش لحفظ جملة واحدة مكتفية بذاتها كلما تعلّم شيئاً دائماً — تفضيلاً، أو قراراً، أو حقيقة مشروع، أو تفصيلة عن شخص — وألا يكتب ملفات الذاكرة بيده مباشرة أبداً. وتُزيل `memory_save` التكرار بنفس طريقة الترقية: حفظ حقيقة موجودة مسبقاً في الملف لا يفعل شيئاً. ويكون `type` افتراضياً `technical` عند إغفاله.
+
+### 3. التعديل اليدوي
+
+افتح أي ملف معرفة في محررك وعدّله. مراقب الملفات في brainstem يكتشف التغيير ويُعيد cortex فهرسته فوراً.
+
+## كيف تُقرأ المعرفة
+
+ملفات المعرفة **لا تُحقَن في الموجّه**. بدلاً من ذلك، تُدرج خريطة `<memory_map>` مواضيع الملفات الخمسة المُنسَّقة — ترويسات مقاطعها `##` — بحيث يعرف النموذج دائماً ما الحقائق الدائمة الموجودة القابلة للجلب:
+
+```
+- knowledge topics — preferences: Development, Communication, Workflow, Tools |
+  people: Sarah (Manager), Omar (Co-founder) (memory_get the file for details)
+```
+
+عندما يكون موضوع ما ذا صلة، يسترجعه النموذج:
+
+- `memory_get` على `file:brain/hippocampus/knowledge/preferences.md` يُرجع الملف كاملاً
+- `memory_search` مع `sources: "knowledge"` يعثر على حقائق مفردة عبر جميع ملفات المعرفة
+
+هذا مقصود: حقيقة حفظتها في مارس تكلّف صفر توكن في كل دورة إلى أن تحتاجها محادثة فعلاً — وعقيدة الاسترجاع تعني أن أي إشارة مُعرَّفة إليها ستُطلق بحثاً دون أن يُطلب ذلك.
+
+## مثال: preferences.md بعد عدة أسابيع
+
+```markdown
+# Preferences
+
+## Development
+- Package manager: pnpm (never npm or yarn)
+- Commit style: conventional commits (feat:, fix:, chore:)
+- Validation: Zod at all API boundaries
+- Testing: Vitest for unit tests, Playwright for e2e
+- Formatting: Biome over ESLint+Prettier
+
+## Communication
+- Prefers concise answers with code examples over lengthy explanations
+- Likes bullet points over paragraphs for technical content
+- Wants to be warned before destructive operations, even if flagged safe
+
+## Workflow
+- Morning sessions (08:00–12:00) for deep work — avoid scheduling interruptions
+- Prefers creating a new branch per feature, never commits directly to main
+- Likes PRs reviewed before merge, even on solo projects
+
+## Tools
+- Editor: VS Code with Vim keybindings
+- Terminal: Warp
+- Browser: Arc for development, Chrome for testing
+- Notes: Obsidian with daily notes
+```
+
+## مثال: people.md
+
+```markdown
+# People
+
+## Sarah (Manager)
+- Engineering manager at current company
+- Prefers async communication over meetings
+- Reviews PRs on Tuesdays and Thursdays
+
+## Omar (Co-founder)
+- Working on the billing service together
+- Handles infrastructure and deployment
+- Timezone: UTC+3 (Riyadh)
+
+## Alex (Design)
+- UI/UX designer on the product team
+- Shares Figma links for review — always check mobile breakpoints
+```
+
+## إرشادات التعديل
+
+<Tabs>
+  <Tab title="إضافة حقائق">
+    أخبر وولفيش أثناء المحادثة:
+    - "تذكّر أن مفتاح API الخاص بي لـ Stripe في 1Password"
+    - "سجّل أننا قررنا استخدام PostgreSQL بدلاً من MySQL للخدمة الجديدة"
+    - "رحلتي إلى الرياض في 3 يونيو"
+
+    الوكيل يحفظ كل حقيقة عبر `memory_save`، موجَّهةً إلى ملف المعرفة المناسب.
+  </Tab>
+  <Tab title="تصحيح حقائق">
+    إذا كان لدى وولفيش معلومات قديمة:
+    - "حدّث تفضيلاتي — انتقلت من yarn إلى pnpm"
+    - "سارة حصلت على ترقية، هي الآن نائبة رئيس الهندسة"
+
+    أو عدّل الملف مباشرة في محررك.
+  </Tab>
+  <Tab title="حذف حقائق">
+    احذف السطر من ملف المعرفة، أو أخبر وولفيش:
+    - "انسَ مشروع خدمة الفوترة، تم إلغاؤه"
+
+    الوكيل سيحذف الإدخال.
+  </Tab>
+</Tabs>
+
+<Tip>
+  ملفات المعرفة تعمل بشكل أفضل عندما تكون موجزة. كل إدخال يجب أن يكون حقيقة، وليس قصة — و`memory_save` تفرض ذلك بتصميمها، إذ تأخذ جملة واحدة مكتفية بذاتها في كل مرة. استخدم ترويسات المقاطع `##` لتجميع الحقائق: هذه الترويسات هي بالضبط ما تعرضه `<memory_map>` للنموذج (حتى 8 لكل ملف).
+</Tip>
+
+## ملفات معرفة مخصصة
+
+أنشئ أي ملف `.md` في مجلد `knowledge/` وسيصبح جزءاً من ذاكرة الوكيل القابلة للبحث:
+
+```bash
+# Create a new knowledge file
+touch ~/.wolffish/workspace/brain/hippocampus/knowledge/health.md
+```
+
+سيكتشفه مراقب الملفات في brainstem وسيُفهرسه cortex تحت مصدر `knowledge`، بحيث تعثر `memory_search` على محتواه مثل أي ذاكرة أخرى. يبقى أمران محجوزين للملفات الخمسة الافتراضية: أسطر مواضيع `<memory_map>` تسرد الملفات الخمسة المُنسَّقة فقط، و`memory_save` لا تكتب إلا فيها — أما الملفات المخصصة فهي ملكك تصونها بيدك.

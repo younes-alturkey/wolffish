@@ -148,13 +148,14 @@ export const CLI_SETTING_SECTIONS: CliSettingSection[] = [
     label: 'Ollama'
   },
 
-  // Channels — the desktop's six sub-tabs, in its order.
+  // Channels — the desktop's seven sub-tabs, in its order.
   {
     id: 'channels.inapp',
     group: 'channels',
     label: 'In-App'
   },
   { id: 'channels.cli', group: 'channels', label: 'CLI' },
+  { id: 'channels.web', group: 'channels', label: 'Web UI' },
   {
     id: 'channels.mobile',
     group: 'channels',
@@ -561,6 +562,169 @@ export const CLI_SETTINGS: CliSetting[] = [
     read: 'channels.mobile.verbose',
     channel: 'mobile:setVerbose',
     wrap: null
+  },
+  {
+    id: 'channels.web.enabled',
+    group: 'channels',
+    section: 'channels.web',
+    label: 'Status',
+    description:
+      'Serves the whole app to a browser at this machine\'s address, behind the master password. On by default; the password was generated at first launch — see it with "Show the master password" on this card, or: wolffish web password.',
+    kind: 'boolean',
+    read: 'channels.web.enabled',
+    channel: 'web:setConfig',
+    wrap: 'enabled'
+  },
+  {
+    id: 'channels.web.port',
+    group: 'channels',
+    section: 'channels.web',
+    label: 'Port',
+    description: 'The port browsers connect to. Ports below 1024 need root on Linux.',
+    kind: 'number',
+    read: 'channels.web.port',
+    channel: 'web:setConfig',
+    wrap: 'port',
+    hint: '1-65535'
+  },
+  {
+    id: 'channels.web.bind',
+    group: 'channels',
+    section: 'channels.web',
+    label: 'Listen on',
+    description:
+      '0.0.0.0 answers on every address this machine has (what a VPS wants); 127.0.0.1 keeps it local.',
+    kind: 'string',
+    read: 'channels.web.bind',
+    channel: 'web:setConfig',
+    wrap: 'bind'
+  },
+  {
+    id: 'channels.web.https',
+    group: 'channels',
+    section: 'channels.web',
+    label: 'HTTPS',
+    description:
+      "How the connection is secured. Browsers only allow notifications and the microphone on HTTPS. Let's Encrypt gives a trusted certificate for a public IP address or hostname and needs port 80 reachable; self-signed shows a one-time browser warning; off is plain HTTP.",
+    kind: 'enum',
+    options: [
+      { value: 'off', label: 'Off (plain HTTP)' },
+      { value: 'acme', label: "Let's Encrypt" },
+      { value: 'selfsigned', label: 'Self-signed certificate' },
+      { value: 'custom', label: 'My own certificate files' }
+    ],
+    read: 'channels.web.https',
+    channel: 'web:setConfig',
+    wrap: 'https.mode'
+  },
+  {
+    id: 'channels.web.httpsPort',
+    group: 'channels',
+    section: 'channels.web',
+    label: 'HTTPS port',
+    description:
+      'The port the HTTPS listener answers on — 443, so https://<address> needs no port. The plain app port stays up beside it and redirects to it once a trusted certificate is served. Behind a pf or iptables forward from 443, set the forwarded-to port here.',
+    kind: 'number',
+    read: 'channels.web.httpsPort',
+    channel: 'web:setConfig',
+    wrap: 'https.port',
+    hint: '443'
+  },
+  {
+    id: 'channels.web.acmeDirectory',
+    group: 'channels',
+    section: 'channels.web',
+    label: "Let's Encrypt directory",
+    description:
+      'production (the default); staging for testing — untrusted certificates, generous rate limits; or a full ACME directory URL for another CA.',
+    kind: 'string',
+    read: 'channels.web.acmeDirectory',
+    channel: 'web:setConfig',
+    argsFor: (value) => {
+      const text = String(value ?? '').trim()
+      return [
+        { https: { acme: { directory: text === '' || text === 'production' ? undefined : text } } }
+      ]
+    },
+    wrap: null,
+    hint: 'production · staging · URL'
+  },
+  {
+    id: 'channels.web.acmeIdentifiers',
+    group: 'channels',
+    section: 'channels.web',
+    label: "Let's Encrypt addresses",
+    description:
+      'The public IP addresses and hostnames the certificate is issued for, comma-separated.',
+    kind: 'string',
+    read: 'channels.web.acmeIdentifiers',
+    channel: 'web:setConfig',
+    argsFor: (value) => [
+      {
+        https: {
+          acme: {
+            identifiers: String(value ?? '')
+              .split(/[,\s]+/)
+              .map((s) => s.trim())
+              .filter(Boolean)
+          }
+        }
+      }
+    ],
+    wrap: null
+  },
+  {
+    id: 'channels.web.acmeEmail',
+    group: 'channels',
+    section: 'channels.web',
+    label: "Let's Encrypt email",
+    description: 'Optional contact for certificate-expiry mail from the CA. Empty for none.',
+    kind: 'string',
+    read: 'channels.web.acmeEmail',
+    channel: 'web:setConfig',
+    argsFor: (value) => [{ https: { acme: { email: String(value ?? '').trim() } } }],
+    wrap: null
+  },
+  {
+    id: 'channels.web.httpPort',
+    group: 'channels',
+    section: 'channels.web',
+    label: 'HTTP port',
+    description:
+      "A second, plain-HTTP listener that answers Let's Encrypt's challenge and redirects browsers to HTTPS. Let's Encrypt validates on port 80 only. Empty for none.",
+    kind: 'string',
+    read: 'channels.web.httpPort',
+    channel: 'web:setConfig',
+    argsFor: (value) => {
+      const text = String(value ?? '').trim()
+      return [{ https: { httpPort: text === '' || text === 'none' ? null : Number(text) } }]
+    },
+    wrap: null,
+    hint: '80, or empty'
+  },
+  {
+    id: 'channels.web.notifications',
+    group: 'channels',
+    section: 'channels.web',
+    label: 'Browser notifications',
+    description:
+      'Lets the agent send a notification to signed-in browsers with its notify_web tool — when a run finishes, fails, or needs you. Off makes that tool refuse.',
+    kind: 'boolean',
+    read: 'channels.web.notifications',
+    channel: 'web:setConfig',
+    wrap: 'notifications'
+  },
+  {
+    id: 'channels.web.verbose',
+    group: 'channels',
+    section: 'channels.web',
+    label: 'Show all tool activity',
+    description:
+      'Same feed preference every channel has: Off shows a clean feed in the browser, On adds every tool call and result.',
+    kind: 'boolean',
+    read: 'channels.web.verbose',
+    channel: 'web:setConfig',
+    wrap: 'verbose'
   },
   {
     id: 'channels.telegram.enabled',

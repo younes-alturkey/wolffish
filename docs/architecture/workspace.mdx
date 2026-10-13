@@ -1,0 +1,94 @@
+---
+title: "Workspace Architecture"
+description: "The ~/.wolffish/workspace/ directory structure explained"
+---
+
+# Your Agent's Brain on Disk
+
+Everything Wolffish knows, remembers, and can do lives in `~/.wolffish/workspace/`. This is your agent's brain on disk — readable, editable, and git-versionable.
+
+## Directory Structure
+
+```
+~/.wolffish/workspace/
+├── brain/
+│   ├── identity/
+│   │   ├── soul.md                    # Agent personality
+│   │   ├── user.md                    # User profile
+│   │   ├── workflow.md                # Master's contract in workflow mode
+│   │   └── workflow-agent.md          # Contract handed to each spawned agent
+│   ├── prefrontal/
+│   │   ├── agents.core.md             # Operating contract (Wolffish-owned)
+│   │   ├── agents.md                  # Your procedures + overrides (never overwritten)
+│   │   └── .debug/                    # Prompt snapshots (rotated, newest 50 kept)
+│   ├── cerebellum/                    # Capabilities
+│   │   ├── shell/                     # Shell commands (SKILL.md + plugin/)
+│   │   ├── filesystem/                # File operations (SKILL.md + plugin/)
+│   │   ├── git/                       # Git operations (SKILL.md only)
+│   │   └── introspect/                # Self-awareness + memory retrieval (SKILL.md + plugin/)
+│   ├── hippocampus/
+│   │   ├── episodes/YYYY-MM-DD.md     # Daily conversation logs (origin-tagged)
+│   │   ├── consolidated/YYYY-WNN.md   # Weekly summaries
+│   │   └── knowledge/                 # Long-term facts (topic files)
+│   ├── motor/tasks/TASK-{id}.md       # Task execution logs
+│   ├── basalganglia/YYYY-MM-DD.md     # Daily feedback logs
+│   ├── brainstem/
+│   │   ├── heartbeat.md               # Automation schedule definitions
+│   │   └── run-history.md             # Durable automation run history
+│   ├── corpus/YYYY-MM-DD.log.md       # Daily event logs (purged after 7 days)
+│   ├── conversations/                 # Chat history (indexed message by message)
+│   ├── projects.json                  # Projects store (what the Projects page edits)
+│   ├── procedures.json                # Saved-procedures store
+│   └── cortex.db                      # SQLite records index (disposable)
+├── files/, uploads/, screenshots/, speech/   # Artifacts (indexed as metadata)
+├── logs/                              # App + extension logs (tail-indexed)
+├── usage/                             # Structured usage ledger (indexed)
+├── whatsapp/read-history.json         # Inbound WhatsApp buffer (indexed per chat)
+└── config.json                        # App configuration (never indexed — holds secrets)
+```
+
+## Key Principles
+
+**Files are truth, `cortex.db` is cache.** The SQLite database indexes everything above — episodes, knowledge, conversations (every message and tool call), task runs, feedback, usage, logs, and artifact metadata — and is fully disposable: delete it and Wolffish rebuilds it from the source files. A normal launch brings it current with an incremental mtime/size diff (~22ms); a full rebuild happens only when the index schema version bumps (~1.3 seconds for a 2GB workspace), never on every launch. Never edit `cortex.db` directly — edit the source files instead.
+
+**Daily files over growing files.** Episodes, feedback, and event logs are split by day (`YYYY-MM-DD.md`). This keeps individual files small, makes them easy to browse, and allows the brainstem to clean up old logs automatically.
+
+**Capabilities are self-contained.** Each folder under `brain/cerebellum/` is a complete capability. You can delete any of them without affecting the core system. You can add new ones by dropping in a folder.
+
+## Inspecting the Workspace
+
+Wolffish includes a built-in file viewer and markdown editor — you can browse and edit your entire workspace without leaving the app. For most use cases, it's all you need. You can also open `~/.wolffish/workspace/` in any external editor if you prefer. Some useful things to inspect:
+
+| What You Want to Know | Where to Look |
+|---|---|
+| What context was sent to the LLM | `brain/prefrontal/.debug/` (newest 50 prompt snapshots) |
+| What the agent remembers about today | `brain/hippocampus/episodes/YYYY-MM-DD.md` |
+| What tools were called and what happened | `brain/motor/tasks/TASK-*.md` |
+| Whether the agent is learning your preferences | `brain/basalganglia/YYYY-MM-DD.md` |
+| Whether an automation actually ran | `brain/brainstem/run-history.md` |
+| Every event that fired (last 7 days) | `brain/corpus/YYYY-MM-DD.log.md` |
+
+### Touched folder chips
+
+Along the top edge of a transcript there is a strip of **folder chips** — every folder the conversation changed files in, and how many. Each is one click from opening on your desktop, and it answers one question: *where did this run work?*
+
+Since **v1.0.309** each touched directory **collapses to the project folder that opens its tree**, with the counts added up across everything underneath:
+
+- On a chat with **no working folder set**, every chip used to be labelled by the **leaf** of the path it happened to touch — `…/wolffish-app/.github/workflows/ci.yml` billed a chip reading **`workflows`** — so the folders you actually worked in were invisible.
+- Worse, work spanning **two projects built the same way** put **two chips both named `src`** on the strip, over two different codebases, with nothing to tell them apart. Now the chips read `wolffish-app` and `wolffish-cloud`.
+- The scan runs **outermost boundary first** — the first `src`, `lib`, `test`, `docs` or dot-directory on the path — while containers like `apps` are passed straight through, so the cloud desktop still bills as **`desktop`** rather than as a generic `apps`, and a `.github` folder folds into its project instead of claiming a chip of its own.
+- Paths **outside** the working folders keep a chip of their own, and a file changed directly in the working folder still bills it.
+
+## Version Control
+
+You can `git init` the workspace directory to version-control your agent's brain. This lets you track changes to personality, review memory evolution, roll back configuration changes, and share your agent setup with others.
+
+```bash
+cd ~/.wolffish/workspace
+git init
+echo "brain/cortex.db" >> .gitignore
+echo "brain/prefrontal/.debug/" >> .gitignore
+echo "config.json" >> .gitignore
+git add .
+git commit -m "Initial brain state"
+```

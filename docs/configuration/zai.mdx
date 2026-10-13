@@ -1,0 +1,65 @@
+---
+title: "Z.ai"
+description: "Set up Z.ai — Zhipu's GLM models with toggleable thinking and a 1M-context flagship"
+---
+
+# Z.ai (Zhipu GLM)
+
+```
+POST https://api.z.ai/api/paas/v4/chat/completions
+```
+
+OpenAI-compatible SSE streaming with tool-calling. Reasoning streams as `reasoning_content`, thinking is controlled with `thinking: { type }` (plus `reasoning_effort` on GLM-5), and prompt-cache hits are reported under `usage.prompt_tokens_details.cached_tokens` — the same wire format as Kimi.
+
+**GLM reasoning is per-model** — GLM-5 models expose real effort tiers (Off / High / Max via `reasoning_effort`), while GLM-4.x are a simple on/off toggle (any mode other than *none* enables reasoning, *none* disables it). GLM-5.2 also offers a **1M-token context window**, the largest in Z.ai's lineup.
+
+Best for: Cost-efficient agentic work, long-context workflows (GLM-5.2), and vision-capable tasks. GLM models are strong all-rounders for tool chains and code at budget-tier pricing.
+
+## Getting an API Key
+
+1. Go to [z.ai](https://z.ai)
+2. Sign up or log in
+3. Open **API Keys** and create a new key
+4. Paste it into Wolffish → Settings → Models → Z.ai
+
+## Models
+
+| Model | Context | Modes | Input / Output (per MTok) | Cached |
+|-------|---------|-------|--------------------------|--------|
+| **glm-5.2** | 1M | Off / High / Max | $1.40 / $4.40 | $0.26 |
+| glm-5.1 | 200K | Off / High / Max | $1.40 / $4.40 | $0.26 |
+| glm-5-turbo | 200K | Off / High / Max | $1.20 / $4.00 | $0.24 |
+| glm-5 | 200K | Off / High / Max | $1.00 / $3.20 | $0.20 |
+| glm-4.7 | 200K | Off / On | $0.60 / $2.20 | $0.11 |
+| glm-4.6 | 200K | Off / On | $0.60 / $2.20 | $0.11 |
+| glm-4.5 | 128K | Off / On | $0.60 / $2.20 | $0.11 |
+| glm-4.5-air | 128K | Off / On | $0.20 / $1.10 | $0.03 |
+
+## Reasoning modes
+
+How this model reasons is set in the **model card beside the chat input** — hover the model switch to preview the card, click to pin it open. The top chip row, labelled **Thinking**, is the control: pick a chip and it applies from your next message. Two separate ideas combine here:
+
+### Thinking — *whether* the model reasons
+
+- **Off** — the model answers immediately. Fastest and cheapest; ideal for simple, direct tasks.
+- **On** (the chip reads **Normal**) — the model first works through the problem in a dedicated reasoning pass before replying. Slower and uses more tokens, but markedly more accurate on multi-step, logical, or ambiguous tasks.
+
+### Effort — *how hard* it thinks
+
+Only effort-capable models expose this; it applies once thinking is on.
+
+- **High** — standard reasoning depth. The right default for most agentic work.
+- **Max** — the model reasons longer and deeper for the hardest problems. More tokens and latency in exchange for higher quality on complex work.
+
+### The chip row
+
+| Chip | Icon | Meaning |
+|------|------|---------|
+| Off | lightning | Thinking off — direct answer |
+| Normal | brain | Thinking on — no effort control |
+| High | AI brain | Thinking on, standard effort |
+| Max | flame | Thinking on, maximum effort |
+
+The active chip is tinted; the rest sit quiet. Each model shows only the chips it genuinely supports — a model that always reasons has no **Off**, a model with a single mode shows that one chip inert, and a model that can't reason at all replaces the row with *"Reasoning is not supported by this model."* Wolffish remembers your choice per model. (Before **v1.0.236** this was a colour-coded brain button on the composer; it moved into the model card, beside the Single/Workflow row, so every model knob sits in one panel.)
+
+**On Z.ai:** GLM-5 models support Off / High / Max (genuine effort tiers). GLM-4.x are a simple On / Off toggle with no effort control.

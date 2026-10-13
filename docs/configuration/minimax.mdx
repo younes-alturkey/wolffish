@@ -1,0 +1,75 @@
+---
+title: "MiniMax"
+description: "Set up MiniMax — strong reasoning and code with competitive pricing"
+---
+
+# MiniMax (Reasoning & Code)
+
+```
+POST https://api.minimaxi.chat/v1/chat/completions
+```
+
+Uses SSE streaming with OpenAI-compatible tool-calling format. Supports reasoning content.
+
+Best for: Reasoning-heavy workloads, code generation, agentic workflows.
+
+<Note>
+  MiniMax is a solid Chinese provider, but DeepSeek and MiMo remain cheaper and more capable for most workloads. Consider MiniMax if you want provider diversity or have specific needs its model lineup serves well.
+</Note>
+
+## Getting an API Key
+
+1. Go to [minimax.io/platform](https://www.minimax.io/platform)
+2. Sign up or log in
+3. Navigate to **API Keys** and create a new key
+4. Paste it into Wolffish → Settings → Models → MiniMax
+
+## Models
+
+| Model | Context | Modes | Input / Output (per MTok) | Notes |
+|-------|---------|-------|--------------------------|-------|
+| **MiniMax-M3** | 1M | Off, On | $0.30 / $1.20 | Latest flagship. Strong reasoning. Cached: $0.06/MTok. |
+| MiniMax-M2.7 | 200K | On | $0.30 / $1.20 | Previous gen flagship. Cached: $0.06/MTok. |
+| MiniMax-M2.7-highspeed | 200K | On | $0.60 / $2.40 | Faster inference, 2× price. Cached: $0.06/MTok. |
+| MiniMax-M2.5 | 200K | On | $0.30 / $1.20 | Code-optimized. Cached: $0.03/MTok. |
+| MiniMax-M2.5-highspeed | 200K | On | $0.60 / $2.40 | Code-optimized, faster. Cached: $0.03/MTok. |
+| MiniMax-M2.1 | 200K | On | $0.30 / $1.20 | Reasoning. Cached: $0.03/MTok. |
+| MiniMax-M2.1-highspeed | 200K | On | $0.60 / $2.40 | Reasoning, faster. Cached: $0.03/MTok. |
+| MiniMax-M2 | 200K | On | $0.30 / $1.20 | Base model. Cached: $0.03/MTok. |
+
+## Video Models Are Not Chat Models
+
+MiniMax's **H3** video models never appear in the model picker — you don't chat with them. They are reached through the [video capability](/integrations/video-generation), which your current chat model calls as a tool.
+
+<Note>
+  **The video key is a separate field.** MiniMax issues one credential that unlocks both its chat models and its video API, but Wolffish never copies the value between **Settings → Models → MiniMax** and **Settings → Services → Video generation**. Video generation is a service, not a property of whichever brain you're chatting with — so switching your chat brain away from MiniMax never takes video with it, and rotating one key never breaks the other. Paste the key in both places if you want both.
+</Note>
+
+## Reasoning modes
+
+How this model reasons is set in the **model card beside the chat input** — hover the model switch to preview the card, click to pin it open. The top chip row, labelled **Thinking**, is the control: pick a chip and it applies from your next message. Two separate ideas combine here:
+
+### Thinking — *whether* the model reasons
+
+- **Off** — the model answers immediately. Fastest and cheapest; ideal for simple, direct tasks.
+- **On** (the chip reads **Normal**) — the model first works through the problem in a dedicated reasoning pass before replying. Slower and uses more tokens, but markedly more accurate on multi-step, logical, or ambiguous tasks.
+
+### Effort — *how hard* it thinks
+
+Only effort-capable models expose this; it applies once thinking is on.
+
+- **High** — standard reasoning depth. The right default for most agentic work.
+- **Max** — the model reasons longer and deeper for the hardest problems. More tokens and latency in exchange for higher quality on complex work.
+
+### The chip row
+
+| Chip | Icon | Meaning |
+|------|------|---------|
+| Off | lightning | Thinking off — direct answer |
+| Normal | brain | Thinking on — no effort control |
+| High | AI brain | Thinking on, standard effort |
+| Max | flame | Thinking on, maximum effort |
+
+The active chip is tinted; the rest sit quiet. Each model shows only the chips it genuinely supports — a model that always reasons has no **Off**, a model with a single mode shows that one chip inert, and a model that can't reason at all replaces the row with *"Reasoning is not supported by this model."* Wolffish remembers your choice per model. (Before **v1.0.236** this was a colour-coded brain button on the composer; it moved into the model card, beside the Single/Workflow row, so every model knob sits in one panel.)
+
+**On MiniMax:** MiniMax-M3 is On / Off. The M2.x models reason always-on, so the button is locked on.

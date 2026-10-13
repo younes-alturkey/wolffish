@@ -97,7 +97,6 @@ export type CorpusEvents = {
   'llm.error': { provider: string; error: string }
   'llm.fallback': { from: string; to: string; reason: string }
   'llm.retry': { provider: string; attempt: number; delayMs: number; errorClass: string }
-  'llm.reasoning_effort.stripped': { model: string; reason: string }
   // Whole-turn roll-up emitted once per agent turn, with the cache split
   // priced separately so caching wins are measurable from the corpus log.
   'turn.usage': {

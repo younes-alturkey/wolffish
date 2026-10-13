@@ -10,6 +10,15 @@ import { collectChannelStatus } from '@main/channels/status'
 import { normalizeReasoningMode, reasoningModesFor } from '@main/runtime/reasoning'
 import { getPlanMode, onPlanModeChange, setPlanMode } from '@main/runtime/plan-mode'
 import { ElectronChannel } from '@main/channels/electron/channel'
+import { registerWebIpc, toPublicConfig, listPublicViews } from '@main/channels/web/ipc'
+import { ensureWebUiPassword } from '@main/channels/web/passphrase'
+import { listDirectories } from '@main/paths/paths'
+import { buildWebCapability, WEB_CAPABILITY_NAME } from '@main/channels/web/notify'
+import { buildWebPublicCapability, WEB_PUBLIC_CAPABILITY_NAME } from '@main/channels/web/public'
+import { WebServer, type AttachFilesRequest } from '@main/channels/web/server'
+import webIcon128 from '@resources/icons/icons/128x128.png?asset'
+import webIcon256 from '@resources/icons/icons/256x256.png?asset'
+import webIcon512 from '@resources/icons/icons/512x512.png?asset'
 import {
   openBrowserUrl,
   type DoctorOptions,
@@ -108,7 +117,7 @@ import {
 import { CliChannel } from '@main/channels/cli/channel'
 import { CliServer } from '@main/channels/cli/server'
 import { registerCliIpc, type AutostartFacts } from '@main/channels/cli/ipc'
-import { stableExecPath } from '@main/autostart/appimage'
+import { appImagePath, stableExecPath } from '@main/autostart/appimage'
 import { cliEntryPath, cliPathStatus, installCliPath } from '@main/autostart/cli-path'
 import {
   autostartMechanism,
@@ -187,7 +196,6 @@ import {
   isUpdateReady,
   markInstalling,
   onUpdaterState,
-  stageUpdate,
   stampPreUpdateVersion,
   type UpdaterState
 } from '@main/updater'
@@ -234,6 +242,8 @@ import {
   getInAppConfig,
   getMemesConfig,
   getMobileChannelConfig,
+  getWebUiConfig,
+  setWebUiConfig,
   setMobileChannelConfig as persistMobileChannelConfig,
   getVideoConfig,
   setVideoConfig,
@@ -745,10 +755,10 @@ async function fetchProviderModels(
       return { ok: false, ...classifyHttpError(res.status, text) }
     }
     const body = (await res.json()) as {
-      data?: Array<{ id: string; created?: number }>
+      data?: Array<{ id: string; created?: number; shutdown_date?: string }>
     }
     const models = (body.data ?? [])
-      .filter((m) => isOpenAIChatModel(m.id))
+      .filter((m) => isOpenAIChatModel(m.id, m.shutdown_date))
       .slice()
       .sort((a, b) => (b.created ?? 0) - (a.created ?? 0))
       .map((m) => m.id)
@@ -768,20 +778,26 @@ function isAnthropicChatModel(id: string): boolean {
   return /^claude-(fable|opus-4|sonnet-4|haiku-4)/.test(id)
 }
 
-// OpenAI's /v1/models returns 60+ entries. Keep ANY chat-completions-capable
-// model — reasoning OR not (non-reasoning models just show the brain button
-// off). Omit only what genuinely can't work in Wolffish or adds no value:
-//  • non-chat endpoints (image/audio/tts/realtime/etc.)
-//  • -pro tiers — Responses-API only, 404 on /v1/chat/completions (verified)
+// OpenAI's /v1/models returns 130+ entries. Keep ANY text model the
+// Responses API serves — reasoning OR not (non-reasoning models just show
+// the brain button off). Omit only what genuinely can't work in Wolffish or
+// adds no value (every exclusion verified live 2026-10-12):
+//  • models past their `shutdown_date` — /v1/models keeps listing them for
+//    months after they 404 ("has been deprecated"), so the date is the gate
+//  • non-text endpoints (image/audio/tts/realtime/live/transcribe/etc.)
+//  • -pro tiers (background-only, not a chat brain) and -codex (Codex CLI
+//    line; the current one 404s outside its own surface)
 //  • gpt-3.5 — too weak for an agentic assistant
 //  • dated snapshots (…-YYYY-MM-DD or -MMDD) — exact duplicates of the alias
-function isOpenAIChatModel(id: string): boolean {
-  if (id.startsWith('gpt-image-') || id.startsWith('chatgpt-image')) return false
-  if (/-(audio|tts|whisper|search|realtime|transcribe|image|instruct)/.test(id)) return false
+function isOpenAIChatModel(id: string, shutdownDate?: string): boolean {
+  if (shutdownDate && shutdownDate <= new Date().toISOString().slice(0, 10)) return false
+  if (/^(gpt-image-|chatgpt-image|gpt-live|gpt-realtime|gpt-audio|gpt-transcribe)/.test(id))
+    return false
+  if (/-(audio|tts|whisper|search|realtime|transcribe|image|instruct|codex)/.test(id)) return false
   if (/-pro($|-)/.test(id)) return false
   if (/(\d{4}-\d{2}-\d{2}|-\d{4})$/.test(id)) return false
   if (/^gpt-3\.5/.test(id)) return false
-  return /^(gpt-|chatgpt-|o\d)/.test(id)
+  return /^(gpt-|chatgpt-|chat-latest|o\d)/.test(id)
 }
 
 function isDeepSeekChatModel(id: string): boolean {
@@ -1065,6 +1081,162 @@ const cliServer = new CliServer({
   channel: cliChannel,
   version: app.getVersion()
 })
+
+/**
+ * The browser. The renderer bundle served over HTTP(S), with the preload
+ * bridge replaced by a socket into the same handler map the CLI reaches —
+ * every panel and every turn, on a phone, by this machine's address. Off
+ * until the user sets a master password and switches it on.
+ */
+const webServer = new WebServer({
+  handlers: ipcHandlers,
+  version: app.getVersion(),
+  rendererDir: join(__dirname, '../renderer'),
+  devServerUrl: is.dev ? (process.env['ELECTRON_RENDERER_URL'] ?? null) : null,
+  icons: { 128: webIcon128, 256: webIcon256, 512: webIcon512 },
+  getConfig: () => getWebUiConfig(),
+  setConfig: async (patch) => {
+    await setWebUiConfig(patch)
+    broadcast('web:configChange', toPublicConfig(await getWebUiConfig()))
+  },
+  persistVapid: async (keys) => {
+    await setWebUiConfig({
+      push: { vapidPublicKey: keys.publicKey, vapidPrivateKey: keys.privateKey }
+    })
+  },
+  stateFile: join(workspaceRoot(), 'web', 'state.json'),
+  tlsDir: join(workspaceRoot(), 'web', 'tls'),
+  exportPdf: (html) => renderHtmlToPdf(html),
+  attachFiles: (request) => webAttachFiles(request),
+  onStatusChange: () => {
+    void webServer
+      .status()
+      .then((status) => broadcast('web:statusChange', status))
+      .catch(() => undefined)
+    syncWebCapability()
+  },
+  onProgress: (event) => broadcast('web:httpsProgress', event),
+  log: (line) => wlog.info('[web]', line.replace(/^\[web\] /, '')),
+  warn: (line) => wlog.warn('[web]', line.replace(/^\[web\] /, ''))
+})
+// The prompt's <web_ui> overlay: where the app is served and whether this
+// box has a screen. Read at every prompt build, so it follows the listener.
+agent.prefrontal.setWebUiFacts(() => {
+  const facts = webServer.promptFacts()
+  return facts ? { ...facts, headless: IS_HEADLESS } : null
+})
+
+/**
+ * The same copy-into-folder helpers the native pickers call once their
+ * dialog closes — reached from the Web UI with paths its upload route staged.
+ */
+async function webAttachFiles(request: AttachFilesRequest): Promise<unknown> {
+  if (request.kind === 'project') {
+    if (!request.id) throw new Error('project id is required')
+    const projectId = request.id
+    const attached = await attachFilesToProject(projectId, request.paths, (progress) =>
+      broadcast('projects:copyProgress', { projectId, ...progress })
+    )
+    return attached.project
+  }
+  if (request.kind === 'procedure') {
+    if (!request.id) throw new Error('procedure id is required')
+    const procedureId = request.id
+    const attached = await attachFilesToProcedure(procedureId, request.paths, (progress) =>
+      broadcast('procedures:copyProgress', { procedureId, ...progress })
+    )
+    return attached.procedure
+  }
+  return attachFilesToAutomation(request.existing ?? [], request.paths, (progress) =>
+    broadcast('automations:copyProgress', progress)
+  )
+}
+
+/**
+ * Print a self-contained HTML document to PDF with the app's own Chromium,
+ * in a hidden window that never runs the document's scripts. Shared by the
+ * chat export's save dialog and the Web UI's download route.
+ */
+async function renderHtmlToPdf(html: string): Promise<Buffer> {
+  const { writeFile, unlink } = await import('node:fs/promises')
+  const tmpPath = join(app.getPath('temp'), `wolffish-chat-export-${Date.now()}.html`)
+  let printWin: BrowserWindow | null = null
+  try {
+    await writeFile(tmpPath, html, 'utf8')
+    printWin = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        javascript: false,
+        nodeIntegration: false,
+        contextIsolation: true
+      }
+    })
+    await printWin.loadFile(tmpPath)
+    return await printWin.webContents.printToPDF({
+      pageSize: 'A4',
+      printBackground: true,
+      displayHeaderFooter: true,
+      headerTemplate: '<span></span>',
+      footerTemplate:
+        '<div style="width:100%;text-align:center;font-family:Helvetica,Arial,sans-serif;font-size:8px;color:#9ca3af;">' +
+        '<span class="pageNumber"></span> / <span class="totalPages"></span></div>',
+      margins: { top: 0.55, bottom: 0.65, left: 0.55, right: 0.55 }
+    })
+  } finally {
+    printWin?.destroy()
+    void unlink(tmpPath).catch(() => undefined)
+  }
+}
+
+/**
+ * notify_web exists for the model exactly while there is a browser to reach:
+ * the channel is listening, notifications are allowed, and at least one
+ * browser has signed in. Re-evaluated on every status change.
+ */
+let webCapabilityRegistered = false
+let webPublicRegistered = false
+function syncWebCapability(): void {
+  void (async () => {
+    const config = await getWebUiConfig()
+    const status = await webServer.status()
+    const wanted = status.listening && config.notifications !== false && status.sessions > 0
+    if (wanted !== webCapabilityRegistered) {
+      webCapabilityRegistered = wanted
+      if (wanted) {
+        const { capability, plugin } = buildWebCapability({
+          notify: (input) => webServer.notify(input)
+        })
+        agent.cerebellum.registerInProcessCapability(capability, plugin)
+        wlog.info('[web]', 'notify_web registered')
+      } else {
+        agent.cerebellum.unregisterInProcessCapability(WEB_CAPABILITY_NAME)
+        wlog.info('[web]', 'notify_web unregistered')
+      }
+    }
+    // Public links need only a listener: they exist for people who are NOT
+    // signed in, so a session count gates nothing here.
+    const publicWanted = status.listening
+    if (publicWanted !== webPublicRegistered) {
+      webPublicRegistered = publicWanted
+      if (publicWanted) {
+        const { capability, plugin } = buildWebPublicCapability({
+          store: webServer.publicShares,
+          publicOrigin: () => webServer.publicOrigin(),
+          onChange: () => {
+            void listPublicViews(webServer)
+              .then((links) => broadcast('web:publicChange', links))
+              .catch(() => undefined)
+          }
+        })
+        agent.cerebellum.registerInProcessCapability(capability, plugin)
+        wlog.info('[web]', 'public_link registered')
+      } else {
+        agent.cerebellum.unregisterInProcessCapability(WEB_PUBLIC_CAPABILITY_NAME)
+        wlog.info('[web]', 'public_link unregistered')
+      }
+    }
+  })().catch((err) => wlog.warn('[web]', `capability sync failed: ${err}`))
+}
 
 /**
  * The phone is a second view of this app, not a chat channel: it renders the
@@ -2021,6 +2193,7 @@ agent.cerebellum.setChannelStatusProvider(() =>
     // The agent's own view has to include the terminal, or on a headless box
     // it believes it has no way to answer the person it is talking to.
     cli: () => ({ clients: cliServer.clientCount(), listening: cliServer.isListening() }),
+    web: () => webServer.quickStatus(),
     headless: () => IS_HEADLESS
   })
 )
@@ -2102,6 +2275,9 @@ browserTabs.setHandlers({
   onFrame: (frame) => {
     const win = mainBrowserWindow()
     if (win && !win.isDestroyed()) win.webContents.send('browser:frame', frame)
+    // A browser card open in the Web UI sees the same frames; the server
+    // drops them on the floor when no browser is connected.
+    webServer.pushBroadcast('browser:frame', frame)
   }
 })
 // Blocking waits (`wait`, utilities). No cross-turn plumbing: a wait lives
@@ -2669,6 +2845,7 @@ function broadcastThemeUpdate(): void {
   for (const w of BrowserWindow.getAllWindows()) {
     w.webContents.send('theme:updated', state)
   }
+  webServer.pushBroadcast('theme:updated', state)
 }
 
 /**
@@ -2726,6 +2903,8 @@ const MOBILE_CONFIG_SILENT = new Set([
   'diagnostics:progress',
   'heartbeat:jobLog',
   'mobile:statusChange',
+  'web:statusChange',
+  'web:httpsProgress',
   'model:pullProgress',
   'ollama:changed',
   'projects:copyProgress',
@@ -2850,6 +3029,7 @@ async function buildCliStatus(callerPath?: string | null): Promise<Record<string
       whatsapp: () => whatsappChannel.getStatus(),
       mobile: () => mobileChannel.getStatus(),
       cli: () => ({ clients: cliServer.clientCount(), listening: cliServer.isListening() }),
+      web: () => webServer.quickStatus(),
       headless: () => IS_HEADLESS
     }),
     mobile: mobileChannel.getStatus(),
@@ -2875,6 +3055,9 @@ function broadcast<T>(channel: string, payload: T): void {
   // channel command) has to land there too. Hooking the chokepoint is what
   // makes that true for every broadcast there is, including ones added later.
   cliServer.pushBroadcast(channel, payload)
+  // Fourth audience: every browser signed into the Web UI. Same chokepoint,
+  // same reason — a window and a phone browser must never disagree.
+  webServer.pushBroadcast(channel, payload)
   // Same signal, second audience. Saving a setting fires one of these on
   // every path there is, so hooking here covers them all at once instead of
   // one remembered push per handler.
@@ -2977,6 +3160,7 @@ let pendingDrainResolvers: Array<() => void> = []
 // in-progress drain and kill the process anyway.
 let quitInProgress = false
 let updateInstallInProgress = false
+let rebootInProgress = false
 
 async function trackBackgroundTask<T>(work: () => Promise<T>): Promise<T> {
   pendingBackgroundTasks += 1
@@ -3016,6 +3200,55 @@ async function drainAndQuit(): Promise<void> {
   // lets will-quit fire and release the workspace lockfile.
   quitInProgress = false
   app.quit()
+}
+
+/**
+ * The same app again, from the path that still exists once this process is
+ * gone. An AppImage runs from a mount that the runtime tears down on exit, so
+ * `app.relaunch()` there would exec a binary that no longer exists; the
+ * .AppImage file is the stable handle, and the args are carried over by hand
+ * because Electron only keeps them when execPath is left alone.
+ */
+function relaunchApp(): void {
+  const appImage = appImagePath()
+  if (appImage) app.relaunch({ execPath: appImage, args: process.argv.slice(1) })
+  else app.relaunch()
+}
+
+/**
+ * Reboot: drain like a quit, then come back as a fresh process.
+ *
+ * Reached from the Settings rail, the Web UI and `wolffish reboot`. The
+ * caller's reply is written before this runs (see the handler), so a terminal
+ * sees "rebooting" rather than a dropped socket. app.exit() skips before-quit
+ * and will-quit, so everything they would have done is done here by hand, in
+ * their order: channels and agent down, background saves drained, sockets
+ * closed, MCP children gone, lockfile released, then relaunch and exit.
+ */
+async function rebootApp(): Promise<void> {
+  if (rebootInProgress || updateInstallInProgress) return
+  rebootInProgress = true
+  isQuittingFromTray = true
+  wlog.info('[reboot]', 'requested — draining before relaunch')
+  broadcast('app:closingPending', { tasks: pendingBackgroundTasks, reason: 'reboot' })
+  await shutdownGracefully()
+  // A wedged save must not pin the app in a half-stopped state forever.
+  await Promise.race([
+    waitForBackgroundDrain(),
+    new Promise<void>((resolve) => setTimeout(resolve, 8_000))
+  ])
+  quitInProgress = false
+  await cliServer.stop().catch(() => undefined)
+  await webServer.stop().catch(() => undefined)
+  mcpManager.killAllSync()
+  browserTabs.destroyAll('shutdown')
+  if (lockAcquired) {
+    releaseLockSync(lockfilePath())
+    lockAcquired = false
+  }
+  wlog.info('[reboot]', 'relaunching')
+  relaunchApp()
+  app.exit(0)
 }
 
 /**
@@ -3159,6 +3392,7 @@ app.whenReady().then(async () => {
       for (const w of BrowserWindow.getAllWindows()) {
         w.webContents.send('extension:statusChange', status)
       }
+      webServer.pushBroadcast('extension:statusChange', status)
     })
     void extensionServer
       .start({ port: extCfg.port })
@@ -3825,6 +4059,7 @@ app.whenReady().then(async () => {
     for (const w of BrowserWindow.getAllWindows()) {
       w.webContents.send('google:setupState', payload)
     }
+    webServer.pushBroadcast('google:setupState', payload)
   }
   handle('google:getSetupState', (): GoogleSetupState => googleService.getSetupState())
   handle('google:setup', async (): Promise<GoogleSetupResult> => {
@@ -4076,6 +4311,7 @@ app.whenReady().then(async () => {
     for (const w of BrowserWindow.getAllWindows()) {
       w.webContents.send(channel, payload)
     }
+    webServer.pushBroadcast(channel, payload)
   }
   // One install path per engine, shared by the panel's button (the IPC handlers
   // below) and by the agent (the voice host further down). Whoever starts it,
@@ -4204,6 +4440,14 @@ app.whenReady().then(async () => {
     await factoryReset().catch(() => undefined)
     app.relaunch()
     app.exit(0)
+  })
+
+  // Reply first, reboot on the next tick: the CLI and Web UI sockets this
+  // answer travels on are closed by the reboot itself.
+  handle('app:reboot', () => {
+    if (rebootInProgress || updateInstallInProgress) return { scheduled: false }
+    setImmediate(() => void rebootApp())
+    return { scheduled: true }
   })
 
   handle('data:getAnalytics', (): Promise<DataAnalytics> => getDataAnalytics())
@@ -5211,16 +5455,6 @@ app.whenReady().then(async () => {
     // Broadcast 'installing' so a panel remounted during the grace window
     // (page navigation) restores the disabled state instead of re-enabling.
     markInstalling()
-    // macOS: Squirrel unpacks and signature-checks the bundle NOW, while the
-    // app is still whole. Until this resolves nothing has been torn down, so a
-    // failure simply lands in the error phase with a working app behind it.
-    // (Before this step existed the handler force-exited 5 s after
-    // quitAndInstall — usually before Squirrel had finished — and the app
-    // died with nothing installed and nothing relaunched.)
-    if (!(await stageUpdate())) {
-      updateInstallInProgress = false
-      return
-    }
     await stampPreUpdateVersion()
     void shutdownGracefully()
     // Grace period: let in-flight work finish, then force through
@@ -5402,6 +5636,11 @@ app.whenReady().then(async () => {
     if (result.canceled || result.filePaths.length === 0) return null
     return result.filePaths
   })
+  // The Web UI's folder sheet: no native dialog in a browser, so it browses
+  // the server one level at a time through this.
+  handle('paths:listDirectories', (_event, target: string, options?: { hidden?: boolean }) =>
+    listDirectories(typeof target === 'string' ? target : '~', options ?? {})
+  )
   handle('automations:removeFile', async (_event, filePath: string) => {
     await removeAutomationFile(filePath)
     return { ok: true as const }
@@ -6215,37 +6454,13 @@ app.whenReady().then(async () => {
       })
       if (result.canceled || !result.filePath) return { ok: false, canceled: true }
 
-      const { writeFile, unlink } = await import('node:fs/promises')
-      const tmpPath = join(app.getPath('temp'), `wolffish-chat-export-${Date.now()}.html`)
-      let printWin: BrowserWindow | null = null
       try {
-        await writeFile(tmpPath, payload.html, 'utf8')
-        printWin = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            javascript: false,
-            nodeIntegration: false,
-            contextIsolation: true
-          }
-        })
-        await printWin.loadFile(tmpPath)
-        const pdf = await printWin.webContents.printToPDF({
-          pageSize: 'A4',
-          printBackground: true,
-          displayHeaderFooter: true,
-          headerTemplate: '<span></span>',
-          footerTemplate:
-            '<div style="width:100%;text-align:center;font-family:Helvetica,Arial,sans-serif;font-size:8px;color:#9ca3af;">' +
-            '<span class="pageNumber"></span> / <span class="totalPages"></span></div>',
-          margins: { top: 0.55, bottom: 0.65, left: 0.55, right: 0.55 }
-        })
+        const pdf = await renderHtmlToPdf(payload.html)
+        const { writeFile } = await import('node:fs/promises')
         await writeFile(result.filePath, pdf)
         return { ok: true }
       } catch (err) {
         return { ok: false, error: err instanceof Error ? err.message : String(err) }
-      } finally {
-        printWin?.destroy()
-        void unlink(tmpPath).catch(() => undefined)
       }
     }
   )
@@ -6332,6 +6547,23 @@ app.whenReady().then(async () => {
   })
   void cliServer.start().catch((err) => wlog.error('[cli]', `socket start failed: ${err}`))
 
+  // The Web UI — same handler map, reached over HTTP(S) by a browser. Its
+  // own channels are registered first so the panel that configures it can
+  // reach them; the server itself only listens once the user enabled it and
+  // set a master password.
+  registerWebIpc({
+    handle,
+    server: webServer,
+    broadcast: (channelName, payload) => broadcast(channelName, payload),
+    syncCapability: () => syncWebCapability()
+  })
+  void ensureWebUiPassword()
+    .then(({ generated }) => {
+      if (generated) wlog.info('[web]', 'generated the master passphrase — wolffish web password')
+      return webServer.start()
+    })
+    .catch((err) => wlog.error('[web]', `start failed: ${err}`))
+
   // Install the `wolffish` shim on every boot, not just on first run. It is
   // idempotent and it has to be re-pointed after an update anyway (the app
   // binary's path can move), so writing it unconditionally is both simpler
@@ -6398,6 +6630,9 @@ app.on('will-quit', () => {
   // hang. Fire-and-forget: will-quit is synchronous and the OS reclaims the
   // socket regardless.
   void cliServer.stop().catch(() => undefined)
+  // Browsers get their sockets closed for the same reason — the bridge reads
+  // a clean close as "the app went away" and shows it, instead of a spinner.
+  void webServer.stop().catch(() => undefined)
   // Last-resort synchronous sweep for stdio MCP children: the idle quit
   // path never runs the async drain, and Node does not kill children on
   // parent exit — a server that ignores stdin EOF would orphan.

@@ -1,0 +1,21 @@
+# Committed demo dataset — generated, not hand-formatted. Reformatting these is
+# never a real change, and `npm run format` used to bury contributors in one.
+
+# Emitted minified by scripts/demo/build-demo-bundle.mjs, and the shard bytes
+# are hashed into manifest.json's version. Reformatting desyncs the committed
+# bundle from what a rebuild would write.
+demo/bundle/
+
+# One conversation per line, as exported.
+demo/conversations/
+
+# demo/config-snapshot.json is deliberately NOT ignored: build-usage-ledger.mjs
+# writes it back through prettier, so it is already conformant and must stay so.
+
+# Build output and generated native projects (ignored by the root .gitignore;
+# prettier only reads ignore files from its own cwd, so repeat them here).
+dist/
+web-build/
+.expo/
+ios/
+android/

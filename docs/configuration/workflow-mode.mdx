@@ -1,0 +1,154 @@
+---
+title: "Workflow Mode"
+description: "Turn the one agent you talk to into the master of a run it designs itself — phases, live parallel agents, and a model chosen per agent"
+---
+
+# One Agent, Many Agents
+
+Most of the time Wolffish is one model doing one thing at a time. Workflow mode keeps that feel — you still talk to one agent — but lets it architect how a hard job gets executed. The agent you message becomes the **master** of the run: it declares the phases of its plan, spawns live agents that work in parallel, collects each one's report the moment it lands, sends follow-ups, cancels dead ends, and folds everything into a single reply. You watch it all happen on a live **workflow card** in the chat.
+
+It's opt-in. By default Wolffish runs in **Single** mode — one model answering directly. You switch modes inside the **model card beside the chat input**: open it, pick Single or Workflow from the chip row above the search, and it takes effect from your next message.
+
+## Workflow vs. Single Mode
+
+| | Single (default) | Workflow |
+|---|---|---|
+| Models | One — the Brain | The Brain as master, plus any connected model per agent |
+| Work | The Brain does everything itself, in sequence | The master delegates independent slices to parallel agents |
+| Cost | One model, one session | Several live sessions, each billed on its own model |
+| Best for | Quick chats, small or strictly sequential tasks | Complex tasks that split into independent parts, or work that deserves verification |
+
+<Note>
+  Switching to Workflow mode doesn't force delegation. The master scales the workflow to the task, **per turn**: "hello" or a one-file edit gets a direct answer with no plan and no agents, while a hard deliverable might get analysis agents, builder agents, skeptic agents, and a verify pass. Workflow mode must never make small things slow.
+</Note>
+
+## How It Works
+
+In workflow mode your **Brain** model becomes the master. Agents are full tool-using Wolffish agents that run in the background and report only to the master — and the master picks **each agent's model individually**.
+
+```
+        You
+         │
+    ┌────▼────┐
+    │ Master  │   (your Brain model)
+    └────┬────┘
+    plan │ spawn / collect / steer / cancel
+    ┌────┼────┐
+    ▼    ▼    ▼
+  Agent Agent Agent   (models the master chooses, running in parallel)
+```
+
+A turn in workflow mode runs like this:
+
+1. **Plan.** For a task big enough to phase, the master declares the run's phases — e.g. analysis → build → critique → verify. The plan is its own design, never a fixed template, and it can revise mid-run as it learns. The phases render on the workflow card and light up as their agents run.
+2. **Spawn.** It fans independent slices out to agents — several at once — writing each a complete, self-contained task. An agent sees only what the master writes; it has no view of your chat thread or the other agents.
+3. **Collect as they land.** It waits event-driven: the **first** agent to finish comes back first, and the master reacts to each report as it arrives instead of stalling on the slowest.
+4. **Verify.** Produced work gets critiqued before it's trusted — a skeptic agent told to refute, a checker that re-runs the claim, competing agents whose answers the master compares. Nothing important ships having been seen only by its author.
+5. **Iterate.** It re-engages idle agents with follow-ups, cancels off-track ones, and absorbs a failed slice itself when that's cheaper than respawning.
+6. **Synthesize.** Once the pieces hold up, the master writes **one reply** in its own voice. It never pastes raw agent output at you, and it leaves no agent running when it answers.
+
+### A model for every agent
+
+This is the biggest difference from the old orchestrator mode's single fixed "Worker" slot: there is no second model to configure. The master sees a live catalog of **every model on every provider you've connected** — each with its context window, supported reasoning efforts, and vision capability — and picks per slice: a frontier model for hard reasoning and judgment, a fast cheap one for mechanical sweeps, its own model when none is specified. It stays within your Brain's provider family by default and crosses to another family only when a slice clearly benefits — a capability its own family lacks, or an independent skeptic whose blind spots differ from the producer's.
+
+Each agent's **reasoning effort** is set per task too — `off` / `on` / `high` / `max`, clamped to what the chosen model supports.
+
+### The workflow tools
+
+The master drives the run through a small, dedicated toolset. You don't call these — the master does, on its own.
+
+| Tool | What it does |
+|---|---|
+| `workflow_plan(phases, note?)` | Declare (or revise) the run's phases. Renders on the workflow card; phases light up as their agents run and complete. |
+| `agent_spawn({task, name?, model?, effort?, phase?})` | Start a live agent in the background. Returns an id immediately; spawn several in a row for parallelism. `model` is any `provider/model-id` you've connected. |
+| `agent_send(agent_id, message, effort?)` | Send a follow-up to an idle agent — it runs again with its full prior context intact. |
+| `agents_await(agent_ids?)` | Block until the **next** agent lands (not all of them); returns the first completed report — or an early **no-progress notice** about a still-running agent that has gotten stuck repeating itself (see below). |
+| `agent_cancel(agent_id)` | Cancel an agent immediately, aborting its in-flight tool call. Cancel-and-respawn is also how the master steers an agent mid-run. |
+
+<Note>
+  Delegation is **one level deep**. Agents are full agents with three exceptions: they can't spawn agents of their own, they can't message any channel, and they can't ask you questions — a blocker goes in their report to the master instead. The master is the only one who can reach you. That keeps the structure flat and the single-voice promise intact.
+
+  What agents *do* share is the app's **saved admin session**: a `sudo` command inside an agent authenticates exactly as it does in chat (at most one native password dialog per app run, handled app-side), so delegated admin work just runs instead of bouncing back as a blocker — the same holds for scheduled runs.
+</Note>
+
+### Agent retries
+
+Agents are **single-shot** — they don't retry on their own. Any failure surfaces straight to the master, which reads it and decides: re-run it, re-scope it, try a different model, or absorb the slice itself. (The master itself still gets a transient-error retry budget; agents don't.)
+
+### When an agent gets stuck
+
+An agent can wedge itself — re-issuing the **same tool call over and over** with nothing to show for it (a page that keeps reloading, a denied action retried on a loop). Wolffish watches for this and tells both ends. The stuck agent gets a note in its own feed that it's repeating itself and should wrap up with whatever it has. The master, meanwhile, is **woken out of `agents_await`** with a no-progress notice naming the agent, the call it keeps making, and how many times — so a master parked waiting on a result that may never come isn't blocked indefinitely. It then decides for itself: **wait a little longer** to let the agent conclude with partial findings, or **`agent_cancel`** it and cover that slice another way. Nothing is capped and nothing is killed automatically — the decision stays with the master. Real landings always take priority: if a finished report is ready, `agents_await` returns that first, and only surfaces a no-progress notice when nothing has landed.
+
+## The Workflow Card
+
+Every workflow run gets one card in the chat. Collapsed, it's a single quiet header; open, it's the whole run:
+
+- **The phase plan** as chips that move from pending to active to done.
+- **A live table** with a row per agent — its name and task, the model it runs on, its phase, status, elapsed time, tokens, tool calls, and cost.
+- **Run totals** in the header: agents done, total tool calls, elapsed time, context tokens, and the true whole-turn cost (agents plus the master's own spend).
+
+Every number is drawn from the harness's own telemetry — statuses, tokens, timing — never from what the model claims, so the card you watch live and the card you reopen next week are the same card. It prints too: the chat's PDF export renders a finished run as a static table. The same telemetry feeds the **context pill's hover card**, which itemizes the run as its own Workflow section — one row per agent with live status, tokens, and cost, plus run totals — and restores alongside the rest of the meter when you reopen the conversation.
+
+## When to Use It
+
+<CardGroup cols={2}>
+  <Card title="Research several things" icon="magnifying-glass">
+    Look into multiple topics, sources, or options at once — one agent per thread — then have the master synthesize the findings.
+  </Card>
+  <Card title="Build or analyze in parallel" icon="layer-group">
+    Several independent components, files, or analyses that don't depend on each other. Each gets an agent's full, focused depth.
+  </Card>
+  <Card title="Batch work" icon="grip">
+    The same operation across many items. Fan it out across agents instead of grinding through serially.
+  </Card>
+  <Card title="Adversarial verification" icon="code-branch">
+    Have skeptic agents attack a draft, run competing approaches, or cross-check a claim on an independent model family — then let the master judge.
+  </Card>
+</CardGroup>
+
+For a small, quick, or strictly **sequential** task — where each step needs the last one's result — stay in Single mode. It's cheaper and faster there, and there's nothing to parallelize.
+
+<Tip>
+  There's no threshold or formula. The good signal is **independence**: if a task splits into parts that can run without waiting on each other, workflow mode buys you speed (they run at once) and depth (each part gets full attention). The second signal is **stakes**: work that deserves adversarial verification gets it built into the run.
+</Tip>
+
+## Turning It On
+
+- **Globally:** open the **model card** beside the chat input — Single/Workflow is a chip row inside it, above the search. It applies from your next message, and scheduled jobs and procedures inherit it by default. (Before v1.0.236 this was a separate mode pill on the composer; it moved so every model knob sits in one panel.)
+- **Per automation:** every job on the [Heartbeat page](/configuration/heartbeat) has its own Single/Workflow toggle — under the hood it's an optional first body line `mode: workflow` (or `mode: single`) in the job's block, which is stripped before the instruction reaches the agent. Wolffish can set it by conversation too when you ask it to schedule something.
+- **Per procedure:** each saved [procedure](/configuration/procedures) carries its own mode, toggled next to its Play button — so the morning brief stays a quick single-model run while the weekly deep-dive fans out into agents.
+
+<Note>
+  Provider API keys live in **Settings → Models**; the active Brain model is picked from the **model switch** beside the chat input. Any connected cloud provider's models are available to the master for agents — there's nothing else to configure.
+</Note>
+
+## Watching the Work on Channels
+
+In the app, the workflow card is always there. On [WhatsApp](/channels/whatsapp) and [Telegram](/channels/telegram), workflow runs report progress as deterministic messages built from the same telemetry: one when the run starts with its phase plan, one as each phase completes, and a closing summary with totals.
+
+With **Show all tool activity** on (per channel, in **Settings → Channels**; the switch was called *Verbose task results* until v1.0.288), each agent also gets a verdict line as it lands — its name, model, duration, and tool-call count. Off keeps the [clean feed](/channels/overview#the-clean-feed): the master's reply, nothing else. The switch affects **display only**, not execution.
+
+Two rules keep the feed honest. **Workers save; Wolffish delivers** — agents carry no send tools at all (withdrawn since v1.0.246, not merely discouraged): their files are saved under the [workspace](/architecture/workspace) and reported by path, and the master alone decides what actually reaches you, so a background worker can never drop an unannounced file onto your Desktop. And since v1.0.259, agents browsing [in your browser](/integrations/browser-extension) put their **milestone screenshots on the record**, flagged as worth seeing — the master relays the telling ones into your chat as the run progresses, so you see *what* the work looks like, not just that it's moving.
+
+## Cost & Limitations
+
+<Warning>
+  Workflow mode is for **complex tasks, not quick conversations**. It can run several live sessions per turn, so it costs more than Single mode and adds coordination overhead. Keep Single as your default and reach for Workflow when a task genuinely splits into parallel parts or deserves built-in verification.
+</Warning>
+
+- **Cost.** Each agent is its own model session, billed on whatever model the master picked for it. Several agents at once means several concurrent bills, on top of the master's own.
+- **Latency on simple work.** Planning, spawning, collecting, and synthesizing adds overhead. For a one-line answer, Single mode streams straight back.
+- **One level only.** Agents can't spawn agents, message channels, or ask you questions. All coordination and all contact with you go through the master.
+- **Unattended runs are conservative.** On scheduled jobs and procedures the master keeps fan-outs modest and models cheap by default — nobody is watching to stop a runaway run.
+
+## Migrating from Orchestrator Mode
+
+Workflow mode replaces the old orchestrator mode (v1.0.196–v1.0.204). If you were running orchestrator mode, you're moved to workflow mode automatically on first launch; the fixed **Worker model** slot, the **Greedy effort** and **Autonomy** toggles, and the drag-and-drop **Modes** settings page are all retired, and leftovers are swept from your workspace. Model selection now lives in the chat composer.
+
+## See Also
+
+- [Choosing a Provider](/configuration/providers) — connect the providers whose models the master can spawn agents on
+- [config.json](/configuration/config-json) — how your model and mode selection is stored (`llm.mode`)
+- [Heartbeat](/configuration/heartbeat) — per-job workflow/single markers for scheduled runs
+- [Procedures](/configuration/procedures) — per-procedure mode for saved prompts
+- [The Pipeline](/architecture/pipeline) — how a turn flows through the brain modules

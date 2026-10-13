@@ -26,7 +26,13 @@
     "title": "Closing Wolffish",
     "subtitle": "Wolffish is finishing up some background work so nothing is lost.",
     "bodyTitle": "Saving your work",
-    "body": "Closes once your work is saved."
+    "body": "Closes once your work is saved.",
+    "reboot": {
+      "title": "Rebooting Wolffish",
+      "subtitle": "Wolffish is finishing up and will be right back.",
+      "bodyTitle": "Saving your work",
+      "body": "Starts again once your work is saved."
+    }
   },
   "onboarding": {
     "welcome": "Welcome to Wolffish",
@@ -205,7 +211,16 @@
       "usage": "Usage",
       "data": "Data",
       "updates": "Updates",
-      "knowledge": "Knowledge"
+      "knowledge": "Knowledge",
+      "reboot": "Reboot"
+    },
+    "reboot": {
+      "title": "Reboot Wolffish?",
+      "warning": "Anything running right now is stopped, unsaved replies are saved, and Wolffish starts again on its own. Your settings and conversations are kept.",
+      "confirm": "Reboot",
+      "rebooting": "Rebooting…",
+      "cancel": "Cancel",
+      "errorToast": "Could not reboot. Try again."
     },
     "wolffish": {
       "title": "Wolffish",
@@ -466,7 +481,8 @@
         "whatsapp": "WhatsApp",
         "mobile": "Mobile",
         "cli": "CLI",
-        "browser": "Browser"
+        "browser": "Browser",
+        "web": "Web UI"
       },
       "cli": {
         "title": "CLI",
@@ -1653,12 +1669,44 @@
       "verifyingTitle": "Verifying update",
       "verifyingSubtitle": "Almost done — verifying your update",
       "installReady": "Install downloaded update",
-      "updateAvailable": "Ready to install"
+      "updateAvailable": "Ready to install",
+      "manualReady": "Installer downloaded",
+      "manualHint": "Opens it and quits Wolffish — drag the new app into Applications, then relaunch.",
+      "manualOpen": "Open installer",
+      "manualReveal": "Show in Finder"
     },
     "mobile": {
       "title": "Mobile",
-      "description": "Run Wolffish on your phone as a companion to this desktop — the same conversations, settings and usage, over an end-to-end encrypted tunnel.",
-      "notPaired": "No phone is paired yet. Start a pairing, then open Wolffish on your phone and connect.",
+      "description": "Run Wolffish on your phone as a companion to this desktop — the same conversations, settings and usage, over an end-to-end encrypted tunnel. The app is built from source and the relay is yours to run; the steps are below.",
+      "setup": {
+        "title": "Set it up yourself",
+        "repo": "Source on GitHub",
+        "intro": "The phone app is no longer in the App Store or Google Play, and the relay it used to connect through is gone. Everything you need is in the Wolffish repository: a relay you deploy, an app you build and install, and one pairing.",
+        "steps": {
+          "relay": {
+            "title": "Deploy the relay",
+            "body": "Open packages/relay in the repository and follow its README. A free Cloudflare account and about ten minutes give you a wss:// address of your own; any machine that runs Node works too."
+          },
+          "address": {
+            "title": "Enter the relay address here",
+            "body": "Paste the wss:// address into the Relay card below and click Use this relay. The next pairing carries it to your phone, so nothing is typed there."
+          },
+          "build": {
+            "title": "Build the app from source",
+            "body": "Open apps/mobile in the repository, run npm install, and put your own app identifier into app.config.ts (plus your Expo account if you build on EAS). The README names the exact lines."
+          },
+          "install": {
+            "title": "Install it on your phone",
+            "body": "iPhone: plug it in and run npm run ios:device from a Mac with Xcode. Android: npm run android with USB debugging on, or npm run android:apk on EAS for an APK you sideload."
+          },
+          "pair": {
+            "title": "Pair",
+            "body": "Generate a QR below, open the app, tap Connect to Desktop and scan it. From then on the phone reconnects by itself."
+          }
+        },
+        "footer": "Push notifications while the app is closed need one more thing: an access token from your Expo account, stored on your relay. The relay README covers it. Without it, notifications still arrive whenever the app is open."
+      },
+      "notPaired": "No phone is paired yet. Once the app is on your phone and your relay address is set, start a pairing here, then open Wolffish on the phone and connect.",
       "qrTitle": "Pairing QR",
       "qrDesc": "Generate a QR and scan it with your phone's camera. The secret travels screen to camera — it never crosses the network.",
       "codeTitle": "Pairing code",
@@ -1692,24 +1740,15 @@
         "relayTitle": "Forwarded by a blind relay",
         "relayBody": "The relay only helps the two devices find each other and passes sealed bytes along. It cannot read, alter or replay them, and it stores nothing — no database, no logs, no accounts, no message history."
       },
-      "getApp": {
-        "title": "Get the app",
-        "body": "Wolffish for your phone, on both stores. Install it, open it, and pair it here.",
-        "ios": "iPhone and iPad",
-        "android": "Android",
-        "appStore": "App Store",
-        "googlePlay": "Google Play"
-      },
       "openRelay": "Open in browser",
       "relayConfig": {
-        "body": "Where the two devices meet to exchange sealed frames. Any deployment of the open-source relay works — run your own, point this at it, and the next pairing carries it to your phone.",
+        "body": "Where the two devices meet to exchange sealed frames. There is no hosted relay: deploy the one in packages/relay of the repository (or anything that speaks its contract), paste its wss:// address here, and the next pairing carries it to your phone.",
         "inputLabel": "Relay URL",
         "apply": "Use this relay",
         "reset": "Reset to default",
-        "repo": "wolffish-relay on GitHub",
         "confirmTitle": "Change the relay?",
         "confirmBody": "This desktop and your phone will meet at:",
-        "confirmCompat": "The relay must be compatible with Wolffish — any deployment of the open-source relay works:",
+        "confirmCompat": "The relay must be compatible with Wolffish — a deployment of the relay in the repository works.",
         "confirmUnpair": "Your phone is paired through the current relay and will be unpaired. Pair it again after the change.",
         "confirmApply": "Change relay",
         "invalid": "That doesn't look like a relay URL. Use wss://host, or paste your relay's https:// address."
@@ -1744,13 +1783,246 @@
       "disconnectHint": "Cut the link loose. Your phone reconnects the next time it is opened.",
       "unpairAction": "Unpair",
       "unpairHint": "Forget this phone and drop its keys. Pairing again needs a new QR or code."
+    },
+    "web": {
+      "title": "Web UI",
+      "subtitle": "The whole app, served to any browser at this machine's address — a phone on the same network, or a VPS reached by its IP. Same chat, same settings, same agent; protected by one master password.",
+      "toggle": {
+        "on": "On",
+        "off": "Off"
+      },
+      "status": {
+        "off": "Off",
+        "listening": "Listening — no browser connected",
+        "connected": "Connected",
+        "error": "Not running"
+      },
+      "clients": "{{count}} connected",
+      "needsPassword": "Set a master password below before switching the Web UI on. There is no password-less mode: whoever reaches this address gets the whole agent.",
+      "notListening": "Could not start: {{error}}",
+      "openAt": "Open it at",
+      "copy": "Copy",
+      "open": "Open in browser",
+      "httpsHint": "Served over HTTPS — notifications and the microphone work in the browser.",
+      "httpHint": "Plain HTTP — HTTPS below for notifications and mic.",
+      "restart": "Restart server",
+      "password": {
+        "title": "Master password",
+        "set": "Set",
+        "description": "What a browser types once to sign in. Wolffish generated a twelve-word passphrase at first launch, so the Web UI could be on from the start; show it, copy it, regenerate it, or replace it with one of your own. Changing it signs every browser out.",
+        "placeholder": "New master password",
+        "confirmPlaceholder": "Repeat it",
+        "tooShort": "At least {{min}} characters.",
+        "mismatch": "The two entries differ.",
+        "change": "Change password",
+        "setAction": "Set password",
+        "saved": "Master password saved.",
+        "confirmTitle": "Change the master password?",
+        "confirmBody": "Every browser that is signed in will be signed out and will need the new password.",
+        "requirements": "At least {{min}} characters, rated Good or better: mix letters, numbers and symbols, or use a long passphrase.",
+        "strength": {
+          "label": "Password strength",
+          "weak": "Weak",
+          "fair": "Fair",
+          "good": "Good",
+          "strong": "Strong"
+        },
+        "hint": {
+          "length": "Make it longer — at least {{min}} characters.",
+          "mix": "Mix letters, numbers and symbols, or make it a long passphrase.",
+          "common": "That is a commonly used password — pick something personal.",
+          "repeat": "Avoid repeated or sequential characters."
+        },
+        "generated": "Generated passphrase",
+        "own": "Your own password",
+        "generatedNote": "Also shown by wolffish web password.",
+        "ownNote": "Stored hashed, so it cannot be shown here. Regenerate to go back to a passphrase Wolffish can show you.",
+        "show": "Show",
+        "hide": "Hide",
+        "copy": "Copy",
+        "copied": "Copied",
+        "regenerate": "Regenerate",
+        "regenerateTitle": "Generate a new master password?",
+        "regenerateBody": "A new twelve-word passphrase replaces the current one. Every browser that is signed in will be signed out and will need the new one.",
+        "regenerated": "New master password generated.",
+        "useOwn": "Use a password of my own instead"
+      },
+      "network": {
+        "title": "Network",
+        "description": "Which port the UI answers on and which addresses it answers at.",
+        "port": "Port",
+        "bind": "Listen on",
+        "bindHint": "0.0.0.0 answers on every address this machine has — what a VPS wants. 127.0.0.1 keeps it reachable from this machine only.",
+        "lowPort": "Ports below 1024 need root on Linux (or CAP_NET_BIND_SERVICE). Pick a higher port unless Wolffish runs as a service with that right.",
+        "apply": "Apply"
+      },
+      "https": {
+        "title": "HTTPS",
+        "description": "Browsers only allow notifications, the microphone and installing the app to a home screen on a trusted HTTPS origin. Let's Encrypt can certify a bare public IP address — no domain name needed.",
+        "modes": {
+          "off": "Off",
+          "acme": "Let's Encrypt",
+          "selfsigned": "Self-signed",
+          "custom": "My certificate"
+        },
+        "modeHint": {
+          "off": "Plain HTTP. Fine on a trusted local network; notifications and the microphone stay off in the browser.",
+          "acme": "A trusted certificate from Let's Encrypt for this machine's public IP address — or a hostname pointing here — served on port 443, renewed on its own every few days. One button runs the checks, gets the certificate and moves you to https://.",
+          "selfsigned": "A certificate Wolffish mints for itself. Every browser shows a warning once and then proceeds; notifications work on desktop browsers but not on phones, and the app cannot be installed to a home screen.",
+          "custom": "Serve a certificate and key you provide (PEM files on this machine)."
+        },
+        "identifiers": "Addresses to certify",
+        "identifiersHint": "The public IP address(es) and/or hostnames browsers will use. Private addresses (192.168.x.x, 10.x.x.x) cannot be certified. Comma-separated.",
+        "detect": "Detect public IP",
+        "detecting": "Detecting…",
+        "detectNone": "Could not detect a public address (or it is already listed).",
+        "email": "Contact email (optional)",
+        "httpPort": "HTTP port for validation",
+        "httpPortHint": "Let's Encrypt connects to port 80 to validate; that listener also redirects browsers to HTTPS. The HTTPS port is 443 unless a pf or iptables forward points elsewhere.",
+        "acmeError": "Let's Encrypt failed: {{error}}",
+        "acmeIssuing": "Asking Let's Encrypt for a certificate…",
+        "acmeOk": "Certificate from Let's Encrypt, valid until {{until}}. Renews itself.",
+        "certPath": "Certificate file (PEM)",
+        "keyPath": "Private key file (PEM)",
+        "serving": "Serving",
+        "expires": "Expires",
+        "issuer": "Issuer",
+        "names": "Names",
+        "sources": {
+          "selfsigned": "Self-signed certificate",
+          "custom": "Your certificate",
+          "acme": "Let's Encrypt certificate"
+        },
+        "renew": "Renew now",
+        "renewing": "Renewing…",
+        "apply": "Apply",
+        "ip": "Public IP address",
+        "ipHint": "Detected from the internet. Edit it if this machine is reached at another address. Let's Encrypt must reach ports 80 and 443 at it.",
+        "domain": "Domain (optional)",
+        "domainHint": "A hostname that points at this machine gets a normal 90-day certificate instead of the 6-day IP one.",
+        "staging": "Use Let's Encrypt staging (test certificates, no rate limits)",
+        "enable": "Enable HTTPS",
+        "enabled": "HTTPS is on at {{url}}",
+        "retry": "Retry",
+        "disable": "Disable HTTPS",
+        "open": "Open HTTPS",
+        "restart": "Restart Wolffish",
+        "restarting": "Restarting Wolffish — back in a moment…",
+        "movingIn": "Moving to {{url}} in {{seconds}}s",
+        "stay": "Stay here",
+        "fixTitle": "How to fix it",
+        "fallback": "A self-signed certificate is being served until Let's Encrypt issues one; browsers warn until then.",
+        "advanced": "Advanced",
+        "httpsPort": "HTTPS port",
+        "steps": {
+          "public-ip": "Public address",
+          "interface": "Bound to this machine",
+          "ports": "Ports 80 and 443 free",
+          "privileged": "Allowed to bind low ports",
+          "firewall": "Firewall",
+          "reachable": "Reachable on port 80",
+          "account": "Let's Encrypt account",
+          "order": "Order and challenge",
+          "certificate": "Certificate issued"
+        },
+        "state": {
+          "disabled": "Off",
+          "preflight": "Checking",
+          "issuing": "Issuing",
+          "active": "Active",
+          "renewing": "Renewing",
+          "error": "Error"
+        },
+        "cert": {
+          "identifier": "Address",
+          "issuer": "Issuer",
+          "serial": "Serial",
+          "sans": "Names",
+          "fingerprint": "SHA-256 fingerprint",
+          "notBefore": "Valid from",
+          "notAfter": "Expires",
+          "hoursLeft": "{{hours}} h left",
+          "lastRenewal": "Last renewal",
+          "nextCheck": "Next check",
+          "listeners": "Ports",
+          "never": "never"
+        },
+        "history": {
+          "title": "Renewal history",
+          "when": "When",
+          "outcome": "Outcome",
+          "duration": "Took",
+          "error": "Error",
+          "empty": "No attempts yet."
+        },
+        "outcome": {
+          "issued": "Issued",
+          "renewed": "Renewed",
+          "failed": "Failed"
+        },
+        "secure": {
+          "title": "This browser",
+          "context": "Secure context",
+          "microphone": "Microphone API",
+          "notifications": "Notification API"
+        }
+      },
+      "notifications": {
+        "label": "Browser notifications",
+        "description": "Lets the agent notify signed-in browsers with its notify_web tool — when a run finishes, fails, or needs you. Delivered as Web Push, so it lands with the tab closed. Off makes the tool refuse.",
+        "subscriptions": "{{count}} browser(s) allowed push notifications.",
+        "test": "Send a test",
+        "testResult": "Shown in {{inband}} open browser(s), pushed to {{pushed}}."
+      },
+      "verbose": {
+        "label": "Show all tool activity",
+        "description": "Same feed preference every channel has. Off shows a clean feed in the browser; On adds every tool call and result."
+      },
+      "sessions": {
+        "title": "Signed-in browsers",
+        "description": "Every browser that typed the master password. Signing one out ends its session and its notifications.",
+        "revokeAll": "Sign out everywhere",
+        "none": "No browser has signed in yet.",
+        "lastSeen": "last seen {{when}}",
+        "revoke": "Sign out"
+      },
+      "public": {
+        "title": "Public links",
+        "description": "Files, folders and local ports the agent has published at an unguessable URL that needs no sign-in — for people who are not you. Anything else the Web UI serves stays behind the master password.",
+        "none": "Nothing is public. The agent publishes with public_link when a task calls for a link someone else can open.",
+        "revokeAll": "Take all down",
+        "revoke": "Take down",
+        "opens": "{{count}} opens",
+        "expires": "expires {{when}}",
+        "never": "no expiry",
+        "kind": {
+          "file": "file",
+          "site": "site",
+          "proxy": "port {{port}}"
+        },
+        "origin": {
+          "label": "Public address",
+          "description": "The origin links are handed out at. Leave empty to use this server's own address (the certificate's name under HTTPS, the first reachable address otherwise); set it when a domain or reverse proxy fronts this box.",
+          "placeholder": "https://files.example.com",
+          "save": "Save"
+        }
+      },
+      "vps": {
+        "title": "On a server",
+        "step1": "Install Wolffish on the box and start it as a background service (Settings → Channels → CLI → Start on its own).",
+        "step2": "The Web UI is already on, behind a master password Wolffish generated — read it with wolffish web password, or Show it here. Open the firewall for the port above (and port 80 for Let's Encrypt).",
+        "step3": "On the HTTPS card pick Let's Encrypt, check the detected public IP, press Enable HTTPS and watch the steps — the certificate arrives within a minute, HTTPS answers on 443, and it renews itself.",
+        "step4": "On your phone, open the address shown above, sign in, allow notifications, and add it to the home screen for a full-screen app."
+      }
     }
   },
   "update": {
     "available": "Update available",
     "install": "Update",
     "retry": "Retry",
-    "changelog": "Changelog"
+    "changelog": "Changelog",
+    "manualLine": "Saved to {{path}} — opens it and quits; drag into Applications, then relaunch",
+    "open": "Open installer"
   },
   "changelog": {
     "empty": "No changelog entries yet."
@@ -2732,5 +3004,66 @@
     "deleteAllConfirm": "Stop everything still running ({{running}}), remove any login entries, and forget all {{count}} processes along with their logs?",
     "removedCount_one": "Removed {{count}} process",
     "removedCount_other": "Removed {{count}} processes"
+  },
+  "web": {
+    "signOut": "Sign out of this browser",
+    "login": {
+      "title": "Wolffish",
+      "subtitle": "Enter your master password.",
+      "noPassword": "No master password is set yet. Set one in the desktop app under Settings → Channels → Web UI.",
+      "placeholder": "Master password",
+      "signIn": "Sign in",
+      "signingIn": "Signing in…",
+      "wrong": "Wrong password.",
+      "rateLimited": "Too many attempts — try again in {{seconds}}s.",
+      "insecure": {
+        "title": "Not an HTTPS connection",
+        "description": "Needed for notifications and mic."
+      },
+      "link": {
+        "title": "Sign in once to open this file",
+        "description": "This browser then stays signed in."
+      },
+      "show": "Show password",
+      "hide": "Hide password"
+    },
+    "prompt": {
+      "confirm": "Use this path",
+      "folder": {
+        "title": "Folder on the server",
+        "description": "A folder on the machine Wolffish runs on. Tap through, or type a path.",
+        "placeholder": "/home/you/project",
+        "empty": "Type a path.",
+        "missing": "That path does not exist on the server.",
+        "notFolder": "That path is a file, not a folder.",
+        "home": "Home",
+        "workspace": "Workspace",
+        "root": "Root",
+        "up": "Up one level",
+        "hidden": "Show hidden folders",
+        "none": "No folders inside.",
+        "truncated": "Showing the first 1000 folders — type a path to go further.",
+        "use": "Use this folder",
+        "loading": "Loading…",
+        "breadcrumb": "Path",
+        "hiddenOn": "Hidden folders shown — click to hide them",
+        "hiddenOff": "Hidden folders hidden — click to show them"
+      }
+    },
+    "notifications": {
+      "nudge": "Allow notifications so Wolffish can reach you when a run finishes or needs you — even with this tab closed.",
+      "enable": "Enable",
+      "enabled": "Notifications enabled on this browser.",
+      "iosInstall": "On iPhone and iPad, notifications need Wolffish on your Home Screen: Share → Add to Home Screen, then open it from there."
+    },
+    "upload": {
+      "uploading": "Uploading {{name}}…",
+      "count": "{{index}} of {{count}}",
+      "done": "Uploaded",
+      "lost": "{{name}} is no longer available — attach it again."
+    },
+    "connection": {
+      "lost": "Connection lost — reconnecting…"
+    }
   }
 }

@@ -1,0 +1,160 @@
+---
+title: 'Installation'
+description: 'Install Wolffish on macOS, Windows, or Linux'
+---
+
+# No Dependencies, Just Install
+
+Wolffish is a self-contained Electron app. No Node.js, no Python, no Docker. Just install and run.
+
+## Prerequisites
+
+<AccordionGroup>
+  <Accordion title="LLM Provider (at least one required)" defaultOpen>
+    Wolffish needs at least one LLM provider to think and respond. You can use **cloud providers**, **local models via Ollama**, or both:
+
+    - **DeepSeek (V4 Pro)** ⭐ Recommended — Get an API key at [platform.deepseek.com](https://platform.deepseek.com)
+    - **Anthropic (Claude)**: Get an API key at [console.anthropic.com](https://console.anthropic.com)
+    - **OpenAI (GPT)**: Get an API key at [platform.openai.com](https://platform.openai.com)
+    - **Ollama (Local)**: Install from [ollama.com](https://ollama.com) for local model inference
+
+    You'll configure these in Wolffish's settings after installation. You explicitly select your Brain model — a cloud provider or local Ollama — and that's the one that runs. There's no automatic fallback between them. You can use only cloud providers, or run fully local by selecting Ollama as your Brain.
+
+  </Accordion>
+
+  <Accordion title="Ollama (Optional — powers local models)">
+    Ollama lets you run open-source models entirely on your machine with zero internet dependency. Wolffish integrates directly with it and will help you choose and download a model. No terminal commands needed.
+
+    Ollama is **not required** — you can use Wolffish with only cloud providers (DeepSeek, Claude, OpenAI). But if you want offline capability or prefer to keep all inference local, install Ollama.
+
+    <Note>
+      Reliable agentic tasks (multi-step tool use) require large models — 70B+ parameters (Llama 3 70B, Qwen 2.5 72B, DeepSeek-V2). Running these needs 48GB+ RAM or a high-end GPU. Smaller models (7B–14B) work for simple conversations but struggle with complex tool-calling workflows. See the [Ollama integration guide](/configuration/ollama) for details.
+    </Note>
+
+  </Accordion>
+
+  <Accordion title="macOS Permissions">
+    For the computer-use capability, macOS will prompt you to grant **Accessibility** and **Screen Recording** permissions. These are only needed if you want Wolffish to interact with your screen.
+  </Accordion>
+</AccordionGroup>
+
+## Download
+
+The quickest route on any of the three systems is the install script attached to every release — it picks the right package, verifies it against the release manifest, and installs it:
+
+```bash
+curl -fsSL https://github.com/younes-alturkey/wolffish/releases/latest/download/install.sh | sh
+```
+
+Windows, from PowerShell:
+
+```powershell
+irm https://github.com/younes-alturkey/wolffish/releases/latest/download/install.ps1 | iex
+```
+
+Or pick the package yourself:
+
+Every build is published on [GitHub Releases](https://github.com/younes-alturkey/wolffish/releases/latest). Builds are unsigned. The app installs the [`wolffish` terminal command](/getting-started/cli) into `~/.wolffish/bin/` and adds it to your PATH on first launch.
+
+<Tabs>
+  <Tab title="macOS">
+    Download the latest `.dmg` from the [latest release](https://github.com/younes-alturkey/wolffish/releases/latest).
+
+    1. Open the `.dmg` file
+    2. Drag Wolffish to your Applications folder
+    3. Launch Wolffish from Applications
+
+    <Note>
+      On first launch, macOS may warn about an unidentified developer. Right-click the app and select "Open" to bypass this.
+    </Note>
+
+  </Tab>
+
+  <Tab title="Windows">
+    Download the latest `.exe` installer from the [latest release](https://github.com/younes-alturkey/wolffish/releases/latest).
+
+    1. Run the NSIS installer
+    2. Follow the setup wizard
+    3. Launch Wolffish from the Start menu
+
+    All permissions are auto-granted on Windows.
+
+  </Tab>
+
+  <Tab title="Linux">
+    Download the latest `.AppImage` from the [latest release](https://github.com/younes-alturkey/wolffish/releases/latest).
+
+    ```bash
+    chmod +x Wolffish-*.AppImage
+    ./Wolffish-*.AppImage
+    ```
+
+    <Warning>
+      X11 is required. Wayland is not currently supported for the computer-use capability.
+    </Warning>
+
+  </Tab>
+</Tabs>
+
+<Note>
+  Installing on a **server with no display**? The same packages work on a headless box — verified
+  end to end on Ubuntu 24.04 — and the [Server Deployment](/getting-started/server-deployment) page
+  covers the background service, autostart, and pairing your phone as the interface.
+</Note>
+
+## What's Bundled
+
+You don't need to install anything else. Electron bundles Node.js and Chromium internally. The app ships with:
+
+- Runtime environment (Node.js + Chromium)
+- All 20+ built-in capabilities
+- SQLite (FTS5 search index)
+- All channel adapters (Desktop, Telegram, WhatsApp)
+
+## Requirements by OS
+
+|                     | macOS                            | Windows                 | Linux                           |
+| ------------------- | -------------------------------- | ----------------------- | ------------------------------- |
+| **Install method**  | `.dmg` → drag to Applications    | NSIS installer (`.exe`) | AppImage (mark executable, run) |
+| **Node.js needed?** | No                               | No                      | No                              |
+| **Runtime deps**    | None                             | None                    | None                            |
+| **For local AI**    | Ollama (optional)                | Ollama (optional)       | Ollama (optional)               |
+| **For cloud AI**    | API key (Anthropic or OpenAI)    | API key                 | API key                         |
+| **Permissions**     | Accessibility + Screen Recording | Auto-granted            | X11 required                    |
+
+System tools like `ffmpeg` and `git` are **not prerequisites**. When a capability needs one, Wolffish detects it's missing and offers to install it for you (via your system's package manager), with your approval. The agent handles dependency management at runtime.
+
+## Build from Source
+
+<Warning>
+  Building from source is only for contributors. Regular users should use the pre-built installers
+  above.
+</Warning>
+
+```bash
+git clone https://github.com/younes-alturkey/wolffish.git
+cd wolffish
+npm install
+npm run dev
+```
+
+Building from source requires Node.js 20+ and npm. Native modules (better-sqlite3) are compiled during `npm install` via `electron-rebuild`.
+
+## Verify Installation
+
+On first launch, Wolffish creates `~/.wolffish/workspace/` with default configuration files. The onboarding flow will guide you through choosing a model and getting started.
+
+To verify everything is working:
+
+1. Follow the onboarding prompts to select and download a model
+2. Send a test message like "Hello, what can you do?"
+3. You should see a streaming response
+
+If Ollama is not detected, Wolffish will offer to guide you through installing it — or you can skip and use cloud providers instead.
+
+## Uninstall
+
+All user data lives in `~/.wolffish/`. To fully uninstall:
+
+1. Delete the application
+2. Remove the data directory: `rm -rf ~/.wolffish/`

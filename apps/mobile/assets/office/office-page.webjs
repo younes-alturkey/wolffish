@@ -1,0 +1,431 @@
+/**
+ * Office card page runtime.
+ *
+ * Renders one .docx, .pptx or .xlsx inside the card's WebView and drives the
+ * pager the app paints around it. The engines are wolffish-app's own — see
+ * assets/office/README.md — so a deck or a document looks the same on the
+ * phone as it does on the desktop.
+ *
+ * The app hands over `window.__wolffishOffice` before this script runs:
+ *
+ *   { kind: 'docx' | 'pptx' | 'xlsx', base64, maxPages, maxRows, maxCols }
+ *
+ * and gets back, over `ReactNativeWebView.postMessage`:
+ *
+ *   { type: 'ready', pages, labels?, aspect? }  pages found, pager may appear
+ *   { type: 'page',  index }                    the visible page changed
+ *   { type: 'error', reason }                   nothing renderable — degrades
+ *
+ * The app drives it through one entry point, `window.wolffishGoTo(index)`.
+ *
+ * Two shapes, because a deck and a document are not the same kind of thing:
+ *
+ *   SLIDES and SHEETS are switched to. One fills the frame, the rest are
+ *   hidden behind it, and `aspect` tells the card what shape to be so the
+ *   slide fills it exactly — the same thing wolffish-app's PresentationViewer
+ *   does with its aspectRatio box.
+ *
+ *   DOCUMENTS are read. Their pages are a scrolling column at full card
+ *   width, as wolffish-app's DocxViewer lays them out, because a page shrunk
+ *   to fit a card's height needs pinch-zooming to read. The pager becomes a
+ *   position line that can also jump, which is what makes page four reachable
+ *   from the card, where the chat list owns the pan gesture.
+ *
+ * Either way every page is reachable: swapping makes the index authoritative,
+ * and the scrolling column is padded so its last page can still reach the top
+ * — a scroller clamps at the bottom otherwise and the final page could never
+ * become the current one.
+ */
+;(function () {
+  var input = window.__wolffishOffice || {}
+  var doc = document.getElementById('doc')
+  var engines = window.WolffishOffice || {}
+
+  var MAX_PAGES = input.maxPages || 200
+  var MAX_ROWS = input.maxRows || 400
+  var MAX_COLS = input.maxCols || 64
+
+  /** Page elements in document order — what the pager indexes into. */
+  var pages = []
+  /**
+   * How pages are reached. 'swap' shows exactly one and hides the rest — right
+   * for slides and sheets, which are discrete things you switch between.
+   * 'scroll' lays them out in a column — right for a document, which is one
+   * continuous thing you read, and which wolffish-app scrolls too.
+   */
+  var flow = 'swap'
+  /** Called before a page is shown, when its content is rendered lazily. */
+  var realize = null
+  /** Called after a resize, for pages whose scale depends on the viewport. */
+  var refit = null
+  var current = 0
+  var settled = false
+
+  function post(message) {
+    try {
+      if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify(message))
+    } catch (error) {
+      // A card with no bridge (the browser harness) still renders.
+    }
+    if (window.__wolffishOfficeDebug) window.__wolffishOfficeDebug(message)
+  }
+
+  function fail(reason) {
+    if (settled) return
+    settled = true
+    post({ type: 'error', reason: String(reason && reason.message ? reason.message : reason) })
+  }
+
+  function ready(extra) {
+    if (settled) return
+    settled = true
+    var message = { type: 'ready', pages: pages.length }
+    if (extra) {
+      for (var key in extra) {
+        if (Object.prototype.hasOwnProperty.call(extra, key)) message[key] = extra[key]
+      }
+    }
+    post(message)
+  }
+
+  // base64 → bytes. The document arrives inlined in the page for the same
+  // reason the PDF card inlines its own: a file:// page may not read a second
+  // file:// URL, and the card keeps that door shut.
+  function bytes(base64) {
+    var binary = atob(base64)
+    var out = new Uint8Array(binary.length)
+    for (var i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i)
+    return out
+  }
+
+  function pageBox() {
+    var box = document.createElement('div')
+    box.className = 'page'
+    if (flow === 'swap') box.hidden = pages.length > 0
+    doc.appendChild(box)
+    pages.push(box)
+    return box
+  }
+
+  // --- paging ---------------------------------------------------------------
+
+  function show(index) {
+    if (flow === 'scroll') {
+      var target = pages[index]
+      if (!target) return
+      current = index
+      window.scrollTo({ top: target.offsetTop, behavior: 'auto' })
+      return
+    }
+    if (realize) realize(index)
+    for (var i = 0; i < pages.length; i++) pages[i].hidden = i !== index
+    current = index
+    // A page only has a layout once it is visible, so anything measured from
+    // it has to be measured now rather than while it was hidden.
+    if (refit) refit(index)
+  }
+
+  window.wolffishGoTo = function (index) {
+    if (index < 0 || index >= pages.length || index === current) return
+    show(index)
+    post({ type: 'page', index: index })
+  }
+
+  window.addEventListener('resize', function () {
+    if (refit) refit(current)
+  })
+
+  /**
+   * Which page is at the top of the scroller, for the position line.
+   *
+   * Measured against the VIEWPORT (0), not against #doc's own rect: the window
+   * is the scroller, so #doc moves with the pages and the difference between
+   * them never changes — every page would report as page 1.
+   */
+  function trackScroll() {
+    var onScroll = function () {
+      var index = 0
+      for (var i = 0; i < pages.length; i++) {
+        if (pages[i].getBoundingClientRect().top <= 24) index = i
+        else break
+      }
+      if (index !== current) {
+        current = index
+        post({ type: 'page', index: index })
+      }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+  }
+
+  // --- pptx -----------------------------------------------------------------
+
+  /** `viewBox="0 0 960 720"` — the only place the renderer states the canvas. */
+  function svgAspect(svg) {
+    var box = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(svg)
+    if (!box) return null
+    var width = Number(box[1])
+    var height = Number(box[2])
+    if (!(width > 0) || !(height > 0)) return null
+    return width / height
+  }
+
+  function renderDeck(data) {
+    var pptx = engines.pptx
+    return Promise.resolve(pptx.loadPresentation(data)).then(function (deck) {
+      var slides = pptx.getSlides(deck)
+      if (!slides || !slides.length) throw new Error('deck has no slides')
+      var count = Math.min(slides.length, MAX_PAGES)
+
+      var paint = function (i) {
+        var box = pages[i]
+        if (!box || box.dataset.painted) return ''
+        var svg
+        try {
+          svg = pptx.renderSlideToSvg(deck, slides[i])
+        } catch (error) {
+          // One unpaintable slide must not cost the reader the other twenty —
+          // wolffish-app's rule. Keep the position, show it empty.
+          svg = ''
+        }
+        box.innerHTML = svg
+        box.dataset.painted = '1'
+        return svg
+      }
+
+      for (var i = 0; i < count; i++) pageBox()
+      // Slides are painted on demand: a hundred-slide deck would otherwise
+      // hold a hundred SVG documents for the one the reader is looking at.
+      realize = paint
+      var first = paint(0)
+      ready({ aspect: svgAspect(first), total: slides.length })
+    })
+  }
+
+  // --- docx -----------------------------------------------------------------
+
+  /**
+   * Word writes its bullets as private-use codepoints in the Symbol and
+   * Wingdings fonts — the default bullet is U+F0B7 in Symbol — and neither
+   * font exists on a phone, so every bulleted list in every Word document
+   * renders as a column of tofu boxes. docx-preview puts those glyphs in a
+   * generated `::before { content }` rule rather than in the DOM, so the fix
+   * is to rewrite the rules: swap the codepoint for its real Unicode
+   * equivalent and stop asking for the font that isn't there.
+   */
+  var SYMBOL_BULLETS = {
+    '\uF06E': '■', // Symbol: filled square
+    '\uF071': '◆', // Symbol: filled diamond
+    '\uF075': '◆',
+    '\uF0A7': '▪', // Symbol: small filled square
+    '\uF0A8': '□', // Symbol: hollow square
+    '\uF0B7': '•', // Symbol: the default Word bullet
+    '\uF0D8': '➢', // Wingdings: arrowhead
+    '\uF0FC': '✓' // Wingdings: check mark
+  }
+
+  function unmojibakeBullets() {
+    var sheets = document.styleSheets
+    for (var s = 0; s < sheets.length; s++) {
+      var rules
+      try {
+        rules = sheets[s].cssRules
+      } catch (error) {
+        // A stylesheet we may not read is not one docx-preview wrote.
+        continue
+      }
+      if (!rules) continue
+      for (var r = 0; r < rules.length; r++) {
+        var rule = rules[r]
+        if (!rule.style || !rule.selectorText) continue
+        var content = rule.style.content
+        if (!content || !/[\uF000-\uF0FF]/.test(content)) continue
+        rule.style.content = content.replace(/[\uF000-\uF0FF]/g, function (ch) {
+          return SYMBOL_BULLETS[ch] || '•'
+        })
+        rule.style.fontFamily = 'inherit'
+      }
+    }
+  }
+
+  function renderDocument(data) {
+    // A document is read, not flipped through: its pages sit in one column and
+    // scroll, the way wolffish-app's DocxViewer does. The pager stays as a
+    // position line that can also jump, which is what makes page four
+    // reachable from the card, where the feed owns the pan gesture and the
+    // preview cannot be scrolled by hand.
+    flow = 'scroll'
+    // docx-preview replaces whatever it is given, so it gets a scratch host
+    // rather than #doc, and the pages are moved out of it afterwards.
+    var host = document.createElement('div')
+    host.className = 'docx-host'
+    doc.appendChild(host)
+
+    return engines.docx
+      .renderAsync(new Blob([data]), host, host, {
+        // No wrapper: the card is the wrapper, and the library's own paints a
+        // grey desk we would have to undo in both themes. Same call
+        // wolffish-app's useDocxPages makes — keep the two in step.
+        inWrapper: false,
+        breakPages: true,
+        renderHeaders: true,
+        renderFooters: true,
+        renderFootnotes: true,
+        renderEndnotes: true,
+        useBase64URL: true
+      })
+      .then(function () {
+        unmojibakeBullets()
+        // docx-preview lays the document out as one <section> per page.
+        var sections = host.querySelectorAll('section')
+        if (!sections.length) throw new Error('document has no pages')
+
+        var limit = Math.min(sections.length, MAX_PAGES)
+        for (var i = 0; i < limit; i++) {
+          var box = pageBox()
+          box.classList.add('doc-page')
+          box.appendChild(sections[i])
+        }
+        host.remove()
+
+        refit = fitDocument
+        fitDocument()
+        // No aspect: the card is a window onto a scrolling document, not a
+        // frame shaped like one page.
+        ready({ total: sections.length })
+        trackScroll()
+      })
+  }
+
+  /**
+   * Scale every Word page to the width of the card, and give the column enough
+   * tail that its last page can still reach the top.
+   *
+   * Fit to WIDTH, not to the whole box: a Letter page shrunk to fit a short
+   * card's height would land at about 60% and need pinch-zooming to read,
+   * whereas at full width it is the same size a PDF page would be. The page is
+   * scaled rather than reflowed either way, so the document keeps its own
+   * layout — wolffish-app's DocxViewer makes the same trade ("the viewer width
+   * IS the page width").
+   */
+  function fitDocument() {
+    var available = doc.clientWidth
+    if (!available) return
+    var lastHeight = 0
+    for (var i = 0; i < pages.length; i++) {
+      var box = pages[i]
+      var section = box.firstElementChild
+      if (!section) continue
+      section.style.transform = ''
+      var naturalWidth = section.offsetWidth
+      var naturalHeight = section.offsetHeight
+      if (!naturalWidth || !naturalHeight) continue
+      var scale = available / naturalWidth
+      section.style.transformOrigin = 'top left'
+      section.style.transform = 'scale(' + scale + ')'
+      // A transform does not change layout, so the box has to be told the
+      // height its scaled page now occupies or the pages would all pile up.
+      box.style.height = naturalHeight * scale + 'px'
+      lastHeight = naturalHeight * scale
+    }
+    // Without this the final page can never scroll its top to the top of the
+    // viewport — the scroller clamps first — and the pager could not reach it.
+    doc.style.paddingBottom = Math.max(0, window.innerHeight - lastHeight) + 'px'
+  }
+
+  // --- xlsx -----------------------------------------------------------------
+
+  function columnLabel(index) {
+    var n = index
+    var label = ''
+    do {
+      label = String.fromCharCode(65 + (n % 26)) + label
+      n = Math.floor(n / 26) - 1
+    } while (n >= 0)
+    return label
+  }
+
+  function renderWorkbook(data) {
+    var XLSX = engines.xlsx
+    var book = XLSX.read(data, { type: 'array', cellNF: true, cellDates: true, sheetRows: MAX_ROWS })
+    var names = book.SheetNames || []
+    if (!names.length) throw new Error('workbook has no sheets')
+
+    var labels = []
+    for (var s = 0; s < names.length && s < MAX_PAGES; s++) {
+      var name = names[s]
+      labels.push(name)
+      var box = pageBox()
+      // `raw: false` asks SheetJS for each cell's FORMATTED text, so a date
+      // stays a date and 0.5 stays 50% — the number formats are the document's
+      // own and the only place they exist.
+      var rows = XLSX.utils.sheet_to_json(book.Sheets[name], {
+        header: 1,
+        raw: false,
+        blankrows: false,
+        defval: ''
+      })
+      box.appendChild(grid(rows))
+    }
+    // No aspect: a sheet is not a page, so the card keeps its own height.
+    ready({ labels: labels })
+  }
+
+  function grid(rows) {
+    var columns = 0
+    for (var r = 0; r < rows.length; r++) columns = Math.max(columns, rows[r].length)
+    columns = Math.min(columns, MAX_COLS)
+
+    var table = document.createElement('table')
+    table.className = 'sheet'
+
+    var head = document.createElement('tr')
+    head.appendChild(cell('th', '', 'gutter'))
+    for (var c = 0; c < columns; c++) head.appendChild(cell('th', columnLabel(c), 'head'))
+    table.appendChild(head)
+
+    for (var i = 0; i < rows.length; i++) {
+      var tr = document.createElement('tr')
+      tr.appendChild(cell('th', String(i + 1), 'gutter'))
+      for (var j = 0; j < columns; j++) {
+        tr.appendChild(cell('td', rows[i][j] == null ? '' : String(rows[i][j]), ''))
+      }
+      table.appendChild(tr)
+    }
+    return table
+  }
+
+  function cell(tag, text, className) {
+    var node = document.createElement(tag)
+    if (className) node.className = className
+    node.textContent = text
+    return node
+  }
+
+  // --- go -------------------------------------------------------------------
+
+  function run() {
+    if (!doc) return fail('no host element')
+    if (!input.base64) return fail('no document')
+    var data
+    try {
+      data = bytes(input.base64)
+    } catch (error) {
+      return fail(error)
+    }
+
+    var work
+    try {
+      if (input.kind === 'pptx') work = renderDeck(data)
+      else if (input.kind === 'docx') work = renderDocument(data)
+      else if (input.kind === 'xlsx') work = Promise.resolve(renderWorkbook(data))
+      else work = Promise.reject(new Error('unsupported kind: ' + input.kind))
+    } catch (error) {
+      return fail(error)
+    }
+    Promise.resolve(work).catch(fail)
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run)
+  else run()
+})()

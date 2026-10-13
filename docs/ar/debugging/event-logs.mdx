@@ -1,0 +1,144 @@
+---
+title: "سجلات الأحداث"
+description: "يسجل ناقل أحداث corpus كل حدث في ملفات Markdown يومية"
+---
+
+# سجل زمني كامل
+
+كل حدث يُطلق في وولفيش يتم تسجيله في ملف Markdown يومي. يمنحك هذا سجلاً زمنياً كاملاً لكل ما حدث — المدخلات والتصنيفات واستدعاءات النموذج اللغوي وتنفيذ الأدوات وقرارات الأمان وعمليات الذاكرة والمزيد.
+
+## الموقع
+
+```
+brain/corpus/YYYY-MM-DD.log.md
+```
+
+ملف واحد في اليوم. سجل اليوم دائماً في:
+```bash
+brain/corpus/$(date +%Y-%m-%d).log.md
+```
+
+## كيف يعمل
+
+يلفّ ناقل أحداث `corpus` كل استدعاء `emit()` بالتسجيل. يتم تخزين الأحداث مؤقتاً لمدة ثانيتين قبل الكتابة على القرص — ليس بالوقت الفعلي تماماً، لكنه قريب بما يكفي لتصحيح الأخطاء.
+
+السجلات اليومية أيضاً **مفهرسة بواسطة cortex** (بوصفها المصدر `corpus`)، لذا ضمن نافذة الاحتفاظ لا تحتاج إلى البحث بـ grep يدوياً — وولفيش نفسه يستطيع إيجاد الأحداث عبر `memory_search`، وتستطيع أنت ذلك أيضاً بمجرد سؤاله.
+
+<Info>
+سجلات الأحداث الخام تُحذف بعد 7 أيام **بالتصميم** — فهي الطبقة الجنائية، لا طبقة الذاكرة. ما يهم لأكثر من أسبوع يستمر في مكان آخر: الحلقات والملخصات الأسبوعية تُحفظ إلى الأبد، وتشغيلات الأتمتة تُسجّل بشكل دائم في `brain/brainstem/run-history.md` (مفهرس أيضاً)، الذي يبقى بعد الحذف. إذا احتجت السجلات الخام لفترة أطول، انسخها خارج مجلد `corpus/`.
+</Info>
+
+## أنواع الأحداث
+
+يُصدر النظام عشرات أنواع الأحداث. إليك الأكثر فائدة لتصحيح الأخطاء:
+
+| الحدث | متى يُطلق |
+|---|---|
+| `message.received` | المستخدم يرسل رسالة |
+| `message.classified` | يتم تحديد نية الرسالة |
+| `context.built` | prefrontal ينتهي من تجميع السياق |
+| `llm.request` | يُرسل الطلب إلى مزود LLM |
+| `llm.response` | LLM يُرجع استجابة |
+| `llm.retry` | تُعاد محاولة استدعاء المزود بعد خطأ عابر |
+| `turn.usage` | حصيلة الرموز/التكلفة للدور بأكمله (مع تفصيل التخزين المؤقت) |
+| `tool.called` | LLM يطلب استدعاء أداة |
+| `tool.completed` | ينجح تنفيذ الأداة |
+| `tool.failed` | يفشل تنفيذ الأداة |
+| `safety.allowed` | amygdala يسمح بالعملية |
+| `safety.blocked` | amygdala يحظر العملية |
+| `safety.confirmNeeded` | amygdala يوقف استدعاءً بانتظار موافقة المستخدم |
+| `safety.approved` | المستخدم يوافق على عملية مُعلَّمة |
+| `safety.denied` | المستخدم يرفض عملية مُعلَّمة |
+| `task.created` | motor يبدأ مهمة جديدة |
+| `task.stepCompleted` | خطوة مهمة تكتمل |
+| `task.completed` | المهمة تنتهي بنجاح |
+| `task.failed` | المهمة تفشل بعد إعادة المحاولات |
+| `memory.episodeSaved` | hippocampus يحفظ حلقة |
+| `memory.consolidated` | التجميع الأسبوعي يعمل |
+| `memory.knowledgeUpdated` | حقيقة دائمة تستقر في ملف معرفة |
+| `index.reindexed` | cortex ينتهي من تحديث الفهرس |
+| `brainstem.jobStarted` / `jobCompleted` / `jobFailed` | مهمة نبض مجدولة تعمل |
+| `health.warning` | hypothalamus يكتشف مشكلة |
+| `health.critical` | صحة النظام متدهورة |
+
+## صيغة السجل
+
+كل إدخال هو عنوان بطابع زمني يتبعه اسم الحدث وحمولته الكاملة كسطر JSON واحد:
+
+```markdown
+## 14:30:22.847
+- message.received → {"content":"Can you check if the server is running?","timestamp":"2026-07-03T14:30:22.847Z"}
+
+## 14:30:23.156
+- context.built → {"tokenCount":5121,"tokenBudget":1000000,"sectionsIncluded":["identity","device","prefrontal","capabilities","memory_map","runtime"]}
+
+## 14:30:24.302
+- llm.response → {"provider":"anthropic","inputTokens":9412,"outputTokens":89,"cacheCreationTokens":0,"cacheReadTokens":9180,"durationMs":1146}
+
+## 14:30:24.310
+- tool.called → {"taskId":"TASK-1747","tool":"shell_exec","args":{"command":"systemctl status myapp"}}
+
+## 14:30:24.315
+- safety.allowed → {"tool":"shell_exec","args":{"command":"systemctl status myapp"}}
+
+## 14:30:25.102
+- tool.completed → {"taskId":"TASK-1747","tool":"shell_exec","durationMs":792}
+
+## 14:30:25.108
+- task.completed → {"taskId":"TASK-1747","durationMs":792}
+```
+
+## تتبع مهمة
+
+أحداث الأدوات والمهام تتشارك `taskId`. لمتابعة مهمة واحدة عبر السجل، ابحث عن معرّفها:
+
+```bash
+grep -B 1 "TASK-1747" brain/corpus/2026-07-03.log.md
+```
+
+الإدخالات تُكتب بالترتيب الزمني، لذا فإن قراءة عادية للملف حول طابع زمني ما تعيد بناء الدور بأكمله: وصول الرسالة ← بناء السياق ← استجابة LLM ← استدعاءات الأدوات ← نتيجة المهمة. ولنسخة أغنى خطوة بخطوة من المهمة نفسها، افتح `brain/motor/tasks/TASK-1747.md`.
+
+## سيناريوهات تصحيح شائعة
+
+<Tabs>
+  <Tab title="لماذا لم تُستدعَ الأداة؟">
+    اقرأ الأحداث حول الطابع الزمني للرسالة:
+    1. `message.received` — هل وصلت الرسالة أصلاً؟
+    2. `context.built` — هل نجح تجميع السياق (ينبغي أن تتضمن `sectionsIncluded` القيمة `capabilities`)؟
+    3. `tool.called` — هل طلب النموذج الأداة؟
+
+    إذا لم يُنتج النموذج استدعاء أداة، فالمشكلة في السياق (تحقق من لقطة التصحيح — هل كانت القدرة في فهرس `<capabilities>`؟). إذا أنتج استدعاءً لكن لم يحدث شيء بعده، ابحث عن حدث `safety.blocked`.
+  </Tab>
+
+  <Tab title="لماذا تم الحظر؟">
+    ابحث عن أحداث `safety.blocked`:
+    ```bash
+    grep -B 1 "safety.blocked" brain/corpus/2026-07-03.log.md
+    ```
+    حقل `reason` يخبرك أي تعبير نمطي من `danger_patterns` تطابق. إما عدّل النمط في SKILL.md أو أكّد العملية عند السؤال.
+  </Tab>
+
+  <Tab title="هل تم حفظ الذاكرة؟">
+    ابحث عن أحداث `memory.episodeSaved`:
+    ```bash
+    grep -B 1 "memory.episodeSaved" brain/corpus/2026-07-03.log.md
+    ```
+    كل دور مكتمل يُلحق بملف الحلقات اليومي، لذا فإن غياب `memory.episodeSaved` حول طابع زمني لدور ما يعني أن الدور لم ينتهِ بشكل سليم — ابحث عن `task.failed` أو `llm.error` بالقرب منه.
+  </Tab>
+</Tabs>
+
+## المراقبة المباشرة
+
+شاهد السجل في الوقت الفعلي أثناء التطوير:
+
+```bash
+tail -f ~/.wolffish/workspace/brain/corpus/$(date +%Y-%m-%d).log.md
+```
+
+<Tip>
+ادمج مع `grep --line-buffered` لتصفية أنواع أحداث محددة في الوقت الفعلي:
+
+```bash
+tail -f brain/corpus/$(date +%Y-%m-%d).log.md | grep --line-buffered "safety\|tool\."
+```
+</Tip>

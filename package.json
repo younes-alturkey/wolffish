@@ -5,7 +5,7 @@
   "description": "Wolffish is a personal AI agent that runs on your machine with full system access. It thinks, acts, and learns — entirely local.",
   "main": "./out/main/index.js",
   "author": "Younes Alturkey <younes@wolffi.sh>",
-  "homepage": "https://wolffi.sh",
+  "homepage": "https://github.com/younes-alturkey/wolffish",
   "engines": {
     "node": ">=24"
   },
@@ -31,6 +31,7 @@
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "electron-vite build && electron-builder --mac",
     "build:linux": "electron-vite build && electron-builder --linux",
+    "extension:bundle": "pnpm -C packages/extension bundle",
     "release": "npm version patch && git push origin main --tags"
   },
   "dependencies": {
@@ -118,5 +119,17 @@
   },
   "overrides": {
     "phantomjs-prebuilt": "npm:empty-npm-package@1.0.0"
+  },
+  "allowScripts": {
+    "better-sqlite3@12.9.0": true,
+    "bun@1.4.2": true,
+    "electron@39.8.9": true,
+    "electron-winstaller@5.4.0": true,
+    "esbuild@0.25.12": true,
+    "esbuild@0.27.7": true,
+    "protobufjs@7.5.6": true,
+    "protobufjs@6.8.8": true,
+    "sharp@0.34.5": true,
+    "@whiskeysockets/baileys@7.0.0-rc.9": true
   }
 }

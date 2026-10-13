@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 
 import { CapabilityGateBody, CapabilityGateCard, useCapabilityGate } from './capabilityGate'
+import { randomId } from '@lib/utils/randomId'
 
 const PAT_URL = 'https://github.com/settings/personal-access-tokens'
 const TOKENS_URL = 'https://github.com/settings/tokens'
@@ -53,7 +54,7 @@ type Row = GitHubConnection & { tokenVisible: boolean; busy: boolean; testError:
 
 function newRow(): Row {
   return {
-    id: crypto.randomUUID(),
+    id: randomId(),
     label: '',
     token: '',
     login: '',

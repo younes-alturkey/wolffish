@@ -1,0 +1,161 @@
+---
+title: "Knowledge Files"
+description: "Long-term facts about people, projects, preferences, and decisions"
+---
+
+# The Agent's Permanent Memory
+
+Knowledge files are the agent's permanent memory — long-term facts that persist indefinitely. While episodes capture what happened and consolidation compresses the timeline, knowledge files store what Wolffish *knows* about you, your world, and your preferences.
+
+## Location
+
+```
+~/.wolffish/workspace/brain/hippocampus/knowledge/
+├── people.md
+├── projects.md
+├── preferences.md
+├── technical.md
+└── decisions.md
+```
+
+## The Five Default Files
+
+| File | Purpose |
+|---|---|
+| `people.md` | People you interact with — names, roles, relationships, context |
+| `projects.md` | Active and past projects — stack, status, key decisions |
+| `preferences.md` | Your personal preferences — tools, workflows, communication style |
+| `technical.md` | Technical facts — environments, APIs, credentials locations, conventions |
+| `decisions.md` | Decisions you've made — rationale, constraints, outcomes |
+
+<Info>
+  These five files are created during first launch. You can add more knowledge files — everything in the `knowledge/` directory is indexed and searchable. Create `books.md`, `health.md`, or whatever categories make sense for your life.
+</Info>
+
+## How Knowledge Gets Written
+
+Knowledge enters the system through three paths:
+
+### 1. Automatic Curation (LLM-driven)
+
+During the [nightly compaction pass](/memory/consolidation), the LLM works as a **curator**, not an extractor: it reads the day's episode log **alongside the current contents of the five knowledge files** and rewrites the files that changed, whole — one tidy `##` section per person, project, and topic; near-duplicates merged into a single line; contradictions resolved in favour of the newest evidence; junk deleted on sight. The section structure is enforced by the app itself (those `##` headers are exactly what the `<memory_map>` surfaces), every rewritten file keeps its previous version as `<file>.md.bak` right beside it, and your hand-written edits survive curation. A day with nothing durable ends in a no-op. Once a month, the [deep reflection](/memory/reflection) audits these same files adversarially — hunting stale entries and conclusions the evidence has turned against.
+
+### 2. `memory_save` — The Model's Write Path
+
+When you say something like "remember that I prefer conventional commits" or "my manager's name is Sarah," the agent calls the `memory_save` tool:
+
+```
+memory_save(fact, { type: projects | people | preferences | technical | decisions })
+```
+
+The operating contract instructs Wolffish to save one self-contained sentence whenever it learns something durable — a preference, a decision, a project fact, a person detail — and never to hand-write memory files directly. `memory_save` is deduplicated the same way promotion is: saving a fact that's already on file is a no-op. The `type` defaults to `technical` when omitted.
+
+### 3. Manual Editing
+
+Open any knowledge file in your editor and change it. The brainstem file watcher detects the change and the cortex re-indexes it immediately.
+
+## How Knowledge Gets Read
+
+Knowledge files are **not injected into the prompt**. Instead, the `<memory_map>` stub lists the topics of the five curated files — their `##` section headers — so the model always knows what durable facts exist to be fetched:
+
+```
+- knowledge topics — preferences: Development, Communication, Workflow, Tools |
+  people: Sarah (Manager), Omar (Co-founder) (memory_get the file for details)
+```
+
+When a topic is relevant, the model retrieves it:
+
+- `memory_get` on `file:brain/hippocampus/knowledge/preferences.md` returns the whole file
+- `memory_search` with `sources: "knowledge"` finds individual facts across all knowledge files
+
+This is deliberate: a fact you saved in March costs zero tokens per turn until a conversation actually needs it — and the retrieval doctrine means a definite reference to it will trigger a search unprompted.
+
+## Example: preferences.md After a Few Weeks
+
+```markdown
+# Preferences
+
+## Development
+- Package manager: pnpm (never npm or yarn)
+- Commit style: conventional commits (feat:, fix:, chore:)
+- Validation: Zod at all API boundaries
+- Testing: Vitest for unit tests, Playwright for e2e
+- Formatting: Biome over ESLint+Prettier
+
+## Communication
+- Prefers concise answers with code examples over lengthy explanations
+- Likes bullet points over paragraphs for technical content
+- Wants to be warned before destructive operations, even if flagged safe
+
+## Workflow
+- Morning sessions (08:00–12:00) for deep work — avoid scheduling interruptions
+- Prefers creating a new branch per feature, never commits directly to main
+- Likes PRs reviewed before merge, even on solo projects
+
+## Tools
+- Editor: VS Code with Vim keybindings
+- Terminal: Warp
+- Browser: Arc for development, Chrome for testing
+- Notes: Obsidian with daily notes
+```
+
+## Example: people.md
+
+```markdown
+# People
+
+## Sarah (Manager)
+- Engineering manager at current company
+- Prefers async communication over meetings
+- Reviews PRs on Tuesdays and Thursdays
+
+## Omar (Co-founder)
+- Working on the billing service together
+- Handles infrastructure and deployment
+- Timezone: UTC+3 (Riyadh)
+
+## Alex (Design)
+- UI/UX designer on the product team
+- Shares Figma links for review — always check mobile breakpoints
+```
+
+## Editing Guidelines
+
+<Tabs>
+  <Tab title="Adding Facts">
+    Just tell Wolffish during conversation:
+    - "Remember that my API key for Stripe is in 1Password"
+    - "Note that we decided to use PostgreSQL over MySQL for the new service"
+    - "My flight to Riyadh is on June 3rd"
+
+    The agent saves each fact with `memory_save`, routed to the appropriate knowledge file.
+  </Tab>
+  <Tab title="Correcting Facts">
+    If Wolffish has outdated information:
+    - "Update my preferences — I switched from yarn to pnpm"
+    - "Sarah got promoted, she's now VP of Engineering"
+
+    Or edit the file directly in your editor.
+  </Tab>
+  <Tab title="Removing Facts">
+    Delete the line from the knowledge file, or tell Wolffish:
+    - "Forget about the billing service project, it was cancelled"
+
+    The agent will remove the entry.
+  </Tab>
+</Tabs>
+
+<Tip>
+  Knowledge files work best when they're concise. Each entry should be a fact, not a story — `memory_save` enforces this by design, taking one self-contained sentence at a time. Use `##` section headers to group facts: the headers are exactly what the `<memory_map>` surfaces to the model (up to 8 per file).
+</Tip>
+
+## Custom Knowledge Files
+
+Create any `.md` file in the `knowledge/` directory and it becomes part of the agent's searchable memory:
+
+```bash
+# Create a new knowledge file
+touch ~/.wolffish/workspace/brain/hippocampus/knowledge/health.md
+```
+
+The brainstem file watcher will detect it and the cortex will index it under the `knowledge` source, so `memory_search` finds its contents like any other memory. Two things stay reserved for the five default files: the `<memory_map>` topic lines only enumerate the curated five, and `memory_save` only writes to them — custom files are yours to maintain by hand.

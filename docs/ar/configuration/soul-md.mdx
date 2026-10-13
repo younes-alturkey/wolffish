@@ -1,0 +1,53 @@
+---
+title: "soul.md"
+description: "ضبط شخصية وكيلك وسلوكه"
+---
+
+# شخصية وكيلك
+
+يقع في `brain/identity/soul.md`، ويعرّف هذا الملف شخصية وكيلك. يقرؤه نموذج اللغة كجزء من المُطالبة النظامية مع كل رسالة.
+
+## ماذا تُضمِّن
+
+- **سمات الشخصية** — هل وكيلك رسمي أم عفوي؟ مقتضب أم مسهب؟ مشجّع أم صادق بقسوة؟
+- **أسلوب التواصل** — كيف ينبغي أن ينسق الردود؟ هل يستخدم الإيموجي؟ كتل الكود؟ العناوين؟
+- **إرشادات السلوك** — أشياء ينبغي أن يفعلها دائمًا أو لا يفعلها أبدًا
+- **النبرة** — الإحساس العام للتفاعلات
+
+## مثال
+
+```markdown
+# Soul
+
+You are Wolffish — a sharp, direct personal AI assistant.
+
+## Personality
+- Be concise. No filler, no fluff.
+- When you're unsure, say so. Don't hallucinate.
+- Use code blocks for any code or commands.
+- Push back if a request seems like a bad idea. Explain why.
+
+## Tone
+- Professional but not corporate
+- Direct but not rude
+- Helpful but not sycophantic
+
+## Rules
+- Never apologize unnecessarily
+- Always explain your reasoning before acting
+- When running commands, show what you're about to run and why
+```
+
+## نصائح
+
+يُضمَّن ملف soul.md في أعلى كل نافذة سياق بأعلى أولوية. أبقِه مركَّزًا على الشخصية والسلوك — تنتمي المعلومات الواقعية عنك إلى `user.md`، وتنتمي التعليمات الإجرائية إلى `agents.md`.
+
+<Tip>
+  تسري التغييرات على soul.md فورًا عند الرسالة التالية. جرّب شخصيات مختلفة واكتشف ما يناسب سير عملك.
+</Tip>
+
+## أين تقع في التطبيق
+
+منذ **الإصدار 1.0.282** صارت [`soul.md`](/ar/configuration/soul-md) و[`user.md`](/ar/configuration/user-md) و[`agents.md`](/ar/configuration/agents-md) **صفحةً واحدة اسمها التخصيص بثلاثة تبويبات** — الشكلَ الذي كان [هاتفك](/ar/integrations/mobile-app) يستعمله أصلاً — بدل ثلاثة مداخل في الشريط الجانبيّ تفتح ثلاثة محرِّراتٍ متشابهة. وكلُّ تبويبٍ يقول في سطرٍ **ما الغرض الحقيقيّ من مستنده**، فلم يعد الاختيار متّكئاً على كلمةٍ واحدة.
+
+والمسوَّدة التي تتركها في تبويبٍ **تبقى حين تعود إليه** من آخر، وذلك التبويب **يحمل نقطةً ما دام فيه تغييراتٌ غير محفوظة** — وهي بالضبط المسوَّدة التي لم تعد تراها. والتعديلات التي تُجرى على هاتفك أو في نافذةٍ أخرى ما زالت تصل من تلقائها، وصارت تحطّ على **أيّ تبويبٍ نظيف** لا على الذي تنظر إليه وحده.

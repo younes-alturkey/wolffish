@@ -1,0 +1,328 @@
+{
+  "id": "2026-06-23_08-17-19",
+  "title": "Check my emails for any unread emails",
+  "model": "qwen3.5:9b",
+  "createdAt": 1782191839573,
+  "updatedAt": 1782192476117,
+  "messages": [
+    {
+      "id": "m_1782192476117_b6d449",
+      "role": "user",
+      "content": "Check my emails for any unread emails and let me know what they are",
+      "timestamp": 1782192476117
+    },
+    {
+      "id": "m_1782192476117_8d3260",
+      "role": "assistant",
+      "content": "Zero unread across both accounts. Inbox is clean 🐟\n\n- **youneswolf@gmail.com** — 0 unread\n- **younes@wolffi.sh** — 0 unread\n\nNothing to action. Enjoy the silence while it lasts.",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782191839578_cdkt57",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782191839578_cdkt57",
+          "segmentId": "seg_2",
+          "toolCallId": "call_00_FMXKkvfYcgA7nNuW0SdZ1414",
+          "name": "google_accounts",
+          "args": {}
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782191839578_cdkt57",
+          "segmentId": "seg_3",
+          "toolCallId": "call_00_FMXKkvfYcgA7nNuW0SdZ1414",
+          "status": "success",
+          "output": "{\"accounts\":[\"youneswolf@gmail.com\",\"younes@wolffi.sh\"],\"note\":\"Every google_* tool call REQUIRES an explicit `account` parameter — there is no default account. Pick the email from `accounts` above. For identity-agnostic requests like \\\"check my email\\\", call the tool once per entry in `accounts` (in parallel) and aggregate the results.\"}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782191839578_cdkt57",
+          "segmentId": "seg_4",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782191839578_cdkt57",
+          "segmentId": "seg_5",
+          "toolCallId": "call_00_U7qy5bxHwLheZNKtjEGp2505",
+          "name": "google_gmail_search",
+          "args": {
+            "account": "youneswolf@gmail.com",
+            "query": "is:unread",
+            "max": 20
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782191839578_cdkt57",
+          "segmentId": "seg_6",
+          "toolCallId": "call_01_wo6pEKzuDku8qFEowLJv9722",
+          "name": "google_gmail_search",
+          "args": {
+            "account": "younes@wolffi.sh",
+            "query": "is:unread",
+            "max": 20
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782191839578_cdkt57",
+          "segmentId": "seg_7",
+          "toolCallId": "call_00_U7qy5bxHwLheZNKtjEGp2505",
+          "status": "success",
+          "output": "{\"account\":\"youneswolf@gmail.com\",\"count\":0,\"nextPageToken\":\"\",\"threads\":[]}"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782191839578_cdkt57",
+          "segmentId": "seg_8",
+          "toolCallId": "call_01_wo6pEKzuDku8qFEowLJv9722",
+          "status": "success",
+          "output": "{\"account\":\"younes@wolffi.sh\",\"count\":0,\"nextPageToken\":\"\",\"threads\":[]}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782191839578_cdkt57",
+          "segmentId": "seg_9",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782191839578_cdkt57",
+          "segmentId": "seg_10",
+          "delta": "Zero unread across both accounts. Inbox is clean 🐟\n\n- **youneswolf@gmail.com** — 0 unread\n- **younes@wolffi.sh** — 0 unread\n\nNothing to action. Enjoy the silence while it lasts."
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1782191839578_cdkt57",
+          "segmentId": "seg_67",
+          "stopReason": "end_turn",
+          "iterationCount": 3,
+          "reasoningContent": "Both accounts returned 0 unread emails. Clean inbox. Short and sweet response."
+        }
+      ],
+      "toolTimings": {
+        "call_00_FMXKkvfYcgA7nNuW0SdZ1414": {
+          "startedAt": 1782191847050,
+          "endedAt": 1782191847164
+        },
+        "call_00_U7qy5bxHwLheZNKtjEGp2505": {
+          "startedAt": 1782191850357,
+          "endedAt": 1782191851978
+        },
+        "call_01_wo6pEKzuDku8qFEowLJv9722": {
+          "startedAt": 1782191850364,
+          "endedAt": 1782191853539
+        }
+      },
+      "stopReason": "end_turn",
+      "timestamp": 1782192476117
+    },
+    {
+      "id": "m_1782192476117_560729",
+      "role": "user",
+      "content": "Please check",
+      "timestamp": 1782192476117
+    },
+    {
+      "id": "m_1782192476117_7a02c7",
+      "role": "assistant",
+      "content": "Now we've got something. **younes@wolffi.sh** has 3 unread:\n\n| From | Subject | Date |\n|------|---------|------|\n| Product Hunt Daily | 😸 Software with no front door | Jun 22 |\n| Kimi API | New model: Kimi K2.7 Code HighSpeed is live | Jun 22 |\n| Product Hunt | You have been awarded a badge! | Jun 22 |\n\nAll three are promo/newsletter tier — the Kimi K2.7 announcement might be worth a glance if you're tracking model releases. Want me to read any of them, mark them as read, or just leave them be?",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782192433581_iceu7g",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782192433581_iceu7g",
+          "segmentId": "seg_2",
+          "toolCallId": "call_00_Ioy23Mcq81AAao0NIKwq0711",
+          "name": "google_gmail_search",
+          "args": {
+            "account": "youneswolf@gmail.com",
+            "query": "is:unread",
+            "max": 20
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782192433581_iceu7g",
+          "segmentId": "seg_3",
+          "toolCallId": "call_01_vV7jiAwuizFqja6U6jYN6027",
+          "name": "google_gmail_search",
+          "args": {
+            "account": "younes@wolffi.sh",
+            "query": "is:unread",
+            "max": 20
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782192433581_iceu7g",
+          "segmentId": "seg_4",
+          "toolCallId": "call_00_Ioy23Mcq81AAao0NIKwq0711",
+          "status": "success",
+          "output": "{\"account\":\"youneswolf@gmail.com\",\"count\":0,\"nextPageToken\":\"\",\"threads\":[]}"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782192433581_iceu7g",
+          "segmentId": "seg_5",
+          "toolCallId": "call_01_vV7jiAwuizFqja6U6jYN6027",
+          "status": "success",
+          "output": "{\"account\":\"younes@wolffi.sh\",\"count\":3,\"nextPageToken\":\"\",\"threads\":[{\"id\":\"19ef011d03d9520e\",\"date\":\"2026-06-22 19:02\",\"from\":\"Product Hunt Daily <hello@digest.producthunt.com>\",\"subject\":\"😸 Software with no front door\",\"labels\":[\"CATEGORY_PROMOTIONS\",\"UNREAD\",\"IMPORTANT\",\"INBOX\"],\"messageCount\":1},{\"id\":\"19eef6f9c72d32f5\",\"date\":\"2026-06-22 16:02\",\"from\":\"Kimi API <team@moonshot.ai>\",\"subject\":\"New model: Kimi K2.7 Code HighSpeed is live\",\"labels\":[\"CATEGORY_PROMOTIONS\",\"UNREAD\",\"IMPORTANT\",\"INBOX\"],\"messageCount\":1},{\"id\":\"19eef45919831320\",\"date\":\"2026-06-22 15:19\",\"from\":\"Product Hunt <hello@producthunt.com>\",\"subject\":\"You have been awarded a badge!\",\"labels\":[\"CATEGORY_PROMOTIONS\",\"UNREAD\",\"IMPORTANT\",\"INBOX\"],\"messageCount\":1}]}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782192433581_iceu7g",
+          "segmentId": "seg_6",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782192433581_iceu7g",
+          "segmentId": "seg_7",
+          "delta": "Now we've got something. **younes@wolffi.sh** has 3 unread:\n\n| From | Subject | Date |\n|------|---------|------|\n| Product Hunt Daily | 😸 Software with no front door | Jun 22 |\n| Kimi API | New model: Kimi K2.7 Code HighSpeed is live | Jun 22 |\n| Product Hunt | You have been awarded a badge! | Jun 22 |\n\nAll three are promo/newsletter tier — the Kimi K2.7 announcement might be worth a glance if you're tracking model releases. Want me to read any of them, mark them as read, or just leave them be?"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1782192433581_iceu7g",
+          "segmentId": "seg_147",
+          "stopReason": "end_turn",
+          "iterationCount": 2,
+          "reasoningContent": "Got results. youneswolf@gmail.com still has 0 unread. younes@wolffi.sh has 3 unread emails, all from June 22. Let me summarize them for the user.\n\n1. Product Hunt Daily - \"Software with no front door\" - Jun 22\n2. Kimi API - \"New model: Kimi K2.7 Code HighSpeed is live\" - Jun 22\n3. Product Hunt - \"You have been awarded a badge!\" - Jun 22\n\nThese are all promotions. Let me present them concisely."
+        }
+      ],
+      "toolTimings": {
+        "call_00_Ioy23Mcq81AAao0NIKwq0711": {
+          "startedAt": 1782192441161,
+          "endedAt": 1782192442392
+        },
+        "call_01_vV7jiAwuizFqja6U6jYN6027": {
+          "startedAt": 1782192441167,
+          "endedAt": 1782192443978
+        }
+      },
+      "stopReason": "end_turn",
+      "timestamp": 1782192476117
+    },
+    {
+      "id": "m_1782192476117_abcd5c",
+      "role": "user",
+      "content": "Mark them ad read please",
+      "timestamp": 1782192476117
+    },
+    {
+      "id": "m_1782192476117_125250",
+      "role": "assistant",
+      "content": "All 3 marked as read ✅ Inbox is clean again.",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782192464522_v5ji1y",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782192464522_v5ji1y",
+          "segmentId": "seg_2",
+          "toolCallId": "call_00_6deyAVRYStkbkYmTMjjL6277",
+          "name": "google_gmail_mark_read",
+          "args": {
+            "account": "younes@wolffi.sh",
+            "ids": ["19ef011d03d9520e", "19eef6f9c72d32f5", "19eef45919831320"]
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782192464522_v5ji1y",
+          "segmentId": "seg_3",
+          "toolCallId": "call_00_6deyAVRYStkbkYmTMjjL6277",
+          "status": "success",
+          "output": "{\"action\":\"marked as read\",\"addedLabels\":null,\"count\":3,\"removedLabels\":[\"UNREAD\"]}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782192464522_v5ji1y",
+          "segmentId": "seg_4",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782192464522_v5ji1y",
+          "segmentId": "seg_5",
+          "delta": "All 3 marked as read ✅ Inbox is clean again."
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1782192464522_v5ji1y",
+          "segmentId": "seg_18",
+          "stopReason": "end_turn",
+          "iterationCount": 2,
+          "reasoningContent": "All 3 marked as read. Short and done."
+        }
+      ],
+      "toolTimings": {
+        "call_00_6deyAVRYStkbkYmTMjjL6277": {
+          "startedAt": 1782192472575,
+          "endedAt": 1782192473548
+        }
+      },
+      "stopReason": "end_turn",
+      "timestamp": 1782192476117
+    }
+  ],
+  "stats": {
+    "allTime": {
+      "turns": 3,
+      "apiCalls": 3,
+      "toolCalls": 6,
+      "inputTokens": 26,
+      "outputTokens": 794,
+      "cacheReadTokens": 25805,
+      "cacheCreationTokens": 12400,
+      "cost": 0.0063053499999999995,
+      "processingMs": 3000,
+      "elapsedMs": 3000,
+      "apiMs": 2460,
+      "endedAt": 1782192476117,
+      "provider": "local",
+      "model": "qwen3.5:9b"
+    },
+    "lastTurn": {
+      "endedAt": 1782192476117,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "apiCalls": 1,
+      "toolCalls": 1,
+      "inputTokens": 6,
+      "outputTokens": 67,
+      "cacheReadTokens": 13147,
+      "cacheCreationTokens": 0,
+      "provider": "local",
+      "model": "qwen3.5:9b",
+      "cost": 0.00046991
+    },
+    "meter": {
+      "contextTokens": 13220,
+      "contextBudget": 1000000,
+      "compactionAt": 725424,
+      "model": "qwen3.5:9b"
+    }
+  }
+}

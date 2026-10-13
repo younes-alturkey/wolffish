@@ -1,0 +1,195 @@
+---
+title: "Contributing"
+description: "How to contribute to Wolffish — code, capabilities, and documentation"
+---
+
+# Three Ways to Contribute
+
+<Warning>
+  **Wolffish is no longer maintained.** Pull requests and issues on the [original repository](https://github.com/younes-alturkey/wolffish) are not reviewed. Fork it, and treat the rest of this page as a guide to working in your own copy.
+</Warning>
+
+There are three ways to contribute to a Wolffish fork:
+
+<CardGroup cols={1}>
+  <Card title="Code" icon="code">
+    TypeScript — fix bugs, add features, improve the runtime.
+  </Card>
+  <Card title="Capabilities" icon="puzzle-piece">
+    SKILL.md + optional plugin — teach Wolffish new things.
+  </Card>
+  <Card title="Documentation" icon="book">
+    MDX pages — improve or translate the docs.
+  </Card>
+</CardGroup>
+
+---
+
+## Code Contributions
+
+### Workflow
+
+1. Fork the repo and clone your fork
+2. Create a feature branch:
+   ```bash
+   git checkout -b feature/my-thing
+   # or
+   git checkout -b fix/the-bug
+   ```
+3. Make your changes
+4. Verify:
+   ```bash
+   npm run typecheck && npm run lint
+   ```
+5. Test frontend changes in the browser (`npm run dev`)
+6. Commit with conventional format
+7. Push and open a PR against `main`
+
+### Commit Messages
+
+Use [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+type(scope): subject
+
+feat(runtime): add token counting to prefrontal
+fix(renderer): prevent flash on theme switch
+refactor(motor): simplify retry logic
+docs(capabilities): add plugin lifecycle diagram
+```
+
+Common types: `feat`, `fix`, `refactor`, `docs`, `chore`, `test`
+
+### Code Conventions
+
+<AccordionGroup>
+  <Accordion title="No comments unless the WHY is non-obvious">
+    Code should be self-documenting. If you need a comment, explain WHY, not WHAT.
+    ```typescript
+    // Bad
+    // Get the user
+    const user = getUser()
+
+    // Good — the WHY is non-obvious
+    // Fallback to default user when workspace has no user.md yet
+    const user = getUser() ?? DEFAULT_USER
+    ```
+  </Accordion>
+
+  <Accordion title="No over-abstraction">
+    Don't create abstractions until you have three concrete uses. A bug fix is a bug fix — don't refactor the world around it.
+  </Accordion>
+
+  <Accordion title="No unnecessary dependencies">
+    Before adding a package, check if the standard library or existing deps already cover it. Wolffish uses `fetch()` directly instead of Axios, `mitt` instead of EventEmitter3, etc.
+  </Accordion>
+
+  <Accordion title="IPC is the ONLY main-renderer channel">
+    Never import from `@main/*` in renderer code. All communication goes through IPC channels defined in the preload layer.
+    ```typescript
+    // In renderer — use the exposed API
+    const result = await window.api.someChannel(args)
+
+    // NEVER do this in renderer
+    import { something } from '@main/some-module' // Breaks process isolation
+    ```
+  </Accordion>
+
+  <Accordion title="Never write outside ~/.wolffish/">
+    The app's entire footprint lives in `~/.wolffish/`. Never write to Desktop, Documents, temp directories, or anywhere else. If a feature needs storage, put it inside the workspace.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Capability Contributions
+
+Capabilities are the easiest way to extend Wolffish without touching core code.
+
+### Creating a Capability
+
+1. Create a folder in `src/defaults/workspace/brain/cerebellum/`:
+   ```
+   brain/cerebellum/my-capability/
+   ├── SKILL.md          # Required — defines triggers, tools, behavior
+   └── plugin/           # Optional — custom tool logic
+       └── index.mjs
+   ```
+
+2. Write `SKILL.md` with proper frontmatter:
+   ```yaml
+   ---
+   name: my-capability
+   description: What this capability does
+   triggers:
+     - keyword that activates this
+     - another trigger phrase
+   tools:
+     - name: my_tool
+       description: What this tool does
+       parameters:
+         type: object
+         properties:
+           input:
+             type: string
+             description: The input to process
+         required: [input]
+   danger:
+     - pattern: "rm -rf"
+       reason: "Destructive file operation"
+   ---
+
+   # Instructions for the LLM
+
+   When the user asks about [topic], use the `my_tool` tool to...
+   ```
+
+3. Test with cloud models (DeepSeek, Claude, GPT) and local models (Ollama) — behavior should be consistent.
+
+### Sharing Capabilities
+
+Capabilities can also live in standalone repos. Users clone them directly into their `~/.wolffish/workspace/brain/cerebellum/` folder:
+
+```bash
+cd ~/.wolffish/workspace/brain/cerebellum/
+git clone https://github.com/you/wolffish-capability-name.git
+```
+
+Wolffish discovers them on next launch.
+
+---
+
+## Documentation Contributions
+
+### Setup
+
+Docs live in the `docs/` folder of the app repository:
+
+```bash
+git clone https://github.com/younes-alturkey/wolffish.git
+cd wolffish/docs
+npx mintlify dev
+```
+
+### Format
+
+- MDX files with Mintlify components (`Card`, `CardGroup`, `Note`, `Tip`, `Warning`, `Tabs`, `Accordion`, etc.)
+- Keep content practical and concise
+- Use code blocks extensively
+
+### Translations
+
+<Warning>
+  Arabic translations are required for all new pages. The `ar/` directory mirrors the English structure exactly.
+</Warning>
+
+For every new page at `section/page.mdx`, create a corresponding `ar/section/page.mdx` with the same structure and translated content. Update `mint.json` navigation for both versions.
+
+<CardGroup cols={2}>
+  <Card title="Development Setup" icon="terminal" href="/development/setup">
+    Get the dev environment running first.
+  </Card>
+  <Card title="Adding Brain Modules" icon="brain" href="/development/adding-brain-modules">
+    Contributing a new runtime module? Read this.
+  </Card>
+</CardGroup>

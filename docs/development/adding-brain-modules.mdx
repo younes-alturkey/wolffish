@@ -1,0 +1,245 @@
+---
+title: "Adding Brain Modules"
+description: "How to add a new runtime module to the Wolffish brain"
+---
+
+# When to Add a Module
+
+The runtime has 15 modules. Adding a 16th is a significant decision — do it when a new function doesn't fit any existing region and is important enough to be a permanent part of the pipeline.
+
+<Note>
+  Before adding a module, consider whether the function belongs in an existing module. If it's a new tool, it probably belongs in `cerebellum` as a capability. If it's a new safety check, it belongs in `amygdala`. New modules are for genuinely new cognitive functions.
+</Note>
+
+## Step 1: Create the Folder
+
+Follow the one-thing-per-folder convention:
+
+```
+src/main/runtime/my-module/my-module.ts
+```
+
+## Step 2: Define the Class
+
+Every module follows the same constructor pattern:
+
+```typescript
+import { Corpus } from '@main/runtime/corpus/corpus'
+
+export interface MyModuleOpts {
+  workspaceRoot: string
+  corpus: Corpus
+}
+
+export class MyModule {
+  private readonly workspaceRoot: string
+  private readonly corpus: Corpus
+
+  constructor(opts: MyModuleOpts) {
+    this.workspaceRoot = opts.workspaceRoot
+    this.corpus = opts.corpus
+
+    // Subscribe to events this module cares about
+    this.corpus.on('message.received', (payload) => this.handleMessage(payload))
+  }
+
+  async doSomething(input: string): Promise<MyResult> {
+    // Module logic here
+
+    // Emit events for other modules to react to
+    this.corpus.emit('my-module.completed', { input, result })
+    return result
+  }
+
+  private handleMessage(payload: MessagePayload): void {
+    // React to events from other modules
+  }
+}
+```
+
+## Step 3: Define Corpus Events
+
+Add your module's events to the `CorpusEvent` enum in `corpus.ts`:
+
+```typescript
+// src/main/runtime/corpus/corpus.ts
+
+export type CorpusEvents = {
+  // ... existing events ...
+
+  // My module events
+  'my-module.started': { input: string }
+  'my-module.completed': { input: string; result: MyResult }
+  'my-module.failed': { input: string; error: string }
+}
+```
+
+<Tip>
+  Name events as `module-name.past-tense-verb`. This makes the event log read like a story: "message received, context built, safety checked, response streamed."
+</Tip>
+
+## Step 4: Wire into Agent
+
+Import and instantiate your module in `agent.ts`:
+
+```typescript
+// src/main/runtime/agent.ts
+
+import { MyModule } from '@main/runtime/my-module/my-module'
+
+export class Agent {
+  private readonly myModule: MyModule
+
+  constructor(opts: AgentOpts) {
+    // ... existing modules ...
+
+    this.myModule = new MyModule({
+      workspaceRoot: opts.workspaceRoot,
+      corpus: this.corpus,
+    })
+  }
+
+  async processMessage(message: string): Promise<void> {
+    // The pipeline — call your module at the right stage
+    const context = await this.prefrontal.buildContext(message)
+    const filtered = await this.ras.filter(context)
+
+    // Example: call your module after context is built
+    await this.myModule.doSomething(filtered)
+
+    const response = await this.thalamus.stream(filtered)
+    // ... rest of pipeline
+  }
+}
+```
+
+Where in the pipeline your module runs depends on what it does:
+
+| Stage | When to insert |
+|-------|----------------|
+| Before `prefrontal` | Input preprocessing, routing |
+| After `prefrontal`, before `thalamus` | Context enrichment, filtering |
+| After `thalamus`, before `broca` | Output processing, validation |
+| After `broca` | Post-response actions, logging |
+
+## Step 5: Add Workspace Storage (if needed)
+
+If your module needs persistent state, create a folder in the defaults:
+
+```
+src/defaults/workspace/brain/my-module/
+```
+
+Read and write markdown files for state:
+
+```typescript
+import { readFile, writeFile } from 'fs/promises'
+import { join } from 'path'
+
+async loadState(): Promise<MyState> {
+  const path = join(this.workspaceRoot, 'brain', 'my-module', 'state.md')
+  const content = await readFile(path, 'utf-8')
+  return this.parseState(content)
+}
+
+async saveState(state: MyState): Promise<void> {
+  const path = join(this.workspaceRoot, 'brain', 'my-module', 'state.md')
+  await writeFile(path, this.serializeState(state), 'utf-8')
+}
+```
+
+---
+
+## Design Rules
+
+<AccordionGroup>
+  <Accordion title="Modules NEVER import each other">
+    All inter-module communication goes through corpus events. This keeps the dependency graph flat and makes modules independently testable.
+    ```typescript
+    // WRONG — direct import creates coupling
+    import { Hippocampus } from '@main/runtime/hippocampus/hippocampus'
+
+    // RIGHT — communicate via events
+    this.corpus.emit('memory.store-requested', { content })
+    this.corpus.on('memory.stored', (payload) => { /* ... */ })
+    ```
+  </Accordion>
+
+  <Accordion title="Single responsibility">
+    Each module does exactly one thing. If you're adding two unrelated functions, that's two modules (or one of them belongs in an existing module).
+  </Accordion>
+
+  <Accordion title="Workspace state is always markdown">
+    Human-readable, git-versionable, LLM-parseable. Never use binary formats or JSON for workspace state. Markdown with YAML frontmatter is the standard.
+  </Accordion>
+
+  <Accordion title="Independently testable">
+    Your module should be testable by mocking only the corpus. If you need to mock five other things, your module has too many dependencies.
+  </Accordion>
+
+  <Accordion title="Config via workspace helper">
+    If your module needs configuration, read it from `config.json` via the workspace helper. Don't invent a new config mechanism.
+    ```typescript
+    import { readConfig } from '@main/workspace/config'
+
+    const config = await readConfig(this.workspaceRoot)
+    const myModuleConfig = config.myModule ?? defaults
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Testing
+
+Unit test your module in isolation by mocking the corpus:
+
+```typescript
+import { describe, it, expect, vi } from 'vitest'
+import { MyModule } from './my-module'
+
+describe('MyModule', () => {
+  function createMockCorpus() {
+    const handlers = new Map<string, Function>()
+    return {
+      on: vi.fn((event, handler) => handlers.set(event, handler)),
+      emit: vi.fn(),
+      // Helper to simulate incoming events
+      simulate: (event: string, payload: unknown) => handlers.get(event)?.(payload),
+    }
+  }
+
+  it('emits completed event after processing', async () => {
+    const corpus = createMockCorpus()
+    const mod = new MyModule({
+      workspaceRoot: '/tmp/test-workspace',
+      corpus: corpus as any,
+    })
+
+    await mod.doSomething('test input')
+
+    expect(corpus.emit).toHaveBeenCalledWith(
+      'my-module.completed',
+      expect.objectContaining({ input: 'test input' })
+    )
+  })
+
+  it('reacts to incoming events', () => {
+    const corpus = createMockCorpus()
+    new MyModule({ workspaceRoot: '/tmp/test-workspace', corpus: corpus as any })
+
+    corpus.simulate('message.received', { content: 'hello' })
+
+    // Assert side effects
+  })
+})
+```
+
+<CardGroup cols={2}>
+  <Card title="Architecture Overview" icon="sitemap" href="/architecture/overview">
+    Understand how all 15 modules fit together.
+  </Card>
+  <Card title="Project Structure" icon="folder-tree" href="/development/project-structure">
+    Where everything lives in the codebase.
+  </Card>
+</CardGroup>

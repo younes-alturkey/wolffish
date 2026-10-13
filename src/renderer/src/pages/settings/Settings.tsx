@@ -32,6 +32,7 @@ import { GitHubPanel } from '@pages/settings/GitHubPanel'
 import { GooglePanel } from '@pages/settings/GooglePanel'
 import { prefetchGooglePanel } from '@pages/settings/googleSnapshot'
 import { CliPanel } from '@pages/settings/CliPanel'
+import { WebUiPanel } from '@pages/settings/WebUiPanel'
 import { InAppPanel } from '@pages/settings/InAppPanel'
 import { McpPanel } from '@pages/settings/McpPanel'
 import { MemesPanel } from '@pages/settings/MemesPanel'
@@ -46,6 +47,7 @@ import { UsagePanel } from '@pages/settings/UsagePanel'
 import { VariablesPanel } from '@pages/settings/VariablesPanel'
 import { WhatsAppPanel } from '@pages/settings/WhatsAppPanel'
 import { WolffishPanel } from '@pages/settings/WolffishPanel'
+import { RebootDialog } from '@pages/settings/RebootDialog'
 import { useFlow } from '@providers/flow/useFlow'
 import { useLocale } from '@providers/locale/useLocale'
 import { useTheme, type ThemeSource } from '@providers/theme/useTheme'
@@ -65,12 +67,14 @@ import {
   Database02Icon,
   DnaIcon,
   GithubIcon,
+  Globe02Icon,
   Key01Icon,
   McpServerIcon,
   Mic01Icon,
   NeuralNetworkIcon,
   PaintBoardIcon,
   PuzzleIcon,
+  ReloadIcon,
   SmartPhone01Icon,
   SmileDizzyIcon,
   VolumeHighIcon,
@@ -166,6 +170,9 @@ export function Settings(): React.JSX.Element {
   const [channel, setChannelRaw] = useState<Channel>(snapshot.channel)
   const [service, setServiceRaw] = useState<Service | null>(snapshot.service)
   const [knowledgeTab, setKnowledgeTabRaw] = useState<KnowledgeTab>(snapshot.knowledgeTab)
+  // Reboot sits in the rail like a tab but never becomes one: it opens a
+  // confirmation and leaves the active panel where it was.
+  const [rebootOpen, setRebootOpen] = useState(false)
 
   const setActive = useCallback(
     (key: TabKey) => {
@@ -279,8 +286,116 @@ export function Settings(): React.JSX.Element {
   const backToServices = useCallback(() => setService(null), [setService])
 
   return (
-    <main className={cn('bg-bg flex h-full w-full', pageTopPadding)}>
-      <aside className="flex w-56 min-w-56 shrink-0 flex-col gap-2 overflow-y-auto p-3">
+    <main className={cn('bg-bg flex h-full w-full max-sm:flex-col', pageTopPadding)}>
+      {/* Phones have no room for a 224px rail, so the same nav ships twice:
+          the desktop column below, and a horizontal strip above the panel
+          here. Same state, same labels — only the axis changes. */}
+      <div className="border-border flex shrink-0 flex-col gap-1 border-b p-2 sm:hidden">
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => goTo('chat')}
+            aria-label={t('common.back')}
+            className={cn(
+              'text-muted hover:text-fg flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg',
+              'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg'
+            )}
+          >
+            <BackIcon size={16} />
+          </button>
+          <div
+            role="tablist"
+            aria-orientation="horizontal"
+            className="flex min-w-0 flex-1 gap-1 overflow-x-auto"
+          >
+            {TABS.map((tab) => {
+              const isActive = active === tab.key
+              return (
+                <button
+                  key={tab.key}
+                  role="tab"
+                  type="button"
+                  aria-selected={isActive}
+                  onClick={() => setActive(tab.key)}
+                  className={cn(
+                    'flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm whitespace-nowrap',
+                    'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
+                    isActive
+                      ? 'bg-primary text-primary-fg shadow-sm'
+                      : 'text-muted hover:bg-border/40 hover:text-fg'
+                  )}
+                >
+                  {tab.icon}
+                  <span>{t(tab.labelKey)}</span>
+                </button>
+              )
+            })}
+            <button
+              type="button"
+              onClick={() => setRebootOpen(true)}
+              className={cn(
+                'flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm whitespace-nowrap',
+                'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
+                'text-muted hover:bg-border/40 hover:text-fg'
+              )}
+            >
+              <ReloadIcon size={18} />
+              <span>{t('settings.tabs.reboot')}</span>
+            </button>
+          </div>
+        </div>
+        {/* The sub-tabs cannot nest under a horizontal strip, so they get
+            their own row of chips underneath it. */}
+        {active === 'channels' && (
+          <div className="flex gap-1 overflow-x-auto">
+            {CHANNELS.map((ch) => {
+              const subActive = channel === ch
+              const Icon = CHANNEL_ICONS[ch]
+              return (
+                <button
+                  key={ch}
+                  type="button"
+                  onClick={() => setChannel(ch)}
+                  className={cn(
+                    'flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs whitespace-nowrap',
+                    'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
+                    subActive
+                      ? 'bg-border/50 text-fg font-medium'
+                      : 'text-muted hover:bg-border/30 hover:text-fg'
+                  )}
+                >
+                  <NavIcon icon={Icon} />
+                  <span>{t(`settings.channels.tabs.${ch}`)}</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
+        {active === 'knowledge' && (
+          <div className="flex gap-1 overflow-x-auto">
+            {KNOWLEDGE_TABS.map((kt) => {
+              const subActive = knowledgeTab === kt
+              return (
+                <button
+                  key={kt}
+                  type="button"
+                  onClick={() => setKnowledgeTab(kt)}
+                  className={cn(
+                    'flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs whitespace-nowrap',
+                    'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
+                    subActive
+                      ? 'bg-border/50 text-fg font-medium'
+                      : 'text-muted hover:bg-border/30 hover:text-fg'
+                  )}
+                >
+                  <span>{t(`settings.knowledge.tabs.${kt}`)}</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </div>
+      <aside className="flex w-56 min-w-56 shrink-0 flex-col gap-2 overflow-y-auto p-3 max-sm:hidden">
         <button
           type="button"
           onClick={() => goTo('chat')}
@@ -392,6 +507,18 @@ export function Settings(): React.JSX.Element {
               </div>
             )
           })}
+          <button
+            type="button"
+            onClick={() => setRebootOpen(true)}
+            className={cn(
+              'flex items-center gap-2 rounded-lg px-3 py-2 text-start text-sm cursor-pointer whitespace-nowrap',
+              'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
+              'text-muted hover:bg-border/40 hover:text-fg'
+            )}
+          >
+            <ReloadIcon size={18} />
+            <span>{t('settings.tabs.reboot')}</span>
+          </button>
         </nav>
       </aside>
 
@@ -502,6 +629,9 @@ export function Settings(): React.JSX.Element {
         <TabPanel active={active === 'channels' && channel === 'cli'}>
           <CliPanel />
         </TabPanel>
+        <TabPanel active={active === 'channels' && channel === 'web'}>
+          <WebUiPanel />
+        </TabPanel>
         <TabPanel active={active === 'channels' && channel === 'browser'}>
           <BrowserExtensionPanel />
         </TabPanel>
@@ -509,6 +639,7 @@ export function Settings(): React.JSX.Element {
           <McpPanel />
         </TabPanel>
       </div>
+      <RebootDialog open={rebootOpen} onClose={() => setRebootOpen(false)} />
     </main>
   )
 }
@@ -606,14 +737,15 @@ function NavIcon({ icon: Icon }: { icon: NavIconComponent }): React.JSX.Element 
   )
 }
 
-type Channel = 'inapp' | 'cli' | 'mobile' | 'browser' | 'telegram' | 'whatsapp'
-// Wolffish's own surfaces first (In-App, CLI, Mobile, Browser), then the
-// external messengers.
-const CHANNELS: Channel[] = ['inapp', 'cli', 'mobile', 'browser', 'telegram', 'whatsapp']
+type Channel = 'inapp' | 'cli' | 'web' | 'mobile' | 'browser' | 'telegram' | 'whatsapp'
+// Wolffish's own surfaces first (In-App, CLI, Web UI, Mobile, Browser), then
+// the external messengers.
+const CHANNELS: Channel[] = ['inapp', 'cli', 'web', 'mobile', 'browser', 'telegram', 'whatsapp']
 
 const CHANNEL_ICONS: Record<Channel, NavIconComponent> = {
   inapp: ComputerIcon,
   cli: ComputerTerminal01Icon,
+  web: Globe02Icon,
   mobile: SmartPhone01Icon,
   browser: BrowserIcon,
   telegram: TelegramLogo,

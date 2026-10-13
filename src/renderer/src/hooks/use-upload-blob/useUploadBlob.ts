@@ -1,12 +1,20 @@
+import { isWeb } from '@lib/utils/platform'
 import { useEffect, useState } from 'react'
 
 /**
- * Fetch an uploaded file's bytes through the upload IPC channel and wrap
- * them in an object URL the renderer can feed to `<img>`, `<audio>`,
- * `<video>` etc. Mirrors the Blob-URL pattern voice memos use — keeps the
+ * A URL the renderer can feed to `<img>`, `<audio>`, `<video>`, `<iframe>`
+ * for an uploaded file.
+ *
+ * Desktop: the bytes come through the upload IPC channel and are wrapped
+ * in an object URL — the Blob-URL pattern voice memos use, which keeps the
  * URL scoped to the renderer's lifetime, avoids registering a custom
  * Electron protocol, and gives every media element a stable string source
  * across re-renders.
+ *
+ * Web: the server's own file route, which streams the file with Range
+ * support and lets the browser cache it. Nothing is read into memory, so a
+ * 260 MB PDF costs a phone nothing until its viewer asks for pages — and
+ * nothing that size ever crosses the socket.
  *
  * Pass `mimeType` so the Blob carries the right content-type for the
  * underlying decoder (Safari's quicktime decoder is MIME-strict; HEIC
@@ -28,21 +36,32 @@ export function useUploadBlob(
 
     const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
 
+    // The read can lose a race with the file still being written — e.g. a
+    // screenshot the agent just captured but hasn't flushed to disk yet.
+    // A single failure used to latch the "deleted" placeholder forever, so
+    // retry a few times before giving up; the bytes normally land within a
+    // few hundred ms. A genuinely missing file still ends in the error state.
+    const resolve = async (): Promise<string> => {
+      if (isWeb) {
+        const href = await window.api.upload.fileUrl(filePath)
+        if (!href) throw new Error(`missing upload: ${filePath}`)
+        const head = await fetch(href, { method: 'HEAD', credentials: 'same-origin' })
+        if (!head.ok) throw new Error(`${href}: ${head.status}`)
+        return href
+      }
+      const buffer = await window.api.upload.readFile(filePath)
+      if (!buffer) throw new Error(`missing upload: ${filePath}`)
+      const objectUrl = URL.createObjectURL(new Blob([buffer], { type: mimeType }))
+      revoke = objectUrl
+      return objectUrl
+    }
+
     void (async () => {
-      // The read can lose a race with the file still being written — e.g. a
-      // screenshot the agent just captured but hasn't flushed to disk yet.
-      // A single failure used to latch the "deleted" placeholder forever, so
-      // retry a few times before giving up; the bytes normally land within a
-      // few hundred ms. A genuinely missing file still ends in the error state.
       for (let attempt = 0; ; attempt++) {
         try {
-          const buffer = await window.api.upload.readFile(filePath)
-          if (!buffer) throw new Error(`missing upload: ${filePath}`)
+          const next = await resolve()
           if (cancelled) return
-          const blob = new Blob([buffer], { type: mimeType })
-          const objectUrl = URL.createObjectURL(blob)
-          revoke = objectUrl
-          setUrl(objectUrl)
+          setUrl(next)
           setError(false)
           return
         } catch {

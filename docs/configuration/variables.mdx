@@ -1,0 +1,131 @@
+---
+title: "Variables"
+description: "Store API keys, tokens, and secrets securely in Wolffish"
+---
+
+# What Variables Are
+
+Variables are named values that Wolffish stores in `config.json` under the `variables` array. They hold API keys, tokens, and secrets that capabilities need at runtime. Configure them in **Settings → Variables**.
+
+## Structure
+
+Each variable has three fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `name` | string | Identifier used to reference the variable (e.g., `OPENAI_API_KEY`) |
+| `value` | string | The actual secret or value |
+| `sensitive` | boolean | When true, the value is masked in the UI |
+
+```json
+{
+  "variables": [
+    {
+      "name": "OPENAI_API_KEY",
+      "value": "sk-proj-abc123...",
+      "sensitive": true
+    },
+    {
+      "name": "GITHUB_TOKEN",
+      "value": "ghp_xxxxxxxxxxxx",
+      "sensitive": true
+    },
+    {
+      "name": "BRAVE_API_KEY",
+      "value": "BSA-xxxxxxxxxx",
+      "sensitive": true
+    },
+    {
+      "name": "NOTION_TOKEN",
+      "value": "ntn_xxxxxxxxxx",
+      "sensitive": true
+    },
+    {
+      "name": "DEFAULT_BRANCH",
+      "value": "main",
+      "sensitive": false
+    }
+  ]
+}
+```
+
+## Sensitive Flag
+
+When `sensitive` is `true`, the variable's value is displayed as `••••••` in the Settings UI. This is a UI-only convenience — it does not mask or exclude the value from the agent.
+
+<Tip>
+  Mark any credential, token, or API key as sensitive so it's hidden in the UI. Non-sensitive variables are for non-secret configuration like branch names, project IDs, or environment labels.
+</Tip>
+
+## How the Agent Uses Variables
+
+Every variable — including ones marked `sensitive` — appears in **plaintext** in the system prompt inside a `<variables>` block on every turn:
+
+```
+- OPENAI_API_KEY = sk-proj-abc123... (sensitive)
+- GITHUB_TOKEN = ghp_xxxxxxxxxxxx (sensitive)
+- BRAVE_API_KEY = BSA-xxxxxxxxxx (sensitive)
+- DEFAULT_BRANCH = main
+```
+
+The `(sensitive)` label is a hint to the agent not to echo the value back — it does not hide or redact the actual value. This is by design: Variables are the mechanism for giving the LLM credentials it needs to use directly (e.g. passing an API key as a shell command argument).
+
+The agent uses them automatically. If a task needs an API key and a matching variable exists, it uses it without asking.
+
+<Warning>
+  If you store a secret as a Variable, the LLM sees it in plaintext. This is intentional — the agent needs the value to act on it. Use Variables for credentials the agent needs to reference directly. For credentials that plugins handle themselves (Google OAuth, Notion token, etc.), use the integration-specific settings pages instead — those are never sent to the LLM.
+</Warning>
+
+<Info>
+  Values are stored in plain text in `config.json`. Wolffish is local-first and your workspace is yours. If you version-control your workspace, add `config.json` to `.gitignore`.
+</Info>
+
+## Variables vs Environment Variables
+
+Variables are not system environment variables. They differ in important ways:
+
+| | Wolffish Variables | System Env Vars |
+|---|---|---|
+| Scope | Wolffish workspace only | Entire OS session |
+| Portable | Yes, travel with the workspace | No, tied to the machine |
+| Managed by | Settings UI or config.json | Shell profile or system settings |
+| Available to | The agent (via system prompt) | All processes |
+
+<Info>
+  If you need a value available to both Wolffish and other tools on your system, set it as both a Wolffish variable and a system env var. They don't conflict.
+</Info>
+
+## Common Variables
+
+| Variable | Used By |
+|---|---|
+| `OPENAI_API_KEY` | OpenAI provider fallback |
+| `GITHUB_TOKEN` | GitHub capability (PRs, issues, repos) |
+| `BRAVE_API_KEY` | Web search capability |
+| `NOTION_TOKEN` | Notion integration |
+| `GOOGLE_API_KEY` | Google Workspace integration |
+| `TELEGRAM_BOT_TOKEN` | Telegram channel |
+
+## Adding a Variable
+
+<Tabs>
+  <Tab title="Via Settings UI">
+    1. Open **Settings → Variables**
+    2. Click **Add Variable**
+    3. Enter the name, value, and toggle sensitive if needed
+    4. Click **Save**
+  </Tab>
+  <Tab title="Via config.json">
+    Edit `brain/config.json` directly and add an entry to the `variables` array:
+
+    ```json
+    {
+      "name": "MY_API_KEY",
+      "value": "your-key-here",
+      "sensitive": true
+    }
+    ```
+
+    Wolffish picks up the change on next conversation turn (no restart needed).
+  </Tab>
+</Tabs>

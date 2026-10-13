@@ -501,10 +501,13 @@ export class ExtensionServer {
     void this.pushEventsSync(testId, client)
 
     const steps: Array<{ type: string; params: Record<string, unknown> }> = [
-      { type: 'browser_tab_open', params: { url: 'https://wolffi.sh/extension', active: true } },
+      {
+        type: 'browser_tab_open',
+        params: { url: 'https://github.com/younes-alturkey/wolffish', active: true }
+      },
       { type: 'browser_get_url', params: {} },
       { type: 'browser_tabs_list', params: {} },
-      { type: 'browser_cookies_get', params: { domain: 'wolffi.sh' } },
+      { type: 'browser_cookies_get', params: { domain: 'github.com' } },
       { type: 'browser_screenshot', params: {} },
       { type: 'browser_read_page', params: { format: 'markdown' } },
       { type: 'browser_query_selector', params: { selector: 'h1', limit: 1 } },

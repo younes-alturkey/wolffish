@@ -14,7 +14,7 @@
  *   macOS   gui       login item (Electron)
  *   macOS   headless  launchd LaunchAgent, RunAtLoad + KeepAlive
  *   Windows gui       login item (Electron)
- *   Windows headless  Task Scheduler, ONLOGON
+ *   Windows headless  Task Scheduler, at logon, restarted on failure
  *   Linux   gui       XDG autostart .desktop — what every other Electron app
  *                     hand-rolls, because Electron won't
  *   Linux   headless  systemd USER unit + lingering
@@ -134,7 +134,7 @@ function systemdUnitBody(execPath: string): string {
   const launchEnv = appImageLaunchEnv()
   return `[Unit]
 Description=Wolffish
-Documentation=https://wolffi.sh
+Documentation=https://github.com/younes-alturkey/wolffish
 After=network-online.target
 Wants=network-online.target
 
@@ -398,24 +398,56 @@ async function launchdStatus(): Promise<AutostartStatus> {
 
 // ─── Windows: Task Scheduler ────────────────────────────────────────────────
 
+/**
+ * The task definition, as PowerShell. `schtasks /create` cannot express
+ * restart-on-failure, and a Web UI whose certificate renews itself every few
+ * days needs the process back after a crash without anyone logging in to
+ * notice: up to 999 restarts a minute apart, no execution time limit, start
+ * late if the logon trigger was missed. At-logon needs no elevation; a
+ * before-logon service would, and asking for that silently fails on a
+ * normal account.
+ */
+export function windowsTaskScript(bin: string, args: string[]): string {
+  const quote = (text: string): string => `'${text.replace(/'/g, "''")}'`
+  return [
+    `$action = New-ScheduledTaskAction -Execute ${quote(bin)} -Argument ${quote(args.join(' '))}`,
+    '$trigger = New-ScheduledTaskTrigger -AtLogOn',
+    '$settings = New-ScheduledTaskSettingsSet -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit ([TimeSpan]::Zero) -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries',
+    `Register-ScheduledTask -TaskName ${quote(TASK_NAME)} -Action $action -Trigger $trigger -Settings $settings -RunLevel Limited -Force | Out-Null`
+  ].join('; ')
+}
+
 async function installSchtasks(execPath: string): Promise<AutostartStatus> {
   const { bin, args } = serviceCommand(execPath)
-  // ONLOGON needs no elevation. ONSTART (before login) does, and asking for
-  // it silently would fail on a normal account — a headless Windows box is
-  // rare enough that the documented `schtasks /sc onstart` upgrade is a
-  // better answer than a UAC prompt nobody expected.
-  await serviceCall('schtasks', [
-    '/create',
-    '/f',
-    '/tn',
-    TASK_NAME,
-    '/tr',
-    `"${bin}" ${args.join(' ')}`,
-    '/sc',
-    'onlogon',
-    '/rl',
-    'limited'
-  ])
+  try {
+    await serviceCall('powershell', [
+      '-NoProfile',
+      '-NonInteractive',
+      '-ExecutionPolicy',
+      'Bypass',
+      '-Command',
+      windowsTaskScript(bin, args)
+    ])
+  } catch (err) {
+    // No PowerShell (or a policy that refuses it): the plain task still
+    // starts Wolffish at logon, without the restart-on-failure settings.
+    wlog.warn(
+      TAG,
+      `PowerShell registration failed, falling back to schtasks: ${err instanceof Error ? err.message : String(err)}`
+    )
+    await serviceCall('schtasks', [
+      '/create',
+      '/f',
+      '/tn',
+      TASK_NAME,
+      '/tr',
+      `"${bin}" ${args.join(' ')}`,
+      '/sc',
+      'onlogon',
+      '/rl',
+      'limited'
+    ])
+  }
   return schtasksStatus()
 }
 

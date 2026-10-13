@@ -1,0 +1,182 @@
+{
+  "id": "2026-07-01_20-40-28_985-c06ce9",
+  "title": "What procedures do I have saved",
+  "model": "gemma4:e2b",
+  "createdAt": 1782927628985,
+  "updatedAt": 1782927644726,
+  "messages": [
+    {
+      "id": "m_1782927644726_ff4e50",
+      "role": "user",
+      "content": "What procedures do I have saved? Show me the full prompt of the one that's saved, then run it.",
+      "timestamp": 1782927644726
+    },
+    {
+      "id": "m_1782927644726_ebddd6",
+      "role": "assistant",
+      "content": "You've got **1 saved procedure:**> **Check my emails** — *\"Check all my connected emails. Send a summary on Telegram of each email, who is it from, if any action is needed from my side. Then mark all as read.\"*\n\nRunning it now 🐟It's running in the background as a sealed conversation — when it finishes it'll show up in your history. That's the one you've got: **Check my emails**, simple and clean.",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782927629000_e49q0c",
+          "segmentId": "seg_1",
+          "provider": "anthropic",
+          "model": "claude-sonnet-4-6"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782927629000_e49q0c",
+          "segmentId": "seg_2",
+          "toolCallId": "toolu_015fGBPKyuKaEYXgL6WXi9ww",
+          "name": "procedure_list",
+          "args": {}
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782927629000_e49q0c",
+          "segmentId": "seg_3",
+          "toolCallId": "toolu_015fGBPKyuKaEYXgL6WXi9ww",
+          "status": "success",
+          "output": "## Procedures (1)\n\n1. **Check my emails** — edited 8h ago\n   Check all my connected emails. Send a summary on Telegram of each email, who is it from, if any action is needed from my side. Then mark all as read.\n\nView the full prompt with `procedure_view`, run one with `procedure_run`, or change it with `procedure_edit` — reference by number or exact title."
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782927629000_e49q0c",
+          "segmentId": "seg_4",
+          "provider": "anthropic",
+          "model": "claude-sonnet-4-6"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782927629000_e49q0c",
+          "segmentId": "seg_5",
+          "delta": "You've got **1 saved procedure:**"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782927629000_e49q0c",
+          "segmentId": "seg_7",
+          "toolCallId": "toolu_0197ZR7YkF192t6VbkA9EYiX",
+          "name": "procedure_view",
+          "args": {
+            "identifier": "1"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782927629000_e49q0c",
+          "segmentId": "seg_8",
+          "toolCallId": "toolu_0197ZR7YkF192t6VbkA9EYiX",
+          "status": "success",
+          "output": "## Check my emails\nedited 8h ago\n\n```\nCheck all my connected emails. Send a summary on Telegram of each email, who is it from, if any action is needed from my side. Then mark all as read.\n```"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782927629000_e49q0c",
+          "segmentId": "seg_9",
+          "provider": "anthropic",
+          "model": "claude-sonnet-4-6"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782927629000_e49q0c",
+          "segmentId": "seg_10",
+          "delta": "> **Check my emails** — *\"Check all my connected emails. Send a summary on Telegram of each email, who is it from, if any action is needed from my side. Then mark all as read.\"*\n\nRunning it now 🐟"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782927629000_e49q0c",
+          "segmentId": "seg_12",
+          "toolCallId": "toolu_01DpFBeL8bpof9syNJh7gXyp",
+          "name": "procedure_run",
+          "args": {
+            "identifier": "1"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782927629000_e49q0c",
+          "segmentId": "seg_13",
+          "toolCallId": "toolu_01DpFBeL8bpof9syNJh7gXyp",
+          "status": "success",
+          "output": "Started \"Check my emails\" in the background — it runs to completion on its own as a sealed conversation and appears in history when it finishes, exactly like a triggered automation. Keep talking to the user in this conversation. Do NOT poll in a loop waiting for it: you can't pause between tool calls, so looping just burns turns and cannot make it finish sooner. Tell the user it's running; if they later ask how it went, point them to the conversation in history."
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782927629000_e49q0c",
+          "segmentId": "seg_14",
+          "provider": "anthropic",
+          "model": "claude-sonnet-4-6"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782927629000_e49q0c",
+          "segmentId": "seg_15",
+          "delta": "It's running in the background as a sealed conversation — when it finishes it'll show up in your history. That's the one you've got: **Check my emails**, simple and clean."
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1782927629000_e49q0c",
+          "segmentId": "seg_18",
+          "stopReason": "end_turn",
+          "iterationCount": 4,
+          "reasoningContent": "The runtime telemetry message - I should not reply to it. But wait, looking at the conversation, the user asked me to show procedures and run the one that's saved. I've done all three steps:\n1. Listed procedures ✓\n2. Showed full prompt ✓\n3. Ran it ✓\n\nI should give the user a final wrap-up text response since the task is complete."
+        }
+      ],
+      "toolTimings": {
+        "toolu_015fGBPKyuKaEYXgL6WXi9ww": {
+          "startedAt": 1782927633115,
+          "endedAt": 1782927633168
+        },
+        "toolu_0197ZR7YkF192t6VbkA9EYiX": {
+          "startedAt": 1782927635928,
+          "endedAt": 1782927636006
+        },
+        "toolu_01DpFBeL8bpof9syNJh7gXyp": {
+          "startedAt": 1782927639472,
+          "endedAt": 1782927639559
+        }
+      },
+      "stopReason": "end_turn",
+      "timestamp": 1782927644726
+    }
+  ],
+  "stats": {
+    "allTime": {
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 3,
+      "inputTokens": 24,
+      "outputTokens": 463,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "cost": 0.0051665,
+      "processingMs": 1000,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "endedAt": 1782927644726,
+      "provider": "local",
+      "model": "gemma4:e2b"
+    },
+    "lastTurn": {
+      "endedAt": 1782927644726,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "apiCalls": 1,
+      "toolCalls": 3,
+      "inputTokens": 24,
+      "outputTokens": 463,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "provider": "local",
+      "model": "gemma4:e2b",
+      "cost": 0.0051665
+    },
+    "meter": {
+      "contextTokens": 12887,
+      "contextBudget": 131072,
+      "compactionAt": 73728,
+      "model": "gemma4:e2b"
+    }
+  }
+}

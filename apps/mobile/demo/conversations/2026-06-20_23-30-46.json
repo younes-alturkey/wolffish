@@ -1,0 +1,83 @@
+{
+  "id": "2026-06-20_23-30-46",
+  "title": "Meone reply to me",
+  "model": "qwen3.5:9b",
+  "createdAt": 1781987446701,
+  "updatedAt": 1781987462237,
+  "messages": [
+    {
+      "id": "m_1781987462237_eeb3c8",
+      "role": "user",
+      "content": "someone reply to me\nI think this is hard to compare. You use bandwidth as you need. With AI there in an incentive to maximise usage: 10x, 100x or 1000x engineer. The proposition is the more tokens you burn the more output you generate. Not seeing a ceiling yet.\n\nmy reply back\nWell brother, you're right. It's too early to tell but I'd bet token consumption optimization will die soon. If AI going to be woven into the fabric of economies then token costs have to be come little to nothing just like the internet.\n\nThe internet started as optional, people slowly adopted as cost went down.\n\nDeepSeek and Xiaomi slashed their pricing 75% and 99% a couple weeks back...\n\nThere will always be a room for such projects but I think it will be less relevant.\n\n\nimprove my reply so it's simple and easy to understand\n\ndon't make ti toolong",
+      "timestamp": 1781987462237
+    },
+    {
+      "id": "m_1781987462237_4ffd91",
+      "role": "assistant",
+      "content": "You're right — too early to call it. But I think token costs are headed to zero, same as the internet. When something becomes infrastructure, the price has to disappear.\n\nDeepSeek and Xiaomi already slashed prices 75% and 99% a couple weeks ago. That trend only goes one direction.\n\nOptimization will matter less and less. There'll always be room for it, but it won't be the bottleneck.",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781987446708_ij6th5",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1781987446708_ij6th5",
+          "segmentId": "seg_2",
+          "delta": "You're right — too early to call it. But I think token costs are headed to zero, same as the internet. When something becomes infrastructure, the price has to disappear.\n\nDeepSeek and Xiaomi already slashed prices 75% and 99% a couple weeks ago. That trend only goes one direction.\n\nOptimization will matter less and less. There'll always be room for it, but it won't be the bottleneck."
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1781987446708_ij6th5",
+          "segmentId": "seg_91",
+          "stopReason": "end_turn",
+          "iterationCount": 1,
+          "reasoningContent": "The user wants me to improve their reply to make it simpler and easier to understand, without making it too long. Let me polish it.\n\nTheir original reply:\n\"improve my reply so it's simple and easy to understand\n\ndon't make ti toolong\" - wait, that's the user's instruction to me. Let me re-read.\n\nThe user is showing me someone's comment, then their draft reply, and asking me to improve it - make it simpler, easier to understand, and not too long.\n\nTheir draft:\n\"Well brother, you're right. It's too early to tell but I'd bet token consumption optimization will die soon. If AI going to be woven into the fabric of economies then token costs have to be come little to nothing just like the internet.\n\nThe internet started as optional, people slowly adopted as cost went down.\n\nDeepSeek and Xiaomi slashed their pricing 75% and 99% a couple weeks back...\n\nThere will always be a room for such projects but I think it will be less relevant.\"\n\nLet me tighten this up. The core points:\n1. Agree it's too early to tell\n2. Token costs will approach zero as AI becomes infrastructure (like internet)\n3. DeepSeek & Xiaomi already slashed prices dramatically\n4. Optimization will be less relevant\n\nLet me make it cleaner and more conversational."
+        }
+      ],
+      "stopReason": "end_turn",
+      "timestamp": 1781987462237
+    }
+  ],
+  "stats": {
+    "allTime": {
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 208,
+      "outputTokens": 193,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "cost": 0.0049247,
+      "processingMs": 1000,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "endedAt": 1781987462237,
+      "provider": "local",
+      "model": "qwen3.5:9b"
+    },
+    "lastTurn": {
+      "endedAt": 1781987462237,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 208,
+      "outputTokens": 193,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "provider": "local",
+      "model": "qwen3.5:9b",
+      "cost": 0.0049247
+    },
+    "meter": {
+      "contextTokens": 12801,
+      "contextBudget": 1000000,
+      "compactionAt": 725424,
+      "model": "qwen3.5:9b"
+    }
+  }
+}

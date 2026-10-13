@@ -38,6 +38,7 @@ import type {
   Interjection,
   InterjectionEvent
 } from '@main/runtime/agent/interjection'
+import { buildApi } from '@preload/api'
 import { contextBridge, ipcRenderer, webUtils, type IpcRendererEvent } from 'electron'
 
 export type {
@@ -783,10 +784,12 @@ export type WorkspaceApi = {
   getModelCatalog: () => Promise<readonly ModelEntry[]>
 }
 
-export type AppClosingPendingEvent = { tasks: number }
+export type AppClosingPendingEvent = { tasks: number; reason?: 'quit' | 'reboot' }
 
 export type AppApi = {
   factoryReset: () => Promise<void>
+  /** Drain and relaunch. Resolves before the process goes down; the overlay follows by broadcast. */
+  reboot: () => Promise<{ scheduled: boolean }>
   onClosingPending: (listener: (event: AppClosingPendingEvent) => void) => () => void
 }
 
@@ -1544,9 +1547,13 @@ export type ProcedureFileRef = {
  * Native path pickers that belong to no one feature — automations and
  * procedures both point runs at folders, and only main has `dialog`.
  */
+export type DirectoryListing = import('@main/paths/paths').DirectoryListing
+
 export type PathsApi = {
   /** Native multi-select folder picker. Returns null on cancel. */
   pickDirectories: () => Promise<string[] | null>
+  /** One level of the server's folders, for the Web UI's folder sheet. `~` expands. */
+  listDirectories: (target: string, options?: { hidden?: boolean }) => Promise<DirectoryListing>
 }
 
 export type Procedure = {
@@ -2384,6 +2391,8 @@ export type UpdateDownloadProgressEvent = {
 export type UpdateReadyEvent = {
   version: string
   releaseNotes: string | null
+  /** Where the installer was saved when the user has to run it (macOS); null when the app installs itself. */
+  installerPath: string | null
 }
 
 export type UpdaterPhase =
@@ -2415,6 +2424,7 @@ export type UpdaterState = {
   percent: number
   releaseNotes: string | null
   error: UpdaterErrorInfo | null
+  installerPath: string | null
 }
 
 export type UpdateCheckResult = { ok: true; version: string | null } | { ok: false; error: string }
@@ -2425,6 +2435,8 @@ export type UpdaterApi = {
   getVersion: () => Promise<string>
   getReady: () => Promise<UpdateReadyEvent | null>
   getState: () => Promise<UpdaterState>
+  /** macOS: show the downloaded installer in Finder. */
+  revealInstaller: () => Promise<void>
   consumePostUpdate: () => Promise<boolean>
   listChangelogMonths: () => Promise<string[]>
   readChangelog: (month: string, locale?: string) => Promise<string>
@@ -2598,6 +2610,67 @@ export type SpellcheckApi = {
   addToDictionary: (word: string) => Promise<void>
 }
 
+export type WebUiStatus = import('@main/channels/web/server').WebUiStatus
+export type HttpsEnableInput = import('@main/channels/web/server').HttpsEnableInput
+export type HttpsEnableResult = import('@main/channels/web/server').HttpsEnableResult
+export type HttpsProgressEvent = import('@main/channels/web/server').HttpsProgressEvent
+export type HttpsStatus = import('@main/channels/web/server').HttpsStatus
+export type PreflightStep = import('@main/channels/web/preflight').PreflightStep
+export type WebUiPublicConfig = import('@main/channels/web/ipc').WebUiPublicConfig
+export type WebSessionView = import('@main/channels/web/ipc').WebSessionView
+export type WebPublicLinkView = import('@main/channels/web/ipc').WebPublicLinkView
+export type WebUiConfigPatch = import('@main/workspace/workspace').WebUiConfigPatch
+export type WebUiHttpsMode = import('@main/workspace/workspace').WebUiHttpsMode
+export type WebNotifyResult = import('@main/channels/web/server').NotifyResult
+
+/**
+ * The Web UI channel — the desktop app served to a browser. Configured from
+ * the desktop (and from the Web UI itself: a browser can change the port it
+ * is on, and reconnects when the server comes back).
+ */
+export type WebUiApi = {
+  getConfig: () => Promise<WebUiPublicConfig>
+  setConfig: (
+    patch: WebUiConfigPatch
+  ) => Promise<{ ok: true; config: WebUiPublicConfig; status: WebUiStatus }>
+  /** Sets (or replaces) the master password. Every signed-in browser is signed out. */
+  setPassword: (
+    password: string
+  ) => Promise<{ ok: true; config: WebUiPublicConfig; status: WebUiStatus }>
+  /** The generated passphrase in clear, or null once the user set their own password. */
+  revealPassword: () => Promise<{ password: string | null }>
+  /** A fresh generated passphrase, returned in clear. Every signed-in browser is signed out. */
+  regeneratePassword: () => Promise<{
+    ok: true
+    password: string
+    config: WebUiPublicConfig
+    status: WebUiStatus
+  }>
+  status: () => Promise<WebUiStatus>
+  listSessions: () => Promise<WebSessionView[]>
+  revokeSession: (id: string) => Promise<{ ok: true }>
+  revokeAllSessions: () => Promise<{ ok: true }>
+  /** Public links — files, folders and ports the agent published past the sign-in. */
+  listPublic: () => Promise<WebPublicLinkView[]>
+  revokePublic: (id: string) => Promise<{ ok: true }>
+  revokeAllPublic: () => Promise<{ ok: true; revoked: number }>
+  testNotification: () => Promise<WebNotifyResult>
+  /** Force a Let's Encrypt issuance now, outside the renewal schedule. */
+  renewCertificate: () => Promise<WebUiStatus>
+  /** The one button: preflight, then Let's Encrypt on 443 with port 80 for validation. */
+  httpsEnable: (input: HttpsEnableInput) => Promise<HttpsEnableResult>
+  httpsDisable: () => Promise<WebUiStatus>
+  restart: () => Promise<WebUiStatus>
+  /** Asks ipify.org what address the internet sees this machine at. */
+  detectPublicIp: () => Promise<{ ipv4: string | null; ipv6: string | null }>
+  onConfigChange: (listener: (config: WebUiPublicConfig) => void) => () => void
+  onStatusChange: (listener: (status: WebUiStatus) => void) => () => void
+  /** The full list after a public link is made or revoked, from any surface. */
+  onPublicChange: (listener: (links: WebPublicLinkView[]) => void) => () => void
+  /** Each state change and each preflight or issuance step while HTTPS is being set up. */
+  onHttpsProgress: (listener: (event: HttpsProgressEvent) => void) => () => void
+}
+
 export type WolffishApi = {
   theme: ThemeApi
   locale: LocaleApi
@@ -2635,6 +2708,7 @@ export type WolffishApi = {
   whatsapp: WhatsAppApi
   inapp: InAppApi
   cli: CliApi
+  web: WebUiApi
   mcp: McpApi
   brave: BraveApi
   notion: NotionApi
@@ -2658,453 +2732,11 @@ function subscribe<T>(channel: string, listener: (payload: T) => void): () => vo
   }
 }
 
-const api: WolffishApi = {
-  theme: {
-    get: () => ipcRenderer.invoke('theme:get'),
-    set: (source) => ipcRenderer.invoke('theme:set', source),
-    onUpdated: (listener) => subscribe('theme:updated', listener)
-  },
-  locale: {
-    get: () => ipcRenderer.invoke('locale:get'),
-    set: (locale) => ipcRenderer.invoke('locale:set', locale)
-  },
-  system: {
-    getInfo: () => ipcRenderer.invoke('system:getInfo')
-  },
-  workspace: {
-    getStatus: () => ipcRenderer.invoke('workspace:getStatus'),
-    completeOnboarding: () => ipcRenderer.invoke('workspace:completeOnboarding'),
-    getModelCatalog: () => ipcRenderer.invoke('workspace:getModelCatalog')
-  },
-  ollama: {
-    detect: () => ipcRenderer.invoke('ollama:detect'),
-    installUrl: () => ipcRenderer.invoke('ollama:installUrl'),
-    openInstallPage: () => ipcRenderer.invoke('ollama:openInstallPage'),
-    start: () => ipcRenderer.invoke('ollama:start'),
-    listInstalled: () => ipcRenderer.invoke('ollama:listInstalled'),
-    snapshot: () => ipcRenderer.invoke('ollama:snapshot'),
-    onChanged: (listener) => subscribe('ollama:changed', listener),
-    scanAvailable: () => ipcRenderer.invoke('ollama:scanAvailable'),
-    getModelsFolder: () => ipcRenderer.invoke('ollama:getModelsFolder'),
-    setModelsFolder: (folder) => ipcRenderer.invoke('ollama:setModelsFolder', folder),
-    pickModelsFolder: () => ipcRenderer.invoke('ollama:pickModelsFolder')
-  },
-  model: {
-    select: (modelName) => ipcRenderer.invoke('model:select', modelName),
-    cancelPull: () => ipcRenderer.invoke('model:cancelPull'),
-    status: () => ipcRenderer.invoke('model:status'),
-    capabilities: () => ipcRenderer.invoke('model:capabilities'),
-    onPullProgress: (listener) => subscribe('model:pullProgress', listener),
-    onPullDone: (listener) => subscribe('model:pullDone', listener)
-  },
-  provider: {
-    list: () => ipcRenderer.invoke('provider:list'),
-    test: (payload) => ipcRenderer.invoke('provider:test', payload),
-    save: (payload) => ipcRenderer.invoke('provider:save', payload),
-    remove: (id) => ipcRenderer.invoke('provider:remove', id),
-    setBrain: (brain) => ipcRenderer.invoke('provider:setBrain', brain),
-    setMode: (mode) => ipcRenderer.invoke('provider:setMode', mode),
-    onUpdated: (listener) => subscribe('provider:updated', listener)
-  },
-  chat: {
-    send: (payload) => ipcRenderer.invoke('chat:send', payload),
-    cancel: (payload) => ipcRenderer.invoke('chat:cancel', payload),
-    activeRuns: () => ipcRenderer.invoke('chat:activeRuns'),
-    getPlanMode: (conversationId) => ipcRenderer.invoke('chat:planModeGet', conversationId),
-    setPlanMode: (payload) => ipcRenderer.invoke('chat:planModeSet', payload),
-    onPlanMode: (listener) => subscribe('chat:planMode', listener),
-    turnMirror: (conversationId) => ipcRenderer.invoke('chat:turnMirror', conversationId),
-    respondApproval: (payload) => ipcRenderer.invoke('chat:approvalRespond', payload),
-    respondAsk: (payload) => ipcRenderer.invoke('chat:askRespond', payload),
-    exportPdf: (payload) => ipcRenderer.invoke('chat:exportPdf', payload),
-    onSegment: (listener) => subscribe('chat:segment', listener),
-    onDone: (listener) => subscribe('chat:done', listener),
-    onError: (listener) => subscribe('chat:error', listener),
-    onTurnEvent: (listener) => subscribe('chat:turnEvent', listener),
-    onApprovalRequest: (listener) => subscribe('chat:approvalRequest', listener),
-    onAskRequest: (listener) => subscribe('chat:askRequest', listener),
-    onCredentialBlocked: (listener) => subscribe('chat:credentialBlocked', listener),
-    onTurnState: (listener) => subscribe('chat:turnState', listener),
-    interject: (payload) => ipcRenderer.invoke('chat:interject', payload),
-    withdrawInterjection: (payload) => ipcRenderer.invoke('chat:withdrawInterjection', payload),
-    pendingInterjections: (conversationId) =>
-      ipcRenderer.invoke('chat:pendingInterjections', conversationId),
-    releaseHeldInterjection: (payload) =>
-      ipcRenderer.invoke('chat:releaseHeldInterjection', payload),
-    onInterjection: (listener) => subscribe('chat:interjection', listener)
-  },
-  conversation: {
-    list: () => ipcRenderer.invoke('conversation:list'),
-    load: (id) => ipcRenderer.invoke('conversation:load', id),
-    save: (conv) => ipcRenderer.invoke('conversation:save', conv),
-    delete: (id) => ipcRenderer.invoke('conversation:delete', id),
-    create: (model) => ipcRenderer.invoke('conversation:create', model),
-    onSummaryUpdated: (listener) => subscribe('conversation:summaryUpdated', listener),
-    onDeleted: (listener) => subscribe('conversation:deleted', listener),
-    onChanged: (listener) => subscribe('conversation:changed', listener),
-    onMessageMirror: (listener) => subscribe('conversation:messageMirror', listener)
-  },
-  task: {
-    cancel: (taskId) => ipcRenderer.invoke('task:cancel', { taskId }),
-    onChanged: (listener) => subscribe('task:changed', listener)
-  },
-  countdown: {
-    abort: (countdownId) => ipcRenderer.invoke('countdown:abort', { countdownId }),
-    onChanged: (listener) => subscribe('countdown:changed', listener)
-  },
-  processes: {
-    list: () => ipcRenderer.invoke('processes:list'),
-    start: (payload) => ipcRenderer.invoke('processes:start', payload),
-    stop: (name) => ipcRenderer.invoke('processes:stop', { name }),
-    stopAll: () => ipcRenderer.invoke('processes:stopAll'),
-    restart: (name) => ipcRenderer.invoke('processes:restart', { name }),
-    update: (payload) => ipcRenderer.invoke('processes:update', payload),
-    remove: (name) => ipcRenderer.invoke('processes:remove', { name }),
-    logs: (name, lines) => ipcRenderer.invoke('processes:logs', { name, lines }),
-    ports: () => ipcRenderer.invoke('processes:ports'),
-    onChanged: (listener) => subscribe('processes:changed', listener),
-    onCardChanged: (listener) => subscribe('process:cardChanged', listener)
-  },
-  browser: {
-    createTab: (input) => ipcRenderer.invoke('browser:createTab', input),
-    closeTab: (tabId) => ipcRenderer.invoke('browser:closeTab', { tabId }),
-    listTabs: () => ipcRenderer.invoke('browser:listTabs'),
-    navigate: (tabId, url) => ipcRenderer.invoke('browser:navigate', { tabId, url }),
-    goBack: (tabId) => ipcRenderer.invoke('browser:goBack', { tabId }),
-    goForward: (tabId) => ipcRenderer.invoke('browser:goForward', { tabId }),
-    reload: (tabId) => ipcRenderer.invoke('browser:reload', { tabId }),
-    attachViewer: (tabId, size, fps) =>
-      ipcRenderer.invoke('browser:attachViewer', { tabId, size, fps }),
-    detachViewer: (tabId) => ipcRenderer.invoke('browser:detachViewer', { tabId }),
-    setViewerFps: (tabId, fps) => ipcRenderer.invoke('browser:setViewerFps', { tabId, fps }),
-    setViewerSize: (tabId, size) => ipcRenderer.invoke('browser:setViewerSize', { tabId, size }),
-    activate: (tabId) => ipcRenderer.invoke('browser:activate', { tabId }),
-    sendInput: (tabId, event) => ipcRenderer.invoke('browser:sendInput', { tabId, event }),
-    openExternal: (url) => ipcRenderer.invoke('browser:openExternal', { url }),
-    setStageRect: (tabId, rect) => ipcRenderer.invoke('browser:setStageRect', { tabId, rect }),
-    setMode: (tabId, mode) => ipcRenderer.invoke('browser:setMode', { tabId, mode }),
-    onFrame: (listener) => subscribe('browser:frame', listener),
-    onChanged: (listener) => subscribe('browser:changed', listener),
-    onClosed: (listener) => subscribe('browser:closed', listener)
-  },
-  viewer: {
-    readTree: () => ipcRenderer.invoke('viewer:readTree'),
-    readFile: (relativePath) => ipcRenderer.invoke('viewer:readFile', relativePath),
-    readBinaryFile: (relativePath) => ipcRenderer.invoke('viewer:readBinaryFile', relativePath),
-    writeFile: (relativePath, content) =>
-      ipcRenderer.invoke('viewer:writeFile', relativePath, content),
-    hasDefault: (relativePath) => ipcRenderer.invoke('viewer:hasDefault', relativePath),
-    readDefault: (relativePath) => ipcRenderer.invoke('viewer:readDefault', relativePath),
-    stat: (relativePath) => ipcRenderer.invoke('viewer:stat', relativePath),
-    download: (relativePath) => ipcRenderer.invoke('viewer:download', relativePath),
-    revealInFolder: (relativePath) => ipcRenderer.invoke('viewer:revealInFolder', relativePath),
-    resync: () => ipcRenderer.invoke('viewer:resync'),
-    onCustomizationChanged: (listener) => subscribe('customization:changed', listener)
-  },
-  heartbeat: {
-    getJobs: () => ipcRenderer.invoke('heartbeat:getJobs'),
-    getRuns: () => ipcRenderer.invoke('heartbeat:getRuns'),
-    runJob: (idOrLabel) => ipcRenderer.invoke('heartbeat:runJob', idOrLabel),
-    getMeta: () => ipcRenderer.invoke('heartbeat:getMeta'),
-    adoptMeta: (stamps) => ipcRenderer.invoke('heartbeat:adoptMeta', stamps),
-    onChanged: (listener) => subscribe('heartbeat:changed', listener),
-    onJobStarted: (listener) => subscribe('heartbeat:jobStarted', listener),
-    onJobEnded: (listener) => subscribe('heartbeat:jobEnded', listener),
-    onJobLog: (listener) => subscribe('heartbeat:jobLog', listener),
-    onRunsChanged: (listener) => subscribe('heartbeat:runsChanged', listener)
-  },
-  paths: {
-    pickDirectories: () => ipcRenderer.invoke('paths:pickDirectories')
-  },
-  automationFiles: {
-    pickFiles: (existing) => ipcRenderer.invoke('automations:pickFiles', existing),
-    removeFile: (path) => ipcRenderer.invoke('automations:removeFile', path),
-    onCopyProgress: (listener) => subscribe('automations:copyProgress', listener)
-  },
-  procedures: {
-    list: () => ipcRenderer.invoke('procedures:list'),
-    create: (payload) => ipcRenderer.invoke('procedures:create', payload),
-    update: (payload) => ipcRenderer.invoke('procedures:update', payload),
-    delete: (id) => ipcRenderer.invoke('procedures:delete', id),
-    pickFiles: (procedureId) => ipcRenderer.invoke('procedures:pickFiles', procedureId),
-    onChanged: (listener) => subscribe('procedures:changed', listener),
-    onCopyProgress: (listener) => subscribe('procedures:copyProgress', listener)
-  },
-  projects: {
-    list: () => ipcRenderer.invoke('projects:list'),
-    create: (payload) => ipcRenderer.invoke('projects:create', payload),
-    update: (payload) => ipcRenderer.invoke('projects:update', payload),
-    delete: (id) => ipcRenderer.invoke('projects:delete', id),
-    pickFiles: (projectId) => ipcRenderer.invoke('projects:pickFiles', projectId),
-    onChanged: (listener) => subscribe('projects:changed', listener),
-    onCopyProgress: (listener) => subscribe('projects:copyProgress', listener)
-  },
-  reindex: {
-    getStatus: () => ipcRenderer.invoke('reindex:getStatus'),
-    onStarted: (listener) => subscribe('reindex:started', listener),
-    onProgress: (listener) => subscribe('reindex:progress', listener),
-    onEnded: (listener) => subscribe('reindex:ended', listener)
-  },
-  diagnostics: {
-    export: (payload) => ipcRenderer.invoke('diagnostics:export', payload),
-    saveCopy: (payload) => ipcRenderer.invoke('diagnostics:saveCopy', payload),
-    reveal: (zipPath) => ipcRenderer.invoke('diagnostics:reveal', zipPath),
-    onProgress: (listener) => subscribe('diagnostics:progress', listener)
-  },
-  app: {
-    factoryReset: () => ipcRenderer.invoke('app:factoryReset'),
-    onClosingPending: (listener) => subscribe('app:closingPending', listener)
-  },
-  data: {
-    getAnalytics: () => ipcRenderer.invoke('data:getAnalytics')
-  },
-  services: {
-    onChanged: (listener) => subscribe('services:changed', listener)
-  },
-  video: {
-    getConfig: () => ipcRenderer.invoke('video:getConfig'),
-    setConfig: (patch) => ipcRenderer.invoke('video:setConfig', patch),
-    test: () => ipcRenderer.invoke('video:test')
-  },
-  runtime: {
-    setLaunchAtStartup: (value) => ipcRenderer.invoke('runtime:setLaunchAtStartup', value),
-    getLaunchAtStartupStatus: () => ipcRenderer.invoke('runtime:getLaunchAtStartupStatus'),
-    setBypassPermissions: (value) => ipcRenderer.invoke('runtime:setBypassPermissions', value),
-    setBlockCredentials: (value) => ipcRenderer.invoke('runtime:setBlockCredentials', value),
-    setLocalOnly: (value) => ipcRenderer.invoke('runtime:setLocalOnly', value),
-    setRestrictPowerfulModels: (value) =>
-      ipcRenderer.invoke('runtime:setRestrictPowerfulModels', value),
-    setThinkingMode: (model, mode) => ipcRenderer.invoke('runtime:setThinkingMode', model, mode),
-    setUpdatesEnabled: (value) => ipcRenderer.invoke('runtime:setUpdatesEnabled', value),
-    setWeekStartsOn: (value) => ipcRenderer.invoke('runtime:setWeekStartsOn', value),
-    setLastSettingsState: (patch) => ipcRenderer.invoke('runtime:setLastSettingsState', patch),
-    onPreferencesChanged: (listener) => subscribe('preferences:changed', listener),
-    onMobileSettingsChange: (listener) => subscribe('settings:mobileChange', listener),
-    getCompactionConfig: () => ipcRenderer.invoke('runtime:getCompactionConfig'),
-    setCompactionConfig: (patch) => ipcRenderer.invoke('runtime:setCompactionConfig', patch),
-    getCompactionRuns: () => ipcRenderer.invoke('runtime:getCompactionRuns'),
-    onCompactionChanged: (listener) => subscribe('compaction:changed', listener),
-    onCompactionConfigChanged: (listener) => subscribe('compaction:configChanged', listener),
-    getReflectionConfig: () => ipcRenderer.invoke('runtime:getReflectionConfig'),
-    setReflectionConfig: (patch) => ipcRenderer.invoke('runtime:setReflectionConfig', patch),
-    runReflectionNow: () => ipcRenderer.invoke('runtime:runReflectionNow'),
-    runDeepCleanNow: () => ipcRenderer.invoke('runtime:runDeepCleanNow'),
-    onReflectionChanged: (listener) => subscribe('reflection:changed', listener)
-  },
-  usage: {
-    getSummary: (range) => ipcRenderer.invoke('usage:getSummary', range),
-    getStats: (range) => ipcRenderer.invoke('usage:getStats', range),
-    getDaily: (year) => ipcRenderer.invoke('usage:getDaily', year),
-    sync: () => ipcRenderer.invoke('usage:sync')
-  },
-  cerebellum: {
-    listCapabilities: () => ipcRenderer.invoke('cerebellum:listCapabilities'),
-    reload: () => ipcRenderer.invoke('cerebellum:reload'),
-    toggleCapability: (name, enabled) =>
-      ipcRenderer.invoke('cerebellum:toggleCapability', name, enabled),
-    importCapability: (sourcePath) => ipcRenderer.invoke('cerebellum:importCapability', sourcePath),
-    pickImport: (options) => ipcRenderer.invoke('cerebellum:pickImport', options),
-    deleteCapability: (name) => ipcRenderer.invoke('cerebellum:deleteCapability', name),
-    onCapabilitiesChanged: (callback) => subscribe('cerebellum:capabilitiesChanged', callback)
-  },
-  variables: {
-    list: () => ipcRenderer.invoke('variables:list'),
-    save: (variables) => ipcRenderer.invoke('variables:save', variables),
-    onChanged: (listener) => subscribe('variables:changed', listener)
-  },
-  voice: {
-    readFile: (filePath) => ipcRenderer.invoke('voice:readFile', filePath),
-    download: (filePath) => ipcRenderer.invoke('voice:download', filePath),
-    revealInFolder: (filePath) => ipcRenderer.invoke('voice:revealInFolder', filePath),
-    exists: (filePath) => ipcRenderer.invoke('voice:exists', filePath)
-  },
-  upload: {
-    pickFile: () => ipcRenderer.invoke('upload:pickFile'),
-    pickFolder: () => ipcRenderer.invoke('upload:pickFolder'),
-    saveFile: (payload) => ipcRenderer.invoke('upload:saveFile', payload),
-    saveBuffer: (payload) => ipcRenderer.invoke('upload:saveBuffer', payload),
-    readFile: (relativePath) => ipcRenderer.invoke('upload:readFile', relativePath),
-    renderDeck: (relativePath) => ipcRenderer.invoke('upload:renderDeck', relativePath),
-    exists: (relativePath) => ipcRenderer.invoke('upload:exists', relativePath),
-    getMetadata: (relativePath) => ipcRenderer.invoke('upload:getMetadata', relativePath),
-    isSupported: (fileName) => ipcRenderer.invoke('upload:isSupported', fileName),
-    validate: (payload) => ipcRenderer.invoke('upload:validate', payload),
-    openExternal: (relativePath) => ipcRenderer.invoke('upload:openExternal', relativePath),
-    fileUrl: (relativePath) => ipcRenderer.invoke('upload:fileUrl', relativePath),
-    statPath: (path) => ipcRenderer.invoke('upload:statPath', path),
-    projectFolders: (dirs, workingFolders) =>
-      ipcRenderer.invoke('upload:projectFolders', dirs, workingFolders),
-    listFolder: (path) => ipcRenderer.invoke('upload:listFolder', path),
-    revealPath: (path) => ipcRenderer.invoke('upload:revealPath', path),
-    downloadPath: (path) => ipcRenderer.invoke('upload:downloadPath', path),
-    download: (relativePath) => ipcRenderer.invoke('upload:download', relativePath),
-    revealInFolder: (relativePath) => ipcRenderer.invoke('upload:revealInFolder', relativePath),
-    getPathForFile: (file) => webUtils.getPathForFile(file),
-    onCopyProgress: (listener) => subscribe('upload:copyProgress', listener)
-  },
-  mobile: {
-    status: () => ipcRenderer.invoke('mobile:status'),
-    offerQr: () => ipcRenderer.invoke('mobile:offerQr'),
-    offerCode: () => ipcRenderer.invoke('mobile:offerCode'),
-    disconnect: () => ipcRenderer.invoke('mobile:disconnect'),
-    unpair: () => ipcRenderer.invoke('mobile:unpair'),
-    setVerbose: (verbose) => ipcRenderer.invoke('mobile:setVerbose', verbose),
-    setNotifications: (enabled) => ipcRenderer.invoke('mobile:setNotifications', enabled),
-    setRelayUrl: (url) => ipcRenderer.invoke('mobile:setRelayUrl', url),
-    onStatusChange: (callback) => subscribe('mobile:statusChange', callback)
-  },
-  telegram: {
-    getConfig: () => ipcRenderer.invoke('telegram:getConfig'),
-    setConfig: (patch) => ipcRenderer.invoke('telegram:setConfig', patch),
-    status: () => ipcRenderer.invoke('telegram:status'),
-    sendTestMessage: (payload) => ipcRenderer.invoke('telegram:sendTestMessage', payload),
-    onStatusChange: (callback) => subscribe('telegram:statusChange', callback)
-  },
-  whatsapp: {
-    getConfig: () => ipcRenderer.invoke('whatsapp:getConfig'),
-    setConfig: (patch) => ipcRenderer.invoke('whatsapp:setConfig', patch),
-    status: () => ipcRenderer.invoke('whatsapp:status'),
-    logout: () => ipcRenderer.invoke('whatsapp:logout'),
-    requestQr: () => ipcRenderer.invoke('whatsapp:requestQr'),
-    onQr: (callback) => subscribe('whatsapp:qr', callback),
-    onStatusChange: (callback) => subscribe('whatsapp:statusChange', callback)
-  },
-  inapp: {
-    getConfig: () => ipcRenderer.invoke('inapp:getConfig'),
-    setConfig: (patch) => ipcRenderer.invoke('inapp:setConfig', patch),
-    onConfigChange: (callback) => subscribe('inapp:configChange', callback)
-  },
-  cli: {
-    getConfig: () => ipcRenderer.invoke('cli:getConfig'),
-    setConfig: (patch) => ipcRenderer.invoke('cli:setConfig', patch),
-    onConfigChange: (callback) => subscribe('cli:configChange', callback),
-    pathStatus: () => ipcRenderer.invoke('cli:pathStatus'),
-    installPath: () => ipcRenderer.invoke('cli:installPath'),
-    uninstallPath: () => ipcRenderer.invoke('cli:uninstallPath'),
-    onPathChange: (callback) => subscribe('cli:pathChanged', callback),
-    serviceStatus: () => ipcRenderer.invoke('service:status'),
-    serviceInstall: (mode) => ipcRenderer.invoke('service:install', mode),
-    serviceUninstall: () => ipcRenderer.invoke('service:uninstall'),
-    serviceSetMode: (mode) => ipcRenderer.invoke('service:setMode', mode),
-    serviceMechanism: () => ipcRenderer.invoke('service:mechanism'),
-    entryPath: () => ipcRenderer.invoke('cli:entryPath')
-  },
-  mcp: {
-    list: () => ipcRenderer.invoke('mcp:list'),
-    add: (input) => ipcRenderer.invoke('mcp:add', input),
-    remove: (id) => ipcRenderer.invoke('mcp:remove', id),
-    setEnabled: (id, enabled) => ipcRenderer.invoke('mcp:setEnabled', id, enabled),
-    setHeaders: (id, headers) => ipcRenderer.invoke('mcp:setHeaders', id, headers),
-    test: (id) => ipcRenderer.invoke('mcp:test', id),
-    authorize: (id) => ipcRenderer.invoke('mcp:authorize', id),
-    onStatusChange: (callback) => subscribe('mcp:statusChange', callback)
-  },
-  brave: {
-    getConfig: () => ipcRenderer.invoke('brave:getConfig'),
-    setConfig: (patch) => ipcRenderer.invoke('brave:setConfig', patch),
-    status: () => ipcRenderer.invoke('brave:status'),
-    test: (apiKey) => ipcRenderer.invoke('brave:test', apiKey)
-  },
-  notion: {
-    getConfig: () => ipcRenderer.invoke('notion:getConfig'),
-    setConfig: (connections) => ipcRenderer.invoke('notion:setConfig', connections),
-    status: () => ipcRenderer.invoke('notion:status'),
-    test: (token) => ipcRenderer.invoke('notion:test', token)
-  },
-  github: {
-    getConfig: () => ipcRenderer.invoke('github:getConfig'),
-    setConfig: (connections) => ipcRenderer.invoke('github:setConfig', connections),
-    status: () => ipcRenderer.invoke('github:status'),
-    test: (token) => ipcRenderer.invoke('github:test', token)
-  },
-  memes: {
-    getConfig: () => ipcRenderer.invoke('memes:getConfig'),
-    setConfig: (patch) => ipcRenderer.invoke('memes:setConfig', patch),
-    status: () => ipcRenderer.invoke('memes:status'),
-    testGiphy: (apiKey) => ipcRenderer.invoke('memes:testGiphy', apiKey),
-    testImgflip: (payload) => ipcRenderer.invoke('memes:testImgflip', payload)
-  },
-  google: {
-    getConfig: () => ipcRenderer.invoke('google:getConfig'),
-    setConfig: (patch) => ipcRenderer.invoke('google:setConfig', patch),
-    status: () => ipcRenderer.invoke('google:status'),
-    checkBinary: () => ipcRenderer.invoke('google:checkBinary'),
-    setup: () => ipcRenderer.invoke('google:setup'),
-    update: () => ipcRenderer.invoke('google:update'),
-    getSetupState: () => ipcRenderer.invoke('google:getSetupState'),
-    onSetupState: (listener) => subscribe('google:setupState', listener),
-    onAuthUrl: (listener) => subscribe('google:authUrl', listener),
-    uploadCredentials: (jsonContent) => ipcRenderer.invoke('google:uploadCredentials', jsonContent),
-    deleteCredentials: () => ipcRenderer.invoke('google:deleteCredentials'),
-    authAdd: (email, opts) => ipcRenderer.invoke('google:authAdd', email, opts),
-    cancelAuth: () => ipcRenderer.invoke('google:cancelAuth'),
-    listAccounts: () => ipcRenderer.invoke('google:listAccounts'),
-    checkAccounts: () => ipcRenderer.invoke('google:checkAccounts'),
-    removeAccount: (email) => ipcRenderer.invoke('google:removeAccount', email)
-  },
-  mic: {
-    checkAccess: () => ipcRenderer.invoke('mic:checkAccess'),
-    requestAccess: () => ipcRenderer.invoke('mic:requestAccess')
-  },
-  stt: {
-    getConfig: () => ipcRenderer.invoke('stt:getConfig'),
-    setConfig: (patch) => ipcRenderer.invoke('stt:setConfig', patch),
-    transcribe: (payload) => ipcRenderer.invoke('stt:transcribe', payload),
-    installStatus: () => ipcRenderer.invoke('stt:installStatus'),
-    install: () => ipcRenderer.invoke('stt:install'),
-    onInstallProgress: (listener) => subscribe('stt:installProgress', listener),
-    getInstallState: () => ipcRenderer.invoke('stt:getInstallState')
-  },
-  tts: {
-    getConfig: () => ipcRenderer.invoke('tts:getConfig'),
-    setConfig: (patch) => ipcRenderer.invoke('tts:setConfig', patch),
-    installStatus: () => ipcRenderer.invoke('tts:installStatus'),
-    install: () => ipcRenderer.invoke('tts:install'),
-    onInstallProgress: (listener) => subscribe('tts:installProgress', listener),
-    getInstallState: () => ipcRenderer.invoke('tts:getInstallState'),
-    preview: (payload) => ipcRenderer.invoke('tts:preview', payload)
-  },
-  computerUse: {
-    getConfig: () => ipcRenderer.invoke('computerUse:getConfig'),
-    checkPermissions: () => ipcRenderer.invoke('computerUse:checkPermissions'),
-    openSettings: (pane) => ipcRenderer.invoke('computerUse:openSettings', pane)
-  },
-  browserExtension: {
-    getConfig: () => ipcRenderer.invoke('browserExtension:getConfig'),
-    setConfig: (patch) => ipcRenderer.invoke('browserExtension:setConfig', patch),
-    status: () => ipcRenderer.invoke('browserExtension:status'),
-    openExtensionFolder: () => ipcRenderer.invoke('browserExtension:openExtensionFolder'),
-    getExtensionPath: () => ipcRenderer.invoke('browserExtension:getExtensionPath'),
-    updateExtension: (target) => ipcRenderer.invoke('browserExtension:updateExtension', target),
-    testConnection: (target) => ipcRenderer.invoke('browserExtension:testConnection', target),
-    openExtensionsPage: () => ipcRenderer.invoke('browserExtension:openExtensionsPage'),
-    doctor: (opts) => ipcRenderer.invoke('browserExtension:doctor', opts),
-    fix: (action, opts) => ipcRenderer.invoke('browserExtension:fix', action, opts),
-    setOverlayEnabled: (enabled, target) =>
-      ipcRenderer.invoke('browserExtension:setOverlayEnabled', enabled, target),
-    onStatusChange: (listener) => subscribe('extension:statusChange', listener)
-  },
-  updater: {
-    install: () => ipcRenderer.invoke('updater:install'),
-    check: () => ipcRenderer.invoke('updater:check'),
-    getVersion: () => ipcRenderer.invoke('updater:getVersion'),
-    getReady: () => ipcRenderer.invoke('updater:getReady'),
-    getState: () => ipcRenderer.invoke('updater:getState'),
-    consumePostUpdate: () => ipcRenderer.invoke('updater:consumePostUpdate'),
-    listChangelogMonths: () => ipcRenderer.invoke('updater:listChangelogMonths'),
-    readChangelog: (month: string, locale?: string) =>
-      ipcRenderer.invoke('updater:readChangelog', month, locale),
-    onAvailable: (listener) => subscribe('updater:available', listener),
-    onProgress: (listener) => subscribe('updater:progress', listener),
-    onReady: (listener) => subscribe('updater:ready', listener),
-    onState: (listener) => subscribe('updater:state', listener)
-  },
-  spellcheck: {
-    onContextMenu: (listener) => subscribe('spellcheck:contextMenu', listener),
-    replace: (word) => ipcRenderer.invoke('spellcheck:replace', word),
-    addToDictionary: (word) => ipcRenderer.invoke('spellcheck:addToDictionary', word)
-  }
-}
+const api: WolffishApi = buildApi({
+  invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
+  subscribe,
+  getPathForFile: (file) => webUtils.getPathForFile(file)
+})
 
 if (process.contextIsolated) {
   try {

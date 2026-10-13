@@ -42,11 +42,12 @@ const check = (name: string, fn: () => void): void => {
   }
 }
 
-check('the closing tools are the three that end a turn', () => {
+check('the closing tools are the ones that end a turn', () => {
   // send_file is on the list for the same reason as the other two: agents.core.md
   // tells the model its wrap-up comes AFTER send_file, so the identical
   // double-close has been latent on every document-producing turn.
   assert.ok(TURN_CLOSING_TOOLS.has('notify_phone'))
+  assert.ok(TURN_CLOSING_TOOLS.has('notify_web'))
   assert.ok(TURN_CLOSING_TOOLS.has('voice_respond'))
   assert.ok(TURN_CLOSING_TOOLS.has('send_file'))
   assert.equal(TURN_CLOSING_TOOLS.has('file_read'), false)

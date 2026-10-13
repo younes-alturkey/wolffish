@@ -1,0 +1,68 @@
+---
+title: "Kimi"
+description: "Set up Kimi (Moonshot AI) — powerful reasoning with long-context support"
+---
+
+# Kimi (Moonshot AI)
+
+```
+POST https://api.moonshot.ai/v1/chat/completions
+```
+
+Uses SSE streaming with OpenAI-compatible tool-calling format. Supports vision (base64 images) and reasoning content — everything from k2.5 onward is natively multimodal, no `-vision` variant needed.
+
+Best for: Agentic workflows, long-context tasks (K3 runs a 1M-token window), reasoning-heavy workloads, and cost-efficient daily automations.
+
+## Getting an API Key
+
+1. Go to [platform.moonshot.ai](https://platform.moonshot.ai)
+2. Sign up or log in
+3. Navigate to **API Keys** and create a new key
+4. Paste it into Wolffish → Settings → Models → Kimi
+
+## Models
+
+| Model | Context | Modes | Input / Output (per MTok) | Cached | Notes |
+|-------|---------|-------|--------------------------|--------|-------|
+| **kimi-k3** | 1M | Off, High, Max | $3.00 / $15.00 | $0.30 | Frontier flagship and the default. Vision + reasoning, 1M context. |
+| kimi-k2.6 | 256K | Off, On | $0.95 / $4.00 | $0.16 | Strong reasoning at mid-range cost. Vision + reasoning. |
+| kimi-k2.5 | 256K | Off, On | $0.60 / $3.00 | $0.10 | Vision + reasoning. |
+| kimi-k2.7-code | 256K | On | — / — | — | Code-focused. Reasoning always on. |
+| kimi-k2.7-code-highspeed | 256K | On | — / — | — | Fast code variant. Reasoning always on. |
+| moonshot-v1-auto | 128K | — | $1.00 / $3.00 | — | Auto-selects context tier. |
+| moonshot-v1-128k | 128K | — | $2.00 / $5.00 | — | Long-context. |
+| moonshot-v1-32k | 32K | — | $1.00 / $3.00 | — | Mid-context. |
+| moonshot-v1-8k | 8K | — | $0.20 / $2.00 | — | Short-context, cheapest. |
+
+## Reasoning modes
+
+How this model reasons is set in the **model card beside the chat input** — hover the model switch to preview the card, click to pin it open. The top chip row, labelled **Thinking**, is the control: pick a chip and it applies from your next message. Two separate ideas combine here:
+
+### Thinking — *whether* the model reasons
+
+- **Off** — the model answers immediately. Fastest and cheapest; ideal for simple, direct tasks.
+- **On** (the chip reads **Normal**) — the model first works through the problem in a dedicated reasoning pass before replying. Slower and uses more tokens, but markedly more accurate on multi-step, logical, or ambiguous tasks.
+
+### Effort — *how hard* it thinks
+
+Only effort-capable models expose this; it applies once thinking is on.
+
+- **High** — standard reasoning depth. The right default for most agentic work.
+- **Max** — the model reasons longer and deeper for the hardest problems. More tokens and latency in exchange for higher quality on complex work.
+
+### The chip row
+
+| Chip | Icon | Meaning |
+|------|------|---------|
+| Off | lightning | Thinking off — direct answer |
+| Normal | brain | Thinking on — no effort control |
+| High | AI brain | Thinking on, standard effort |
+| Max | flame | Thinking on, maximum effort |
+
+The active chip is tinted; the rest sit quiet. Each model shows only the chips it genuinely supports — a model that always reasons has no **Off**, a model with a single mode shows that one chip inert, and a model that can't reason at all replaces the row with *"Reasoning is not supported by this model."* Wolffish remembers your choice per model. (Before **v1.0.236** this was a colour-coded brain button on the composer; it moved into the model card, beside the Single/Workflow row, so every model knob sits in one panel.)
+
+**On Kimi:** K3 is effort-capable — Off / High / Max, driven by Moonshot's `reasoning_effort` dial, and Off genuinely disables thinking (verified against the live API; Moonshot currently ships one real effort level, so High and Max behave alike until lower efforts land). k2.x models are On / Off. The k2.x-code variants reason always-on (locked on). The older moonshot-v1 models don't reason.
+
+<Note>
+  Kimi K3 is Moonshot's frontier flagship, priced alongside the premium Western mid-tier ($3.00 / $15.00) with a 1M-token window. The k2.x line beneath it keeps Kimi's classic position — between the budget Chinese providers (DeepSeek, MiMo) and the premium Western providers (Anthropic, OpenAI) — offering strong reasoning at a mid-range cost. See [Choosing a Provider](/configuration/providers#choosing-a-provider) for guidance on when to use which tier.
+</Note>

@@ -1,0 +1,7 @@
+{
+  "extends": "@extension/tsconfig/module",
+  "compilerOptions": {
+    "outDir": "dist"
+  },
+  "include": ["index.mts", "lib"]
+}

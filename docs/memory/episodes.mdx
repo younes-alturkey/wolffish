@@ -1,0 +1,122 @@
+---
+title: "Episodes"
+description: "Daily conversation logs — the raw stream of what happened"
+---
+
+# The Raw Stream
+
+Episodes are the raw stream of everything that happened. Every conversation turn gets a compact block appended to today's episode file — a timestamped headline, the user message, the tools that ran, and a preview of the response. No LLM call — just a formatted, capped extraction of the turn.
+
+## Location
+
+```
+~/.wolffish/workspace/brain/hippocampus/episodes/
+├── 2026-05-14.md
+├── 2026-05-15.md
+└── 2026-05-16.md
+```
+
+Each file is named by date: `YYYY-MM-DD.md`.
+
+## How Episodes Are Written
+
+After every turn completes, `hippocampus.appendEpisode()` appends a block to today's file:
+
+```typescript
+// Simplified from src/main/runtime/hippocampus.ts
+async appendEpisode(turn: TurnSummary): Promise<void> {
+  const date = formatDate(turn.timestamp)
+  const file = join(this.episodesDir, `${date}.md`)
+  const origin = turn.origin && turn.origin !== 'electron' ? ` [${turn.origin}]` : ''
+  const block =
+    `## ${formatTime(turn.timestamp)}${origin} — ${headline(turn.userMessage)}\n` +
+    `- **User:** ${truncate(turn.userMessage, 280)}\n` +
+    `- **Tools:** ${turn.toolCalls.map(formatToolCall).join(', ') || 'none'}\n` +
+    `- **Response:** ${truncate(turn.assistantResponse, 200)}\n\n`
+  await diskWriter.appendLine(file, block)
+  this.corpus.emit('memory.episodeSaved', { date, section: headline(turn.userMessage) })
+}
+```
+
+Each block captures the headline (capped at 80 characters), the user message (capped at 280), every tool call with its outcome (`success`, `failed`, `denied`, or `blocked`), and a response preview (capped at 200). The full-fidelity transcript lives in `brain/conversations/*.json` and is always reachable via `conversation_read`.
+
+### Origin Tags
+
+Turns that didn't come from you typing in the app carry an origin tag in the header — `[heartbeat]` for scheduled automation runs, `[worker]` for [workflow](/configuration/workflow-mode) agent tasks, `[telegram]` or `[whatsapp]` for channel messages, `[procedure]` for saved-prompt runs. In-app turns carry no tag. This keeps machine-generated activity distinguishable from real user activity, both for recall filtering and for the nightly consolidation.
+
+<Info>
+  No LLM call is involved. The block is a deterministic extraction of what happened, not a generated summary. This keeps episode logging instant and free.
+</Info>
+
+## Example Episode File
+
+Here's what `2026-05-16.md` might look like after a day of use:
+
+```markdown
+# 2026-05-16
+
+## 08:32 — Asked about React 19 Server Components
+- **User:** What changed with Server Components streaming in React 19?
+- **Tools:** web_search {"query":"React 19 Server Components streaming"} (success)
+- **Response:** React 19 stabilized the streaming SSR contract. The key changes are…
+
+## 09:10 — Review PR #247
+- **User:** Review PR #247 and tell me if the auth middleware can be simplified
+- **Tools:** shell_exec {"command":"gh pr view 247"} (success), file_read (success)
+- **Response:** The middleware duplicates the token check — you can collapse the two…
+
+## 11:30 [telegram] — Search for flights to Riyadh
+- **User:** find me flights to Riyadh next weekend
+- **Tools:** web_search (success), ext_get_url (success)
+- **Response:** Found three options. The best is the Saudia 14:20 departure at…
+
+## 14:00 [heartbeat] — Hourly inbox check
+- **User:** Check the inbox and flag anything urgent
+- **Tools:** google_gmail_list (success)
+- **Response:** Nothing urgent. Two newsletters, one receipt.
+
+## 17:40 — Remember I prefer pnpm over npm
+- **User:** remember I prefer pnpm over npm
+- **Tools:** memory_save {"fact":"Prefers pnpm over npm","type":"preferences"} (success)
+- **Response:** Saved — I'll use pnpm going forward.
+```
+
+## How Episodes Are Used
+
+### Retrieval, Not Injection
+
+Episodes are **never loaded into the prompt**. The `<memory_map>` stub in the system prompt tells the model how many episode records exist and their date range; the content itself is retrieved on demand:
+
+- `memory_search` with `sources: "episode"` for keyword search across every day
+- `wolffish_recall` with `date: "2026-05-16"` to pin results to a single day
+- `memory_get` on a `file:` ref to read a whole episode file
+
+### Consolidation Input
+
+Episodes are the raw input for the daily compaction pass. Each night the brainstem reads that day's episode file, sends it to the LLM for fact extraction, promotes durable facts to knowledge files, and appends a daily summary to the week's consolidated file. The weekly review then records a coverage digest over the last seven days. Episodes remain on disk afterwards — they're never deleted automatically.
+
+### Cortex Search
+
+All episode files are indexed by the cortex (SQLite FTS5) at section granularity — each `## HH:MM` block is its own searchable record. When you ask "what did we discuss about auth last week?", `memory_search` returns the matching blocks with BM25 relevance ranking and refs you can follow with `memory_get`.
+
+## Manual Editing
+
+Episode files are plain markdown. You can:
+
+- **Delete entries** you don't want remembered
+- **Add entries** to seed memory (e.g., a `## 09:00 — Started the billing service project` block)
+- **Edit entries** to correct inaccuracies
+
+Changes are picked up by the brainstem file watcher and re-indexed in the cortex automatically.
+
+<Warning>
+  If you delete an episode file entirely, that day's history is gone from memory. The cortex will remove it from the search index on the next file-watch cycle.
+</Warning>
+
+## Configuration
+
+Episodes are always written — there's no toggle to disable them. They're the foundation of the entire memory system. And because episodes are retrieved on demand rather than injected into the prompt, there's no context-window knob to tune either: a year of episodes costs the same per turn as a day.
+
+<Tip>
+  The schedule for the compaction passes that consume episodes is configurable — see [Consolidation](/memory/consolidation#configuration).
+</Tip>

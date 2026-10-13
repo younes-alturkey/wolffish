@@ -1,0 +1,191 @@
+---
+title: "Task Files"
+description: "Step-by-step logs of tool execution in motor/tasks/"
+---
+
+# The Source of Truth for Tool Calls
+
+When the LLM calls a tool, the `motor` module creates a task file that records every step of execution. These files are the source of truth for what a tool actually did — not in-memory variables, not the LLM's summary, the markdown file on disk.
+
+## Location
+
+```
+brain/motor/tasks/TASK-{id}.md
+```
+
+The task ID is a monotonically increasing integer. A new file is created by `motor.createTask()` when tool execution begins.
+
+## What's Inside
+
+Each task file contains:
+
+- **Header** — task ID, creation timestamp, associated turn ID, status
+- **Steps** — each tool call within the task, with:
+  - Tool name
+  - Arguments (the exact input)
+  - Output (the exact result)
+  - Duration
+  - Attempt count (1 = first try, 2+ = retries)
+  - Status (success, failed, aborted)
+- **Summary** — final status and total duration
+
+## Example Task File
+
+Here's a complete task file showing a multi-step execution with one retry:
+
+```markdown
+# TASK-1747
+
+- **Created**: 2025-05-16T14:30:24.310Z
+- **Turn ID**: turn-a8f3c
+- **Status**: completed
+
+---
+
+## Step 1: shell_exec
+
+- **Attempt**: 1/3
+- **Args**:
+  ```json
+  {
+    "command": "systemctl status myapp"
+  }
+  ```
+- **Output**:
+  ```
+  ● myapp.service - My Application
+       Loaded: loaded (/etc/systemd/system/myapp.service; enabled)
+       Active: inactive (dead) since Fri 2025-05-16 14:20:01 UTC
+  ```
+- **Duration**: 792ms
+- **Status**: success
+
+---
+
+## Step 2: shell_exec
+
+- **Attempt**: 1/3
+- **Args**:
+  ```json
+  {
+    "command": "systemctl restart myapp"
+  }
+  ```
+- **Output**:
+  ```
+  Job for myapp.service failed because the control process exited with error code.
+  See "systemctl status myapp.service" and "journalctl -xe" for details.
+  ```
+- **Duration**: 1204ms
+- **Status**: failed
+- **Error**: Non-zero exit code: 1
+
+---
+
+## Step 2 (retry): shell_exec
+
+- **Attempt**: 2/3
+- **Backoff**: 2000ms
+- **Args**:
+  ```json
+  {
+    "command": "systemctl restart myapp"
+  }
+  ```
+- **Output**:
+  ```
+  (no output)
+  ```
+- **Duration**: 3891ms
+- **Status**: success
+
+---
+
+## Step 3: shell_exec
+
+- **Attempt**: 1/3
+- **Args**:
+  ```json
+  {
+    "command": "systemctl status myapp"
+  }
+  ```
+- **Output**:
+  ```
+  ● myapp.service - My Application
+       Loaded: loaded (/etc/systemd/system/myapp.service; enabled)
+       Active: active (running) since Fri 2025-05-16 14:30:29 UTC
+  ```
+- **Duration**: 456ms
+- **Status**: success
+
+---
+
+## Summary
+
+- **Total Steps**: 3 (1 retry)
+- **Total Duration**: 8343ms
+- **Final Status**: completed
+```
+
+## Retry Behavior
+
+When a step fails, motor retries up to 3 times with exponential backoff:
+
+| Attempt | Backoff |
+|---|---|
+| 1st retry | 2 seconds |
+| 2nd retry | 6 seconds |
+| 3rd retry | 18 seconds |
+
+If all 3 retries fail, the task is marked as `failed` and the error is reported back to the LLM.
+
+## Crash Recovery
+
+<Warning>
+Task files are the crash recovery mechanism. If Wolffish crashes mid-task, the markdown file shows exactly where execution stopped.
+</Warning>
+
+Because task state lives on disk (not in memory), Wolffish can detect incomplete tasks on restart. A task file with `Status: running` after a restart means it was interrupted. The motor module will not automatically retry crashed tasks — it reports the incomplete state to the LLM, which decides whether to retry.
+
+## Aborted Tasks
+
+If a task is aborted (user cancelled, safety gate denied, timeout), the file records where it stopped:
+
+```markdown
+## Step 2: shell_exec
+
+- **Attempt**: 1/3
+- **Args**:
+  ```json
+  {
+    "command": "rm -rf /tmp/build/"
+  }
+  ```
+- **Status**: aborted
+- **Reason**: safety.denied — user rejected dangerous operation
+
+---
+
+## Summary
+
+- **Total Steps**: 1 of 3 planned
+- **Final Status**: aborted
+- **Abort Reason**: User denied safety confirmation
+```
+
+## Common Questions
+
+<Tabs>
+  <Tab title="What did the tool actually run?">
+    Open the task file and read the `Args` section for each step. This is the exact input passed to the tool — no summarization.
+  </Tab>
+
+  <Tab title="Why did it fail?">
+    Look for steps with `Status: failed`. The `Error` field shows the exact error message. If there are retries, each attempt's output is preserved so you can see if the error changed.
+  </Tab>
+
+  <Tab title="What output came back?">
+    The `Output` section contains the raw tool result. This is what gets passed back to the LLM for its next response. If the output looks wrong, the bug is in the tool/plugin, not in Wolffish.
+  </Tab>
+</Tabs>

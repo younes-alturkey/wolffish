@@ -1,0 +1,162 @@
+{
+  "id": "2026-07-09_12-39-31_015-b6df1c",
+  "title": "Current Automations And Next Runs",
+  "model": null,
+  "createdAt": 1783589971014,
+  "updatedAt": 1783590022573,
+  "messages": [
+    {
+      "id": "m_1783589996177_08f351",
+      "role": "user",
+      "content": "What are the current automations and when are they going to run next?",
+      "timestamp": 1783589996177
+    },
+    {
+      "id": "m_1783590022573_e370be",
+      "role": "assistant",
+      "content": "📋 <b>Your 4 automations:</b>\n\n1. <b>Hourly (15)</b> — every hour at :15\n   <i>Email check → Telegram summary → mark all read</i>\n   Last run: 12:15 ✅ | <b>Next: 13:15</b> (in ~35 min)\n\n2. <b>Daily (13:38)</b> — every day at 13:38\n   <i>Startup/entrepreneurship meme for morale</i>\n   Not run yet | <b>Next: today 13:38</b> (in ~58 min)\n\n3. <b>Daily (16:12)</b> — every day at 16:12\n   <i>Yesterday's top AI news → polished HTML report</i>\n   Not run yet | <b>Next: today 16:12</b> (in ~3.5h)\n\n4. <b>Daily (11:26)</b> — every day at 11:26\n   <i>Romantic GIF for Sana ❤️</i>\n   Last run: 11:26 ✅ | <b>Next: tomorrow 11:26</b>\n\nNothing running right now. The daily 13:38 meme drop is up next.",
+      "timestamp": 1783590022573,
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783589996190_q0fvkg",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783589996190_q0fvkg",
+          "segmentId": "seg_2",
+          "toolCallId": "call_00_qOVvOTaugPInUvr0vqgB6741",
+          "name": "tool_activate",
+          "args": {
+            "capability": "automations"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783589996190_q0fvkg",
+          "segmentId": "seg_3",
+          "toolCallId": "call_00_qOVvOTaugPInUvr0vqgB6741",
+          "status": "success",
+          "output": "Loaded `automations`.\n\n## automations [loaded] — Manage Wolffish's scheduled automations (the heartbeat) — list, create, edit, delete, check status, and run jobs that f…\n- `automation_list` — List every configured automation — its schedule, the plain-English timing, the instruction it runs,…\n- `automation_create` — Create a new automation that runs on a schedule. Provide the schedule and the instruction to run.\n- `automation_edit` — Change an existing automation's schedule and/or its instruction. Identify it by the number from aut…\n- `automation_delete` — Permanently remove an automation so it stops firing. Identify it by its number from automation_list…\n- `automation_check` — Check runtime status — which automation (if any) is running right now, and how each one's last run …\n- `automation_run` — Run an automation immediately, right now, instead of waiting for its schedule — the way to test one…"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783589996190_q0fvkg",
+          "segmentId": "seg_4",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783589996190_q0fvkg",
+          "segmentId": "seg_5",
+          "toolCallId": "call_00_01kfLQuEq0Pet5I3aQvo9792",
+          "name": "automation_list",
+          "args": {}
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783589996190_q0fvkg",
+          "segmentId": "seg_6",
+          "toolCallId": "call_01_hMikWwPcWpQjmZQb8PXm8785",
+          "name": "automation_check",
+          "args": {}
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783589996190_q0fvkg",
+          "segmentId": "seg_7",
+          "toolCallId": "call_00_01kfLQuEq0Pet5I3aQvo9792",
+          "status": "success",
+          "output": "## Automations (4)\n\n1. **Hourly (15)** — every hour at :15 · mode: single\n   cron: `15 * * * *`\n   Check all my connected emails. Send a summary on Telegram of each email, who is it from, if any action is needed from my side. Then mark all as read.\n   last run 25m ago: completed\n\n2. **Daily (16:12)** — every day at 16:12 · mode: single\n   cron: `12 16 * * *`\n   Create a polished HTML report summarizing yesterday's top and breaking AI news, flowing across as many pages as needed — search the web for the stories, and …\n   not run yet this session\n\n3. **Daily (13:38)** — every day at 13:38 · mode: single\n   cron: `38 13 * * *`\n   Uplift my spirit with a fresh, creative startup/entrepreneurship meme every time — never repeat one you've sent before. Pull a real image via Giphy or web im…\n   not run yet this session\n\n4. **Daily (11:26)** — every day at 11:26 · mode: single\n   cron: `26 11 * * *`\n   Find a fresh, funny-romantic animated GIF (via Giphy or web image search) that captures \"so glad you're in my life\" — playful and heartfelt, not cheesy or bo…\n   last run 1h ago: completed\n\nEdit or delete by the number above (or the exact label). Memory compaction jobs are configured in Settings → Hippocampus and are not listed here."
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783589996190_q0fvkg",
+          "segmentId": "seg_8",
+          "toolCallId": "call_01_hMikWwPcWpQjmZQb8PXm8785",
+          "status": "success",
+          "output": "## Automation status\n\nNothing is running right now.\n\n### 4 scheduled\n- **Hourly (15)** (every hour at :15) — last run 25m ago: completed\n- **Daily (16:12)** (every day at 16:12) — not run yet this session\n- **Daily (13:38)** (every day at 13:38) — not run yet this session\n- **Daily (11:26)** (every day at 11:26) — last run 1h ago: completed"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783589996190_q0fvkg",
+          "segmentId": "seg_9",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1783589996190_q0fvkg",
+          "segmentId": "seg_10",
+          "delta": "📋 <b>Your 4 automations:</b>\n\n1. <b>Hourly (15)</b> — every hour at :15\n   <i>Email check → Telegram summary → mark all read</i>\n   Last run: 12:15 ✅ | <b>Next: 13:15</b> (in ~35 min)\n\n2. <b>Daily (13:38)</b> — every day at 13:38\n   <i>Startup/entrepreneurship meme for morale</i>\n   Not run yet | <b>Next: today 13:38</b> (in ~58 min)\n\n3. <b>Daily (16:12)</b> — every day at 16:12\n   <i>Yesterday's top AI news → polished HTML report</i>\n   Not run yet | <b>Next: today 16:12</b> (in ~3.5h)\n\n4. <b>Daily (11:26)</b> — every day at 11:26\n   <i>Romantic GIF for Sana ❤️</i>\n   Last run: 11:26 ✅ | <b>Next: tomorrow 11:26</b>\n\nNothing running right now. The daily 13:38 meme drop is up next."
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1783589996190_q0fvkg",
+          "segmentId": "seg_289",
+          "stopReason": "end_turn",
+          "iterationCount": 3,
+          "reasoningContent": "Let me summarize the automations for the user in Telegram HTML format. Let me calculate the next run times:\n\n1. Hourly (15) — runs every hour at :15. Current time is 12:40. Last run was 25 min ago, so it ran at 12:15. Next run: 13:15 (in about 35 min).\n2. Daily (16:12) — runs at 16:12. Next: today at 16:12 (in about 3h 32m).\n3. Daily (13:38) — runs at 13:38. Next: today at 13:38 (in about 58 min).\n4. Daily (11:26) — runs at 11:26. Last run 1h ago. Next: tomorrow at 11:26.\n\nLet me format this nicely for Telegram. No HTML tags needed really except maybe bold labels. Let me keep it simple and clean."
+        }
+      ],
+      "toolTimings": {
+        "call_00_qOVvOTaugPInUvr0vqgB6741": {
+          "startedAt": 1783590010669,
+          "endedAt": 1783590010713
+        },
+        "call_00_01kfLQuEq0Pet5I3aQvo9792": {
+          "startedAt": 1783590013360,
+          "endedAt": 1783590013399
+        },
+        "call_01_hMikWwPcWpQjmZQb8PXm8785": {
+          "startedAt": 1783590013360,
+          "endedAt": 1783590013426
+        }
+      },
+      "stopReason": "end_turn"
+    }
+  ],
+  "channel": "telegram",
+  "stats": {
+    "allTime": {
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 3,
+      "inputTokens": 17,
+      "outputTokens": 976,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "cost": 0.0057287,
+      "processingMs": 26396,
+      "elapsedMs": 26396,
+      "apiMs": 21645,
+      "endedAt": 1783590022573,
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro"
+    },
+    "lastTurn": {
+      "endedAt": 1783590022573,
+      "elapsedMs": 26396,
+      "apiMs": 21645,
+      "apiCalls": 1,
+      "toolCalls": 3,
+      "inputTokens": 17,
+      "outputTokens": 976,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro",
+      "cost": 0.0057287
+    },
+    "meter": {
+      "contextTokens": 13393,
+      "contextBudget": 1000000,
+      "compactionAt": 725424,
+      "model": "deepseek-v4-pro"
+    }
+  }
+}

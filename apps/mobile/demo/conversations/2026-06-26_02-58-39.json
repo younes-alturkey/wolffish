@@ -1,0 +1,118 @@
+{
+  "id": "2026-06-26_02-58-39",
+  "title": "How are the channels doning",
+  "model": "qwen3.5:9b",
+  "createdAt": 1782431919428,
+  "updatedAt": 1782431928864,
+  "messages": [
+    {
+      "id": "m_1782431928864_0ce5fe",
+      "role": "user",
+      "content": "How are the channels doning?",
+      "timestamp": 1782431928864
+    },
+    {
+      "id": "m_1782431928864_cfd93c",
+      "role": "assistant",
+      "content": "Let me check on the channels real quick.All three are up — **🟢 Telegram**, **🟢 WhatsApp**, and **🟢 In-app chat.** Smooth sailing. Also, fresh start: you just restarted me 20 seconds ago at 2:58 AM. What's keeping you up, Younes? 🐟",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782431919440_g9noep",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782431919440_g9noep",
+          "segmentId": "seg_2",
+          "delta": "Let me check on the channels real quick."
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782431919440_g9noep",
+          "segmentId": "seg_11",
+          "toolCallId": "call_00_zgSLCiXHA6p1dkFRkMRQ0645",
+          "name": "wolffish_status",
+          "args": {}
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782431919440_g9noep",
+          "segmentId": "seg_12",
+          "toolCallId": "call_00_zgSLCiXHA6p1dkFRkMRQ0645",
+          "status": "success",
+          "output": "## Wolffish Status\n\n- **Running since:** 2026-06-26 02:58 (20s)\n- **Providers:** openrouter/deepseek/deepseek-v4-pro, zai/glm-5.2 (fallback), deepseek/deepseek-v4-pro ✦, local/qwen3.5:9b\n- **Capabilities:** none (0 loaded)\n- **Tool calls:** 925 total, 113 today\n- **Channels:** 🟢 Telegram, 🟢 WhatsApp, 🟢 In-app chat\n- **RAM used:** 10.4 GB / 16.0 GB (65%)\n- **RAM available:** ~4.8 GB (includes reclaimable)\n- **Swap:** 4.0 GB\n- **Disk free:** 512.0 GB\n- **cortex.db:** 11.6 MB\n- **Platform:** darwin arm64\n- **OS restarted:** 2026-06-22 22:48 (up 3d 4h)\n- **Internet:** connected (31ms DNS latency)"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782431919440_g9noep",
+          "segmentId": "seg_13",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782431919440_g9noep",
+          "segmentId": "seg_14",
+          "delta": "All three are up — **🟢 Telegram**, **🟢 WhatsApp**, and **🟢 In-app chat.** Smooth sailing. Also, fresh start: you just restarted me 20 seconds ago at 2:58 AM. What's keeping you up, Younes? 🐟"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1782431919440_g9noep",
+          "segmentId": "seg_69",
+          "stopReason": "end_turn",
+          "iterationCount": 2,
+          "reasoningContent": "All three channels are green: Telegram, WhatsApp, and In-app chat. Everything's healthy. Let me give a clean summary."
+        }
+      ],
+      "toolTimings": {
+        "call_00_zgSLCiXHA6p1dkFRkMRQ0645": {
+          "startedAt": 1782431926138,
+          "endedAt": 1782431926196
+        }
+      },
+      "stopReason": "end_turn",
+      "timestamp": 1782431928864
+    }
+  ],
+  "stats": {
+    "allTime": {
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 1,
+      "inputTokens": 7,
+      "outputTokens": 268,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "cost": 0.0049469,
+      "processingMs": 1000,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "endedAt": 1782431928864,
+      "provider": "local",
+      "model": "qwen3.5:9b"
+    },
+    "lastTurn": {
+      "endedAt": 1782431928864,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "apiCalls": 1,
+      "toolCalls": 1,
+      "inputTokens": 7,
+      "outputTokens": 268,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "provider": "local",
+      "model": "qwen3.5:9b",
+      "cost": 0.0049469
+    },
+    "meter": {
+      "contextTokens": 12675,
+      "contextBudget": 1000000,
+      "compactionAt": 725424,
+      "model": "qwen3.5:9b"
+    }
+  }
+}

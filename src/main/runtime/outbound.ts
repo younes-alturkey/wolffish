@@ -109,6 +109,26 @@ export const PHONE_NOTIFY_SENT_NOTICE =
   'Send another only if something NEW and major has happened since: blocked on the user, a failure, a finding worth acting on now.'
 
 /**
+ * The browser twins — the same three states for notify_web, registered while
+ * a browser is signed in to the Web UI and notifications are allowed. A turn
+ * with both a phone and a browser carries both notices and closes with one
+ * call to each: two surfaces, one call per surface, never two on either.
+ */
+export const WEB_NOTIFY_NOTICE =
+  'BROWSER: a signed-in Web UI browser is reachable, and notify_web lands on it as a Web Push even with the tab closed — the lock screen of a phone that keeps Wolffish on its Home Screen. ' +
+  'END THIS TURN with ONE notify_web carrying the real outcome (phase completed/failed, open "current") — a turn the user watched you finish still gets one. ' +
+  'Send one NOW instead of waiting if you are blocked on them, a step failed, or you found something worth acting on immediately. ' +
+  'Stay silent only when there is genuinely nothing to carry (small talk, a one-line acknowledgment) or the user asked for quiet.'
+
+export const WEB_NOTIFY_CHANNEL_NOTICE =
+  'BROWSER: this reply reaches the user as a channel message that already notifies their phone, so do NOT close the turn with a duplicate notify_web. ' +
+  'Use it only for a major beat they would otherwise miss: you are blocked on them, a step failed, or a finding is worth acting on now.'
+
+export const WEB_NOTIFY_SENT_NOTICE =
+  'BROWSER: a notify_web for this turn has already gone out (an UNCONFIRMED one may be on their screen too) — do not repeat it, reworded or otherwise. ' +
+  'Send another only if something NEW and major has happened since: blocked on the user, a failure, a finding worth acting on now.'
+
+/**
  * Live runtime context, injected at the tail of the outbound clone each
  * iteration instead of into the system prompt. Two kinds of volatile fact
  * ride here: the host clock (current date/time, UTC offset, and IANA zone
@@ -170,6 +190,9 @@ export function formatRuntimeStatus(runtime: RuntimeContext, now: Date = new Dat
     // registered) — same vehicle. Changes at most once per turn, when the
     // first notification goes out.
     (runtime.phoneNotify ? `${runtime.phoneNotify} ` : '') +
+    // Browser-notification notice (a browser is signed in to the Web UI and
+    // notify_web is registered) — same vehicle, same once-per-turn flip.
+    (runtime.webNotify ? `${runtime.webNotify} ` : '') +
     // Screen-indicator notice (this turn raised the computer-use glow and has
     // not lowered it) — same vehicle. Changes at most twice per turn.
     (runtime.screenIndicator ? `${runtime.screenIndicator} ` : '') +

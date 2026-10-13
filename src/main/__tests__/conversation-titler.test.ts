@@ -436,6 +436,11 @@ async function run(): Promise<void> {
       ['deepseek', 'deepseek-v4-pro', 'off'],
       ['anthropic', 'claude-opus-4-8', 'off'],
       ['openai', 'gpt-5.5', 'off'],
+      ['openai', 'gpt-6-sol', 'off'],
+      ['openai', 'gpt-6.1-sol', 'on'], // ['on','high','max'] — rejects 'none'
+      ['openai', 'gpt-6-astra', 'on'], // ['on','high','max'] — rejects 'none'
+      ['openai', 'gpt-5', 'on'], // ['on','high'] — rejects 'none'
+      ['openai', 'o3', 'on'], // ['on','high'] — rejects 'none'
       ['zai', 'glm-4.6', 'off'],
       ['minimax', 'minimax-m3', 'off'],
       ['xai', 'grok-4.6', 'on'], // ['on','high','max'] — rejects 'none'

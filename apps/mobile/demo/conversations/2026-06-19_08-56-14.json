@@ -1,0 +1,169 @@
+{
+  "id": "2026-06-19_08-56-14",
+  "title": "U there buddy",
+  "model": null,
+  "createdAt": 1781848574806,
+  "updatedAt": 1781848915151,
+  "messages": [
+    {
+      "id": "m_1781848574808_2121c0",
+      "role": "user",
+      "content": "You there buddy?",
+      "timestamp": 1781848574808
+    },
+    {
+      "id": "m_1781848583944_511e16",
+      "role": "assistant",
+      "content": "Always here, buddy. 🐟\n\n**Status check:** 92% success rate today, 13/14 tasks in the bag, RAM sitting pretty at 55%, 522 GB of ocean to swim in. Just had a fresh restart 19 hours ago.\n\nWhat's on your mind?",
+      "timestamp": 1781848583944,
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781848574808_wbg4jn",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1781848574808_wbg4jn",
+          "segmentId": "seg_2",
+          "toolCallId": "call_00_fTVju02RLngYp8BUBalG4077",
+          "name": "wolffish_status",
+          "args": {}
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1781848574808_wbg4jn",
+          "segmentId": "seg_3",
+          "toolCallId": "call_01_N2hDd2Mej3RzgKp3YKVg8896",
+          "name": "wolffish_performance",
+          "args": {}
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1781848574808_wbg4jn",
+          "segmentId": "seg_4",
+          "toolCallId": "call_00_fTVju02RLngYp8BUBalG4077",
+          "status": "success",
+          "output": "## Wolffish Status\n\n- **Running since:** 2026-06-19 08:50 (5m)\n- **Providers:** openrouter/deepseek/deepseek-v4-pro (fallback), deepseek/deepseek-v4-flash ✦\n- **Capabilities:** none (0 loaded)\n- **Tool calls:** 204 total, 80 today\n- **RAM used:** 8.9 GB / 16.0 GB (55%)\n- **RAM available:** ~6.3 GB (includes reclaimable)\n- **Swap:** 1.8 GB\n- **Disk free:** 522.2 GB\n- **cortex.db:** 7.7 MB\n- **Platform:** darwin arm64\n- **OS restarted:** 2026-06-18 13:43 (up 19h 13m)\n- **Internet:** connected (52ms DNS latency)"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1781848574808_wbg4jn",
+          "segmentId": "seg_5",
+          "toolCallId": "call_01_N2hDd2Mej3RzgKp3YKVg8896",
+          "status": "success",
+          "output": "## Performance\n\n- **Tasks today:** 14 (13 succeeded, 0 failed, 0 stopped)\n- **Tasks all time:** 36\n- **Success rate:** 92%\n- **Total tool calls:** 205\n- **Most used:** web_search (71), web_fetch (39), shell_exec (26), notion_append_blocks (10), browser_launch (4)\n- **Avg task duration:** 192.8s"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781848574808_wbg4jn",
+          "segmentId": "seg_6",
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1781848574808_wbg4jn",
+          "segmentId": "seg_7",
+          "delta": "Always here, buddy. 🐟\n\n**Status check:** 92% success rate today, 13/14 tasks in the bag, RAM sitting pretty at 55%, 522 GB of ocean to swim in. Just had a fresh restart 19 hours ago.\n\nWhat's on your mind?"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1781848574808_wbg4jn",
+          "segmentId": "seg_66",
+          "stopReason": "end_turn",
+          "iterationCount": 2,
+          "reasoningContent": "The user just asked \"You there buddy?\" - a casual check-in. Quick status check shows everything's running well. 92% success rate today, 13/14 tasks completed, RAM healthy at 55%, disk plenty free. Let me give a warm, casual response."
+        }
+      ],
+      "toolTimings": {
+        "call_00_fTVju02RLngYp8BUBalG4077": {
+          "startedAt": 1781848580184,
+          "endedAt": 1781848580513
+        },
+        "call_01_N2hDd2Mej3RzgKp3YKVg8896": {
+          "startedAt": 1781848580512,
+          "endedAt": 1781848580515
+        }
+      },
+      "stopReason": "end_turn"
+    },
+    {
+      "id": "m_1781848907131_5f7b65",
+      "role": "user",
+      "content": "Heya",
+      "timestamp": 1781848907131
+    },
+    {
+      "id": "m_1781848915151_a94d27",
+      "role": "assistant",
+      "content": "Heya Younes. 5 minutes of uptime so far today and I'm already feeling dangerous. What are we cooking?",
+      "timestamp": 1781848915151,
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781848907132_ba6bw9",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1781848907132_ba6bw9",
+          "segmentId": "seg_2",
+          "delta": "Heya Younes. 5 minutes of uptime so far today and I'm already feeling dangerous. What are we cooking?"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1781848907132_ba6bw9",
+          "segmentId": "seg_29",
+          "stopReason": "end_turn",
+          "iterationCount": 1,
+          "reasoningContent": "Younes is just saying \"Heya\" - casual greeting. I'll match the casual energy."
+        }
+      ],
+      "stopReason": "end_turn"
+    }
+  ],
+  "channel": "whatsapp",
+  "stats": {
+    "allTime": {
+      "turns": 2,
+      "apiCalls": 2,
+      "toolCalls": 2,
+      "inputTokens": 5,
+      "outputTokens": 357,
+      "cacheReadTokens": 12710,
+      "cacheCreationTokens": 12400,
+      "cost": 0.005425500000000001,
+      "processingMs": 17156,
+      "elapsedMs": 17156,
+      "apiMs": 14068,
+      "endedAt": 1781848915151,
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro"
+    },
+    "lastTurn": {
+      "endedAt": 1781848915151,
+      "elapsedMs": 8020,
+      "apiMs": 6576,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 1,
+      "outputTokens": 51,
+      "cacheReadTokens": 12710,
+      "cacheCreationTokens": 0,
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro",
+      "cost": 0.0004377
+    },
+    "meter": {
+      "contextTokens": 12762,
+      "contextBudget": 1000000,
+      "compactionAt": 725424,
+      "model": "deepseek-v4-pro"
+    }
+  }
+}

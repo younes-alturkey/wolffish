@@ -1,0 +1,191 @@
+---
+title: "ملفات المهام"
+description: "سجلات خطوة بخطوة لتنفيذ الأدوات في motor/tasks/"
+---
+
+# مصدر الحقيقة لاستدعاءات الأدوات
+
+عندما يستدعي LLM أداة، تُنشئ وحدة `motor` ملف مهمة يسجل كل خطوة من التنفيذ. هذه الملفات هي مصدر الحقيقة لما فعلته الأداة فعلاً — ليس المتغيرات في الذاكرة، وليس ملخص LLM، بل ملف Markdown على القرص.
+
+## الموقع
+
+```
+brain/motor/tasks/TASK-{id}.md
+```
+
+معرف المهمة هو عدد صحيح متزايد بشكل رتيب. يُنشأ ملف جديد بواسطة `motor.createTask()` عند بدء تنفيذ الأداة.
+
+## ما بداخلها
+
+كل ملف مهمة يحتوي على:
+
+- **الترويسة** — معرف المهمة، طابع وقت الإنشاء، معرف الدور المرتبط، الحالة
+- **الخطوات** — كل استدعاء أداة ضمن المهمة، مع:
+  - اسم الأداة
+  - المعاملات (المدخلات الدقيقة)
+  - المخرجات (النتيجة الدقيقة)
+  - المدة
+  - عدد المحاولات (1 = المحاولة الأولى، 2+ = إعادة محاولة)
+  - الحالة (نجاح، فشل، إلغاء)
+- **الملخص** — الحالة النهائية والمدة الإجمالية
+
+## مثال على ملف مهمة
+
+إليك ملف مهمة كامل يُظهر تنفيذاً متعدد الخطوات مع إعادة محاولة واحدة:
+
+```markdown
+# TASK-1747
+
+- **Created**: 2025-05-16T14:30:24.310Z
+- **Turn ID**: turn-a8f3c
+- **Status**: completed
+
+---
+
+## Step 1: shell_exec
+
+- **Attempt**: 1/3
+- **Args**:
+  ```json
+  {
+    "command": "systemctl status myapp"
+  }
+  ```
+- **Output**:
+  ```
+  ● myapp.service - My Application
+       Loaded: loaded (/etc/systemd/system/myapp.service; enabled)
+       Active: inactive (dead) since Fri 2025-05-16 14:20:01 UTC
+  ```
+- **Duration**: 792ms
+- **Status**: success
+
+---
+
+## Step 2: shell_exec
+
+- **Attempt**: 1/3
+- **Args**:
+  ```json
+  {
+    "command": "systemctl restart myapp"
+  }
+  ```
+- **Output**:
+  ```
+  Job for myapp.service failed because the control process exited with error code.
+  See "systemctl status myapp.service" and "journalctl -xe" for details.
+  ```
+- **Duration**: 1204ms
+- **Status**: failed
+- **Error**: Non-zero exit code: 1
+
+---
+
+## Step 2 (retry): shell_exec
+
+- **Attempt**: 2/3
+- **Backoff**: 2000ms
+- **Args**:
+  ```json
+  {
+    "command": "systemctl restart myapp"
+  }
+  ```
+- **Output**:
+  ```
+  (no output)
+  ```
+- **Duration**: 3891ms
+- **Status**: success
+
+---
+
+## Step 3: shell_exec
+
+- **Attempt**: 1/3
+- **Args**:
+  ```json
+  {
+    "command": "systemctl status myapp"
+  }
+  ```
+- **Output**:
+  ```
+  ● myapp.service - My Application
+       Loaded: loaded (/etc/systemd/system/myapp.service; enabled)
+       Active: active (running) since Fri 2025-05-16 14:30:29 UTC
+  ```
+- **Duration**: 456ms
+- **Status**: success
+
+---
+
+## Summary
+
+- **Total Steps**: 3 (1 retry)
+- **Total Duration**: 8343ms
+- **Final Status**: completed
+```
+
+## سلوك إعادة المحاولة
+
+عندما تفشل خطوة، يعيد motor المحاولة حتى 3 مرات مع تراجع أسّي:
+
+| المحاولة | التراجع |
+|---|---|
+| إعادة المحاولة الأولى | ثانيتان |
+| إعادة المحاولة الثانية | 6 ثوانٍ |
+| إعادة المحاولة الثالثة | 18 ثانية |
+
+إذا فشلت جميع المحاولات الثلاث، تُوسم المهمة كـ `failed` ويُبلّغ الخطأ إلى LLM.
+
+## استعادة الأعطال
+
+<Warning>
+ملفات المهام هي آلية استعادة الأعطال. إذا تعطل وولفيش أثناء تنفيذ مهمة، يُظهر ملف Markdown بالضبط أين توقف التنفيذ.
+</Warning>
+
+لأن حالة المهمة موجودة على القرص (وليس في الذاكرة)، يستطيع وولفيش اكتشاف المهام غير المكتملة عند إعادة التشغيل. ملف مهمة بحالة `Status: running` بعد إعادة التشغيل يعني أنه تم مقاطعته. لن تعيد وحدة motor المحاولة تلقائياً للمهام المتعطلة — بل تُبلّغ الحالة غير المكتملة إلى LLM، الذي يقرر ما إذا كان سيعيد المحاولة.
+
+## المهام المُلغاة
+
+إذا تم إلغاء مهمة (إلغاء المستخدم، رفض بوابة الأمان، انتهاء المهلة)، يسجل الملف أين توقفت:
+
+```markdown
+## Step 2: shell_exec
+
+- **Attempt**: 1/3
+- **Args**:
+  ```json
+  {
+    "command": "rm -rf /tmp/build/"
+  }
+  ```
+- **Status**: aborted
+- **Reason**: safety.denied — user rejected dangerous operation
+
+---
+
+## Summary
+
+- **Total Steps**: 1 of 3 planned
+- **Final Status**: aborted
+- **Abort Reason**: User denied safety confirmation
+```
+
+## أسئلة شائعة
+
+<Tabs>
+  <Tab title="ما الذي نفذته الأداة فعلاً؟">
+    افتح ملف المهمة واقرأ قسم `Args` لكل خطوة. هذا هو المدخل الدقيق الذي مُرر للأداة — بدون تلخيص.
+  </Tab>
+
+  <Tab title="لماذا فشلت؟">
+    ابحث عن الخطوات بحالة `Status: failed`. حقل `Error` يُظهر رسالة الخطأ الدقيقة. إذا كانت هناك إعادة محاولات، يتم الاحتفاظ بمخرجات كل محاولة حتى تستطيع رؤية ما إذا تغير الخطأ.
+  </Tab>
+
+  <Tab title="ما المخرجات التي عادت؟">
+    قسم `Output` يحتوي على نتيجة الأداة الخام. هذا ما يُمرر مرة أخرى إلى LLM لاستجابته التالية. إذا بدت المخرجات خاطئة، فالخلل في الأداة/الإضافة وليس في وولفيش.
+  </Tab>
+</Tabs>

@@ -21,6 +21,9 @@ import {
   RESUME_NOTICE_MIN_GAP_MS,
   shapeOutbound,
   truncateSuperseded,
+  WEB_NOTIFY_CHANNEL_NOTICE,
+  WEB_NOTIFY_NOTICE,
+  WEB_NOTIFY_SENT_NOTICE,
   withVolatileTail
 } from '../outbound'
 import { toAnthropicMessages } from '../providers/anthropic'
@@ -218,6 +221,49 @@ check(
       phoneNotify: PHONE_NOTIFY_NOTICE
     })
     return both.includes('NETWORK: OFFLINE') && both.includes('PHONE:')
+  })(),
+  true
+)
+
+// The browser twin: same three states, its own line, and it rides beside the
+// phone notice when both surfaces are reachable.
+const webIdle = formatRuntimeStatus({
+  iteration: 1,
+  toolsCalled: 0,
+  webNotify: WEB_NOTIFY_NOTICE
+})
+check('web: cadence notice asks for a turn-closing send', webIdle.includes('END THIS TURN'), true)
+check(
+  'web: cadence notice names the current-conversation target',
+  webIdle.includes('open "current"'),
+  true
+)
+check(
+  'web: channel notice suppresses the duplicate turn-end notification',
+  formatRuntimeStatus({
+    iteration: 1,
+    toolsCalled: 0,
+    webNotify: WEB_NOTIFY_CHANNEL_NOTICE
+  }).includes('do NOT close the turn with a duplicate notify_web'),
+  true
+)
+const webSent = formatRuntimeStatus({
+  iteration: 4,
+  toolsCalled: 6,
+  webNotify: WEB_NOTIFY_SENT_NOTICE
+})
+check('web: sent notice forbids a repeat', webSent.includes('do not repeat it'), true)
+check('web: sent notice drops the send instruction', webSent.includes('END THIS TURN'), false)
+check(
+  'web: coexists with the phone notice — two surfaces, two lines',
+  (() => {
+    const both = formatRuntimeStatus({
+      iteration: 2,
+      toolsCalled: 3,
+      phoneNotify: PHONE_NOTIFY_NOTICE,
+      webNotify: WEB_NOTIFY_NOTICE
+    })
+    return both.includes('PHONE:') && both.includes('BROWSER:')
   })(),
   true
 )

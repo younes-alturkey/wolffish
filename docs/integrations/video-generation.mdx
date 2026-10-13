@@ -1,0 +1,115 @@
+---
+title: "Video Generation"
+description: "Make video with MiniMax H3 — the prompt written by your own chat model, rendered asynchronously, delivered where you asked"
+---
+
+# Your Model Directs, H3 Renders
+
+Wolffish can generate video. Ask for a clip in any conversation and the model you are already chatting with writes the brief; **MiniMax H3** does the rendering. H3 never appears in the model picker, because you never chat with it — it is a tool your current model calls.
+
+Generation is asynchronous. The API hands back a task id and renders for a few minutes, so the result arrives as a **task card in the chat** rather than as a blocked turn.
+
+<Info>
+  Video generation is a **service**, not a brain. It has its own key under **Settings → Services → Video generation** and is independent of whichever model you chat with — see [Why the key is separate](#why-the-key-is-separate).
+</Info>
+
+## Setup
+
+1. Get a key from the [MiniMax platform](https://www.minimax.io/platform)
+2. Open **Settings → Services → Video generation**
+3. Paste the key and click **Save**, then **Test connection**
+
+The status line reads **Ready**, **Key rejected**, or **No key set**. The agent has its own free check — `video_check` — which it calls before the first generation of a conversation so an unconfigured service costs you a turn instead of a failed render.
+
+### Why the key is separate
+
+MiniMax issues one credential that unlocks both its chat models and its video API, so the value you paste here is the same string you may already have under **Settings → Models → MiniMax**. The app never copies one field into the other, and that is deliberate:
+
+- They are **independent decisions**. Video generation is a service — like Brave Search or Giphy — not a property of whichever brain you happen to be chatting with. If the keys were shared, switching your chat brain away from MiniMax would silently take video with it.
+- **Rotating one never drags the other with it.** Revoke a chat key and video keeps working, and the reverse.
+
+<Note>
+  A desktop with MiniMax configured as a chat provider can still have video generation unconfigured. That is the expected state, not a bug — paste the key in both places if you want both.
+</Note>
+
+## Director Mode
+
+The video model does not read your request. Your **selected chat model** does, and rewrites it into a full cinematic prompt — subject, action, camera movement, lighting, mood — then chooses duration, resolution, aspect ratio, and which images serve as first frame, last frame, or style reference.
+
+| | |
+| --- | --- |
+| **You ask** | *a 4 second video of gentle ocean waves rolling onto a beach at sunset* |
+| **Your model sends** | *Gentle ocean waves rolling onto a sandy beach at sunset. Soft golden-orange light reflecting off the water, calm ripples of foam washing up the shore and receding. Slow, soothing motion, warm pastel sky…* |
+
+That rewriting is where most of the quality lives:
+
+- It adds the creative detail you left out — light, texture, atmosphere, camera language — because sparse prompts produce flat, generic footage.
+- It picks the technical settings from context, and **omits the aspect ratio when you supply an image** so the video adopts the picture's own shape.
+- It names the task, waits for the render, and decides how to present the result.
+
+With director mode **on**, the agent shows you the exact prompt it sent as a short quoted block — that replay is how you steer the next take. With it **off**, your words go to H3 exactly as you wrote them, with only obvious framing ("make a video of…") stripped; the model still picks duration and resolution unless you specify them.
+
+<Tip>
+  **A stronger chat model gets a better video from the identical request.** If a clip misses what you pictured, telling your model what to change usually beats rewording the original ask — you are talking to the director, not the camera.
+</Tip>
+
+## What H3 Can Do
+
+One model, four input modes, combined freely — up to **twelve media items** in a single request.
+
+| Mode | Inputs | Notes |
+| --- | --- | --- |
+| Text to video | `prompt` only | Aspect ratio applies (defaults to 16:9) |
+| Image to video | `first_frame` and/or `last_frame` | Output adopts the image's shape — ratio is omitted |
+| First-and-last frame | both frames | Describe the **motion between** them, not the frames themselves |
+| Reference | images, clips, audio | Keeps a subject, a motion, or a voice consistent |
+
+**Output:** H.264 mp4 with a generated soundtrack, 24 fps, **768P** (≈1344×768) or **2K** (≈2560×1440), **4 to 15 seconds**. Rendering typically takes one to five minutes.
+
+## The Task Card
+
+Because a render takes minutes rather than moments, `video_generate` returns immediately and a **task card** appears in the chat on its own:
+
+- The task id, live status — Submitted, Queued, Running, Done, Failed, Cancelled — and a progress estimate
+- A **Cancel task** button that stops a queued or running render server-side
+- The finished mp4, **downloaded automatically** and played inline in the card
+
+The agent is instructed not to narrate what the card already shows: it adds at most a sentence around it.
+
+### When a render outlives its turn
+
+If the app restarts mid-render, or the model simply moves on, Wolffish **finishes the job on its own**. It keeps polling, saves the video, updates the card, and delivers it to the channel the request came from — compressing an oversized clip to fit [Telegram](/channels/telegram) or [WhatsApp](/channels/whatsapp) while keeping the original here at full quality.
+
+## Attaching Your Own Media
+
+Media you attach is **checked and optimized automatically**, so nothing needs resizing by hand:
+
+| Input | Accepted | Handled for you |
+| --- | --- | --- |
+| Images | JPG, PNG, WEBP, HEIC/HEIF — sides 256–5760 px, aspect 2:5 to 5:2, ≤30 MB | Oversized images downscale to ~2048 px (generation caps at 2K anyway) |
+| Video references | up to 3 clips, 2–15 s each and combined | Non-H.264 or oversized clips transcode automatically |
+| Audio references | up to 3 clips, 2–15 s each | wav/mp3 pass through, anything else converts |
+
+The whole request must stay under **64 MB**, because attached files ship as base64. Public `https://` URLs cost nothing against that budget — which is why the composer's paperclip grew an **Attach media URL** option (image, video, or audio). MiniMax fetches the link directly, sidestepping the size limit for large references.
+
+When an input breaks a limit that can't be fixed automatically — a 40-second clip, a 1:6 panorama — the tool says so, and the agent trims or crops with `ffmpeg_run` before retrying.
+
+## Where Videos Live
+
+Generated clips are saved per conversation under `generations/video/conv-<id>/` in [the workspace](/architecture/workspace), and are **deleted along with the conversation**. Nothing is re-downloaded: once a task lands, the file is already on disk and the agent delivers that path.
+
+## Tools
+
+| Tool | What it does |
+| --- | --- |
+| `video_check` | Confirm the service is configured and the key works. Free — spends no credits. |
+| `video_generate` | Start a render. Returns a task id immediately and raises the task card. |
+| `video_await` | Park until the task lands, then return the saved mp4's path. The normal next call. |
+| `video_status` | Non-blocking snapshot of this conversation's tasks. |
+| `video_cancel` | Cancel a queued or running task server-side. |
+
+Delivery is a separate, deliberate step, as everywhere else in Wolffish: in the app the agent calls `send_file`, on Telegram `telegram_send_video`, on WhatsApp `whatsapp_send_video`. Generation alone never puts a file in front of you.
+
+<Warning>
+  **Every generation spends real API credits.** The agent runs one task per request unless you explicitly ask for variants, and 2K is both slower and roughly seven times larger than 768P. Start at 768P and re-render at 2K once the take is right.
+</Warning>

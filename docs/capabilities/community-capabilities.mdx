@@ -1,0 +1,56 @@
+---
+title: "Community Capabilities"
+description: "Install and share capabilities with the community"
+---
+
+# Capabilities Are Just Folders
+
+Wolffish capabilities are self-contained folders. This makes them trivially shareable — clone a repo into your cerebellum directory and it just works.
+
+## Installing a Community Capability
+
+### From a folder or zip
+
+If a capability is shared as a downloadable folder or `.zip`, you don't need the terminal — **drop it onto Settings → Capabilities** (or click the field to browse). It's validated and loaded on the spot, and you can remove it later with the trash icon. See [Installing a Capability](/capabilities/creating-capabilities#installing-a-capability) for the accepted shapes and the rules a drop must satisfy.
+
+### From a git repo
+
+```bash
+cd ~/.wolffish/workspace/brain/cerebellum/
+git clone https://github.com/someone/wolffish-capability-name.git capability-name
+```
+
+Click the **Resync** button in Settings → Capabilities to reload capabilities, and the new one is loaded automatically.
+
+## Sharing Your Capability
+
+To share a capability you've built:
+
+1. Make sure the folder is self-contained (no references to files outside the capability folder)
+2. Leave out `node_modules/` — npm dependencies reinstall on first use, and the importer strips it anyway
+3. Distribute it either way:
+   - **Zip the folder** and send it — the recipient drops the `.zip` onto their Capabilities panel and it's live, no terminal needed
+   - **Push to git** (GitHub or any host) so others can `git clone` it into their `brain/cerebellum/`
+
+See [Packaging for Import and Sharing](/capabilities/creating-capabilities#packaging-for-import-and-sharing) for the full list of rules a portable capability should meet.
+
+## Structure Requirements
+
+A shareable capability should include:
+
+```
+my-capability/
+├── SKILL.md              # Required
+├── plugin/               # Optional
+│   └── index.mjs
+├── README.md             # Recommended: usage instructions
+└── LICENSE               # Recommended: license terms
+```
+
+## Security Considerations
+
+<Warning>
+  Community plugins execute with full Node.js access in the Electron main process. Review any plugin code before installing. The amygdala gates tool execution but not plugin initialization — a malicious `init()` function runs on startup without any safety check.
+</Warning>
+
+Only install capabilities from sources you trust. Review the `plugin/index.mjs` file before adding it to your workspace.

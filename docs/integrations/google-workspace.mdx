@@ -1,0 +1,188 @@
+---
+title: "Google Workspace"
+description: "Gmail, Drive, Calendar, Contacts, Tasks, and Sheets integration"
+---
+
+# Gmail, Drive, Calendar, and More
+
+The Google Workspace integration connects Wolffish to Gmail, Google Drive, Calendar, Contacts, Tasks, and Sheets. It supports multiple Google accounts and uses OAuth 2.0 for authentication.
+
+## Setup
+
+The integration runs on **gogcli**, a small Google Suite CLI Wolffish installs for you. You bring your own Google Cloud OAuth client, which is what keeps the whole thing on your own credentials.
+
+<Steps>
+  <Step title="Install gogcli">
+    Open **Settings → Services → Google Workspace** and click **Install**. Wolffish downloads the prebuilt binary for your platform to `~/.wolffish/bin/gog` — no package manager, no admin password. macOS, Linux and Windows are all supported. Since **v1.0.263** the installer is **pinned to the exact audited gogcli release** (v0.37.0) rather than fetching whatever is latest, so the CLI can never change its syntax underneath a shipped release — every tool is verified command-by-command against that binary, and a mismatched older installation gets an error that names the fix: update from Settings.
+  </Step>
+  <Step title="Create an OAuth client">
+    In the [Google Cloud Console](https://console.cloud.google.com): create a project, enable the APIs you want under **APIs & Services → Library** (Gmail, Drive, Calendar, Sheets, Tasks, People, and any others the panel lists), set the **OAuth consent screen** to *External* and add yourself as a **Test user**, then **Credentials → Create Credentials → OAuth client ID → Desktop app**. Download the `client_secret_*.json`. The panel walks through every step with a confirmation for each.
+  </Step>
+  <Step title="Drop the JSON in">
+    Drag the downloaded file onto the credentials dropzone. Wolffish validates it and stores it; the section shows the project and client it now holds.
+  </Step>
+  <Step title="Authorize an account">
+    Type the account email and click **Authorize**. Your browser opens Google's consent screen; approve, and the account lands in the **Accounts** list. Add as many as you like, and use **Reconnect** on any account whose refresh token has expired or been revoked.
+  </Step>
+</Steps>
+
+<Note>
+  Credentials and tokens are held in **gogcli's own keychain**, not in Wolffish's config. `config.json` keeps only safe public metadata — the client and project ids, and whether credentials are stored. Deleting the credentials from the panel removes every authorized account with them.
+</Note>
+
+<Tip>
+  Leave the consent screen's publishing status on **Testing**. Only test users can authorize, which is exactly right for personal use, and you can enable more APIs later without redoing any of this.
+</Tip>
+
+## Multi-Account Support
+
+You can authorize multiple Google accounts. The `google_accounts` tool lists all connected accounts, and every other Google tool requires an explicit `account` parameter to specify which account to use.
+
+```
+User: "Check my email"
+LLM calls: google_accounts() → returns [{email: "work@company.com"}, {email: "personal@gmail.com"}]
+LLM calls: google_gmail_search({account: "work@company.com", query: "is:unread"})
+```
+
+There is no implicit default account: even with one authorized, every call carries `account` explicitly. For an identity-agnostic request ("any unread mail?") the model calls the tool once per account, in parallel.
+
+## Available Tools
+
+Every tool is `google_`-prefixed and takes a required `account` parameter.
+
+### Accounts
+
+| Tool | Description |
+|---|---|
+| `google_accounts` | List the authorized accounts — call this first to get the exact `account` values |
+
+### Gmail
+
+| Tool | Description |
+|---|---|
+| `google_gmail_search` | Search messages with Gmail query syntax (`from:`, `is:unread`, `has:attachment`, …) |
+| `google_gmail_read` | Read a full thread by ID — headers, body text, attachment metadata |
+| `google_gmail_send` | Send an email; pass `thread_id` to make it a reply in that thread |
+| `google_gmail_forward` | Forward a message to new recipients, with optional intro text |
+| `google_gmail_draft_create` | Save a draft without sending |
+| `google_gmail_archive` | Archive messages — by IDs or by a search query |
+| `google_gmail_trash` | Move messages to trash — by IDs or by a search query |
+| `google_gmail_mark_read` | Mark messages read — by IDs or by a search query |
+| `google_gmail_mark_unread` | Mark messages unread — by IDs or by a search query |
+| `google_gmail_labels` | List labels with their IDs and message counts |
+
+### Google Drive
+
+| Tool | Description |
+|---|---|
+| `google_drive_list` | List files, optionally inside a parent folder |
+| `google_drive_search` | Search files by name or content |
+| `google_drive_upload` | Upload a local file (path resolved from the workspace root) |
+| `google_drive_download` | Download a file to a local path |
+| `google_drive_mkdir` | Create a folder |
+| `google_drive_delete` | Move a Drive file to trash |
+
+### Google Calendar
+
+| Tool | Description |
+|---|---|
+| `google_calendar_events` | List upcoming events — `today` / `tomorrow` / `week`, a day count, or an explicit date range |
+| `google_calendar_create` | Create an event (ISO 8601 times, optional attendees) |
+| `google_calendar_update` | Update an event — reschedule, rename, relocate, add or replace attendees |
+| `google_calendar_delete` | Delete an event permanently |
+
+### Google Contacts
+
+| Tool | Description |
+|---|---|
+| `google_contacts_search` | Search contacts by name, email, or phone |
+| `google_contacts_create` | Create a contact |
+
+### Google Tasks
+
+| Tool | Description |
+|---|---|
+| `google_tasks_list` | List task lists, or the tasks inside one when given a `task_list_id` |
+| `google_tasks_add` | Add a task to a list |
+| `google_tasks_complete` | Mark a task completed |
+| `google_tasks_delete` | Delete a task permanently |
+
+### Google Sheets
+
+| Tool | Description |
+|---|---|
+| `google_sheets_read` | Read a range in A1 notation; returns a 2D array of values |
+| `google_sheets_write` | Write a 2D array of values starting at a range's top-left cell |
+
+## Triggers
+
+The capability is not in context by default — it loads on demand when `tool_search` matches your request against the triggers declared in its `SKILL.md`:
+
+```
+google, gmail, email, inbox, send email, compose email, search email,
+mark as read, mark read, archive email, trash email, forward email, save draft,
+delete event, update event, reschedule, complete task, delete task,
+create contact, add contact, create folder,
+drive, upload file, download file, list files, google drive,
+calendar, events, schedule, meeting, appointment, create event,
+contacts, address book, phone number,
+tasks, todo, task list,
+sheets, spreadsheet, google sheets,
+mail, message, reply, draft, label, unread, starred, attachment,
+invite, attendee, reminder, due date,
+workspace, cloud storage, shared drive
+```
+
+Once loaded, its tools are callable the same turn.
+
+## Example Workflows
+
+<AccordionGroup>
+  <Accordion title="Check unread emails">
+    ```
+    You: "Check my email"
+    Wolffish: Lists your 10 most recent unread emails with sender, subject, and snippet.
+    ```
+  </Accordion>
+  <Accordion title="Schedule a meeting">
+    ```
+    You: "Schedule a meeting with Ali tomorrow at 2pm for 30 minutes"
+    Wolffish: Creates a calendar event, confirms the time and date.
+    ```
+  </Accordion>
+  <Accordion title="Upload a file to Drive">
+    ```
+    You: "Upload ~/Documents/report.pdf to my Drive"
+    Wolffish: Uploads the file and returns the Drive link.
+    ```
+  </Accordion>
+  <Accordion title="Search emails by sender">
+    ```
+    You: "Find emails from sarah@example.com about the project proposal"
+    Wolffish: Searches Gmail with the query and returns matching threads.
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Configuration Reference
+
+`config.json` holds only public metadata about the connection — never a token:
+
+```json
+{
+  "google": {
+    "status": "active",
+    "clientId": "1234567890-abcdefg.apps.googleusercontent.com",
+    "projectId": "my-wolffish-project",
+    "credentialsStored": true
+  }
+}
+```
+
+<Warning>
+  Manage accounts from the panel rather than by hand. The OAuth client JSON and every refresh token live in gogcli's keychain, so editing `config.json` cannot add, remove, or repair an account — and **Delete credentials** removes all of them at once.
+</Warning>
+
+<Tip>
+  If Google calls start failing with 401s, open **Settings → Services → Google Workspace** and hit **Reconnect** on the affected account — that re-runs the consent flow and returns a fresh refresh token. This is what you want after revoking access from your Google account's security settings.
+</Tip>

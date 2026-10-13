@@ -1,0 +1,162 @@
+---
+title: "Debug Snapshots"
+description: "Inspect the exact context sent to the LLM on every turn"
+---
+
+# See Exactly What the LLM Sees
+
+Debug snapshots are the single most useful debugging tool in Wolffish. They show you the **exact** system prompt assembled and sent to the LLM on every turn — no abstraction, no summarization, the literal text.
+
+## Location
+
+```
+brain/prefrontal/.debug/{timestamp}.md
+```
+
+A new snapshot is written by `prefrontal.buildContext()` on every turn. The filename is the timestamp in `YYYY-MM-DD_HH-MM-SS.mmm` format (millisecond precision), so lexicographic order is chronological order.
+
+<Note>
+Debug snapshots rotate: the `.debug/` directory keeps the **50 most recent** snapshots and deletes the oldest beyond that. If you need to preserve one, copy it out of the directory.
+</Note>
+
+## What's Inside
+
+The system prompt is **lean by design** — a fresh conversation's prompt is roughly 5,000 tokens. It carries the essentials only; memory, history, files, and the full tool catalog are indexed on disk and retrieved on demand (`memory_search`, `tool_search`), never dumped into the prompt. Each snapshot contains:
+
+- **Header** — timestamp, estimated tokens, the assembly budget, and the list of sections included
+- **Message** — the user message this context was built for
+- **Sources** — every file that fed the prompt, with its category and approximate token cost
+- **Prompt** — the complete assembled system prompt, verbatim
+
+The prompt itself is built from these sections:
+
+| Section | Contents |
+|---|---|
+| `<identity>` | `soul.md` (personality) + `user.md` (who you are) |
+| `<device>` | Static device facts — OS, shell, paths, resources (~40 tokens) |
+| `<variables>` | User-defined variables from Settings → Variables (if any) |
+| `<prefrontal>` | The `agents.core.md` operating contract (~1.4k tokens) + your `agents.md` overrides + the learned-preferences digest |
+| `<capabilities>` | One line per installed capability — name, tool count, ≤90-char description, `[loaded]` marker for the ones callable right now |
+| `<memory_map>` | A coverage map of everything recallable — per-source record counts, date ranges, knowledge topics. A **map** of what exists, never the content |
+| `<runtime>` | Live loop counters (when rendered in-prompt) |
+
+Conditional overlays are appended when active: role (`<workflow_mode>` for the [workflow](/configuration/workflow-mode) master — including its `<workflow_models>` catalog of spawnable models — and `<workflow_agent>` for agents), `<channel>` formatting (WhatsApp), and `<local_model>` (the honesty overlay for locally-run models).
+
+Conversation history is **not** part of the system prompt — it travels in the messages array, and long conversations replay as a rolling summary plus the verbatim tail.
+
+## Reading a Debug Snapshot
+
+Here is an annotated example:
+
+```markdown
+# Prefrontal context snapshot
+
+- timestamp: 2026-07-03T14:30:22.847Z
+- estimated tokens: 5121
+- budget: 963000
+- sections: identity, device, prefrontal, capabilities, memory_map, runtime
+
+## message
+
+Can you check if the server is running?
+
+## sources
+
+- (identity, score=1.00, ~610t) brain/identity/soul.md
+- (identity, score=1.00, ~180t) brain/identity/user.md
+- (prefrontal, score=1.00, ~1420t) brain/prefrontal/agents.core.md
+- (prefrontal, score=1.00, ~85t) brain/prefrontal/agents.md
+- (prefrontal, score=1.00, ~490t) synthesized: learned preferences
+
+## prompt
+
+<identity>
+<source path="brain/identity/soul.md">
+You are Wolffish, a personal AI assistant...
+</source>
+
+<source path="brain/identity/user.md">
+Name: Younes
+Preferences: ...
+</source>
+</identity>
+
+<device>
+OS: macOS 15.5 (arm64), shell: zsh, home: /Users/younes, ...
+</device>
+
+<prefrontal>
+<source path="brain/prefrontal/agents.core.md">
+# Operating contract
+...
+</source>
+
+<source path="brain/prefrontal/agents.md">
+[Your overrides — win on any conflict with the core contract]
+</source>
+</prefrontal>
+
+<capabilities>
+Installed capabilities ([loaded] = callable right now; anything else is
+one tool_search/tool_activate away):
+- shell (1 tools) — Execute shell commands on the local system [loaded]
+- filesystem (3 tools) — Read, write, and patch files [loaded]
+- introspect (12 tools) — Search memory, read conversations, ... [loaded]
+- github (61 tools) — GitHub repos, issues, PRs, Actions, releases
+- pdf (8 tools) — Read, create, merge, and modify PDF files
+...
+</capabilities>
+
+<memory_map>
+Everything you have ever done, said, produced, or spent is indexed on
+disk — this is the coverage map, NOT the content. ...
+- episode: ~450 records (2026-01-12 → 2026-07-03)
+- conversation: ~1200 records (2026-01-12 → 2026-07-03)
+- knowledge topics — projects: Wolffish, ... (memory_get the file for details)
+</memory_map>
+
+<runtime>
+  Tool iteration this turn: 1
+  Tools called this turn: 0
+</runtime>
+```
+
+## What to Look For
+
+<AccordionGroup>
+  <Accordion title="Missing capability?">
+    Check the `<capabilities>` section. Every installed capability should have one line there — `[loaded]` means its tool schemas shipped with the request; anything else loads on demand when the model calls `tool_search` or `tool_activate` (or calls one of its tools directly, which auto-activates the capability).
+
+    If your capability is missing from the index entirely, its SKILL.md failed to parse — check the frontmatter. If it's listed but the model never picks it, make its `name`, `description`, and `triggers` more descriptive: `tool_search` matches against those terms. To keep a capability always loaded, add it to `pinnedCapabilities` in `config.json`.
+  </Accordion>
+
+  <Accordion title="Model didn't recall something it should know?">
+    Memory content is never injected into the prompt — the `<memory_map>` only tells the model what exists. Recall happens when the model calls `memory_search` / `memory_get` / `conversation_read` during the turn.
+
+    Check the `<memory_map>` section first: if the relevant source (episodes, knowledge, conversations) shows records in the right date range, the data is indexed and a search would have found it — the model just didn't search. If the map shows nothing for that source, check the underlying files under `brain/`.
+  </Accordion>
+
+  <Accordion title="Unexpected behavior?">
+    Read the `<identity>` and `<prefrontal>` sections carefully. The LLM follows these instructions literally. If behavior is unexpected, the instructions might be ambiguous or contradictory. Edit `soul.md` or `agents.md` to clarify — never `agents.core.md`, which is app-managed and overwritten on every launch. Your `agents.md` wins on any conflict.
+  </Accordion>
+
+  <Accordion title="Prompt larger than expected?">
+    The header shows `estimated tokens` against the assembly budget. A fresh prompt should sit around 5k tokens. If it's much larger, look for an oversized source in the `## sources` list — a bloated `soul.md`, `user.md`, or `agents.md` lands in every prompt. The `<capabilities>` index stays bounded on its own (it collapses to grouped counts past 60 capabilities), and the `<memory_map>` is a fixed-size stub.
+
+    Note the prompt is only part of a request: tool schemas for core + activated capabilities ride the API's tools parameter, and conversation history rides the messages array.
+  </Accordion>
+
+  <Accordion title="Tool not available?">
+    Tool schemas are not prose in the prompt — they ship via the provider's tools parameter for the **core capabilities plus whatever this conversation has activated** (up to 10 non-core activations, LRU-evicted invisibly). The `<capabilities>` index tells you what's `[loaded]`.
+
+    If the model hits an "unknown tool" error, that means not-yet-loaded, not broken — the error itself instructs the model to `tool_search`. A known-but-unloaded tool called directly just works. If a tool never appears at all, check its capability's SKILL.md `tools:` declarations and `plugin/index.mjs` exports.
+  </Accordion>
+</AccordionGroup>
+
+## The 90% Rule
+
+<Tip>
+If Wolffish did something wrong, 90% of the time the answer is in the debug snapshot. The model can only act on what it sees — if the right information wasn't in the context, the model couldn't have used it. And under the lean design, "what it sees" includes what it can *fetch*: check whether the model was told the data existed (`<memory_map>`, `<capabilities>`) and simply didn't go get it.
+</Tip>
+
+Start here. Always.

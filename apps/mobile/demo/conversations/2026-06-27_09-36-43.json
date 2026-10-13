@@ -1,0 +1,258 @@
+{
+  "id": "2026-06-27_09-36-43",
+  "title": "What were my latest emails about",
+  "model": null,
+  "createdAt": 1782542203212,
+  "updatedAt": 1782542267883,
+  "messages": [
+    {
+      "id": "m_1782542224244_9f371a",
+      "role": "user",
+      "content": "What were my latest emails about? Did I miss anything?",
+      "timestamp": 1782542224244
+    },
+    {
+      "id": "m_1782542267881_bfb2eb",
+      "role": "assistant",
+      "content": "Let me check both inboxes right now — memory's from earlier, let's see what's actually there.One unread on youneswolf@gmail.com — an Amazon delivery ping. Let me read it and also grab your most recent few from both accounts for context.Here's the rundown — one unread, nothing you need to act on:\n\n### 🔴 Unread (1)\n\n| Account | From | Subject | \n|---------|------|---------|\n| youneswolf@gmail.com | Amazon.sa | **Out for delivery: \"Coca-Cola Zero, PET Pack of...\"** — arriving today, Order #171-8241097-5573264 |\n\n### ✅ Recent (already read, last 24h)\n\n**youneswolf@gmail.com:**\n- Amazon.sa — Out for delivery: Fniiva 50-pack disposable bowls, 3 more items (8:20 AM)\n- Amazon.sa — Out for delivery: Clorox toilet bowl cleaner x3 (8:18 AM)\n- Atlantis, The Palm — upsell offer (8:16 AM)\n- Sahem/KSRelief — SAR 30 donation confirmed (8:10 AM)\n\n**younes@wolffi.sh:**\n- Anthropic — higher rate limits on Claude API (2 AM, no action)\n- Product Hunt — \"Agent Arena\" launch, PixVerse receipts, PH Daily digest (last night)\n\n### Verdict\n\nYou didn't miss anything important. Morning Amazon spam, a donation receipt, last night's PH/PixVerse noise. The Coke Zero is on its way — that's the only unread. You want me to mark it read or leave it so it reminds you when the delivery lands? 🐟",
+      "timestamp": 1782542267881,
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782542224246_kdbtmh",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782542224246_kdbtmh",
+          "segmentId": "seg_2",
+          "delta": "Let me check both inboxes right now — memory's from earlier, let's see what's actually there."
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782542224246_kdbtmh",
+          "segmentId": "seg_24",
+          "toolCallId": "call_00_jIl9xNtrQJvVVEoHelhT8058",
+          "name": "google_accounts",
+          "args": {}
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782542224246_kdbtmh",
+          "segmentId": "seg_25",
+          "toolCallId": "call_00_jIl9xNtrQJvVVEoHelhT8058",
+          "status": "success",
+          "output": "{\"accounts\":[\"youneswolf@gmail.com\",\"younes@wolffi.sh\"],\"note\":\"Every google_* tool call REQUIRES an explicit `account` parameter — there is no default account. Pick the email from `accounts` above. For identity-agnostic requests like \\\"check my email\\\", call the tool once per entry in `accounts` (in parallel) and aggregate the results.\"}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782542224246_kdbtmh",
+          "segmentId": "seg_26",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782542224246_kdbtmh",
+          "segmentId": "seg_27",
+          "toolCallId": "call_00_bi7RePpT9u9LsjwTk7Ds3711",
+          "name": "google_gmail_search",
+          "args": {
+            "account": "youneswolf@gmail.com",
+            "query": "is:unread",
+            "max": 20
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782542224246_kdbtmh",
+          "segmentId": "seg_28",
+          "toolCallId": "call_01_3DKPkHbYN2Ra0NT46Viz9188",
+          "name": "google_gmail_search",
+          "args": {
+            "account": "younes@wolffi.sh",
+            "query": "is:unread",
+            "max": 20
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782542224246_kdbtmh",
+          "segmentId": "seg_29",
+          "toolCallId": "call_00_bi7RePpT9u9LsjwTk7Ds3711",
+          "status": "success",
+          "output": "{\"account\":\"youneswolf@gmail.com\",\"count\":1,\"nextPageToken\":\"\",\"threads\":[{\"id\":\"19f078208ad0ee9f\",\"date\":\"2026-06-27 08:31\",\"from\":\"\\\"Amazon.sa\\\" <shipment-tracking@amazon.sa>\",\"subject\":\"Out for delivery: \\\"Coca-Cola Zero, PET Pack of...\\\"\",\"labels\":[\"CATEGORY_UPDATES\",\"INBOX\"],\"messageCount\":7}]}"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782542224246_kdbtmh",
+          "segmentId": "seg_30",
+          "toolCallId": "call_01_3DKPkHbYN2Ra0NT46Viz9188",
+          "status": "success",
+          "output": "{\"account\":\"younes@wolffi.sh\",\"count\":0,\"nextPageToken\":\"\",\"threads\":[]}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782542224246_kdbtmh",
+          "segmentId": "seg_31",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782542224246_kdbtmh",
+          "segmentId": "seg_32",
+          "delta": "One unread on youneswolf@gmail.com — an Amazon delivery ping. Let me read it and also grab your most recent few from both accounts for context."
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782542224246_kdbtmh",
+          "segmentId": "seg_65",
+          "toolCallId": "call_00_bk1mnnonfGYUaTMrGgvU8433",
+          "name": "google_gmail_read",
+          "args": {
+            "account": "youneswolf@gmail.com",
+            "id": "19f078208ad0ee9f"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782542224246_kdbtmh",
+          "segmentId": "seg_66",
+          "toolCallId": "call_01_qGE8gWXKnDf9mpFdY4wR2778",
+          "name": "google_gmail_search",
+          "args": {
+            "account": "youneswolf@gmail.com",
+            "query": "newer_than:1d",
+            "max": 5
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782542224246_kdbtmh",
+          "segmentId": "seg_67",
+          "toolCallId": "call_02_ZHD7Mcr4nCI0TqIZfNpF6689",
+          "name": "google_gmail_search",
+          "args": {
+            "account": "younes@wolffi.sh",
+            "query": "newer_than:1d",
+            "max": 5
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782542224246_kdbtmh",
+          "segmentId": "seg_68",
+          "toolCallId": "call_00_bk1mnnonfGYUaTMrGgvU8433",
+          "status": "success",
+          "output": "{\"downloaded\":null,\"thread\":{\"historyId\":\"3892416\",\"id\":\"19f078208ad0ee9f\",\"messages\":[{\"historyId\":\"3892416\",\"id\":\"19f078208ad0ee9f\",\"internalDate\":\"1782537389000\",\"labelIds\":[\"CATEGORY_UPDATES\",\"INBOX\"],\"payload\":{\"body\":{},\"headers\":[{\"name\":\"Delivered-To\",\"value\":\"youneswolf@gmail.com\"},{\"name\":\"Received\",\"value\":\"by 2002:a05:7300:fd12:b0:30c:9c46:c8df with SMTP id jx18csp916729dyc;        Fri, 26 Jun 2026 22:16:30 -0700 (PDT)\"},{\"name\":\"X-Received\",\"value\":\"by 2002:a05:6000:41c9:b0:461:fefc:251 with SMTP id ffacd0b85a97d-46dc263b112mr15911868f8f.29.1782537390213;        Fri, 26 Jun 2026 22:16:30 -0700 (PDT)\"},{\"name\":\"ARC-Seal\",\"value\":\"i=1; a=rsa-sha256; t=1782537390; cv=none;        d=google.com; s=arc-20260327;        b=AFdcOckwvJeRAjer0r8UcaMm93G49MEpkrl39tIpdOmiJ02Sf1TYXosi8DsVpuz88n         vGTR53KwmkA9TO0DdC8z10KCSjq8hPBqd3x/fzy607qk/fd/Qgl4hkzsEt8oD14WZb0P         XKx2IJusxbPuSYpENho6hbVK6ElrFtzh3XLEPK7BkvEF7/++RZB27dgJPqGh1TaO1EcA         Y72NC8U83ieyzhJ4JuYXOwaggWxTZWT9bpq3eUW+8i6Q0S6L+QtljJW07iWmcK6TK9Ea         ZHgb42I14AeJqRkvX6bGJBWmHbK2HQfRNxDDGMHaP9RzYqus+TtxLdZ5qFxYlBY9ULPU         oFnA==\"},{\"name\":\"ARC-Message-Signature\",\"value\":\"i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;        h=feedback-id:bounces-to:mime-version:subject:message-id:to:from:date         :dkim-signature:dkim-signature;        bh=A+nzfSuvlkRDQdJgOr8A0FMvc+rN8eWD/QxkuJ0TI+A=;        fh=gWZEBLWfF25Fz+gUYRvTTB78sRTd/iB2EttSLjXR3F0=;        b=N7Ysu7UkNAVSpAL7Uv8smes4UGHxvq3d1jAiKdivg0/9eTvBwPZ+XTku4w7tg2dxEG         IQzCNL4E2p9DePwFoSgxP36HqJcRPuiQIqewtee7ZUEPu2JHvaXDpCs5lsXBWAH+p3Qg         qw0/znU5A0JXVsqCFrKue6XKznHf7PkOAgjYOtAhaEXtCAU/+9gPaC2ME3svxyRTP/Ho         Np0cREB3hUFNTsJA5H813a2eG2Rd+wFqbc5Al5X9vDfg+HP8gC0oB94GeXZrvYrAlUI1         EnfIpPrbgBDnN+WsVeMK9IXVzD/ykD1jYsIhg7AI7ZnazX2cWhvKJu+BHQPbRu1jL2Di         Z1nQ==;        dara=google.com\"},{\"name\":\"ARC-Authentication-Results\",\"value\":\"i=1; mx.google.com;       dkim=pass header.i=@amazon.sa header.s=66ndqyblzegqkbq2ketcibxlznmamcee header.b=SFJbK6Mh;       dkim=pass header.i=@amazonses.com header.s=shh3fegwg5fppqsuzphvschd53n6ihuv header.b=icDNLTgU;       spf=pass (google.com: domain of 2026062705162837a59d582e5f4026b40faa31f570p0eu-c1x24lid70lqti@bounces.amazon.com designates 54.240.1.50 as permitted sender) smtp.mailfrom=2026062705162837a59d582e5f4026b40faa31f570p0eu-C1X24LID70LQTI@bounces.amazon.com;       dmarc=pass (p=QUARANTINE sp=QUARANTINE dis=NONE) header.from=amazon.sa\"},{\"name\":\"Return-Path\",\"value\":\"<2026062705162837a59d582e5f4026b40faa31f570p0eu-C1X24LID70LQTI@bounces.amazon.com>\"},{\"name\":\"Received\",\"value\":\"from a1-50.smtp-out.eu-west-1.amazonses.com (a1-50.smtp-out.eu-west-1.amazonses.com. [54.240.1.50])        by mx.google.com with ESMTPS id ffacd0b85a97d-46c226a6d81si19453080f8f.246.2026.06.26.22.16.29        for <youneswolf@gmail.com>        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);        Fri, 26 Jun 2026 22:16:30 -0700 (PDT)\"},{\"name\":\"Received-SPF\",\"value\":\"pass (google.com: domain of 2026062705162837a59d582e5f4026b40faa31f570p0eu-c1x24lid70lqti@bounces.amazon.com designates 54.240.1.50 as permitted sender) client-ip=54.240.1.50;\"},{\"name\":\"Authentication-Results\",\"value\":\"mx.google.com;       dkim=pass header.i=@amazon.sa header.s=66ndqyblzegqkbq2ketcibxlznmamcee header.b=SFJbK6Mh;       dkim=pass header.i=@amazonses.com header.s=shh3fegwg5fppqsuzphvschd53n6ihuv header.b=icDNLTgU;       spf=pass (google.com: domain of 2026062705162837a59d582e5f4026b40faa31f570p0eu-c1x24lid70lqti@bounces.amazon.com designates 54.240.1.50 as permitted sender) smtp.mailfrom=2026062705162837a59d582e5f4026b40faa31f570p0eu-C1X24LID70LQTI@bounces.amazon.com;       dmarc=pass (p=QUARANTINE sp=QUARANTINE dis=NONE) header.from=amazon.sa\"},{\"name\":\"DKIM-Signature\",\"value\":\"v=1; a=rsa-sha256; q=dns/txt; c=relaxed/simple; s=66ndqyblzegqkbq2ketcibxlznmamcee; d=amazon.sa; t=1782537389; h=Date:From:To:Message-ID:Subject:MIME-Version:Content-Type; bh=5/1PHj94L/xp3bOGmkhp4SL0PZgOQNTvOFM8AsUms5g=; b=SFJbK6Mh2G2aZ1WLM/aSCbFuowevt0nAWMFgjQDotTH4Dp16jJM5qTk00ZrsBuiN cObiDjU75JDYPJoIJiOebXcMXrGt6yyeAEmutRLKVgZ3Mlvt7AX8bgJBXFyRrq2k7xH 7jQb3xLvM8c7Zh22HWI9x574ZOT6c1Aq6l+Xzu1U=\"},{\"name\":\"DKIM-Signature\",\"value\":\"v=1; a=rsa-sha256; q=dns/txt; c=relaxed/simple; s=shh3fegwg5fppqsuzphvschd53n6ihuv; d=amazonses.com; t=1782537389; h=Date:From:To:Message-ID:Subject:MIME-Version:Content-Type:Feedback-ID; bh=5/1PHj94L/xp3bOGmkhp4SL0PZgOQNTvOFM8AsUms5g=; b=icDNLTgUqUIZW9/f6Zk+AmTazq5vLT6QArbKsdME+HJcwGO/83nrRkq0oB5EG3yA WFtqpy6BzrNn6hrJoJbvZC5RfL77BbMIEjUhNt87FKG8HuyLK0/r2UEV9vd18O85QP4 IbGJcysHCMxgcQiKiq1lFOGwBKD+jugl6++Z56LY=\"},{\"name\":\"Date\",\"value\":\"Sat, 27 Jun 2026 05:16:29 +0000\"},{\"name\":\"From\",\"value\":\"\\\"Amazon.sa\\\" <shipment-tracking@amazon.sa>\"},{\"name\":\"To\",\"value\":\"youneswolf@gmail.com\"},{\"name\":\"Message-ID\",\"value\":\"<0102019f07820654-88ed9595-209f-4322-823c-b78888c537a5-000000@eu-west-1.amazonses.com>\"},{\"name\":\"Subject\",\"value\":\"Out for delivery: \\\"Coca-Cola Zero, PET Pack of...\\\"\"},{\"name\":\"MIME-Version\",\"value\":\"1.0\"},{\"name\":\"Content-Type\",\"value\":\"multipart/alternative; boundary=\\\"----=_Part_6511031_2080381254.1782537389531\\\"\"},{\"name\":\"X-AMAZON-MAIL-RELAY-TYPE\",\"value\":\"notification\"},{\"name\":\"Bounces-to\",\"value\":\"2026062705162837a59d582e5f4026b40faa31f570p0eu-C1X24LID70LQTI@bounces.amazon.com\"},{\"name\":\"X-AMAZON-METADATA\",\"value\":\"CA=C1X24LID70LQTI-CU=A29QKVX4TMERDJ\"},{\"name\":\"X-Original-MessageID\",\"value\":\"<urn.rtn.msg.2026062705162837a59d582e5f4026b40faa31f570p0eu@1782537389536.>\"},{\"name\":\"Feedback-ID\",\"value\":\"1319653141::1.eu-west-1.UIAUrMfbpGrxavqnRE0yoZrAUBI9C7GRNUx/kUDo6B4=:AmazonSES\"},{\"name\":\"X-SES-Outgoing\",\"value\":\"2026.06.27-54.240.1.50\"}],\"mimeType\":\"multipart/alternative\",\"parts\":[{\"body\":{\"data\":\"DQogIA0KWW91ciBPcmRlcnMNCg0KaHR0cHM6Ly93d3cuYW1hem9uLnNhL2dwL2Nzcy9vcmRlci1oaXN0b3J5P3JlZl89ZmVkX3lvX2RlZmF1bHQNCg0KUHJpbWUgRGF5IERlYWxzDQoNCmh0dHBzOi8vd3d3LmFtYXpvbi5zYS9wcmltZWRheT9yZWZfPWZlZF9wZF9kZWZhdWx0DQoNCkJ1eSBBZ2Fpbg0KDQpodHRwczovL3d3dy5hbWF6b24uc2EvZ3AvYnV5YWdhaW4_cmVmXz1mZWRfYmlhX2RlZmF1bHQNCg0KDQogICAgWW91ciBwYWNrYWdlIGlzIG91dCBmb3IgZGVsaXZlcnkhDQpPcmRlcmVkDQoNClNoaXBwZWQNCg0KT3V0IGZvciBkZWxpdmVyeQ0KDQpEZWxpdmVyZWQNCg0KDQoNCg0KDQoNCg0KDQoNCg0KQXJyaXZpbmcgdG9kYXkNCg0KDQoNCllvdW5lcyAtIFJpeWFkaCwgUml5YWRoDQoNCk9yZGVyICMNCjE3MS04MjQxMDk3LTU1NzMyNjQNCg0KDQoNClRyYWNrIHBhY2thZ2UNCmh0dHBzOi8vd3d3LmFtYXpvbi5zYS9wcm9ncmVzcy10cmFja2VyL3BhY2thZ2U_X2VuY29kaW5nPVVURjgmb3JkZXJJZD0xNzEtODI0MTA5Ny01NTczMjY0JnBhY2thZ2VJbmRleD0wJnNoaXBtZW50SWQ9VEdTNzNIS0QyJnZ0PU5PVElGSUNBVElPTlMmcmVmXz1wX2J0bl9mZWRfdHJhY2tfcGFja2FnZQ0KDQoqIENvY2EtQ29sYSBaZXJvLCBQRVQgUGFjayBvZiA2eDIuMkwsIFNhbWUgQ29jYSBDb2xhIFRhc3RlIHdpdGggWmVybyBTdWdhciBhbmQgWmVybyBDYWxvcmllcywgQ3Jpc3AgQ29rZSBaZXJvIFNvZnQgRHJpbmtzDQogIFF1YW50aXR5OiAxDQoNCg0KDQpJZiB5b3Ugd291bGQgbGlrZSB0byB0ZWxsIHVzIHdoZXJlIHRvIGxlYXZlIHlvdXIgcGFja2FnZSwgcGxlYXNlIGFkZCBkZWxpdmVyeSBpbnN0cnVjdGlvbnMNCmh0dHBzOi8vd3d3LmFtYXpvbi5zYS9tYS9kZWxpdmVyeVByb2ZpbGVQYWdlP2luZ3Jlc3NQb2ludFR5cGU9Tk9USUZJQ0FUSU9OUyZhZGRyZXNzSWQ9cm5waHF3bW5ramtxJnJlZl89MzAyX0VfRERFLg0KDQoNCg0KwqkyMDI2IEFtYXpvbi5jb20sIEluYy4gb3IgaXRzIGFmZmlsaWF0ZXMuIEFsbCByaWdodHMgcmVzZXJ2ZWQuIEFtYXpvbiwgQW1hem9uLnNhLCBBbWF6b24uY29tIGFuZCB0aGUgQW1hem9uLnNhIGxvZ28gYXJlIHRyYWRlbWFya3Mgb2YgQW1hem9uLmNvbSwgSW5jLiBvciBpdHMgYWZmaWxpYXRlcy4gQW1hem9uLmNvbSwgNDEwIFRlcnJ5IEF2ZW51ZSBOLiwgU2VhdHRsZSwgV0EgOTgxMDktNTIxMC4NCg0KQW1hem9uLnNh\",\"size\":1218},\"headers\":[{\"name\":\"Content-Type\",\"value\":\"text/plain; charset=utf-8\"},{\"name\":\"Content-Transfer-Encoding\",\"value\":\"quoted-printable\"}],\"mimeType\":\"text/plain\",\"partId\":\"0\"},{\"body\":{\"data\":\"PCFkb2N0eXBlIGh0bWw-PGh0bWwgbGFuZz0iZW4iIGRpcj0iYXV0byIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGh0bWwiIHhtbG5zOnY9InVybjpzY2hlbWFzLW1pY3Jvc29mdC1jb206dm1sIiB4bWxuczpvPSJ1cm46c2NoZW1hcy1taWNyb3NvZnQtY29tOm9mZmljZTpvZmZpY2UiPjxoZWFkPjx0aXRsZT48L3RpdGxlPjwhLS1baWYgIW1zb10-PCEtLT48bWV0YSBodHRwLWVxdWl2PSJYLVVBLUNvbXBhdGlibGUiIGNvbnRlbnQ9IklFPWVkZ2UiPjwhLS08IVtlbmRpZl0tLT48bWV0YSBodHRwLWVxdWl2PSJDb250ZW50LVR5cGUiIGNvbnRlbnQ9InRleHQvaHRtbDsgY2hhcnNldD1VVEYtOCI-PG1ldGEgbmFtZT0idmlld3BvcnQiIGNvbnRlbnQ9IndpZHRoPWRldmljZS13aWR0aCxpbml0aWFsLXNjYWxlPTEiPjxzdHlsZSB0eXBlPSJ0ZXh0L2NzcyI-I291dGxvb2sgYXtwYWRkaW5nOjB9Ym9keXttYXJnaW46MDtwYWRkaW5nOjA7LXdlYmtpdC10ZXh0LXNpemUtYWRqdXN0OjEwMCU7LW1zLXRleHQtc2l6ZS1hZGp1c3Q6MTAwJX10YWJsZSx0ZHtib3JkZXItY29sbGFwc2U6Y29sbGFwc2U7bXNvLXRhYmxlLWxzcGFjZTowcHQ7bXNvLXRhYmxlLXJzcGFjZTowcHR9aW1ne2JvcmRlcjowO2hlaWdodDphdXRvO2xpbmUtaGVpZ2h0OjEwMCU7b3V0bGluZTowO3RleHQtZGVjb3JhdGlvbjpub25lOy1tcy1pbnRlcnBvbGF0aW9uLW1vZGU6YmljdWJpY31we2Rpc3BsYXk6YmxvY2s7bWFyZ2luOjEzcHggMH08L3N0eWxlPjwhLS1baWYgbXNvXT4NCiAgICA8bm9zY3JpcHQ-DQogICAgPHhtbD4NCiAgICA8bzpPZmZpY2VEb2N1bWVudFNldHRpbmdzPg0KICAgICAgPG86QWxsb3dQTkcvPg0KICAgICAgPG86UGl4ZWxzUGVySW5jaD45NjwvbzpQaXhlbHNQZXJJbmNoPg0KICAgIDwvbzpPZmZpY2VEb2N1bWVudFNldHRpbmdzPg0KICAgIDwveG1sPg0KICAgIDwvbm9zY3JpcHQ-DQogICAgPCFbZW5kaWZdLS0-PCEtLVtpZiBsdGUgbXNvIDExXT4NCiAgICA8c3R5bGUgdHlwZT0idGV4dC9jc3MiPi5tai1vdXRsb29rLWdyb3VwLWZpeHt3aWR0aDoxMDAlIWltcG9ydGFudH08L3N0eWxlPg0KICAgIDwhW2VuZGlmXS0tPjxzdHlsZSB0eXBlPSJ0ZXh0L2NzcyI-QG1lZGlhIG9ubHkgc2NyZWVuIGFuZCAobWluLXdpZHRoOjYwMHB4KXsubWotY29sdW1uLXBlci0xMDB7d2lkdGg6MTAwJSFpbXBvcnRhbnQ7bWF4LXdpZHRoOjEwMCV9Lm1qLWNvbHVtbi1wZXItNTB7d2lkdGg6NTAlIWltcG9ydGFudDttYXgtd2lkdGg6NTAlfS5tai1jb2x1bW4tcHgtOTB7d2lkdGg6OTBweCFpbXBvcnRhbnQ7bWF4LXdpZHRoOjkwcHh9Lm1qLWNvbHVtbi1weC01ODR7d2lkdGg6NTg0cHghaW1wb3J0YW50O21heC13aWR0aDo1ODRweH0ubWotY29sdW1uLXB4LTE0NHt3aWR0aDoxNDRweCFpbXBvcnRhbnQ7bWF4LXdpZHRoOjE0NHB4fS5tai1jb2x1bW4tcHgtTmFOe3dpZHRoOk5hTk5hTiUhaW1wb3J0YW50O21heC13aWR0aDpOYU5OYU4lfS5tai1jb2x1bW4tcHgtMTI4e3dpZHRoOjEyOHB4IWltcG9ydGFudDttYXgtd2lkdGg6MTI4cHh9Lm1qLWNvbHVtbi1wZXItMjV7d2lkdGg6MjUlIWltcG9ydGFudDttYXgtd2lkdGg6MjUlfS5tai1jb2x1bW4tcGVyLTc1e3dpZHRoOjc1JSFpbXBvcnRhbnQ7bWF4LXdpZHRoOjc1JX19PC9zdHlsZT48c3R5bGUgbWVkaWE9InNjcmVlbiBhbmQgKG1pbi13aWR0aDo2MDBweCkiPi5tb3otdGV4dC1odG1sIC5tai1jb2x1bW4tcGVyLTEwMCB7IHdpZHRoOjEwMCUgIWltcG9ydGFudDsgbWF4LXdpZHRoOiAxMDAlOyB9DQoubW96LXRleHQtaHRtbCAubWotY29sdW1uLXBlci01MCB7IHdpZHRoOjUwJSAhaW1wb3J0YW50OyBtYXgtd2lkdGg6IDUwJTsgfQ0KLm1vei10ZXh0LWh0bWwgLm1qLWNvbHVtbi1weC05MCB7IHdpZHRoOjkwcHggIWltcG9ydGFudDsgbWF4LXdpZHRoOiA5MHB4OyB9DQoubW96LXRleHQtaHRtbCAubWotY29sdW1uLXB4LTU4NCB7IHdpZHRoOjU4NHB4ICFpbXBvcnRhbnQ7IG1heC13aWR0aDogNTg0cHg7IH0NCi5tb3otdGV4dC1odG1sIC5tai1jb2x1bW4tcHgtMTQ0IHsgd2lkdGg6MTQ0cHggIWltcG9ydGFudDsgbWF4LXdpZHRoOiAxNDRweDsgfQ0KLm1vei10ZXh0LWh0bWwgLm1qLWNvbHVtbi1weC1OYU4geyB3aWR0aDpOYU5OYU4lICFpbXBvcnRhbnQ7IG1heC13aWR0aDogTmFOTmFOJTsgfQ0KLm1vei10ZXh0LWh0bWwgLm1qLWNvbHVtbi1weC0xMjggeyB3aWR0aDoxMjhweCAhaW1wb3J0YW50OyBtYXgtd2lkdGg6IDEyOHB4OyB9DQoubW96LXRleHQtaHRtbCAubWotY29sdW1uLXBlci0yNSB7IHdpZHRoOjI1JSAhaW1wb3J0YW50OyBtYXgtd2lkdGg6IDI1JTsgfQ0KLm1vei10ZXh0LWh0bWwgLm1qLWNvbHVtbi1wZXItNzUgeyB3aWR0aDo3NSUgIWltcG9ydGFudDsgbWF4LXdpZHRoOiA3NSU7IH08L3N0eWxlPjxzdHlsZSB0eXBlPSJ0ZXh0L2NzcyI-DQogICAgICAgICAgICAgICAgDQoNCiAgICAgICAgICAgICAgICAgICAgDQogICAgICAgICAgICAgICAgDQoNCiAgICAgICAgICAgICAgICAgICAgDQogICAgICAgICAgICAgICAgDQoNCiAgICAgICAgICAgICAgICAgICAgDQogICAgICAgICAgICAgICAgDQoNCiAgICAgICAgICAgICAgICAgICAgDQogICAgICAgICAgICAgICAgDQoNCiAgICAgICAgICAgICAgICAgICAgDQogICAgICAgICAgICAgICAgDQoNCiAgICAgICAgICAgICAgICAgICAgDQogICAgICAgICAgICAgICAgDQoNCiAgICAgICAgICAgICAgICAgICAgDQogICAgICAgICAgICAgICAgDQoNCiAgICAgICAgICAgICAgICAgICAgDQogICAgICAgICAgICAgICAgDQoNCiAgICAgICAgICAgICAgICAgICAgDQogICAgICAgICAgICAgICAgDQoNCiAgICAgICAgICAgICAgICAgICAgDQogICAgICAgICAgICAgICAgDQoNCiAgICAgICAgICAgICAgICAgICAgDQogICAgICAgICAgICAgICAgDQoNCiAgICAgICAgICAgICAgICAgICAgDQogICAgICAgICAgICAgICAgDQoNCiAgICAgICAgICAgICAgICAgICAgDQogICAgICAgICAgICAgICAgDQoNCiAgICAgICAgICAgICAgICAgICAgDQogICAgICAgICAgICAgICAgDQoNCiAgICAgICAgICAgICAgICAgICAgDQogICAgICAgICAgICAgICAgDQoNCiAgICAgICAgICAgICAgICAgICAgDQogICAgICAgICAgICAgICAgDQoNCiAgICAgICAgICAgICAgICAgICAgDQogICAgICAgICAgICAgICAgDQoNCiAgICAgICAgICAgICAgICAgICAgDQogICAgICAgICAgICAgICAgDQogICAgICAgICAgICAgICAgDQogICAgICAgICAgICAgICAgDQogICAgICAgICAgICAgICAgDQogICAgICAgICAgICAgICAgDQogICAgICAgICAgICBAbWVkaWEgKHByZWZlcnMtY29sb3Itc2NoZW1lOmRhcmspey5yaW8taGVhZGVyLTE3OCwucmlvLWhlYWRlci0xNzggKnsNCiAgICAgICAgICAgIGNvbG9yOiAjRkZGRkZGICFpbXBvcnRhbnQ7DQogICAgICAgICAgICB9fUBtZWRpYSAocHJlZmVycy1jb2xvci1zY2hlbWU6ZGFyayl7LnJpby1idXR0b24tMjY4ew0KICAgICAgICAgIGNvbG9yOiAjNTY1OTU5ICFpbXBvcnRhbnQ7DQogICAgICAgICAgYmFja2dyb3VuZDogI0ZFRkVGRSAhaW1wb3J0YW50Ow0KICAgICAgICAgIGJvcmRlci1jb2xvcjogI0Q1RDlEOSAhaW1wb3J0YW50Ow0KICAgICAgICAgIH0ucmlvLWJ1dHRvbi1jdGEtc2Vjb25kYXJ5ew0KICAgICAgICAgIGJhY2tncm91bmQ6ICNGRUZFRkUgIWltcG9ydGFudDsNCiAgICAgICAgICB9fVtkYXRhLW9nc2NdIC5yaW8tYnV0dG9uLTI2OHsNCiAgICAgICAgY29sb3I6ICM1NjU5NTkgIWltcG9ydGFudDsNCiAgICAgICAgYmFja2dyb3VuZDogI0ZFRkVGRSAhaW1wb3J0YW50Ow0KICAgICAgICBib3JkZXItY29sb3I6ICNENUQ5RDkgIWltcG9ydGFudDsNCiAgICAgICAgfVtkYXRhLW9nc2NdIC5yaW8tYnV0dG9uLWN0YS1zZWNvbmRhcnl7DQogICAgICAgIGJhY2tncm91bmQ6ICNGRUZFRkUgIWltcG9ydGFudDsNCiAgICAgICAgfUBtZWRpYSAocHJlZmVycy1jb2xvci1zY2hlbWU6ZGFyayl7LnJpby1idXR0b24tMjY5ew0KICAgICAgICAgIGNvbG9yOiAjMEYxMTExICFpbXBvcnRhbnQ7DQogICAgICAgICAgYmFja2dyb3VuZDogI0ZGRDkxNiAhaW1wb3J0YW50Ow0KICAgICAgICAgIGJvcmRlci1jb2xvcjogI0ZDRDIwMCAhaW1wb3J0YW50Ow0KICAgICAgICAgIH0ucmlvLWJ1dHRvbi1jdGEtcHJpbWFyeXsNCiAgICAgICAgICBiYWNrZ3JvdW5kOiAjRkZEOTE2ICFpbXBvcnRhbnQ7DQogICAgICAgICAgfX1bZGF0YS1vZ3NjXSAucmlvLWJ1dHRvbi0yNjl7DQogICAgICAgIGNvbG9yOiAjMEYxMTExICFpbXBvcnRhbnQ7DQogICAgICAgIGJhY2tncm91bmQ6ICNGRkQ5MTYgIWltcG9ydGFudDsNCiAgICAgICAgYm9yZGVyLWNvbG9yOiAjRkNEMjAwICFpbXBvcnRhbnQ7DQogICAgICAgIH1bZGF0YS1vZ3NjXSAucmlvLWJ1dHRvbi1jdGEtcHJpbWFyeXsNCiAgICAgICAgYmFja2dyb3VuZDogI0ZGRDkxNiAhaW1wb3J0YW50Ow0KICAgICAgICB9QG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTpkYXJrKXsucmlvLWhlYWRlci0xNzksLnJpby1oZWFkZXItMTc5ICp7DQogICAgICAgICAgICBjb2xvcjogI0ZGRkZGRiAhaW1wb3J0YW50Ow0KICAgICAgICAgICAgfX1AbWVkaWEgKHByZWZlcnMtY29sb3Itc2NoZW1lOmRhcmspey5yaW8taGVhZGVyLTE4MCwucmlvLWhlYWRlci0xODAgKnsNCiAgICAgICAgICAgIGNvbG9yOiAjRkZGRkZGICFpbXBvcnRhbnQ7DQogICAgICAgICAgICB9fUBtZWRpYSAocHJlZmVycy1jb2xvci1zY2hlbWU6ZGFyayl7LnJpby1oZWFkZXItMTgxLC5yaW8taGVhZGVyLTE4MSAqew0KICAgICAgICAgICAgY29sb3I6ICNGRkZGRkYgIWltcG9ydGFudDsNCiAgICAgICAgICAgIH19QG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTpkYXJrKXsucmlvLXRleHQtMjE4ew0KICAgICAgICAgICAgY29sb3I6ICNGRkZGRkY7DQogICAgICAgICAgICB9fUBtZWRpYSAocHJlZmVycy1jb2xvci1zY2hlbWU6ZGFyayl7LnJpby1idXR0b24tMjcwew0KICAgICAgICAgIGNvbG9yOiAjMEYxMTExICFpbXBvcnRhbnQ7DQogICAgICAgICAgYmFja2dyb3VuZDogI0ZGRDkxNiAhaW1wb3J0YW50Ow0KICAgICAgICAgIGJvcmRlci1jb2xvcjogI0ZDRDIwMCAhaW1wb3J0YW50Ow0KICAgICAgICAgIH0ucmlvLWJ1dHRvbi1jdGEtcHJpbWFyeXsNCiAgICAgICAgICBiYWNrZ3JvdW5kOiAjRkZEOTE2ICFpbXBvcnRhbnQ7DQogICAgICAgICAgfX1bZGF0YS1vZ3NjXSAucmlvLWJ1dHRvbi0yNzB7DQogICAgICAgIGNvbG9yOiAjMEYxMTExICFpbXBvcnRhbnQ7DQogICAgICAgIGJhY2tncm91bmQ6ICNGRkQ5MTYgIWltcG9ydGFudDsNCiAgICAgICAgYm9yZGVyLWNvbG9yOiAjRkNEMjAwICFpbXBvcnRhbnQ7DQogICAgICAgIH1bZGF0YS1vZ3NjXSAucmlvLWJ1dHRvbi1jdGEtcHJpbWFyeXsNCiAgICAgICAgYmFja2dyb3VuZDogI0ZGRDkxNiAhaW1wb3J0YW50Ow0KICAgICAgICB9QG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTpkYXJrKXsucmlvLXRleHQtMjE5ew0KICAgICAgICAgICAgY29sb3I6ICNGRkZGRkY7DQogICAgICAgICAgICB9fUBtZWRpYSAocHJlZmVycy1jb2xvci1zY2hlbWU6ZGFyayl7LnJpby10ZXh0LTIyMHsNCiAgICAgICAgICAgIGNvbG9yOiAjRkZGRkZGOw0KICAgICAgICAgICAgfX1AbWVkaWEgKHByZWZlcnMtY29sb3Itc2NoZW1lOmRhcmspey5yaW8tdGV4dC0yMjF7DQogICAgICAgICAgICBjb2xvcjogI0ZGRkZGRjsNCiAgICAgICAgICAgIH19QG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTpkYXJrKXsucmlvLXRleHQtMjIyew0KICAgICAgICAgICAgY29sb3I6ICNGRkZGRkY7DQogICAgICAgICAgICB9fUBtZWRpYSAocHJlZmVycy1jb2xvci1zY2hlbWU6ZGFyayl7LnJpby10ZXh0LTIyM3sNCiAgICAgICAgICAgIGNvbG9yOiAjRkZGRkZGOw0KICAgICAgICAgICAgfX1AbWVkaWEgKHByZWZlcnMtY29sb3Itc2NoZW1lOmRhcmspey5yaW8tdGV4dC0yMjR7DQogICAgICAgICAgICBjb2xvcjogI0ZGRkZGRjsNCiAgICAgICAgICAgIH19QG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTpkYXJrKXsucmlvLXRleHQtMjI1ew0KICAgICAgICAgICAgY29sb3I6ICNGRkZGRkY7DQogICAgICAgICAgICB9fUBtZWRpYSAocHJlZmVycy1jb2xvci1zY2hlbWU6ZGFyayl7LnJpby10ZXh0LTIyNnsNCiAgICAgICAgICAgIGNvbG9yOiAjRkZGRkZGOw0KICAgICAgICAgICAgfX1AbWVkaWEgKHByZWZlcnMtY29sb3Itc2NoZW1lOmRhcmspey5yaW8tdGV4dC0yMjd7DQogICAgICAgICAgICBjb2xvcjogI0ZGRkZGRjsNCiAgICAgICAgICAgIH19QG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTpkYXJrKXsucmlvLXRleHQtMjI4ew0KICAgICAgICAgICAgY29sb3I6ICNGRkZGRkY7DQogICAgICAgICAgICB9fUBtZWRpYSAocHJlZmVycy1jb2xvci1zY2hlbWU6ZGFyayl7LnJpby10ZXh0LTIyOXsNCiAgICAgICAgICAgIGNvbG9yOiAjRkZGRkZGOw0KICAgICAgICAgICAgfX1AbWVkaWEgKHByZWZlcnMtY29sb3Itc2NoZW1lOmRhcmspey5yaW8tdGV4dC0yMzB7DQogICAgICAgICAgICBjb2xvcjogI0ZGRkZGRjsNCiAgICAg\n… [truncated for demo: 100,027 chars total]"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782542224246_kdbtmh",
+          "segmentId": "seg_69",
+          "toolCallId": "call_01_qGE8gWXKnDf9mpFdY4wR2778",
+          "status": "success",
+          "output": "{\"account\":\"youneswolf@gmail.com\",\"count\":5,\"nextPageToken\":\"14105740906299186628\",\"threads\":[{\"id\":\"19f0785a5a5ebf49\",\"date\":\"2026-06-27 08:20\",\"from\":\"\\\"Amazon.sa\\\" <shipment-tracking@amazon.sa>\",\"subject\":\"Out for delivery: ⁦2⁩ \\\"Fniiva 50 Pack Disposable...\\\" and ⁦3⁩ more items\",\"labels\":[\"CATEGORY_UPDATES\",\"INBOX\"],\"messageCount\":1},{\"id\":\"19f0783772b0564c\",\"date\":\"2026-06-27 08:18\",\"from\":\"\\\"Amazon.sa\\\" <shipment-tracking@amazon.sa>\",\"subject\":\"Out for delivery: ⁦3⁩ \\\"Clorox Original Toilet Bowl...\\\"\",\"labels\":[\"CATEGORY_UPDATES\",\"INBOX\"],\"messageCount\":1},{\"id\":\"19f07825066eb8e0\",\"date\":\"2026-06-27 08:16\",\"from\":\"\\\"Atlantis, The Palm through Booking.com\\\" <6753208194-kpzx.wn4j.72rc.9k1q@property.booking.com>\",\"subject\":\"We Have A Special Offer For You #294187356\",\"labels\":[\"CATEGORY_PERSONAL\",\"INBOX\"],\"messageCount\":1},{\"id\":\"19f078208ad0ee9f\",\"date\":\"2026-06-27 08:31\",\"from\":\"\\\"Amazon.sa\\\" <shipment-tracking@amazon.sa>\",\"subject\":\"Out for delivery: \\\"Coca-Cola Zero, PET Pack of...\\\"\",\"labels\":[\"CATEGORY_UPDATES\",\"INBOX\"],\"messageCount\":7},{\"id\":\"19f077c72343a92e\",\"date\":\"2026-06-27 08:10\",\"from\":\"Sahem Platform <noreply@ksrelief.org>\",\"subject\":\"Sahem - Donation Confirmation\",\"labels\":[\"CATEGORY_UPDATES\",\"INBOX\"],\"messageCount\":1}]}"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782542224246_kdbtmh",
+          "segmentId": "seg_70",
+          "toolCallId": "call_02_ZHD7Mcr4nCI0TqIZfNpF6689",
+          "status": "success",
+          "output": "{\"account\":\"younes@wolffi.sh\",\"count\":5,\"nextPageToken\":\"06068123419957927727\",\"threads\":[{\"id\":\"19f062a7ad99df15\",\"date\":\"2026-06-27 02:01\",\"from\":\"Anthropic Team <notice@email.anthropic.com>\",\"subject\":\"[No Action Required]: Higher rate limits on the Claude API\",\"labels\":[\"IMPORTANT\",\"CATEGORY_UPDATES\",\"INBOX\"],\"messageCount\":1},{\"id\":\"19f0554503eb152f\",\"date\":\"2026-06-26 22:07\",\"from\":\"Product Hunt <hello@producthunt.com>\",\"subject\":\"Zac Zuo hunted \\\"Agent Arena\\\"\",\"labels\":[\"CATEGORY_PROMOTIONS\",\"IMPORTANT\",\"INBOX\"],\"messageCount\":1},{\"id\":\"19f054291597d4ce\",\"date\":\"2026-06-26 21:47\",\"from\":\"PixVerse <invoice+statements+acct_1QI1glFp8xjrNETm@stripe.com>\",\"subject\":\"Your receipt from PixVerse #2837-6415\",\"labels\":[\"IMPORTANT\",\"CATEGORY_UPDATES\",\"INBOX\"],\"messageCount\":1},{\"id\":\"19f053f87375f307\",\"date\":\"2026-06-26 21:44\",\"from\":\"noreply@mail.pixverse.ai\",\"subject\":\"Register to PixVerse\",\"labels\":[\"IMPORTANT\",\"CATEGORY_UPDATES\",\"INBOX\"],\"messageCount\":1},{\"id\":\"19f04b63f1730b98\",\"date\":\"2026-06-26 19:14\",\"from\":\"Product Hunt Daily <hello@digest.producthunt.com>\",\"subject\":\"😸 Bring your own brain\",\"labels\":[\"CATEGORY_PROMOTIONS\",\"IMPORTANT\",\"INBOX\"],\"messageCount\":1}]}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782542224246_kdbtmh",
+          "segmentId": "seg_71",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782542224246_kdbtmh",
+          "segmentId": "seg_72",
+          "delta": "Here's the rundown — one unread, nothing you need to act on:\n\n### 🔴 Unread (1)\n\n| Account | From | Subject | \n|---------|------|---------|\n| youneswolf@gmail.com | Amazon.sa | **Out for delivery: \"Coca-Cola Zero, PET Pack of...\"** — arriving today, Order #171-8241097-5573264 |\n\n### ✅ Recent (already read, last 24h)\n\n**youneswolf@gmail.com:**\n- Amazon.sa — Out for delivery: Fniiva 50-pack disposable bowls, 3 more items (8:20 AM)\n- Amazon.sa — Out for delivery: Clorox toilet bowl cleaner x3 (8:18 AM)\n- Atlantis, The Palm — upsell offer (8:16 AM)\n- Sahem/KSRelief — SAR 30 donation confirmed (8:10 AM)\n\n**younes@wolffi.sh:**\n- Anthropic — higher rate limits on Claude API (2 AM, no action)\n- Product Hunt — \"Agent Arena\" launch, PixVerse receipts, PH Daily digest (last night)\n\n### Verdict\n\nYou didn't miss anything important. Morning Amazon spam, a donation receipt, last night's PH/PixVerse noise. The Coke Zero is on its way — that's the only unread. You want me to mark it read or leave it so it reminds you when the delivery lands? 🐟"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1782542224246_kdbtmh",
+          "segmentId": "seg_374",
+          "stopReason": "end_turn",
+          "iterationCount": 4,
+          "reasoningContent": "Alright, let me summarize the email status for Younes.\n\n**Current unread (1):**\n- youneswolf@gmail.com: 1 unread — Amazon.sa \"Out for delivery: Coca-Cola Zero, PET Pack of...\" — arriving today, Order #171-8241097-5573264. Last message in thread at 8:31 AM.\n\n**younes@wolffi.sh: 0 unread.**\n\n**Recent emails (last 24h):**\n\nyouneswolf@gmail.com:\n1. Amazon.sa — \"Out for delivery: Coca-Cola Zero\" (currently unread, 8:31 AM)\n2. Amazon.sa — \"Out for delivery: 2 'Fniiva 50 Pack Disposable...' and 3 more items\" (8:20 AM) — already read\n3. Amazon.sa — \"Out for delivery: 3 'Clorox Original Toilet Bowl...'\" (8:18 AM) — already read\n4. Atlantis, The Palm — \"We Have A Special Offer For You\" (8:16 AM) — already read (upsell)\n5. Sahem Platform — \"Donation Confirmation\" (8:10 AM) — already read (SAR 30 to KSRelief)\n\nyounes@wolffi.sh:\n1. Anthropic Team — \"Higher rate limits on the Claude API\" (2:01 AM) — no action needed\n2. Product Hunt — \"Zac Zuo hunted Agent Arena\" (10:07 PM)\n3. PixVerse — receipt from Stripe (9:47 PM)\n4. PixVerse — Register to PixVerse (9:44 PM)\n5. Product Hunt Daily — \"Bring your own brain\" (7:14 PM)\n\nSo nothing critical missed. The only unread is a Coke Zero delivery update. The user should know: you missed one Amazon delivery notification for Coke Zero, plus the morning wave of Amazon deliveries (all already read) and the usual Product Hunt/PixVerse noise on wolffi.sh.\n\nThis is a clean status, nothing urgent. No action needed except maybe marking that one as read if they want."
+        }
+      ],
+      "toolTimings": {
+        "call_00_jIl9xNtrQJvVVEoHelhT8058": {
+          "startedAt": 1782542234383,
+          "endedAt": 1782542234593
+        },
+        "call_00_bi7RePpT9u9LsjwTk7Ds3711": {
+          "startedAt": 1782542237977,
+          "endedAt": 1782542239406
+        },
+        "call_01_3DKPkHbYN2Ra0NT46Viz9188": {
+          "startedAt": 1782542237977,
+          "endedAt": 1782542240057
+        },
+        "call_00_bk1mnnonfGYUaTMrGgvU8433": {
+          "startedAt": 1782542244655,
+          "endedAt": 1782542246656
+        },
+        "call_01_qGE8gWXKnDf9mpFdY4wR2778": {
+          "startedAt": 1782542244816,
+          "endedAt": 1782542248638
+        },
+        "call_02_ZHD7Mcr4nCI0TqIZfNpF6689": {
+          "startedAt": 1782542244816,
+          "endedAt": 1782542250211
+        }
+      },
+      "stopReason": "end_turn"
+    }
+  ],
+  "channel": "telegram",
+  "stats": {
+    "allTime": {
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 6,
+      "inputTokens": 14,
+      "outputTokens": 5611,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "cost": 0.010826299999999999,
+      "processingMs": 43637,
+      "elapsedMs": 43637,
+      "apiMs": 35782,
+      "endedAt": 1782542267881,
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro"
+    },
+    "lastTurn": {
+      "endedAt": 1782542267881,
+      "elapsedMs": 43637,
+      "apiMs": 35782,
+      "apiCalls": 1,
+      "toolCalls": 6,
+      "inputTokens": 14,
+      "outputTokens": 5611,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro",
+      "cost": 0.010826299999999999
+    },
+    "meter": {
+      "contextTokens": 18025,
+      "contextBudget": 1000000,
+      "compactionAt": 725424,
+      "model": "deepseek-v4-pro"
+    }
+  }
+}

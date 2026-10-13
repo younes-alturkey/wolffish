@@ -338,7 +338,10 @@ export function ModelSwitch({
   return (
     <span
       ref={rootRef}
-      className="relative inline-flex shrink-0"
+      // `max-sm:static` is deliberate: below 640px the card must not be
+      // positioned against this pill (it would overflow the phone's edge) but
+      // against the composer, which it then spans edge to edge.
+      className="relative inline-flex shrink-0 max-sm:static"
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
     >
@@ -372,14 +375,19 @@ export function ModelSwitch({
       {cardVisible && (
         <div
           role="dialog"
-          className="border-border bg-surface absolute bottom-full inset-s-0 z-50 mb-2 w-104 max-w-[90vw] rounded-xl border shadow-xl"
+          className={cn(
+            'border-border bg-surface absolute bottom-full inset-s-0 z-50 mb-2 w-104 max-w-[90vw] rounded-xl border shadow-xl',
+            // Phones: span the composer (see the wrapper's `max-sm:static`)
+            // and scroll inside rather than running off the bottom.
+            'max-sm:inset-e-0 max-sm:w-auto max-sm:max-w-none max-sm:max-h-[60vh] max-sm:overflow-y-auto'
+          )}
         >
           {showControls && (
             <div className="border-border flex flex-col gap-1.5 border-b px-3 py-2.5">
               <div
                 role="group"
                 aria-label={t('chat.reasoning.ariaLabel')}
-                className="flex items-center gap-1.5"
+                className="flex items-center gap-1.5 max-sm:flex-wrap"
               >
                 <span className="text-muted w-14 shrink-0 text-[10px] font-medium tracking-wide uppercase">
                   {t('chat.reasoning.label')}
@@ -414,7 +422,7 @@ export function ModelSwitch({
               <div
                 role="group"
                 aria-label={t('chat.modePicker.ariaLabel')}
-                className="flex items-center gap-1.5"
+                className="flex items-center gap-1.5 max-sm:flex-wrap"
               >
                 <span className="text-muted w-14 shrink-0 text-[10px] font-medium tracking-wide uppercase">
                   {t('chat.modePicker.label')}

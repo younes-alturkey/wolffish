@@ -1,0 +1,245 @@
+---
+title: "The Event Bus (Corpus)"
+description: "How brain modules communicate through typed pub/sub events"
+---
+
+# How Modules Communicate
+
+The corpus callosum connects all brain regions. Modules broadcast "this happened" notifications through typed events on the corpus — no module needs to know who is listening. When something needs a direct request/response (the prefrontal asking the cerebellum for the capability index, or the cortex for search results), that goes through module references injected at startup, not the bus. This keeps the system modular, inspectable, and easy to extend.
+
+## Architecture
+
+Built on [mitt](https://github.com/developit/mitt) — a lightweight typed event emitter (200 bytes). Every module receives the corpus singleton in its constructor:
+
+```typescript
+class MyModule {
+  constructor(private corpus: Corpus) {
+    this.corpus.on('message.received', this.handleInput.bind(this))
+  }
+}
+```
+
+The corpus is initialized first during startup and passed to all other modules. Notifications always ride the bus; the few direct request/response paths are references handed in at startup, never `import`s between modules.
+
+## Usage
+
+```typescript
+// Emit an event
+corpus.emit('tool.called', {
+  taskId: 'TASK-42',
+  tool: 'shell_exec',
+  args: { command: 'ls -la' }
+})
+
+// Listen for an event
+corpus.on('tool.completed', (payload) => {
+  console.log(`${payload.tool} finished in ${payload.durationMs}ms`)
+})
+```
+
+<Info>
+  The corpus itself installs an internal wildcard handler on construction — every event that flows through it is captured, buffered, and flushed to the daily log files. Modules get logging for free.
+</Info>
+
+## Event Categories
+
+Over 80 typed events are defined in the `CorpusEvents` type map. The main categories:
+
+### Message & Context Events
+
+| Event | Emitted By | Payload |
+|---|---|---|
+| `message.received` | Agent | `{ content, timestamp }` |
+| `message.classified` | Agent | `{ type, complexity }` |
+| `context.built` | Prefrontal | `{ tokenCount, tokenBudget, sectionsIncluded }` |
+| `tools.filtered` | Agent | `{ total, kept, dropped }` |
+| `compaction.started` | Agent | `{ messagesCount, force? }` |
+| `compaction.applied` | Agent | `{ tokensSaved, targetsCount }` |
+
+### LLM Events
+
+| Event | Emitted By | Payload |
+|---|---|---|
+| `llm.request` | Thalamus | `{ provider, model }` |
+| `llm.response` | Thalamus | `{ provider, inputTokens, outputTokens, cacheCreationTokens, cacheReadTokens, durationMs }` |
+| `llm.error` | Thalamus | `{ provider, error }` |
+| `llm.retry` | Thalamus | `{ provider, attempt, delayMs, errorClass }` |
+| `turn.usage` | Agent | `{ provider, model, iterations, toolCalls, inputTokens, outputTokens, cacheHitRate, cost, ... }` |
+| `usage.recorded` | Usage ledger | `{ provider, model, inputTokens, outputTokens, cost }` |
+
+`turn.usage` is the whole-turn roll-up, with the cache split priced separately so caching wins are measurable straight from the corpus log.
+
+### Tool & Task Events
+
+| Event | Emitted By | Payload |
+|---|---|---|
+| `tool.called` | Motor | `{ taskId, tool, args }` |
+| `tool.completed` | Motor | `{ taskId, tool, durationMs }` |
+| `tool.failed` | Motor | `{ taskId, tool, error, attempt }` |
+| `task.created` | Motor | `{ taskId, name, stepsTotal }` |
+| `task.stepCompleted` | Motor | `{ taskId, step, total }` |
+| `task.completed` | Motor | `{ taskId, durationMs }` |
+| `task.failed` | Motor | `{ taskId, failedAt, error }` |
+| `task.stopped` | Motor | `{ taskId, stoppedAt }` |
+
+### Safety Events
+
+| Event | Emitted By | Payload |
+|---|---|---|
+| `safety.allowed` | Amygdala | `{ tool, args }` |
+| `safety.blocked` | Amygdala | `{ tool, args, reason }` |
+| `safety.confirmNeeded` | Amygdala | `{ id, tool, args, reason }` |
+| `safety.approved` | Amygdala | `{ id }` |
+| `safety.denied` | Amygdala | `{ id }` |
+| `safety.autoApproved` | Amygdala | `{ id, tool, args, level, reason }` |
+
+### Memory & Learning Events
+
+| Event | Emitted By | Payload |
+|---|---|---|
+| `memory.episodeSaved` | Hippocampus | `{ date, section }` |
+| `memory.consolidated` | Brainstem | `{ week }` |
+| `memory.knowledgeUpdated` | Hippocampus | `{ file, fact }` |
+| `feedback.recorded` | Basal Ganglia | `{ action, outcome }` |
+
+### Health & Index Events
+
+| Event | Emitted By | Payload |
+|---|---|---|
+| `health.warning` | Hypothalamus | `{ resource, usage, threshold }` |
+| `health.critical` | Hypothalamus | `{ resource, message }` |
+| `index.reindexStarted` | Cortex | `{ startedAt, total }` |
+| `index.reindexProgress` | Cortex | `{ done, total }` |
+| `index.reindexed` | Cortex | `{ filesCount, durationMs }` |
+
+### Scheduler Events
+
+| Event | Emitted By | Payload |
+|---|---|---|
+| `brainstem.jobStarted` | Brainstem | `{ job, type, label, timestamp }` |
+| `brainstem.jobCompleted` | Brainstem | `{ job, type, label, timestamp, durationMs }` |
+| `brainstem.jobFailed` | Brainstem | `{ job, type, label, timestamp, error }` |
+| `brainstem.jobSkipped` | Brainstem | `{ job, label, reason }` |
+| `brainstem.jobCatchup` | Brainstem | `{ job, label, missedAt }` |
+| `brainstem.schedulerReloaded` | Brainstem | `{ jobs, timestamp }` |
+
+Beyond these, whole families cover dependency installation (`dependency.*`), channels (`telegram.*`, `whatsapp.*`), voice and speech (`voice.*`, `stt.*`), file uploads (`upload.*`), and conversation switches (`conversation.changed`). All follow the same pattern: typed payload, automatic logging.
+
+## Event Logging
+
+Every event is logged to daily markdown files at `brain/corpus/YYYY-MM-DD.log.md`. A 2-second buffer flush batches writes for performance — each event lands as a timestamped block:
+
+```markdown
+## 09:15:02
+- message.received → {"content":"What PRs need review?","timestamp":"2026-07-03T09:15:02.114Z"}
+
+## 09:15:02
+- context.built → {"tokenCount":5012,"tokenBudget":200000,"sectionsIncluded":["identity","device","prefrontal","capabilities","memory_map"]}
+
+## 09:15:04
+- tool.called → {"taskId":"TASK-89","tool":"github_list_prs","args":{"state":"open"}}
+
+## 09:15:05
+- safety.allowed → {"tool":"github_list_prs","args":{"state":"open"}}
+
+## 09:15:06
+- tool.completed → {"taskId":"TASK-89","tool":"github_list_prs","durationMs":1204}
+
+## 09:15:07
+- memory.episodeSaved → {"date":"2026-07-03","section":"09:15"}
+```
+
+Old logs are automatically cleaned after 7 days to prevent unbounded disk growth. That purge is by design — anything worth keeping longer already persists elsewhere (episodes, weekly summaries, `run-history.md`), and the logs themselves are indexed by the cortex while they exist.
+
+<Tip>
+  Read the corpus logs when debugging unexpected behavior. They show you the exact sequence of events that occurred — which module did what and when.
+</Tip>
+
+## Subscribing and Unsubscribing
+
+```typescript
+// Subscribe — returns an unsubscribe function
+const off = corpus.on('task.completed', (payload) => {
+  console.log('Task done:', payload.taskId)
+})
+
+// Unsubscribe when done
+off()
+```
+
+The turn runner uses this pattern to subscribe to events for the duration of a turn, then unsubscribes in the `finally` block.
+
+## Adding New Events
+
+To add a new event type:
+
+1. Add the event name and its payload type to the `CorpusEvents` type map in `src/main/runtime/corpus.ts`
+2. Emit it from the relevant module
+3. Subscribe to it from any module that needs to react
+
+The event is automatically logged by the wildcard handler — no extra wiring needed.
+
+## Design Benefits
+
+The event bus architecture provides:
+
+- **Module independence**: modules can be developed, tested, and upgraded independently
+- **Full observability**: every interaction is logged and timestamped
+- **Easy extension**: new modules subscribe to existing events without modifying producers
+- **Testability**: mock the corpus in tests and verify events are emitted correctly
+
+## Practical Example: Hypothalamus Health Monitoring
+
+The hypothalamus demonstrates how a module uses corpus to monitor the entire system without importing any other module:
+
+```typescript
+class Hypothalamus {
+  private failureCount = 0
+  private lastContextTokens = 0
+
+  constructor(private corpus: Corpus) {
+    // Listen for problems from other modules
+    corpus.on('llm.error', () => {
+      this.failureCount++
+      if (this.failureCount > 5) {
+        corpus.emit('health.warning', {
+          resource: 'llm',
+          usage: this.failureCount,
+          threshold: 5
+        })
+      }
+    })
+
+    corpus.on('context.built', (payload) => {
+      this.lastContextTokens = payload.tokenCount
+      if (payload.tokenCount > payload.tokenBudget * 0.9) {
+        corpus.emit('health.warning', {
+          resource: 'context',
+          usage: payload.tokenCount,
+          threshold: payload.tokenBudget
+        })
+      }
+    })
+
+    corpus.on('tool.failed', (payload) => {
+      if (payload.attempt >= 3) {
+        corpus.emit('health.critical', {
+          resource: 'tool',
+          message: `${payload.tool}: max retries exceeded`
+        })
+      }
+    })
+
+    // Reset failure count on success
+    corpus.on('llm.response', () => {
+      this.failureCount = 0
+    })
+  }
+}
+```
+
+The hypothalamus never touches the thalamus, motor, or prefrontal modules directly. It observes their behavior through events and raises its own events when thresholds are crossed. Any module can then react to health warnings — the UI can show an indicator, the brainstem can trigger a diagnostic job, and the prefrontal can include health context in the next prompt.
+
+<Warning>
+  Event handlers should be fast and non-blocking. Heavy work triggered by an event should be deferred (setTimeout, queueMicrotask) to avoid slowing down the event producer.
+</Warning>

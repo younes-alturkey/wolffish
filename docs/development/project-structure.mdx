@@ -1,0 +1,153 @@
+---
+title: "Project Structure"
+description: "How the codebase is organized — one thing per folder"
+---
+
+# One Thing per Folder
+
+The codebase follows one rule: **one thing per folder, file matches folder name**.
+
+## Top-Level Layout
+
+```
+src/
+├── main/                  Electron main process
+│   ├── index.ts           IPC handlers — the entry point
+│   ├── channels/          Telegram, WhatsApp, Electron
+│   ├── runtime/           The 15-module brain
+│   ├── workspace/         ~/.wolffish management
+│   ├── conversations/     SQLite conversation store
+│   ├── uploads/           File processing
+│   └── {service}/         github/, google/, notion/, ollama/, etc.
+├── preload/               contextBridge (IPC types)
+├── renderer/src/          React frontend
+│   ├── pages/             One folder per screen
+│   ├── components/        core/ (primitives) + common/ (composed)
+│   ├── providers/         React context (Theme, Locale, Flow)
+│   ├── hooks/             Custom hooks
+│   └── lib/               i18n, utils
+└── defaults/workspace/    Bundled brain (copied on first launch)
+```
+
+## Folder Convention
+
+Every folder contains exactly one thing. The primary file matches the folder name:
+
+```
+components/core/copy-button/CopyButton.tsx
+hooks/use-online/useOnline.ts
+main/runtime/hippocampus/hippocampus.ts
+main/runtime/corpus/corpus.ts
+pages/chat/Chat.tsx
+providers/theme/ThemeProvider.tsx
+```
+
+No barrel `index.ts` files. Imports always use the explicit file path via aliases:
+
+```typescript
+// Explicit path — always know exactly what you're importing
+import { CopyButton } from '@components/core/copy-button/CopyButton'
+import { useOnline } from '@hooks/use-online/useOnline'
+```
+
+## Provider/Hook Split Pattern
+
+When a file has both a React component and a hook, split them into separate files. This is required for React Fast Refresh to work correctly.
+
+```
+providers/flow/
+├── FlowProvider.tsx    # Component only (renders context provider)
+└── useFlow.ts          # Context creation + hook + types
+```
+
+```typescript
+// useFlow.ts — context, hook, and types
+import { createContext, useContext } from 'react'
+
+export interface FlowContextValue { /* ... */ }
+export const FlowContext = createContext<FlowContextValue | null>(null)
+
+export function useFlow(): FlowContextValue {
+  const ctx = useContext(FlowContext)
+  if (!ctx) throw new Error('useFlow must be used within FlowProvider')
+  return ctx
+}
+```
+
+```typescript
+// FlowProvider.tsx — component only
+import { FlowContext, FlowContextValue } from './useFlow'
+
+export function FlowProvider({ children }) {
+  const value: FlowContextValue = { /* ... */ }
+  return <FlowContext.Provider value={value}>{children}</FlowContext.Provider>
+}
+```
+
+<Tip>
+  Fast Refresh only works when a file exports components OR hooks, not both. Mixing them causes full-page reloads during development.
+</Tip>
+
+## The Runtime Folder
+
+```
+src/main/runtime/
+├── agent.ts              The pipeline orchestrator
+├── corpus/               Event bus (mitt-based)
+├── thalamus/             LLM provider routing
+├── prefrontal/           Context assembly
+├── ras/                  Attention filtering
+├── cortex/               Fast retrieval (FTS5)
+├── hippocampus/          Conversation memory
+├── cerebellum/           Capability discovery
+├── wernicke/             Output parsing
+├── broca/                Response streaming
+├── amygdala/             Safety gate
+├── motor/                Task execution
+├── basalganglia/         Outcome recording
+├── hypothalamus/         System health
+├── brainstem/            Background tasks
+├── insula/               Status introspection
+└── mcp/                  MCP server connections (manager, per-server lifecycle, OAuth)
+```
+
+Each module is a class with a constructor that accepts `{ workspaceRoot, corpus, ... }`. Modules never import each other — they communicate through corpus events.
+
+## Data Location
+
+```
+~/.wolffish/
+├── workspace/
+│   ├── brain/            Runtime state (skills, memory, logs)
+│   ├── soul.md           System personality
+│   ├── user.md           User context
+│   ├── agents.md         Agent definitions
+│   └── config.json       Runtime configuration
+├── conversations.db      SQLite conversation store
+└── uploads/              Processed files
+```
+
+<Info>
+  `~/.wolffish/` is the ENTIRE footprint. The app stores nothing elsewhere. Uninstall is `rm -rf ~/.wolffish/` plus removing the app itself.
+</Info>
+
+## Workspace Initialization
+
+The `defaults/workspace/` directory in the source tree is the template. On first launch:
+
+1. Wolffish checks if `~/.wolffish/workspace/` exists
+2. If it doesn't, copies `defaults/workspace/` into `~/.wolffish/workspace/`
+3. If it does, **nothing happens** — user data is never overwritten
+
+<Warning>
+  Workspace init runs ONLY when `~/.wolffish/workspace/` doesn't exist. If you add new default files to `defaults/workspace/`, existing users won't get them automatically. Handle migrations in code if needed.
+</Warning>
+
+<CardGroup cols={2}>
+  <Card title="Development Setup" icon="terminal" href="/development/setup">
+    Get the dev environment running.
+  </Card>
+  <Card title="Adding Brain Modules" icon="brain" href="/development/adding-brain-modules">
+    Add a new module to the runtime pipeline.
+  </Card>
+</CardGroup>

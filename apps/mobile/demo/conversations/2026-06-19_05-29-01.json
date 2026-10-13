@@ -1,0 +1,368 @@
+{
+  "id": "2026-06-19_05-29-01",
+  "title": "Run a health check on my shell, git,",
+  "model": "",
+  "createdAt": 1781836141685,
+  "updatedAt": 1781836205088,
+  "messages": [
+    {
+      "id": "m_1781836205088_d8519a",
+      "role": "user",
+      "content": "Run a health check on my shell, git, node, internet, and disk",
+      "timestamp": 1781836205088
+    },
+    {
+      "id": "m_1781836205088_df000d",
+      "role": "assistant",
+      "content": "# 🩺 System Health — All Clear 🐟\n\n| System | Status | Detail |\n|--------|--------|--------|\n| **Shell** | ✅ | `/bin/zsh` · 26 PATH entries · Home writable |\n| **Git** | ✅ | `2.47.1` · Younes Alharbi / youneswolf@gmail.com · rebase on pull |\n| **Node** | ✅ | `v24.16.0` installed |\n| **Internet** | ✅ | DNS ~33ms · Connect ~123ms · TTFB ~374ms · HTTP 200 |\n| **Disk** | ✅ | `526 GiB free` (57%) · Wolffish workspace: 298 MB |\n\n**No issues.** The usual suspects eating disk: Library (128G), Documents (19G), .ollama models (13G), and Movies (13G). Your `.ollama` and `.lmstudio` together are ~22 GB — those model files add up quick, but at 57% free you've got breathing room.",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781836141690_ga8wvk",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1781836141690_ga8wvk",
+          "segmentId": "seg_td_1i1yn3r_1a",
+          "toolCallId": "call_td_1i1yn3r_1",
+          "name": "todo_write",
+          "args": {
+            "todos": [
+              {
+                "content": "Run echo",
+                "status": "in_progress"
+              },
+              {
+                "content": "Run git command",
+                "status": "pending"
+              },
+              {
+                "content": "Check node",
+                "status": "pending"
+              },
+              {
+                "content": "Make HTTP request",
+                "status": "pending"
+              },
+              {
+                "content": "Run echo",
+                "status": "pending"
+              }
+            ]
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1781836141690_ga8wvk",
+          "segmentId": "seg_td_1i1yn3r_1b",
+          "toolCallId": "call_td_1i1yn3r_1",
+          "status": "success",
+          "output": "5 todos (0 completed, 1 in progress)\n[\n  {\n    \"content\": \"Run echo\",\n    \"status\": \"in_progress\"\n  },\n  {\n    \"content\": \"Run git command\",\n    \"status\": \"pending\"\n  },\n  {\n    \"content\": \"Check node\",\n    \"status\": \"pending\"\n  },\n  {\n    \"content\": \"Make HTTP request\",\n    \"status\": \"pending\"\n  },\n  {\n    \"content\": \"Run echo\",\n    \"status\": \"pending\"\n  }\n]"
+        },
+        {
+          "kind": "todo",
+          "turnId": "turn_1781836141690_ga8wvk",
+          "segmentId": "seg_td_1i1yn3r_1c",
+          "items": [
+            {
+              "content": "Run echo",
+              "status": "in_progress"
+            },
+            {
+              "content": "Run git command",
+              "status": "pending"
+            },
+            {
+              "content": "Check node",
+              "status": "pending"
+            },
+            {
+              "content": "Make HTTP request",
+              "status": "pending"
+            },
+            {
+              "content": "Run echo",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1781836141690_ga8wvk",
+          "segmentId": "seg_2",
+          "toolCallId": "call_00_jM9TYOPUzmvZf45I5EdK2047",
+          "name": "shell_exec",
+          "args": {
+            "command": "echo \"=== SHELL ===\" && echo \"Shell: $SHELL\" && echo \"PATH entries: $(echo $PATH | tr ':' '\\n' | wc -l | tr -d ' ')\" && echo \"Home writable: $([ -w ~ ] && echo yes || echo no)\""
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1781836141690_ga8wvk",
+          "segmentId": "seg_3",
+          "toolCallId": "call_01_7SZId5FeRKGIuZRiubvs4505",
+          "name": "shell_exec",
+          "args": {
+            "command": "echo \"=== GIT ===\" && git --version 2>&1 && echo \"---\" && git config --get user.name 2>&1 && git config --get user.email 2>&1 && echo \"---\" && git config --global --list 2>&1 | grep -E \"init\\.defaultBranch|pull\\.rebase|core\\.editor\""
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1781836141690_ga8wvk",
+          "segmentId": "seg_4",
+          "toolCallId": "call_02_gtqK6UfVwNIOfFAaq3yI6810",
+          "name": "node_check",
+          "args": {}
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1781836141690_ga8wvk",
+          "segmentId": "seg_5",
+          "toolCallId": "call_03_ArYWnBneNZ6tzhVdlLrq3718",
+          "name": "shell_exec",
+          "args": {
+            "command": "echo \"=== INTERNET ===\" && curl -s -o /dev/null -w \"DNS: ok (%{time_namelookup}s)\\nConnect: ok (%{time_connect}s)\\nTTFB: %{time_starttransfer}s\\nHTTP: %{http_code}\\n\" --max-time 10 https://www.google.com 2>&1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1781836141690_ga8wvk",
+          "segmentId": "seg_6",
+          "toolCallId": "call_04_YSvzCP0WGYFFr0skuXOY9332",
+          "name": "shell_exec",
+          "args": {
+            "command": "echo \"=== DISK ===\" && df -h /Users/younes && echo \"---\" && echo \"Wolffish workspace:\" && du -sh ~/.wolffish/workspace 2>/dev/null && echo \"Home top 10 dirs by size:\" && du -sh ~/.[!.]* ~/* 2>/dev/null | sort -rh | head -10"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1781836141690_ga8wvk",
+          "segmentId": "seg_7",
+          "toolCallId": "call_00_jM9TYOPUzmvZf45I5EdK2047",
+          "status": "success",
+          "output": "=== SHELL ===\nShell: /bin/zsh\nPATH entries: 26\nHome writable: yes",
+          "meta": {
+            "label": "Run shell command",
+            "cwd": "/Users/younes",
+            "durationMs": 48,
+            "exitCode": 0,
+            "truncated": false
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1781836141690_ga8wvk",
+          "segmentId": "seg_8",
+          "toolCallId": "call_01_7SZId5FeRKGIuZRiubvs4505",
+          "status": "success",
+          "output": "=== GIT ===\ngit version 2.47.1\n---\nYounes Alharbi\nyouneswolf@gmail.com\n---\npull.rebase=true\ncore.editor=true",
+          "meta": {
+            "label": "Run git command",
+            "cwd": "/Users/younes",
+            "durationMs": 93,
+            "exitCode": 0,
+            "truncated": false
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1781836141690_ga8wvk",
+          "segmentId": "seg_9",
+          "toolCallId": "call_02_gtqK6UfVwNIOfFAaq3yI6810",
+          "status": "success",
+          "output": "{\"installed\":true,\"version\":\"v24.16.0\"}"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1781836141690_ga8wvk",
+          "segmentId": "seg_10",
+          "toolCallId": "call_03_ArYWnBneNZ6tzhVdlLrq3718",
+          "status": "success",
+          "output": "=== INTERNET ===\nDNS: ok (0.033152s)\nConnect: ok (0.122894s)\nTTFB: 0.373644s\nHTTP: 200",
+          "meta": {
+            "label": "Make HTTP request",
+            "cwd": "/Users/younes",
+            "durationMs": 1051,
+            "exitCode": 0,
+            "truncated": false
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1781836141690_ga8wvk",
+          "segmentId": "seg_11",
+          "toolCallId": "call_04_YSvzCP0WGYFFr0skuXOY9332",
+          "status": "success",
+          "output": "=== DISK ===\nFilesystem      Size    Used   Avail Capacity iused ifree %iused  Mounted on\n/dev/disk3s5   926Gi   377Gi   526Gi    42%    3.3M  5.5G    0%   /System/Volumes/Data\n---\nWolffish workspace:\n298M\t/Users/younes/.wolffish/workspace\nHome top 10 dirs by size:\n128G\t/Users/younes/Library\n 19G\t/Users/younes/Documents\n 13G\t/Users/younes/Movies\n 13G\t/Users/younes/.ollama\n8.9G\t/Users/younes/.gradle\n8.8G\t/Users/younes/.lmstudio\n6.3G\t/Users/younes/.android\n4.8G\t/Users/younes/Xcode.app\n2.5G\t/Users/younes/.cache\n1.1G\t/Users/younes/.local",
+          "meta": {
+            "label": "Run shell command",
+            "cwd": "/Users/younes",
+            "durationMs": 49251,
+            "exitCode": 0,
+            "truncated": false
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1781836141690_ga8wvk",
+          "segmentId": "seg_td_1i1yn3r_2a",
+          "toolCallId": "call_td_1i1yn3r_2",
+          "name": "todo_write",
+          "args": {
+            "todos": [
+              {
+                "content": "Run echo",
+                "status": "completed"
+              },
+              {
+                "content": "Run git command",
+                "status": "completed"
+              },
+              {
+                "content": "Check node",
+                "status": "completed"
+              },
+              {
+                "content": "Make HTTP request",
+                "status": "completed"
+              },
+              {
+                "content": "Run echo",
+                "status": "completed"
+              }
+            ]
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1781836141690_ga8wvk",
+          "segmentId": "seg_td_1i1yn3r_2b",
+          "toolCallId": "call_td_1i1yn3r_2",
+          "status": "success",
+          "output": "5 todos (5 completed, 0 in progress)\n[\n  {\n    \"content\": \"Run echo\",\n    \"status\": \"completed\"\n  },\n  {\n    \"content\": \"Run git command\",\n    \"status\": \"completed\"\n  },\n  {\n    \"content\": \"Check node\",\n    \"status\": \"completed\"\n  },\n  {\n    \"content\": \"Make HTTP request\",\n    \"status\": \"completed\"\n  },\n  {\n    \"content\": \"Run echo\",\n    \"status\": \"completed\"\n  }\n]"
+        },
+        {
+          "kind": "todo",
+          "turnId": "turn_1781836141690_ga8wvk",
+          "segmentId": "seg_td_1i1yn3r_2c",
+          "items": [
+            {
+              "content": "Run echo",
+              "status": "completed"
+            },
+            {
+              "content": "Run git command",
+              "status": "completed"
+            },
+            {
+              "content": "Check node",
+              "status": "completed"
+            },
+            {
+              "content": "Make HTTP request",
+              "status": "completed"
+            },
+            {
+              "content": "Run echo",
+              "status": "completed"
+            }
+          ]
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781836141690_ga8wvk",
+          "segmentId": "seg_12",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1781836141690_ga8wvk",
+          "segmentId": "seg_13",
+          "delta": "# 🩺 System Health — All Clear 🐟\n\n| System | Status | Detail |\n|--------|--------|--------|\n| **Shell** | ✅ | `/bin/zsh` · 26 PATH entries · Home writable |\n| **Git** | ✅ | `2.47.1` · Younes Alharbi / youneswolf@gmail.com · rebase on pull |\n| **Node** | ✅ | `v24.16.0` installed |\n| **Internet** | ✅ | DNS ~33ms · Connect ~123ms · TTFB ~374ms · HTTP 200 |\n| **Disk** | ✅ | `526 GiB free` (57%) · Wolffish workspace: 298 MB |\n\n**No issues.** The usual suspects eating disk: Library (128G), Documents (19G), .ollama models (13G), and Movies (13G). Your `.ollama` and `.lmstudio` together are ~22 GB — those model files add up quick, but at 57% free you've got breathing room."
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1781836141690_ga8wvk",
+          "segmentId": "seg_231",
+          "stopReason": "end_turn",
+          "iterationCount": 2,
+          "reasoningContent": "All checks came back clean. Let me present a concise health summary."
+        }
+      ],
+      "toolTimings": {
+        "call_00_jM9TYOPUzmvZf45I5EdK2047": {
+          "startedAt": 1781836150293,
+          "endedAt": 1781836150341
+        },
+        "call_01_7SZId5FeRKGIuZRiubvs4505": {
+          "startedAt": 1781836150308,
+          "endedAt": 1781836150401
+        },
+        "call_02_gtqK6UfVwNIOfFAaq3yI6810": {
+          "startedAt": 1781836150308,
+          "endedAt": 1781836150669
+        },
+        "call_03_ArYWnBneNZ6tzhVdlLrq3718": {
+          "startedAt": 1781836150308,
+          "endedAt": 1781836151359
+        },
+        "call_04_YSvzCP0WGYFFr0skuXOY9332": {
+          "startedAt": 1781836150308,
+          "endedAt": 1781836199559
+        },
+        "call_td_1i1yn3r_2": {
+          "startedAt": 1781836200159,
+          "endedAt": 1781836200199
+        },
+        "call_td_1i1yn3r_1": {
+          "startedAt": 1781836148893,
+          "endedAt": 1781836148933
+        }
+      },
+      "stopReason": "end_turn",
+      "timestamp": 1781836205088
+    }
+  ],
+  "stats": {
+    "allTime": {
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 7,
+      "inputTokens": 15,
+      "outputTokens": 780,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "cost": 0.0055125,
+      "processingMs": 1000,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "endedAt": 1781836205088,
+      "provider": "",
+      "model": ""
+    },
+    "lastTurn": {
+      "endedAt": 1781836205088,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "apiCalls": 1,
+      "toolCalls": 7,
+      "inputTokens": 15,
+      "outputTokens": 780,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "provider": "",
+      "model": "",
+      "cost": 0.0055125
+    },
+    "meter": {
+      "contextTokens": 13195,
+      "contextBudget": 1000000,
+      "compactionAt": 725424,
+      "model": ""
+    }
+  }
+}

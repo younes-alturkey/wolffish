@@ -1,0 +1,82 @@
+import { readFileSync } from 'node:fs';
+import type { ManifestType } from '@extension/shared';
+
+const packageJson = JSON.parse(readFileSync('./package.json', 'utf8'));
+
+const manifest = {
+  manifest_version: 3,
+  default_locale: 'en',
+  name: '__MSG_extensionName__',
+  version: packageJson.version,
+  description: '__MSG_extensionDescription__',
+  host_permissions: ['<all_urls>'],
+  permissions: [
+    'tabs',
+    // Wolffish works inside its own tab group so it never drives the user's
+    // tabs; the group's title is also its live status line. Browsers without
+    // this API just get a plain dedicated tab.
+    'tabGroups',
+    'activeTab',
+    'alarms',
+    'scripting',
+    'storage',
+    'cookies',
+    'downloads',
+    'notifications',
+    'clipboardRead',
+    'clipboardWrite',
+    'webNavigation',
+    'sidePanel',
+    'debugger',
+    // Profile identity for the multi-browser panel: which signed-in profile
+    // this connection belongs to. Chrome-only; Firefox ignores the pair.
+    'identity',
+    'identity.email',
+  ],
+  background: {
+    service_worker: 'background.js',
+    type: 'module',
+  },
+  action: {
+    default_icon: {
+      '16': 'icon-16.png',
+      '32': 'icon-32.png',
+      '48': 'icon-48.png',
+      '128': 'icon-128.png',
+    },
+  },
+  icons: {
+    '16': 'icon-16.png',
+    '32': 'icon-32.png',
+    '48': 'icon-48.png',
+    '128': 'icon-128.png',
+  },
+  side_panel: {
+    default_path: 'side-panel/index.html',
+  },
+  // Its own tab, not the cramped dialog Chrome embeds in the extensions list:
+  // the page is a real settings surface, reached from the side panel's gear
+  // and from "Extension options" in the browser's own list.
+  options_ui: {
+    page: 'options/index.html',
+    open_in_tab: true,
+  },
+  content_scripts: [
+    {
+      matches: ['http://*/*', 'https://*/*'],
+      js: ['content/all.iife.js'],
+      run_at: 'document_idle',
+    },
+  ],
+  // Only the icons are reachable from web pages. The content script is
+  // injected by the service worker, the overlay is inline, and a broad
+  // `*.js`/`*.css` glob would let any page fingerprint the extension.
+  web_accessible_resources: [
+    {
+      resources: ['icon-16.png', 'icon-32.png', 'icon-48.png', 'icon-128.png'],
+      matches: ['*://*/*'],
+    },
+  ],
+} satisfies ManifestType;
+
+export default manifest;

@@ -1,0 +1,270 @@
+---
+title: "Adding a New Channel"
+description: "How to implement a new communication channel for Wolffish"
+---
+
+# Build a Channel from Scratch
+
+A channel connects Wolffish to an external communication platform. The desktop UI, Telegram, and WhatsApp are all channels — they receive messages from different sources but route them through the same brain pipeline.
+
+This guide walks through implementing a new channel from scratch.
+
+## What is a Channel?
+
+A channel is a `TurnSink` implementation. It receives segments (streaming text, tool calls, results) and renders them to the user in whatever format the platform supports. The `TurnRunner` handles the agent pipeline — your channel just needs to:
+
+1. Accept incoming messages from your platform
+2. Send them into the agent pipeline
+3. Render the agent's response back to the user
+4. Handle approval requests (for dangerous tool calls)
+
+## The TurnSink Interface
+
+```typescript
+interface TurnSink {
+  channelId: string
+
+  onSegment(segment: Segment): void
+  onTurnEvent(event: CorpusEvent): void
+  onApprovalRequest(req: ApprovalRequest): Promise<'approved' | 'denied'>
+  onDone(): void
+  onError(error: Error): void
+  onCredentialBlocked(variable: string): void
+}
+```
+
+### Methods Explained
+
+| Method | Purpose |
+|---|---|
+| `onSegment` | Receives streaming content — text deltas, tool calls, tool results, turn end |
+| `onTurnEvent` | Corpus events relayed during the turn (for status indicators like "thinking...") |
+| `onApprovalRequest` | Must resolve to `'approved'` or `'denied'` — implement however your platform prompts users |
+| `onDone` | Called when the turn completes successfully |
+| `onError` | Called when the turn fails with an unrecoverable error |
+| `onCredentialBlocked` | Called when a tool needs a variable that doesn't exist |
+
+### Segment Types
+
+```typescript
+type Segment =
+  | { type: 'text'; delta: string }           // Streaming text chunk
+  | { type: 'tool_call'; call: ToolCallInfo } // Tool invocation starting
+  | { type: 'tool_result'; result: ToolResult } // Tool execution output
+  | { type: 'turn_end'; reason: StopReason }  // Final marker
+```
+
+- **text**: Streaming deltas — accumulate them to build the full response
+- **tool_call**: The agent is invoking a tool (show a status indicator)
+- **tool_result**: The tool finished (show output or a summary)
+- **turn_end**: The turn is complete with a stop reason (`end_turn`, `tool_use`, `max_tokens`)
+
+## Step-by-Step Implementation
+
+### Step 1: Create the Channel File
+
+```bash
+touch src/main/channels/my-channel.ts
+```
+
+### Step 2: Implement TurnSink
+
+```typescript
+import { TurnSink, Segment, ApprovalRequest, CorpusEvent } from '../types'
+import { TurnRunner } from '../runtime/turn-runner'
+
+export class MyChannel implements TurnSink {
+  channelId = 'my-channel'
+  private turnRunner: TurnRunner
+  private responseBuffer = ''
+
+  constructor(turnRunner: TurnRunner) {
+    this.turnRunner = turnRunner
+  }
+
+  onSegment(segment: Segment): void {
+    switch (segment.type) {
+      case 'text':
+        this.responseBuffer += segment.delta
+        this.sendPartialUpdate(this.responseBuffer)
+        break
+      case 'tool_call':
+        this.sendStatus(`Using tool: ${segment.call.name}`)
+        break
+      case 'tool_result':
+        if (!segment.result.success) {
+          this.sendStatus(`Tool failed: ${segment.result.error}`)
+        }
+        break
+      case 'turn_end':
+        // Final response is ready
+        break
+    }
+  }
+
+  onTurnEvent(event: CorpusEvent): void {
+    // Optional: show status indicators
+    // e.g., "context.built" → "Thinking..."
+  }
+
+  async onApprovalRequest(req: ApprovalRequest): Promise<'approved' | 'denied'> {
+    // Implement however your platform prompts users
+    // Must return 'approved' or 'denied'
+    const userResponse = await this.promptUser(
+      `Wolffish wants to run: ${req.toolName}\nArgs: ${JSON.stringify(req.args)}`
+    )
+    return userResponse ? 'approved' : 'denied'
+  }
+
+  onDone(): void {
+    this.sendFinalMessage(this.responseBuffer)
+    this.responseBuffer = ''
+  }
+
+  onError(error: Error): void {
+    this.sendErrorMessage(`Error: ${error.message}`)
+    this.responseBuffer = ''
+  }
+
+  onCredentialBlocked(variable: string): void {
+    this.sendErrorMessage(
+      `Missing credential: ${variable}. Add it in Settings > Variables.`
+    )
+  }
+
+  // Platform-specific methods
+  private sendPartialUpdate(text: string) { /* ... */ }
+  private sendStatus(status: string) { /* ... */ }
+  private sendFinalMessage(text: string) { /* ... */ }
+  private sendErrorMessage(text: string) { /* ... */ }
+  private promptUser(message: string): Promise<boolean> { /* ... */ }
+}
+```
+
+### Step 3: Handle Incoming Messages
+
+When your platform receives a message, load or create a conversation and send it through the TurnRunner:
+
+```typescript
+async handleIncomingMessage(externalMessage: ExternalMessage) {
+  // Map external thread to a Wolffish conversation
+  const conversationId = this.resolveConversation(externalMessage.threadId)
+
+  // Load conversation history
+  const history = await this.loadHistory(conversationId)
+
+  // Send through the agent pipeline
+  await this.turnRunner.send({
+    content: externalMessage.text,
+    history,
+    conversationId,
+    sink: this // This channel is the TurnSink
+  })
+}
+```
+
+### Step 4: Register the Channel
+
+Add your channel to the startup flow in `src/main/index.ts`:
+
+```typescript
+import { MyChannel } from './channels/my-channel'
+
+// During app initialization, after TurnRunner is created:
+const myChannel = new MyChannel(turnRunner)
+myChannel.start() // Begin listening for incoming messages
+```
+
+<Info>
+  The TurnRunner is shared across all channels. It serializes turns **per conversation** — a conversation's own turns queue behind each other, but different conversations run in parallel regardless of which channel initiated them.
+</Info>
+
+## Per-Conversation Serialization
+
+The TurnRunner keeps one queue per conversation (turns with no conversation id get a private lane keyed by their turn id). A second message in the same conversation waits for that conversation's current turn to finish — preserving transcript order and preventing races in its memory and context assembly — while a message for a *different* conversation runs immediately, in parallel.
+
+```
+Desktop conversation A: "Summarize my emails" → [running] ─┐
+Telegram conversation B: "What's the weather?" → [running] ─┴─ concurrently
+Desktop conversation A: "…and reply to Sam"    → [queued behind A's turn]
+```
+
+<Warning>
+  A long-running turn only blocks *its own* conversation's next message — never other conversations or other channels. A channel can still preempt its own conversation's in-flight turn by aborting the previous controller before dispatching a new one.
+</Warning>
+
+## Conversation Mapping
+
+Your channel decides how external threads map to Wolffish conversations:
+
+```typescript
+private resolveConversation(externalThreadId: string): string {
+  // Option A: One conversation per external thread
+  return `my-channel-${externalThreadId}`
+
+  // Option B: Single persistent conversation for the channel
+  return `my-channel-main`
+
+  // Option C: New conversation per session (with /new command to reset)
+  return this.activeConversation || this.createNew()
+}
+```
+
+The Telegram channel uses Option C — one active conversation that persists until the user sends `/new`.
+
+## Reference: Telegram Channel Pattern
+
+The Telegram channel demonstrates the full pattern:
+
+```typescript
+// Simplified from src/main/channels/telegram.ts
+class TelegramChannel implements TurnSink {
+  channelId = 'telegram'
+
+  async onMessage(msg: TelegramMessage) {
+    // 1. Check for slash commands
+    if (msg.text.startsWith('/')) {
+      await this.handleCommand(msg)
+      return
+    }
+
+    // 2. Load or create conversation
+    const conversationId = this.activeConversation
+      || await this.createConversation()
+
+    // 3. Build history from stored messages
+    const history = await this.hippocampus.loadEpisode(conversationId)
+
+    // 4. Send through pipeline
+    await this.turnRunner.send({
+      content: msg.text,
+      history,
+      conversationId,
+      sink: this
+    })
+  }
+
+  async onApprovalRequest(req: ApprovalRequest) {
+    // Send inline keyboard with Approve/Deny buttons
+    const response = await this.sendInlineKeyboard(
+      `Wolffish wants to execute:\n  ${req.toolName}: ${JSON.stringify(req.args)}`,
+      ['Approve', 'Deny']
+    )
+    return response === 'Approve' ? 'approved' : 'denied'
+  }
+}
+```
+
+## Checklist for New Channels
+
+Before shipping your channel:
+
+- [ ] Implements all `TurnSink` methods
+- [ ] Handles approval requests with user-facing prompts
+- [ ] Maps external threads to conversations consistently
+- [ ] Cleans up `responseBuffer` on `onDone` and `onError`
+- [ ] Handles `onCredentialBlocked` with a helpful message
+- [ ] Registered in main process startup
+- [ ] Tested with multi-turn conversations
+- [ ] Tested with tool calls (including failures and cancellation)
+- [ ] Tested with concurrent messages from multiple channels

@@ -1,0 +1,188 @@
+---
+title: "Google Workspace"
+description: "تكامل Gmail و Drive و Calendar و Contacts و Tasks و Sheets"
+---
+
+# Gmail وDrive وCalendar والمزيد
+
+يربط تكامل Google Workspace تطبيق وولفيش بـ Gmail و Google Drive و Calendar و Contacts و Tasks و Sheets. يدعم حسابات Google متعددة ويستخدم OAuth 2.0 للمصادقة.
+
+## الإعداد
+
+يقوم التكامل على **gogcli**، وهي أداة سطر أوامر صغيرة لـ Google Suite يثبّتها وولفيش نيابةً عنك. وأنت تُحضِر عميل OAuth الخاص بك من Google Cloud، وهو ما يُبقي الأمر كلَّه على بيانات اعتمادك أنت.
+
+<Steps>
+  <Step title="تثبيت gogcli">
+    افتح **الإعدادات ← الخدمات ← Google Workspace** واضغط **تثبيت**. ينزّل وولفيش الملف التنفيذي الجاهز لمنصّتك إلى `~/.wolffish/bin/gog` — دون مدير حزم ودون كلمة مرور المسؤول. وماك ولينكس وويندوز جميعها مدعومة. ومنذ **الإصدار 1.0.263** صار المثبِّت **مثبَّتاً على إصدار gogcli المدقَّق بعينه** (v0.37.0) بدل جلب الأحدث أيّاً كان، فلا يستطيع سطر الأوامر أن يغيّر صيغته من تحت إصدارٍ منشور — كلُّ أداةٍ متحقَّقٌ منها أمراً أمراً على تلك الثنائية، والنسخة الأقدم المخالفة تلقى خطأً يسمّي العلاج: حدِّث من الإعدادات.
+  </Step>
+  <Step title="إنشاء عميل OAuth">
+    في [Google Cloud Console](https://console.cloud.google.com): أنشئ مشروعًا، وفعّل الواجهات التي تريدها من **APIs & Services ← Library** (Gmail وDrive وCalendar وSheets وTasks وPeople وما تسرده اللوحة سواها)، واضبط **شاشة موافقة OAuth** على *External* وأضف نفسك **مستخدمًا تجريبيًّا**، ثم **Credentials ← Create Credentials ← OAuth client ID ← Desktop app**. ونزّل ملف `client_secret_*.json`. وتمشي بك اللوحة في كل خطوة مع تأكيدٍ لكلٍّ منها.
+  </Step>
+  <Step title="إفلات ملف JSON">
+    اسحب الملف المنزَّل إلى منطقة إفلات بيانات الاعتماد. يتحقّق وولفيش منه ويخزّنه، ويعرض القسم المشروعَ والعميل اللذين صار يحملهما.
+  </Step>
+  <Step title="تفويض حساب">
+    اكتب بريد الحساب واضغط **تفويض**. يفتح متصفّحك شاشة موافقة Google؛ وافق فيحطّ الحساب في قائمة **الحسابات**. أضف ما شئت من الحسابات، واستخدم **إعادة الاتصال** لأيّ حساب انتهت صلاحية رمز تحديثه أو أُلغي.
+  </Step>
+</Steps>
+
+<Note>
+  تُحفَظ بيانات الاعتماد والرموز في **سلسلة مفاتيح gogcli نفسها**، لا في تهيئة وولفيش. ولا يحتفظ `config.json` إلا ببيانات وصفية عامة آمنة — معرّفا العميل والمشروع، وما إذا كانت بيانات الاعتماد مخزّنة. وحذف بيانات الاعتماد من اللوحة يزيل معها كلَّ حسابٍ مفوَّض.
+</Note>
+
+<Tip>
+  اترك حالة النشر في شاشة الموافقة على **Testing**. فلا يستطيع التفويض إلا المستخدمون التجريبيّون، وهو ما يناسب الاستعمال الشخصيّ تمامًا، ويمكنك تفعيل واجهات إضافية لاحقًا دون إعادة أيٍّ من هذا.
+</Tip>
+
+## دعم الحسابات المتعددة
+
+يمكنك تفويض حسابات Google متعددة. أداة `google_accounts` تعرض جميع الحسابات المتصلة، وكل أداة Google أخرى تتطلب معامل `account` صريحًا لتحديد الحساب المراد استخدامه.
+
+```
+User: "Check my email"
+LLM calls: google_accounts() → returns [{email: "work@company.com"}, {email: "personal@gmail.com"}]
+LLM calls: google_gmail_search({account: "work@company.com", query: "is:unread"})
+```
+
+ولا يوجد حساب افتراضيّ ضمنيّ: حتى مع حسابٍ واحدٍ مفوَّض، يحمل كلُّ استدعاءٍ `account` صراحةً. وفي الطلب غير المرتبط بهويّة («هل من بريدٍ غير مقروء؟») يستدعي النموذج الأداةَ مرّةً لكل حساب، بالتوازي.
+
+## الأدوات المتاحة
+
+كلّ أداة مسبوقة بـ `google_` وتأخذ معامل `account` إلزاميًّا.
+
+### الحسابات
+
+| الأداة | الوصف |
+|---|---|
+| `google_accounts` | سرد الحسابات المفوَّضة — استدعِها أولًا للحصول على قيم `account` بالضبط |
+
+### Gmail
+
+| الأداة | الوصف |
+|---|---|
+| `google_gmail_search` | البحث في الرسائل بصيغة استعلام Gmail (`from:` و`is:unread` و`has:attachment` …) |
+| `google_gmail_read` | قراءة سلسلة كاملة بمعرّفها — الترويسات والنصّ وبيانات المرفقات |
+| `google_gmail_send` | إرسال رسالة؛ ومرِّر `thread_id` ليكون ردًّا داخل تلك السلسلة |
+| `google_gmail_forward` | إعادة توجيه رسالة إلى مستلمين جدد، مع نصّ تمهيديّ اختياريّ |
+| `google_gmail_draft_create` | حفظ مسودّة دون إرسال |
+| `google_gmail_archive` | أرشفة الرسائل — بالمعرّفات أو باستعلام بحث |
+| `google_gmail_trash` | نقل الرسائل إلى المهملات — بالمعرّفات أو باستعلام بحث |
+| `google_gmail_mark_read` | تعليم الرسائل مقروءةً — بالمعرّفات أو باستعلام بحث |
+| `google_gmail_mark_unread` | تعليم الرسائل غير مقروءة — بالمعرّفات أو باستعلام بحث |
+| `google_gmail_labels` | سرد التصنيفات بمعرّفاتها وأعداد رسائلها |
+
+### Google Drive
+
+| الأداة | الوصف |
+|---|---|
+| `google_drive_list` | سرد الملفات، وداخل مجلّد أب عند الطلب |
+| `google_drive_search` | البحث في الملفات بالاسم أو المحتوى |
+| `google_drive_upload` | رفع ملفّ محلّيّ (يُحلّ مساره من جذر مساحة العمل) |
+| `google_drive_download` | تنزيل ملفّ إلى مسار محلّيّ |
+| `google_drive_mkdir` | إنشاء مجلّد |
+| `google_drive_delete` | نقل ملفّ في Drive إلى المهملات |
+
+### Google Calendar
+
+| الأداة | الوصف |
+|---|---|
+| `google_calendar_events` | سرد الأحداث القادمة — `today` / `tomorrow` / `week`، أو عدد أيّام، أو نطاق تواريخ صريح |
+| `google_calendar_create` | إنشاء حدث (أوقات ISO 8601، ومدعوّون اختياريًّا) |
+| `google_calendar_update` | تحديث حدث — إعادة جدولة أو تسمية أو تغيير موقع أو إضافة المدعوّين أو استبدالهم |
+| `google_calendar_delete` | حذف حدث نهائيًّا |
+
+### Google Contacts
+
+| الأداة | الوصف |
+|---|---|
+| `google_contacts_search` | البحث في جهات الاتصال بالاسم أو البريد أو الهاتف |
+| `google_contacts_create` | إنشاء جهة اتصال |
+
+### Google Tasks
+
+| الأداة | الوصف |
+|---|---|
+| `google_tasks_list` | سرد قوائم المهام، أو مهامّ قائمةٍ بعينها عند تمرير `task_list_id` |
+| `google_tasks_add` | إضافة مهمّة إلى قائمة |
+| `google_tasks_complete` | تعليم مهمّة مكتملةً |
+| `google_tasks_delete` | حذف مهمّة نهائيًّا |
+
+### Google Sheets
+
+| الأداة | الوصف |
+|---|---|
+| `google_sheets_read` | قراءة نطاق بترميز A1؛ ويعيد مصفوفة قيمٍ ثنائيّة الأبعاد |
+| `google_sheets_write` | كتابة مصفوفة قيمٍ ثنائيّة الأبعاد ابتداءً من الخليّة العليا اليسرى للنطاق |
+
+## المحفّزات
+
+القدرة ليست في السياق افتراضيًّا — بل تُحمَّل عند الطلب حين يطابق `tool_search` طلبَك مع المحفّزات المعلنة في `SKILL.md` الخاصّ بها:
+
+```
+google, gmail, email, inbox, send email, compose email, search email,
+mark as read, mark read, archive email, trash email, forward email, save draft,
+delete event, update event, reschedule, complete task, delete task,
+create contact, add contact, create folder,
+drive, upload file, download file, list files, google drive,
+calendar, events, schedule, meeting, appointment, create event,
+contacts, address book, phone number,
+tasks, todo, task list,
+sheets, spreadsheet, google sheets,
+mail, message, reply, draft, label, unread, starred, attachment,
+invite, attendee, reminder, due date,
+workspace, cloud storage, shared drive
+```
+
+وبمجرّد تحميلها تصبح أدواتها قابلة للاستدعاء في الدور نفسه.
+
+## أمثلة على سير العمل
+
+<AccordionGroup>
+  <Accordion title="فحص الرسائل غير المقروءة">
+    ```
+    You: "Check my email"
+    Wolffish: Lists your 10 most recent unread emails with sender, subject, and snippet.
+    ```
+  </Accordion>
+  <Accordion title="جدولة اجتماع">
+    ```
+    You: "Schedule a meeting with Ali tomorrow at 2pm for 30 minutes"
+    Wolffish: Creates a calendar event, confirms the time and date.
+    ```
+  </Accordion>
+  <Accordion title="رفع ملف إلى Drive">
+    ```
+    You: "Upload ~/Documents/report.pdf to my Drive"
+    Wolffish: Uploads the file and returns the Drive link.
+    ```
+  </Accordion>
+  <Accordion title="البحث في الرسائل حسب المرسل">
+    ```
+    You: "Find emails from sarah@example.com about the project proposal"
+    Wolffish: Searches Gmail with the query and returns matching threads.
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## مرجع التهيئة
+
+لا يحمل `config.json` إلا بياناتٍ وصفيّةً عامّة عن الاتصال — ولا يحمل رمزًا قطّ:
+
+```json
+{
+  "google": {
+    "status": "active",
+    "clientId": "1234567890-abcdefg.apps.googleusercontent.com",
+    "projectId": "my-wolffish-project",
+    "credentialsStored": true
+  }
+}
+```
+
+<Warning>
+  أدِر الحسابات من اللوحة لا يدويًّا. فملفّ عميل OAuth وكلّ رمز تحديثٍ يقيمان في سلسلة مفاتيح gogcli، ولذلك لا يستطيع تعديل `config.json` أن يضيف حسابًا أو يزيله أو يصلحه — و**حذف بيانات الاعتماد** يزيلها جميعًا دفعةً واحدة.
+</Warning>
+
+<Tip>
+  إذا بدأت استدعاءات Google بالفشل بأخطاء 401، فافتح **الإعدادات ← الخدمات ← Google Workspace** واضغط **إعادة الاتصال** على الحساب المعنيّ — فذلك يعيد تشغيل مسار الموافقة ويأتي برمز تحديثٍ جديد. وهذا ما تريده بعد إلغاء الوصول من إعدادات أمان حسابك في Google.
+</Tip>

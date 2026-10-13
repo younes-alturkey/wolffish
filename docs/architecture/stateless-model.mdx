@@ -1,0 +1,93 @@
+---
+title: "Stateless by Design"
+description: "Why every LLM request is self-contained — no sessions, no threads, no server-side state"
+---
+
+# Everything in One Request
+
+Wolffish uses a stateless, self-contained-request model with every cloud provider. There are no persistent sessions, no thread IDs, no server-side conversation state. Each API call carries everything the model needs and is completely independent of the call before it.
+
+This isn't a limitation — it's the architecture's most important property.
+
+## How It Works
+
+Every turn, the agent assembles the complete message array from scratch:
+
+1. **Prefrontal** builds a lean system prompt: identity, device facts, the operating contract, the learned-preferences digest, a one-line-per-capability index, and a memory map — a map of what exists to be recalled, never the content itself. No memory dumps, no episode history, no skill bodies, no tool catalogs: the model retrieves what a turn needs through tools (`memory_search`, `tool_search`).
+2. **The agent** appends the conversation replay. For most conversations that's the full history verbatim. Past ~120k characters of growth, older turns are folded into a persisted rolling summary and replay as that summary plus the last 8 messages verbatim — the request stays self-contained without re-sending every byte ever exchanged. See [Context Compaction](/architecture/context-compaction).
+3. **Thalamus** routes to the active provider, which transforms messages to the provider's native format and sends a single HTTP request.
+
+The provider receives everything it needs in one shot — system prompt, tools, and the conversation replay. It has no memory of previous calls.
+
+## Within a Single Turn
+
+The agent runs a tool-use loop: call the model, execute tools, append results, call the model again. Each iteration sends the growing message array back to the provider:
+
+```
+Iteration 1:  [system] + [history] + [latest user message]
+Iteration 2:  [system] + [history] + [latest user message] + [tool call A] + [tool result A]
+Iteration 3:  [system] + [history] + [latest user message] + [call A] + [result A] + [call B] + [result B]
+```
+
+The provider sees more context each iteration, but never maintains state between them. The system prompt and tool schemas are pinned at turn start and byte-stable across iterations; the live loop counters ride a small volatile tail at the very end of the outbound array, after every cache breakpoint, so they never perturb the cached prefix.
+
+## Provider-Specific Request Format
+
+Each provider receives the same logical content, transformed to its native API:
+
+| Provider | Endpoint | System Prompt | Tool Results |
+|---|---|---|---|
+| **DeepSeek** | `/chat/completions` | First message in the array | OpenAI-compatible `role: "tool"` messages |
+| **Anthropic** | `/v1/messages` | Separate `system` field | Coalesced into user-role content blocks |
+| **OpenAI** | `/v1/chat/completions` | First message in the array | `role: "tool"` messages with `tool_call_id` |
+| **Ollama** | `/api/chat` | Flat message array | Documents converted to placeholder text |
+
+The transformation is invisible to the rest of the system. Thalamus takes one canonical format in and produces the provider-specific request out.
+
+## Prompt Caching
+
+Sending the whole payload every call sounds expensive. It isn't — because of prompt caching, and because Wolffish's prompt prefix is byte-stable by construction: the memory map regenerates once per calendar day, tool activation is conversation-scoped (another conversation loading a capability never touches this one's prefix), and the per-iteration counters render after the cache breakpoints. Measured across 50 conversations, provider cache hits run at ~99%.
+
+### Anthropic
+
+The Anthropic provider uses prompt caching with three `cache_control` breakpoints:
+
+1. **System prompt** — The lean prefrontal context, byte-stable across turns
+2. **Tool definitions** — Stable within a conversation
+3. **Conversation history prefix** — The second-to-last user turn, marking the boundary between stable history and the latest exchange
+
+On the first call, Anthropic writes the prefix to a server-side cache (5-minute TTL, refreshed on each hit). Subsequent calls read from cache instead of reprocessing, reducing input token cost by ~90% and time-to-first-token by ~80% on the cached portion. The cache is ephemeral and anonymous — it contains no session identity and expires automatically if the conversation goes idle.
+
+### OpenAI
+
+OpenAI applies its own automatic prefix caching transparently (50% input discount on cache hits). No opt-in is needed.
+
+### DeepSeek
+
+DeepSeek applies its own prefix caching with a 75% input discount on cache hits, making it the most cost-efficient provider for long conversations and multi-step agentic workflows.
+
+### Ollama
+
+Ollama runs locally and has no caching layer.
+
+## Why Stateless
+
+Three properties depend on the stateless design, and losing any of them would compromise the architecture.
+
+### Model Switching
+
+Thalamus calls whichever Brain model you selected — DeepSeek, Anthropic, OpenAI, or Ollama — and there's no automatic cascade between them. But because the app owns the full message array, switching your Brain model mid-conversation just works: the new model gets the complete context on its very next turn, with no thread to migrate. (Workflow mode leans on the same property — each agent is handed a complete, self-contained context, on whatever model the master picked for it.) Thread-based APIs would make that impossible.
+
+### Privacy
+
+No provider retains conversation state between calls. Each request is isolated. If a provider is swapped mid-conversation, the previous provider has nothing. Your conversation history lives on your machine, not on someone else's server.
+
+### Context Control
+
+Because the app rebuilds the request each turn, it controls exactly what the model sees. The rolling-summary fold, the verbatim tail, recovery-pointer stubs for stale bulky tool results, attachment trimming — all of it happens before the request leaves your machine, and all of it is reversible: the model can pull any folded turn back with `conversation_read`. Thread-based APIs accumulate everything the model has ever seen, and that control is lost.
+
+## Persistence Is App-Side Only
+
+Conversations are persisted locally at `~/.wolffish/workspace/brain/conversations/` as JSON files containing the full message history, streaming segments, tool timings, and attachments. Every message carries a stable `id`, and all writers persist through an id-keyed merge — so two copies of the same conversation (a channel message landing while an in-app turn runs on the same thread) reconcile message-by-message instead of last-writer-wins, and a stale copy can never shrink the transcript. The rolling summary lives in the same file (`{summary, summarizedThroughMessage, summarizedThroughMessageId}`) as a read-time lens — the id form pins the summary boundary to a specific message so merges can't shift it, the original messages are never modified or deleted, and the History page always shows the complete transcript untouched. This is purely local — providers never see a conversation ID or resume from stored state.
+
+The app is the source of truth. The providers are stateless compute.

@@ -405,7 +405,14 @@ export function ViewerPage(): React.JSX.Element {
       </header>
 
       <div dir="ltr" className="flex min-h-0 flex-1">
-        <aside className="border-border w-64 shrink-0 overflow-y-auto border-e p-3">
+        {/* Phones show one pane at a time: the tree until a file is picked,
+            then the file, with a back button in its header. */}
+        <aside
+          className={cn(
+            'border-border w-64 shrink-0 overflow-y-auto border-e p-3',
+            selectedPath ? 'max-sm:hidden' : 'max-sm:w-full'
+          )}
+        >
           {loadingTree ? (
             <TreeSkeleton />
           ) : treeError ? (
@@ -417,10 +424,23 @@ export function ViewerPage(): React.JSX.Element {
           )}
         </aside>
 
-        <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <section
+          className={cn(
+            'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
+            !selectedPath && 'max-sm:hidden'
+          )}
+        >
           {selectedPath && hasContent ? (
             <>
-              <div className="border-border flex items-center justify-between gap-2 border-b px-4 py-3">
+              <div className="border-border flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3 max-sm:px-3">
+                <button
+                  type="button"
+                  onClick={() => setSelectedPath(null)}
+                  aria-label={t('common.back')}
+                  className="text-muted hover:text-fg flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg sm:hidden"
+                >
+                  {isRtl ? <ArrowRight02Icon size={16} /> : <ArrowLeft02Icon size={16} />}
+                </button>
                 <div className="flex min-w-0 flex-col">
                   <div className="flex min-w-0 items-baseline gap-1.5">
                     <span className="text-fg truncate text-sm font-medium" title={selectedPath}>
@@ -441,7 +461,7 @@ export function ViewerPage(): React.JSX.Element {
                     {selectedPath}
                   </span>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex shrink-0 items-center gap-2 max-sm:gap-1">
                   {!readOnly && !mediaType && (
                     <IconButton
                       label={t('workspace.save')}
@@ -467,7 +487,7 @@ export function ViewerPage(): React.JSX.Element {
                     )}
                   >
                     <FolderOpenIcon size={14} />
-                    <span>{t('workspace.reveal')}</span>
+                    <span className="max-sm:hidden">{t('workspace.reveal')}</span>
                   </button>
                   <button
                     type="button"
@@ -480,7 +500,7 @@ export function ViewerPage(): React.JSX.Element {
                     )}
                   >
                     <Download01Icon size={14} />
-                    <span>{t('workspace.download')}</span>
+                    <span className="max-sm:hidden">{t('workspace.download')}</span>
                   </button>
                   <button
                     type="button"
@@ -495,7 +515,7 @@ export function ViewerPage(): React.JSX.Element {
                     )}
                   >
                     <Refresh01Icon size={14} />
-                    <span>{t('workspace.resync')}</span>
+                    <span className="max-sm:hidden">{t('workspace.resync')}</span>
                   </button>
                   {!mediaType && <CopyButton text={editorContent} variant="inline" />}
                   {!mediaType && (
@@ -517,7 +537,7 @@ export function ViewerPage(): React.JSX.Element {
                     onDownload={handleDownload}
                   />
                 ) : viewMode === 'preview' ? (
-                  <div className="bg-surface text-fg min-h-0 flex-1 overflow-y-auto px-6 py-5 text-sm">
+                  <div className="bg-surface text-fg min-h-0 flex-1 overflow-y-auto px-6 py-5 text-sm max-sm:px-4 max-sm:py-4">
                     {isMarkdown ? (
                       <Markdown content={stripHtmlComments(editorContent)} />
                     ) : (

@@ -1,0 +1,132 @@
+{
+  "id": "2026-06-19_06-07-51",
+  "title": "How healthy are you",
+  "model": "",
+  "createdAt": 1781838471455,
+  "updatedAt": 1781838493160,
+  "messages": [
+    {
+      "id": "m_1781838493160_15d8a9",
+      "role": "user",
+      "content": "how healthy are you?",
+      "timestamp": 1781838493160
+    },
+    {
+      "id": "m_1781838493160_dfe94a",
+      "role": "assistant",
+      "content": "Here's the fish checkup 🐟:\n\n| Metric | Status | Detail |\n|--------|--------|--------|\n| **Brain** | ✅ | DeepSeek V4 Pro active, 91% task success rate |\n| **RAM** | ✅ | 9.6 GB / 16 GB (60%) — comfortable |\n| **Disk** | ✅ | 526 GB free — plenty of ocean |\n| **Swap** | ⚠️ | 850 MB — moderate, not alarming |\n| **Internet** | ✅ | 28ms DNS — snappy |\n| **Uptime** | 🆕 | 38 seconds — you just restarted me |\n\n**The swap is the only eyebrow-raiser.** 850 MB spilled to disk. Normal for a 16 GB machine running a browser + dev tools, but worth keeping an eye on — especially if you fire up memory-hungry tasks.\n\n91% success rate today is solid. You're in good shape. 🐟",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781838471458_m3vyub",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1781838471458_m3vyub",
+          "segmentId": "seg_2",
+          "toolCallId": "call_00_TzH60eE0dzR7wq3ZVJpb3722",
+          "name": "wolffish_status",
+          "args": {}
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1781838471458_m3vyub",
+          "segmentId": "seg_3",
+          "toolCallId": "call_01_JDV2MoJZGxu0GWchK36w2355",
+          "name": "wolffish_performance",
+          "args": {}
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1781838471458_m3vyub",
+          "segmentId": "seg_4",
+          "toolCallId": "call_00_TzH60eE0dzR7wq3ZVJpb3722",
+          "status": "success",
+          "output": "## Wolffish Status\n\n- **Running since:** 2026-06-19 06:07 (38s)\n- **Providers:** deepseek/deepseek-v4-pro ✦\n- **Capabilities:** none (0 loaded)\n- **Tool calls:** 178 total, 54 today\n- **RAM used:** 9.6 GB / 16.0 GB (60%)\n- **RAM available:** ~6.1 GB (includes reclaimable)\n- **Swap:** 849.7 MB\n- **Disk free:** 526.1 GB\n- **cortex.db:** 7.6 MB\n- **Platform:** darwin arm64\n- **OS restarted:** 2026-06-18 13:43 (up 16h 24m)\n- **Internet:** connected (28ms DNS latency)"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1781838471458_m3vyub",
+          "segmentId": "seg_5",
+          "toolCallId": "call_01_JDV2MoJZGxu0GWchK36w2355",
+          "status": "success",
+          "output": "## Performance\n\n- **Tasks today:** 10 (9 succeeded, 0 failed, 0 stopped)\n- **Tasks all time:** 32\n- **Success rate:** 91%\n- **Total tool calls:** 179\n- **Most used:** web_search (65), web_fetch (35), shell_exec (14), notion_append_blocks (10), browser_launch (4)\n- **Avg task duration:** 212.4s"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781838471458_m3vyub",
+          "segmentId": "seg_6",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1781838471458_m3vyub",
+          "segmentId": "seg_7",
+          "delta": "Here's the fish checkup 🐟:\n\n| Metric | Status | Detail |\n|--------|--------|--------|\n| **Brain** | ✅ | DeepSeek V4 Pro active, 91% task success rate |\n| **RAM** | ✅ | 9.6 GB / 16 GB (60%) — comfortable |\n| **Disk** | ✅ | 526 GB free — plenty of ocean |\n| **Swap** | ⚠️ | 850 MB — moderate, not alarming |\n| **Internet** | ✅ | 28ms DNS — snappy |\n| **Uptime** | 🆕 | 38 seconds — you just restarted me |\n\n**The swap is the only eyebrow-raiser.** 850 MB spilled to disk. Normal for a 16 GB machine running a browser + dev tools, but worth keeping an eye on — especially if you fire up memory-hungry tasks.\n\n91% success rate today is solid. You're in good shape. 🐟"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1781838471458_m3vyub",
+          "segmentId": "seg_204",
+          "stopReason": "end_turn",
+          "iterationCount": 2,
+          "reasoningContent": "Let me analyze the health data:\n\n- Uptime: 38 seconds — just restarted!\n- RAM: 9.6 GB / 16 GB (60%) — reasonable\n- Swap: 849.7 MB — some swap, but not concerning\n- Disk: 526.1 GB free — healthy\n- Success rate: 91% — solid\n- Provider: DeepSeek V4 Pro — active and working\n\nThe user just restarted Wolffish (38s uptime). Everything looks healthy."
+        }
+      ],
+      "toolTimings": {
+        "call_00_TzH60eE0dzR7wq3ZVJpb3722": {
+          "startedAt": 1781838487468,
+          "endedAt": 1781838487516
+        },
+        "call_01_JDV2MoJZGxu0GWchK36w2355": {
+          "startedAt": 1781838487474,
+          "endedAt": 1781838487534
+        }
+      },
+      "stopReason": "end_turn",
+      "timestamp": 1781838493160
+    }
+  ],
+  "stats": {
+    "allTime": {
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 2,
+      "inputTokens": 5,
+      "outputTokens": 523,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "cost": 0.0052268,
+      "processingMs": 1000,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "endedAt": 1781838493160,
+      "provider": "",
+      "model": ""
+    },
+    "lastTurn": {
+      "endedAt": 1781838493160,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "apiCalls": 1,
+      "toolCalls": 2,
+      "inputTokens": 5,
+      "outputTokens": 523,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "provider": "",
+      "model": "",
+      "cost": 0.0052268
+    },
+    "meter": {
+      "contextTokens": 12928,
+      "contextBudget": 1000000,
+      "compactionAt": 725424,
+      "model": ""
+    }
+  }
+}

@@ -1,0 +1,126 @@
+{
+  "id": "2026-06-22_09-04-51",
+  "title": "Orfesh, good morning",
+  "model": null,
+  "createdAt": 1782108291556,
+  "updatedAt": 1782108338332,
+  "messages": [
+    {
+      "id": "m_1782108317231_4753f0",
+      "role": "user",
+      "content": "Hello Orfesh, good morning. What did we discuss today? Give me a quick recap, please.",
+      "timestamp": 1782108317231,
+      "attachments": [
+        {
+          "type": "audio",
+          "filePath": "uploads/conv-2026-06-22_09-04-51/voice_779.ogg",
+          "originalName": "voice_779.ogg",
+          "mimeType": "audio/ogg",
+          "sizeBytes": 0
+        }
+      ],
+      "voicePrompt": true
+    },
+    {
+      "id": "m_1782108338330_f59472",
+      "role": "assistant",
+      "content": "Voice memo sent 🐟",
+      "timestamp": 1782108338330,
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782108317232_0k7uyd",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782108317232_0k7uyd",
+          "segmentId": "seg_2",
+          "toolCallId": "call_00_eeunMJQjJcqOmVr9GWnI3268",
+          "name": "voice_respond",
+          "args": {
+            "text": "صباح الخير يا يونس. اليوم كان هادئ الحمدلله. رحلتين صوتية الصباح — سألتني شو سوينا أمس، وقلتلك إن أمس كان هادئ وكان الشغل الأساسي فحص الأمن اليومي. macOS متاكد إنه محدث، الفايروول شغال، FileVault مفعل، ولا مشاكل. برامج Homebrew قديمة شوي و Ruby 2.6 قديم لكن هذي معروفة. واليوم الحين ناويين على شي؟ 🐟",
+            "voice": "ar-SA-HamedNeural"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782108317232_0k7uyd",
+          "segmentId": "seg_3",
+          "toolCallId": "call_00_eeunMJQjJcqOmVr9GWnI3268",
+          "status": "success",
+          "output": "{\"filePath\":\"/Users/younes/.wolffish/workspace/speech/conv-2026-06-22_09-04-51/1782108329637-0aebcae9.mp3\",\"fileName\":\"1782108329637-0aebcae9.mp3\",\"sizeBytes\":206640,\"voice\":\"ar-SA-HamedNeural\",\"speed\":\"+0%\",\"isResponse\":true,\"textLength\":300}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782108317232_0k7uyd",
+          "segmentId": "seg_4",
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782108317232_0k7uyd",
+          "segmentId": "seg_5",
+          "delta": "Voice memo sent 🐟"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1782108317232_0k7uyd",
+          "segmentId": "seg_9",
+          "stopReason": "end_turn",
+          "iterationCount": 2,
+          "reasoningContent": "The voice response was sent successfully. The runtime telemetry says not to reply to it. Since I already responded with the voice memo (which is the complete response for a voice note), I'm done here."
+        }
+      ],
+      "toolTimings": {
+        "call_00_eeunMJQjJcqOmVr9GWnI3268": {
+          "startedAt": 1782108329627,
+          "endedAt": 1782108335520
+        }
+      },
+      "stopReason": "end_turn"
+    }
+  ],
+  "channel": "telegram",
+  "stats": {
+    "allTime": {
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 1,
+      "inputTokens": 841,
+      "outputTokens": 155,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "cost": 0.005072800000000001,
+      "processingMs": 21099,
+      "elapsedMs": 21099,
+      "apiMs": 17301,
+      "endedAt": 1782108338330,
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro"
+    },
+    "lastTurn": {
+      "endedAt": 1782108338330,
+      "elapsedMs": 21099,
+      "apiMs": 17301,
+      "apiCalls": 1,
+      "toolCalls": 1,
+      "inputTokens": 841,
+      "outputTokens": 155,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro",
+      "cost": 0.005072800000000001
+    },
+    "meter": {
+      "contextTokens": 13396,
+      "contextBudget": 1000000,
+      "compactionAt": 725424,
+      "model": "deepseek-v4-pro"
+    }
+  }
+}

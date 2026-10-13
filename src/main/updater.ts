@@ -1,12 +1,28 @@
 import { is } from '@electron-toolkit/utils'
 import { wlog } from '@main/workspace/logger'
 import { patchConfig, readConfig } from '@main/workspace/workspace'
-import { app, autoUpdater as nativeUpdater, BrowserWindow } from 'electron'
+import { app, BrowserWindow, shell } from 'electron'
 import { handle } from '@main/ipc-registry'
 import { autoUpdater, type UpdateDownloadedEvent, type UpdateInfo } from 'electron-updater'
+import { createHash } from 'node:crypto'
+import { createReadStream, createWriteStream } from 'node:fs'
+import { mkdir, readdir, rename, rm, stat } from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
+import { Readable, Transform } from 'node:stream'
+import { pipeline } from 'node:stream/promises'
 
-const RELEASES_URL = 'https://releases.wolffi.sh'
+const RELEASES = { owner: 'younes-alturkey', repo: 'wolffish' } as const
 const tag = '[updater]'
+
+// Builds are ad-hoc signed, and Squirrel.Mac refuses to install an update into
+// an app without a Developer ID signature. On macOS the updater therefore
+// fetches the release's .dmg itself into ~/.wolffish/updates, verifies the
+// sha512 from latest-mac.yml, and "installing" means opening that image and
+// quitting so the user can drag the new app over the old one. Windows (NSIS)
+// and Linux (AppImage) install unsigned updates on their own.
+const MANUAL_INSTALL = process.platform === 'darwin'
+const UPDATES_DIR = path.join(os.homedir(), '.wolffish', 'updates')
 
 export type UpdateAvailableEvent = {
   version: string
@@ -20,6 +36,8 @@ export type UpdateDownloadProgressEvent = {
 export type UpdateReadyEvent = {
   version: string
   releaseNotes: string | null
+  /** Where the installer was saved when the user has to run it (macOS); null when the app installs itself. */
+  installerPath: string | null
 }
 
 export type UpdaterPhase =
@@ -55,6 +73,7 @@ export type UpdaterState = {
   percent: number
   releaseNotes: string | null
   error: UpdaterErrorInfo | null
+  installerPath: string | null
 }
 
 // A sha512 mismatch error embeds two 88-char base64 digests; left raw they blow
@@ -137,7 +156,8 @@ let state: UpdaterState = {
   version: null,
   percent: 0,
   releaseNotes: null,
-  error: null
+  error: null,
+  installerPath: null
 }
 
 /**
@@ -170,7 +190,104 @@ function setState(patch: Partial<UpdaterState>): void {
 // separate error channel to keep in sync.
 function failWith(error: UpdaterErrorInfo): void {
   lastReady = null
-  setState({ phase: 'error', error })
+  setState({ phase: 'error', error, installerPath: null })
+}
+
+function reportProgress(pct: number, transferred: number, total: number): void {
+  wlog.info(tag, `download ${pct}%  (${transferred}/${total})`)
+  if (pct >= 100 && !verifyWatchdog) {
+    verifyWatchdog = setTimeout(() => {
+      // The timer has fired — release the handle so a later 100% tick (e.g.
+      // after a Retry) can re-arm. Without this, the guard above stays false
+      // forever and a second silent post-100% hang would never recover.
+      verifyWatchdog = null
+      if (state.phase === 'verifying') {
+        wlog.warn(tag, 'verification timed out')
+        failWith({
+          code: 'timeout',
+          message: 'The update timed out while being verified.',
+          detail: null
+        })
+      }
+    }, VERIFY_TIMEOUT_MS)
+  }
+  // Monotonic: a late or duplicate low tick must never rewind the bar.
+  setState({
+    phase: pct >= 100 ? 'verifying' : 'downloading',
+    percent: Math.max(state.percent, pct)
+  })
+  broadcast<UpdateDownloadProgressEvent>('updater:progress', { percent: pct })
+}
+
+function markReady(
+  version: string,
+  releaseNotes: string | null,
+  installerPath: string | null
+): void {
+  clearVerifyWatchdog()
+  const event: UpdateReadyEvent = { version, releaseNotes, installerPath }
+  lastReady = event
+  setState({ phase: 'ready', version, percent: 100, releaseNotes, error: null, installerPath })
+  broadcast<UpdateReadyEvent>('updater:ready', event)
+}
+
+async function sha512Of(file: string): Promise<string> {
+  const hash = createHash('sha512')
+  for await (const chunk of createReadStream(file)) hash.update(chunk as Buffer)
+  return hash.digest('base64')
+}
+
+/**
+ * macOS: fetch the release's disk image into UPDATES_DIR, streaming the sha512
+ * as it lands, and resolve with its path. A copy from an earlier launch that
+ * still matches the manifest is reused rather than fetched again; anything
+ * else in the folder (older versions, broken partials) is dropped first.
+ */
+async function downloadInstaller(info: UpdateInfo): Promise<string> {
+  const file = info.files.find((f) => f.url.endsWith('.dmg')) ?? info.files[0]
+  if (!file) throw new Error('the release manifest lists no installer')
+  const name = path.basename(file.url)
+  const dest = path.join(UPDATES_DIR, name)
+  await mkdir(UPDATES_DIR, { recursive: true })
+  for (const entry of await readdir(UPDATES_DIR)) {
+    if (entry !== name) await rm(path.join(UPDATES_DIR, entry), { recursive: true, force: true })
+  }
+  const existing = await stat(dest).catch(() => null)
+  if (existing?.isFile()) {
+    setState({ phase: 'verifying', percent: 100 })
+    if ((await sha512Of(dest)) === file.sha512) return dest
+    await rm(dest, { force: true })
+  }
+  // The provider records the tag it resolved; fall back to our own scheme.
+  const tag = (info as { tag?: string }).tag ?? `v${info.version}`
+  const url = `https://github.com/${RELEASES.owner}/${RELEASES.repo}/releases/download/${tag}/${name}`
+  wlog.info(tag, `fetching ${url}`)
+  const res = await fetch(url)
+  if (!res.ok || !res.body) throw new Error(`network: HTTP ${res.status} for ${url}`)
+  const total = file.size ?? Number(res.headers.get('content-length') ?? 0)
+  const hash = createHash('sha512')
+  let received = 0
+  let lastPct = -1
+  const meter = new Transform({
+    transform(chunk: Buffer, _encoding, callback) {
+      hash.update(chunk)
+      received += chunk.length
+      const pct = total > 0 ? Math.min(100, Math.floor((received / total) * 100)) : 0
+      if (pct !== lastPct) {
+        lastPct = pct
+        reportProgress(pct, received, total)
+      }
+      callback(null, chunk)
+    }
+  })
+  const part = `${dest}.part`
+  await pipeline(Readable.fromWeb(res.body as never), meter, createWriteStream(part))
+  if (hash.digest('base64') !== file.sha512) {
+    await rm(part, { force: true })
+    throw new Error(`sha512 checksum mismatch for ${name}`)
+  }
+  await rename(part, dest)
+  return dest
 }
 
 // Post-100% verification hang watchdog. On Windows the bytes can be fully on
@@ -219,21 +336,24 @@ export function initUpdater(): void {
   handle('updater:getVersion', () => app.getVersion())
   handle('updater:getReady', () => lastReady)
   handle('updater:getState', () => state)
+  handle('updater:revealInstaller', () => {
+    if (lastReady?.installerPath) shell.showItemInFolder(lastReady.installerPath)
+  })
 
   if (is.dev) return
 
   wlog.separator('Updater Init')
   wlog.info(tag, `version  ${app.getVersion()}`)
-  wlog.info(tag, `feed     ${RELEASES_URL}`)
+  wlog.info(tag, `feed     github:${RELEASES.owner}/${RELEASES.repo}`)
 
-  autoUpdater.autoDownload = true
+  autoUpdater.autoDownload = !MANUAL_INSTALL
   autoUpdater.autoInstallOnAppQuit = false
   autoUpdater.autoRunAppAfterInstall = true
-  // Always fetch the full artifact and let electron-updater verify its sha512,
-  // mirroring the standalone install scripts. The NSIS differential/blockmap
-  // path is a known source of stalled/corrupt Windows downloads, so opt out.
+  // Always fetch the full artifact and let electron-updater verify its sha512.
+  // The NSIS differential/blockmap path is a known source of stalled/corrupt
+  // Windows downloads, so opt out.
   autoUpdater.disableDifferentialDownload = true
-  autoUpdater.setFeedURL({ provider: 'generic', url: RELEASES_URL })
+  autoUpdater.setFeedURL({ provider: 'github', ...RELEASES })
 
   autoUpdater.on('checking-for-update', () => {
     wlog.separator('Update Check')
@@ -248,7 +368,16 @@ export function initUpdater(): void {
   autoUpdater.on('update-not-available', (info: UpdateInfo) => {
     wlog.info(tag, `up to date (v${info.version})`)
     clearVerifyWatchdog()
-    setState({ phase: 'idle', version: null, percent: 0, releaseNotes: null, error: null })
+    setState({
+      phase: 'idle',
+      version: null,
+      percent: 0,
+      releaseNotes: null,
+      error: null,
+      installerPath: null
+    })
+    // The previous version's image, once the user has moved on to it.
+    if (MANUAL_INSTALL) void rm(UPDATES_DIR, { recursive: true, force: true })
   })
 
   autoUpdater.on('update-available', (info: UpdateInfo) => {
@@ -258,57 +387,41 @@ export function initUpdater(): void {
     // (esp. one whose watchdog self-fired) must never block re-arming.
     clearVerifyWatchdog()
     const releaseNotes = extractReleaseNotes(info)
-    // autoDownload is on, so the download starts immediately — go straight to
-    // 'downloading'. This percent reset to 0 is the only legitimate reset.
-    setState({ phase: 'downloading', version: info.version, percent: 0, releaseNotes, error: null })
+    // The download starts immediately (autoDownload, or our own fetch below) —
+    // go straight to 'downloading'. This percent reset to 0 is the only
+    // legitimate reset.
+    setState({
+      phase: 'downloading',
+      version: info.version,
+      percent: 0,
+      releaseNotes,
+      error: null,
+      installerPath: null
+    })
     broadcast<UpdateAvailableEvent>('updater:available', { version: info.version, releaseNotes })
+    if (MANUAL_INSTALL) {
+      downloadInstaller(info).then(
+        (installerPath) => {
+          wlog.info(tag, `installer saved to ${installerPath}`)
+          markReady(info.version, releaseNotes, installerPath)
+        },
+        (err) => {
+          wlog.error(tag, err)
+          failWith(classifyUpdaterError(err))
+        }
+      )
+    }
   })
 
   autoUpdater.on('download-progress', (progress) => {
-    const pct = Math.round(progress.percent)
-    wlog.info(tag, `download ${pct}%  (${progress.transferred}/${progress.total})`)
-    if (pct >= 100 && !verifyWatchdog) {
-      verifyWatchdog = setTimeout(() => {
-        // The timer has fired — release the handle so a later 100% tick (e.g.
-        // after a Retry) can re-arm. Without this, the guard above stays false
-        // forever and a second silent post-100% hang would never recover.
-        verifyWatchdog = null
-        if (state.phase === 'verifying') {
-          wlog.warn(tag, 'verification timed out')
-          failWith({
-            code: 'timeout',
-            message: 'The update timed out while being verified.',
-            detail: null
-          })
-        }
-      }, VERIFY_TIMEOUT_MS)
-    }
-    // Monotonic: a late or duplicate low tick must never rewind the bar.
-    setState({
-      phase: pct >= 100 ? 'verifying' : 'downloading',
-      percent: Math.max(state.percent, pct)
-    })
-    broadcast<UpdateDownloadProgressEvent>('updater:progress', { percent: pct })
+    reportProgress(Math.round(progress.percent), progress.transferred, progress.total)
   })
 
   autoUpdater.on('update-downloaded', (info: UpdateDownloadedEvent) => {
     wlog.separator('Download Complete')
     wlog.info(tag, `version  v${info.version}`)
     wlog.info(tag, `file     ${info.downloadedFile}`)
-    clearVerifyWatchdog()
-    const event: UpdateReadyEvent = {
-      version: info.version,
-      releaseNotes: extractReleaseNotes(info)
-    }
-    lastReady = event
-    setState({
-      phase: 'ready',
-      version: info.version,
-      percent: 100,
-      releaseNotes: event.releaseNotes,
-      error: null
-    })
-    broadcast<UpdateReadyEvent>('updater:ready', event)
+    markReady(info.version, extractReleaseNotes(info), null)
   })
 
   autoUpdater.on('error', (err) => {
@@ -370,86 +483,13 @@ export function installFailed(): boolean {
   return installFailure !== null
 }
 
-// How long Squirrel.Mac gets to fetch, unpack and signature-check the bundle
-// before the install is called off. A ~300 MB universal zip is routinely
-// 5–30 s on a busy disk; this is a hang guard, not a budget.
-const STAGE_TIMEOUT_MS = 180_000
-
-/**
- * macOS only; a no-op that resolves true elsewhere.
- *
- * electron-updater downloads and sha512-checks the zip itself, but the
- * install is Squirrel.Mac's job. With autoInstallOnAppQuit off, its
- * quitAndInstall() only ASKS Squirrel to fetch the zip from a local proxy,
- * unpack it and verify the signature — the app quits when Squirrel later
- * reports the bundle staged. That gap was the "update closes the app and it
- * never comes back" bug: the install handler force-exited a fixed 5 s after
- * the call, before Squirrel finished, so nothing was installed and nothing
- * relaunched.
- *
- * Doing the staging here, BEFORE the graceful shutdown, means the app is torn
- * down only once the install is guaranteed (quitAndInstall() then takes its
- * instant path), and a staging failure leaves a fully working app behind in
- * the error phase instead of a dead process.
- */
-export async function stageUpdate(): Promise<boolean> {
-  if (process.platform !== 'darwin') return true
-  if (!isUpdateReady()) return false
-  installFailure = null
-  wlog.info(tag, 'staging with Squirrel.Mac')
-  const startedAt = Date.now()
-  const failure = await new Promise<UpdaterErrorInfo | null>((resolve) => {
-    let settled = false
-    const finish = (result: UpdaterErrorInfo | null): void => {
-      if (settled) return
-      settled = true
-      clearTimeout(timer)
-      nativeUpdater.off('update-downloaded', onStaged)
-      nativeUpdater.off('error', onError)
-      resolve(result)
-    }
-    const onStaged = (): void => finish(null)
-    const onError = (err: Error): void => finish(classifyUpdaterError(err, 'install'))
-    const timer = setTimeout(
-      () =>
-        finish({
-          code: 'install',
-          message: 'The update took too long to prepare.',
-          detail: null
-        }),
-      STAGE_TIMEOUT_MS
-    )
-    nativeUpdater.on('update-downloaded', onStaged)
-    nativeUpdater.on('error', onError)
-    try {
-      // The feed URL points at electron-updater's proxy from the moment it
-      // emitted update-downloaded, which isUpdateReady() guarantees.
-      nativeUpdater.checkForUpdates()
-    } catch (err) {
-      finish(classifyUpdaterError(err, 'install'))
-    }
-  })
-  if (failure) {
-    wlog.warn(
-      tag,
-      `staging failed after ${Date.now() - startedAt}ms: ${failure.detail ?? failure.message}`
-    )
-    // Squirrel's error normally also reaches electron-updater's 'error' event
-    // (handled above); the timeout and a synchronous throw do not.
-    installFailure = installFailure ?? failure
-    if (state.phase !== 'error') failWith(failure)
-    return false
-  }
-  wlog.info(tag, `staged in ${Date.now() - startedAt}ms — Squirrel holds the bundle`)
-  return true
-}
-
 /**
  * Hands the verified artifact to the platform installer and returns whether
- * that succeeded. On macOS this is instant once stageUpdate() has run; on
- * Windows/Linux it spawns NSIS/the AppImage swap. A false return means
- * electron-updater reported the failure (already broadcast as the error
- * phase) and the app is NOT going to quit — the caller must not force it.
+ * that succeeded. On Windows/Linux it spawns NSIS/the AppImage swap; on macOS
+ * it opens the downloaded disk image and quits, leaving the user to drag the
+ * new app into Applications. A false return means the failure was already
+ * broadcast as the error phase and the app is NOT going to quit — the caller
+ * must not force it.
  */
 export function installUpdate(): boolean {
   if (!isUpdateReady()) {
@@ -463,6 +503,12 @@ export function installUpdate(): boolean {
   }
   installFailure = null
   wlog.separator('Install')
+  if (lastReady?.installerPath) {
+    wlog.info(tag, `opening ${lastReady.installerPath}`)
+    void shell.openPath(lastReady.installerPath)
+    app.quit()
+    return true
+  }
   wlog.info(tag, 'quitAndInstall(false, true)')
   try {
     autoUpdater.quitAndInstall(false, true)

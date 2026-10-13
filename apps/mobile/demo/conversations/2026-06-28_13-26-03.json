@@ -1,0 +1,246 @@
+{
+  "id": "2026-06-28_13-26-03",
+  "title": "List my automations pls",
+  "model": "deepseek-r1:8b",
+  "createdAt": 1782642363477,
+  "updatedAt": 1782643098374,
+  "messages": [
+    {
+      "id": "m_1782643098374_a1e1be",
+      "role": "user",
+      "content": "list my automations pls",
+      "timestamp": 1782643098374
+    },
+    {
+      "id": "m_1782643098374_e36957",
+      "role": "assistant",
+      "content": "Three automations on the books:\n\n| # | Schedule | What |\n|---|----------|------|\n| 1 | **Hourly :15** | Email check → Telegram summary, mark all read |\n| 2 | **Daily 1:22 PM** | Pepe startup motivation meme on Telegram |\n| 3 | **Daily 11:14 AM** | Romantic meme to Sana on WhatsApp |\n\nAll three healthy — #1 and #2 ran recently (11m and 4m ago), #3 hasn't fired yet this session but that's normal for a daily. Anything you want to tweak? 🐟",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782642363484_5lzjd2",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782642363484_5lzjd2",
+          "segmentId": "seg_2",
+          "toolCallId": "call_00_HmMAJPJYx4i99fF7ETjz2482",
+          "name": "automation_list",
+          "args": {}
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782642363484_5lzjd2",
+          "segmentId": "seg_3",
+          "toolCallId": "call_00_HmMAJPJYx4i99fF7ETjz2482",
+          "status": "success",
+          "output": "## Automations (3)\n\n1. **Hourly (15)** — every hour at :15\n   cron: `15 * * * *`\n   Check all my connected emails. Send a summary on Telegram of each email, who is it from, if any action is needed from my side. Then mark all as read.\n   last run 11m ago: completed\n\n2. **Daily (13:22)** — every day at 13:22\n   cron: `22 13 * * *`\n   Uplift my spirit with a unique Pepe Giphy meme sent on Telegram only regarding startups and entrepreneurship. Don't use a template but rather a Pepe meme dir…\n   last run 4m ago: completed\n\n3. **Daily (11:14)** — every day at 11:14\n   cron: `14 11 * * *`\n   Send a creative unqiue and fresh romantic funny meme about how much I'm glad she's in my life to me wife on whatsapp her number is +966507219348 let her know…\n   not run yet this session\n\nEdit or delete by the number above (or the exact label). Memory compaction jobs are configured in Settings → Hippocampus and are not listed here."
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782642363484_5lzjd2",
+          "segmentId": "seg_4",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782642363484_5lzjd2",
+          "segmentId": "seg_5",
+          "delta": "Three automations on the books:\n\n| # | Schedule | What |\n|---|----------|------|\n| 1 | **Hourly :15** | Email check → Telegram summary, mark all read |\n| 2 | **Daily 1:22 PM** | Pepe startup motivation meme on Telegram |\n| 3 | **Daily 11:14 AM** | Romantic meme to Sana on WhatsApp |\n\nAll three healthy — #1 and #2 ran recently (11m and 4m ago), #3 hasn't fired yet this session but that's normal for a daily. Anything you want to tweak? 🐟"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1782642363484_5lzjd2",
+          "segmentId": "seg_132",
+          "stopReason": "end_turn",
+          "iterationCount": 2,
+          "reasoningContent": "The user asked me to list their automations, and I have the results. Let me present them clearly."
+        }
+      ],
+      "toolTimings": {
+        "call_00_HmMAJPJYx4i99fF7ETjz2482": {
+          "startedAt": 1782642370653,
+          "endedAt": 1782642370667
+        }
+      },
+      "stopReason": "end_turn",
+      "timestamp": 1782643098374
+    },
+    {
+      "id": "m_1782643098374_1c134a",
+      "role": "user",
+      "content": "run 2 like right now but don't change anything",
+      "timestamp": 1782643098374
+    },
+    {
+      "id": "m_1782643098374_2b63a6",
+      "role": "assistant",
+      "content": "Fired. Your 1:22 PM Pepe meme is running in the background — should hit your Telegram any second 🐸🚀",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782642432428_r30fka",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782642432428_r30fka",
+          "segmentId": "seg_2",
+          "toolCallId": "call_00_XwDEI4VKzO2qmWmOCZrm1023",
+          "name": "automation_run",
+          "args": {
+            "identifier": "2"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782642432428_r30fka",
+          "segmentId": "seg_3",
+          "toolCallId": "call_00_XwDEI4VKzO2qmWmOCZrm1023",
+          "status": "success",
+          "output": "Started \"Daily (13:22)\" in the background — it runs as its own sealed conversation and appears in history when it finishes. It runs to completion on its own. Do NOT call automation_check in a loop waiting for it: you can't pause between tool calls, so polling just burns turns and cannot make it finish any sooner. Reply to the user now that it's running. Only if they later ask how it went, call automation_check ONCE — or point them to the conversation in history."
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782642432428_r30fka",
+          "segmentId": "seg_4",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782642432428_r30fka",
+          "segmentId": "seg_5",
+          "delta": "Fired. Your 1:22 PM Pepe meme is running in the background — should hit your Telegram any second 🐸🚀"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1782642432428_r30fka",
+          "segmentId": "seg_31",
+          "stopReason": "end_turn",
+          "iterationCount": 2,
+          "reasoningContent": "The automation is running in the background. Just confirm to the user."
+        }
+      ],
+      "toolTimings": {
+        "call_00_XwDEI4VKzO2qmWmOCZrm1023": {
+          "startedAt": 1782642440426,
+          "endedAt": 1782642440438
+        }
+      },
+      "stopReason": "end_turn",
+      "timestamp": 1782643098374
+    },
+    {
+      "id": "m_1782643098374_9717c0",
+      "role": "user",
+      "content": "Run it again baby",
+      "timestamp": 1782643098374
+    },
+    {
+      "id": "m_1782643098374_cf7a1b",
+      "role": "assistant",
+      "content": "Double Pepe. Second one's running too — you're about to get two doses of startup motivation back to back. That's either inspiring or a cry for help, I haven't decided yet 🐸🚀",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782643087173_7nnn1p",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782643087173_7nnn1p",
+          "segmentId": "seg_2",
+          "toolCallId": "call_00_67BPeWl5phfx2lnXTkHf1403",
+          "name": "automation_run",
+          "args": {
+            "identifier": "2"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782643087173_7nnn1p",
+          "segmentId": "seg_3",
+          "toolCallId": "call_00_67BPeWl5phfx2lnXTkHf1403",
+          "status": "success",
+          "output": "Started \"Daily (13:22)\" in the background — it runs as its own sealed conversation and appears in history when it finishes. It runs to completion on its own. Do NOT call automation_check in a loop waiting for it: you can't pause between tool calls, so polling just burns turns and cannot make it finish any sooner. Reply to the user now that it's running. Only if they later ask how it went, call automation_check ONCE — or point them to the conversation in history."
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782643087173_7nnn1p",
+          "segmentId": "seg_4",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782643087173_7nnn1p",
+          "segmentId": "seg_5",
+          "delta": "Double Pepe. Second one's running too — you're about to get two doses of startup motivation back to back. That's either inspiring or a cry for help, I haven't decided yet 🐸🚀"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1782643087173_7nnn1p",
+          "segmentId": "seg_46",
+          "stopReason": "end_turn",
+          "iterationCount": 2,
+          "reasoningContent": "The automation was fired again. No need for a long response here."
+        }
+      ],
+      "toolTimings": {
+        "call_00_67BPeWl5phfx2lnXTkHf1403": {
+          "startedAt": 1782643095182,
+          "endedAt": 1782643095216
+        }
+      },
+      "stopReason": "end_turn",
+      "timestamp": 1782643098374
+    }
+  ],
+  "stats": {
+    "allTime": {
+      "turns": 3,
+      "apiCalls": 3,
+      "toolCalls": 3,
+      "inputTokens": 22,
+      "outputTokens": 833,
+      "cacheReadTokens": 25900,
+      "cacheCreationTokens": 12400,
+      "cost": 0.0063498999999999995,
+      "processingMs": 3000,
+      "elapsedMs": 3000,
+      "apiMs": 2460,
+      "endedAt": 1782643098374,
+      "provider": "local",
+      "model": "deepseek-r1:8b"
+    },
+    "lastTurn": {
+      "endedAt": 1782643098374,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "apiCalls": 1,
+      "toolCalls": 1,
+      "inputTokens": 4,
+      "outputTokens": 209,
+      "cacheReadTokens": 13042,
+      "cacheCreationTokens": 0,
+      "provider": "local",
+      "model": "deepseek-r1:8b",
+      "cost": 0.00062236
+    },
+    "meter": {
+      "contextTokens": 13255,
+      "contextBudget": 1000000,
+      "compactionAt": 725424,
+      "model": "deepseek-r1:8b"
+    }
+  }
+}

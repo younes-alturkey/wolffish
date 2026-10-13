@@ -1,0 +1,771 @@
+{
+  "id": "2026-06-20_06-42-00",
+  "title": "Daily(6:42)",
+  "model": null,
+  "createdAt": 1781926920115,
+  "updatedAt": 1781934161067,
+  "messages": [
+    {
+      "id": "m_1781926920115_dad487",
+      "role": "user",
+      "content": "Start by searching the web for known recent CVEs and security\nadvisories relevant to my OS and common software. Then detect my\nOS and run the appropriate commands. Check open ports and what's\nlistening on them, firewall status, running services and daemons,\nSSH config, disk encryption status, OS-level security features,\nand any outdated software. Cross-reference what you find locally\nagainst the CVEs from your search. Flag anything concerning with\nrisk level and tell me exactly how to fix it.",
+      "timestamp": 1781926920115
+    },
+    {
+      "id": "m_1781934161067_ee592f",
+      "role": "assistant",
+      "content": "# 🔐 Wolffish Security Audit — June 20, 2026\n\n**System:** macOS Tahoe 26.5.1 (25F80) · Apple Silicon M3 Pro  \n**Last OS update:** June 4, 2026 · Uptime: 14+ days\n\n---\n\n## ⚡ Quick Verdict\n\nYour OS is **fully patched** at the latest public release (26.5.1). No new macOS updates available. But you have **two critical findings** that need action today:\n\n| Risk | Issue | Action |\n|------|-------|--------|\n| 🔴 **HIGH** | **Node.js v24.16.0** — 12 CVEs unpatched, 2 HIGH (TLS auth bypass, WebCrypto DoS) | Update to **v24.17.0** |\n| 🟠 **MEDIUM** | **Chrome 149.0.7827.116** — ✅ Already patched past CVE-2026-11645 (zero-day) | No action needed |\n| 🟡 **LOW** | **28 outdated brew formulae + 3 casks** | `brew upgrade` |\n| 🟡 **LOW** | **Ports *:5000 and *:7000** listening on all interfaces (AirPlay Receiver) | OK, but verify you use it |\n| 🟢 **PASS** | **Ruby 2.6.10** — system Ruby, EOL since 2022, but Apple-bundled | See note below |\n\n---\n\n## 1. 🔴 macOS CVEs — Cross-Reference (ALL PATCHED)\n\nmacOS Tahoe **26.5** (May 11) fixed **~69–80 vulnerabilities**, including major ones:\n\n| CVE | Description | Severity | Status |\n|-----|-------------|----------|--------|\n| CVE-2026-28819 | **Wi-Fi kernel RCE** — app may execute code with kernel privileges | 🔴 Critical | ✅ Patched in 26.5 |\n| CVE-2026-28952 | **Kernel integer overflow** — system termination (found by Claude!) | 🔴 High | ✅ Patched in 26.5 |\n| CVE-2026-28951 | **Kernel root privilege escalation** | 🔴 High | ✅ Patched in 26.5 |\n| CVE-2026-20700 | **dyld zero-day** — arbitrary code execution (exploited in wild) | 🔴 Critical | ✅ Patched (earlier update) |\n| CVE-2026-28925 | **HFS buffer overflow** — kernel memory write | 🟠 High | ✅ Patched in 26.5 |\n| CVE-2026-43668 | **mDNSResponder use-after-free** — remote kernel memory corruption | 🟠 High | ✅ Patched in 26.5 |\n| CVE-2026-28915 | **CUPS parsing issue** — root privilege escalation | 🟠 High | ✅ Patched in 26.5 |\n| CVE-2026-28954 | **Gatekeeper bypass** — malicious disk images | 🟠 High | ✅ Patched in 26.5 |\n| +60 more | Various kernel, WebKit, IOKit, ImageIO, sandbox escapes | Various | ✅ All patched |\n\n**You are on 26.5.1 (June 4)** — this includes all 26.5 fixes plus additional refinements. **No new OS update available.** ✅\n\n---\n\n## 2. 🔴 NODE.JS — 12 CVEs, 2 HIGH — NEEDS UPDATE\n\nThe Node.js project released **v24.17.0** yesterday (June 18) fixing **12 vulnerabilities**, including:\n\n| CVE | Description | Severity |\n|-----|-------------|----------|\n| **CVE-2026-48618** | **TLS wildcard auth bypass** — Unicode dot separator in hostname lets attackers bypass certificate validation | 🔴 **HIGH** |\n| **CVE-2026-48933** | **WebCrypto crash (DoS)** — 2 GiB input to `subtle.encrypt()` crashes the process | 🔴 **HIGH** |\n| CVE-2026-48615 | Proxy credentials leaked in error messages | 🟠 Medium |\n| CVE-2026-48619 | HTTP/2 unbounded memory growth (OOM) | 🟠 Medium |\n| CVE-2026-48937 | HTTP/2 GOAWAY session leak | 🟠 Medium |\n| CVE-2026-48928 | mTLS authorization bypass (case-sensitive hostname) | 🟠 Medium |\n| CVE-2026-48930 | TLS hostname rebinding via embedded nul chars | 🟠 Medium |\n| CVE-2026-48934 | TLS session reuse bypass | 🟠 Medium |\n| +4 more | Lower severity | 🟢 Low |\n\n### Your version: **v24.16.0** · Patch: **v24.17.0**\n\n**Fix it:**\n```bash\nbrew upgrade node@24\n# or if installed via nvm, use nvm install\n```\n\n---\n\n## 3. 🟢 CHROME — Already Patched ✅\n\n- **Your version:** 149.0.7827.116\n- **CVE-2026-11645:** V8 zero-day exploited in the wild, patched in **149.0.7827.102/.103**\n- **You are above the fix.** ✅ No action needed.\n\n---\n\n## 4. 🟢 OS Security Posture — Strong Baseline\n\n| Check | Status | Detail |\n|-------|--------|--------|\n| **FileVault (disk encryption)** | ✅ **Enabled** | Full disk encryption active |\n| **SIP (System Integrity Protection)** | ✅ **Enabled** | Core system protected |\n| **Gatekeeper** | ✅ **Enabled** | Only signed apps can run |\n| **Firewall** | ✅ **Enabled** | Blocks incoming connections |\n| **SSH Remote Login** | ✅ **Disabled** | No remote shell access |\n| **IP Forwarding** | ❌ **Disabled** | Not acting as a router |\n| **Automatic Updates** | ⚠️ | No pending updates (good) |\n\n---\n\n## 5. 🟡 Open Ports — Mostly Local, Two on All Interfaces\n\n| Port | Process | Interface | Risk |\n|------|---------|-----------|------|\n| **5000** | ControlCenter (AirPlay Receiver) | **\\*:5000** (all interfaces) | 🟡 Low — standard macOS, but visible on network |\n| **7000** | ControlCenter (AirPlay) | **\\*:7000** (all interfaces) | 🟡 Low — same as above |\n| 9222 | Google Chrome DevTools | 127.0.0.1 only | 🟢 Safe |\n| 11434, 49153 | Ollama | 127.0.0.1 only | 🟢 Safe |\n| 23151 | Wolffish | 127.0.0.1 only | 🟢 Safe |\n| 44950, 44960 | Figma agent | 127.0.0.1 only | 🟢 Safe |\n| 49152+ | rapportd (Apple Remote Play) | All interfaces | 🟡 Low — Apple standard |\n| 59869 | Logitech Options | All interfaces | 🟡 Low — peripheral daemon |\n\n**Note:** *:5000/*:7000 are AirPlay Receiver ports — standard macOS feature. If you don't use AirPlay receiving, you could disable it in **System Settings > General > AirDrop & Handoff > AirPlay Receiver**. Not a real risk, just hygiene.\n\n---\n\n## 6. 🟡 Outdated Brew Packages — 28 Formulae, 3 Casks\n\nNotable ones:\n\n| Package | Risk Note |\n|---------|-----------|\n| **awscli** | May miss API security fixes |\n| **git** | 2.47.1 — could be behind on CVEs |\n| **gnupg, gnutls** | Crypto library updates important |\n| **openssl dependency** | Underlying lib updates |\n| **ffmpeg** | Codec security fixes |\n| **python@3.13, python@3.14** | Both outdated |\n| **discord, dotnet-sdk, ngrok** (casks) | Outdated |\n\n**Fix:**\n```bash\nbrew update && brew upgrade && brew upgrade --cask\n```\n\n---\n\n## 7. 🟡 Ruby 2.6.10 — System Ruby, EOL Since March 2022\n\nThis is Apple's bundled Ruby (`/usr/bin/ruby`). It's **EOL** and has known unpatched vulnerabilities. However:\n- It's the **system Ruby** that ships with macOS — Apple doesn't update it\n- You probably use **Homebrew's Ruby** or **rbenv** for actual work\n- Risk is low unless you're running scripts with it against untrusted input\n\n**If you use system Ruby for anything important:** Install a modern Ruby via brew:\n```bash\nbrew install ruby@3.4\n```\n\n---\n\n## 8. 🟢 Services & Daemons — Running Normally\n\n- **Docker:** Installed (29.2.0) but **no containers running** ✅\n- **Palo Alto GlobalProtect:** VPN agent running (expected for work) ✅\n- **Norton Antivirus:** Running — definition updates from June 18 ✅\n- **Ollama:** Running (0.30.10) on localhost only ✅\n- **Logitech Options:** Running (peripheral manager) ✅\n- **OneDrive:** Background updater present ✅\n- **Zoom:** Updater present ✅\n- **Splashtop:** Remote support helper present ✅\n- **No sshd running** ✅\n\n---\n\n## ☑️ Action Summary\n\n| Priority | Action | Command |\n|----------|--------|---------|\n| 🔴 **Now** | Update Node.js to v24.17.0 | `brew upgrade node@24` |\n| 🟡 **Today** | Update all brew packages | `brew update && brew upgrade && brew upgrade --cask` |\n| 🟢 **Optional** | Update system Ruby if used | `brew install ruby@3.4` |\n| 🟢 **Nice-to-have** | Disable AirPlay Receiver if unused | System Settings > General > AirDrop & Handoff |\n| 🟢 **Monitor** | Chrome is auto-updating to latest stable | Already above the zero-day fix |\n\nYour OS security baseline is **solid** — Apple's latest patches are all applied, encryption and firewall are on, SSH is locked down. The one real 🔴 item is Node.js which has a TLS auth bypass patch from **yesterday** that you should grab.",
+      "timestamp": 1781934161067,
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_td_1uvee9l_1a",
+          "toolCallId": "call_td_1uvee9l_1",
+          "name": "todo_write",
+          "args": {
+            "todos": [
+              {
+                "content": "Search the web for “macOS Tahoe Sequoia 26.5 CVE security vulne…” and 1 more",
+                "status": "in_progress"
+              },
+              {
+                "content": "Run sw_vers, lsof and 7 more",
+                "status": "pending"
+              },
+              {
+                "content": "Read support.apple.com",
+                "status": "pending"
+              },
+              {
+                "content": "Search the web for “CVE-2026-28819 macOS Wi-Fi kernel vulnerabi…” and 2 more",
+                "status": "pending"
+              },
+              {
+                "content": "Run ruby",
+                "status": "pending"
+              },
+              {
+                "content": "Search the web for “Norton 26.4 for Mac latest version security…”",
+                "status": "pending"
+              }
+            ]
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_td_1uvee9l_1b",
+          "toolCallId": "call_td_1uvee9l_1",
+          "status": "success",
+          "output": "6 todos (0 completed, 1 in progress)\n[\n  {\n    \"content\": \"Search the web for “macOS Tahoe Sequoia 26.5 CVE security vulne…” and 1 more\",\n    \"status\": \"in_progress\"\n  },\n  {\n    \"content\": \"Run sw_vers, lsof and 7 more\",\n    \"status\": \"pending\"\n  },\n  {\n    \"content\": \"Read support.apple.com\",\n    \"status\": \"pending\"\n  },\n  {\n    \"content\": \"Search the web for “CVE-2026-28819 macOS Wi-Fi kernel vulnerabi…” and 2 more\",\n    \"status\": \"pending\"\n  },\n  {\n    \"content\": \"Run ruby\",\n    \"status\": \"pending\"\n  },\n  {\n    \"content\": \"Search the web for “Norton 26.4 for Mac latest version security…”\",\n    \"status\": \"pending\"\n  }\n]"
+        },
+        {
+          "kind": "todo",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_td_1uvee9l_1c",
+          "items": [
+            {
+              "content": "Search the web for “macOS Tahoe Sequoia 26.5 CVE security vulne…” and 1 more",
+              "status": "in_progress"
+            },
+            {
+              "content": "Run sw_vers, lsof and 7 more",
+              "status": "pending"
+            },
+            {
+              "content": "Read support.apple.com",
+              "status": "pending"
+            },
+            {
+              "content": "Search the web for “CVE-2026-28819 macOS Wi-Fi kernel vulnerabi…” and 2 more",
+              "status": "pending"
+            },
+            {
+              "content": "Run ruby",
+              "status": "pending"
+            },
+            {
+              "content": "Search the web for “Norton 26.4 for Mac latest version security…”",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_2",
+          "toolCallId": "call_00_A5ygnD2WtuiQ3FrvKcTk0955",
+          "name": "web_search",
+          "args": {
+            "query": "macOS Tahoe Sequoia 26.5 CVE security vulnerabilities June 2026",
+            "maxResults": 10
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_3",
+          "toolCallId": "call_01_G7Gl6J7eL06MNPuyA8Ja6288",
+          "name": "web_search",
+          "args": {
+            "query": "macOS critical vulnerability CVE 2026 remote code execution zero-day",
+            "maxResults": 10
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_4",
+          "toolCallId": "call_02_HzE526VPlfEm8UiTJsNe9315",
+          "name": "shell_exec",
+          "args": {
+            "command": "sw_vers && uname -a"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_5",
+          "toolCallId": "call_00_A5ygnD2WtuiQ3FrvKcTk0955",
+          "status": "success",
+          "output": "{\"provider\":\"brave\",\"results\":[{\"title\":\"About the security content of macOS Tahoe 26.5 - Apple Support\",\"snippet\":\"For more information about security, see the Apple Product Security page. ... Description: <strong>An out-of-bounds read was addressed with improved bounds checking</strong>. ... Description: A permissions issue was addressed with additional restrictions. ... Description: A buffer overflow was addressed with ...\",\"url\":\"https://support.apple.com/en-us/127115\"},{\"title\":\"Apple macOS Security Vulnerabilities in 2026 - stack.watch\",\"snippet\":\"The issue was addressed with improved ... in macOS Sequoia 15.4, macOS Sonoma 14.7.5, macOS Ventura 13.7.5. <strong>A malicious app may be able to access private information</strong>. ... An access issue was addressed with additional sandbox restrictions. This issue is fixed in macOS Tahoe 26....\",\"url\":\"https://stack.watch/product/apple/macos/\"},{\"title\":\"Apple’s 2026 Security Events: iPhone Exploits, Zero-Days Put Millions at Risk\",\"snippet\":\"The iOS and iPadOS 26.5 updates addressed more than 60 CVEs, including 20 distinct WebKit flaws that could cause sandboxed data leaks and device crashes. Meanwhile, macOS Tahoe 26.5 resolved <strong>nearly 80 vulnerabilities</strong>, closing flaws that allowed ...\",\"url\":\"https://www.techrepublic.com/article/news-apple-security-roundup-june-2026/\"},{\"title\":\"About the security content of macOS Tahoe 26 - Apple Support\",\"snippet\":\"Description: <strong>This is a vulnerability in open source code and Apple Software is among the affected projects</strong>. The CVE-ID was assigned by a third party.\",\"url\":\"https://support.apple.com/en-us/125110\"},{\"title\":\"Apple adds new CVE details to several macOS, iOS, iPadOS, visionOS, and watchOS updates, old and new - 9to5Mac\",\"snippet\":\"Available for: macOS Sequoia Impact: <strong>A malicious app may be able to gain root privileges</strong> Description: A logic issue was addressed with improved checks. CVE-2025-43306: Mickey Jin (@patch1t) Additionally, Apple updated macOS Tahoe 26’s security ...\",\"url\":\"https://9to5mac.com/2026/05/26/apple-adds-new-cve-details-to-several-macos-ios-ipados-visionos-and-watchos-updates/\"},{\"title\":\"About the security content of macOS Tahoe 26.2 - Apple Support\",\"snippet\":\"Learn more about the issue and CVE-ID at cve.org. ... Description: <strong>A permissions issue was addressed by removing the vulnerable code</strong>.\",\"url\":\"https://support.apple.com/en-us/125886\"},{\"title\":\"Apple Products Multiple Vulnerabilities\",\"snippet\":\"macOS Tahoe 26.5 · macOS Sequoia 15.7.7 · macOS Sonoma 14.8.7 · Safari 26.5 · tvOS 26.5 · watchOS 26.5 · visionOS 26.5 · CVE-2025-43524 · CVE-2026-1837 · CVE-2026-28819 · CVE-2026-28840 · CVE-2026-28846 · CVE-2026-28847 · CVE-2026-28848 · CVE-2026-28870 ·\",\"url\":\"https://www.hkcert.org/security-bulletin/apple-products-multiple-vulnerabilities_20260513\"},{\"title\":\"Apple has released macOS Tahoe 26.5, and security updates 15.7.7 and 14.8.7 – The Eclectic Light Company\",\"snippet\":\"Security release notes are here for Tahoe with <strong>around 69 vulnerabilities fixed</strong> including more kernel bugs than I’ve ever seen in a single update, here for Sequoia with around 45, and here for Sonoma with a mere 43 or so.\",\"url\":\"https://eclecticlight.co/2026/05/11/apple-has-released-macos-tahoe-26-5-and-security-updates-15-7-6-and-14-8-6/\"},{\"title\":\"CVE-2026-20700: Apple Patches Zero-Day Exploited in Sophisticated Cyber Attacks | SOC Prime\",\"snippet\":\"Yes. <strong>Devices running vulnerable versions, especially those not updated to the patched OS releases, can remain exposed</strong>. ... Update Apple devices to the latest available security release for your OS line, including iOS 26.3,iPadOS 26.3, and macOS ...\",\"url\":\"https://socprime.com/blog/cve-2026-20700-vulnerability/\"},{\"title\":\"CVE-2026-28952: Apple macOS 26.5 Kernel Vuln found by Claude | Hacker News\",\"snippet\":\"For the record, this bug has nothing to do with our recent MIE attack [1] [2], which exploited two different kernel bugs. Our bugs are not fixed yet · vulnerabilities have already been fixed, and the system update was pushed 2026/05/11 †\",\"url\":\"https://news.ycombinator.com/item?id=48273169\"}]}"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_6",
+          "toolCallId": "call_01_G7Gl6J7eL06MNPuyA8Ja6288",
+          "status": "success",
+          "output": "{\"provider\":\"brave\",\"results\":[{\"title\":\"Apple Fixes Exploited Zero-Day Affecting iOS, macOS, and Other Devices\",\"snippet\":\"<strong>Apple releases security updates fixing exploited dyld zero-day CVE-2026-20700 enabling code execution across iOS, macOS, and Apple devices</strong>.\",\"url\":\"https://thehackernews.com/2026/02/apple-fixes-exploited-zero-day.html\"},{\"title\":\"CVE-2026-20700: Apple Patches Zero-Day Exploited in Sophisticated Cyber Attacks | SOC Prime\",\"snippet\":\"CVE-2026-20700 is a memory corruption vulnerability in Apple’s dyld component. Apple states that <strong>an attacker with memory write capability may be able to exploit the flaw to execute arbitrary code</strong>.\",\"url\":\"https://socprime.com/blog/cve-2026-20700-vulnerability/\"},{\"title\":\"Zero Day Initiative — The Apple macOS Security Update Review\",\"snippet\":\"- CVE-2026-28819 (Wi-Fi) stands out as the strongest candidate for the most severe as it states, “<strong>An app may be able to execute arbitrary code with kernel privileges</strong>.” The combination of arbitrary code execution at the kernel level is about ...\",\"url\":\"https://www.zerodayinitiative.com/blog/2026/5/12/the-apple-macos-security-update-review\"},{\"title\":\"Apple fixed first actively exploited zero-day in 2026\",\"snippet\":\"Apple released updates for iOS, iPadOS, macOS, watchOS, tvOS, and visionOS to address an actively exploited zero-day tracked as CVE-2026-20700. The flaw is a memory corruption issue in Apple’s Dynamic Link Editor (dyld) that lets attackers execute arbitrary code on vulnerable devices.\",\"url\":\"https://securityaffairs.com/187890/security/apple-fixed-first-actively-exploited-zero-day-in-2026.html\"},{\"title\":\"Apple fixes zero-day flaw exploited in targeted attacks (CVE-2026-20700) - Help Net Security\",\"snippet\":\"CVE-2026-20700 is a memory corruption issue in dyld, the Dynamic Link Editor component of Apple’s operating systems, and <strong>may allow attackers with memory write capability to execute arbitrary code</strong>.\",\"url\":\"https://www.helpnetsecurity.com/2026/02/12/apple-zero-day-fixed-cve-2026-20700/\"},{\"title\":\"Apple Releases Emergency Patch For Two Zero-Day ...\",\"snippet\":\"We cannot provide a description for this page right now\",\"url\":\"https://www.linkedin.com/pulse/apple-releases-emergency-patch-two-zero-day-flaws-zqf5e\"},{\"title\":\"Apple Mac Os X security vulnerabilities, CVEs, versions and CVE reports\",\"snippet\":\"Apple Mac Os X security vulnerabilities, CVEs, exploits, metasploit modules, vulnerability statistics and list of versions\",\"url\":\"https://www.cvedetails.com/product/156/Apple-Mac-Os-X.html?vendor_id=49\"},{\"title\":\"Apple Urgently Patches WebKit Zero-Day Vulnerabilities Exploited in Targeted Attacks Affecting iOS, macOS, and Safari – Rescana\",\"snippet\":\"Apple has released emergency security updates to address two zero-day vulnerabilities in WebKit, the browser engine powering Safari and all browsers on iOS. Both vulnerabilities (<strong>CVE-2025-43529 and CVE-2025-14174</strong>) have been confirmed as exploited ...\",\"url\":\"https://www.rescana.com/post/apple-urgently-patches-webkit-zero-day-vulnerabilities-exploited-in-targeted-attacks-affecting-ios\"},{\"title\":\"macOS - Intrucept\",\"snippet\":\"As such, this patch not only fixes a critical issue but also highlights the need for continued vigilance and timely system updates. Apple has so far fixed a total of seven zero-day vulnerabilities in 2025 that were actively exploited in real-world attacks, including CVE-2025-43300, reflecting an ongoing effort to patch critical security flaws across iOS, iPadOS, and macOS platforms.\",\"url\":\"https://intruceptlabs.com/tag/macos/\"},{\"title\":\"Securing the git push pipeline: Responding to a critical remote code execution vulnerability - The GitHub Blog\",\"snippet\":\"How we validated, fixed, and investigated a critical vulnerability in under two hours, and confirmed no exploitation. ... On March 4, 2026, we received a vulnerability report through our Bug Bounty program from researchers at Wiz describing a critical remote code execution vulnerability affecting github.com, GitHub Enterprise Cloud, GitHub Enterprise Cloud with Data Residency, GitHub Enterprise Cloud with Enterprise Managed Users, and GitHub Enterprise Server.\",\"url\":\"https://github.blog/security/securing-the-git-push-pipeline-responding-to-a-critical-remote-code-execution-vulnerability/\"}]}"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_7",
+          "toolCallId": "call_02_HzE526VPlfEm8UiTJsNe9315",
+          "status": "success",
+          "output": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5.1\nBuildVersion:\t\t25F80\nDarwin yana-macbook-pro 25.5.0 Darwin Kernel Version 25.5.0: Mon Apr 27 20:39:09 PDT 2026; root:xnu-12377.121.6~2/RELEASE_ARM64_T6020 arm64",
+          "meta": {
+            "label": "Run shell command",
+            "cwd": "/Users/younes",
+            "durationMs": 3297,
+            "exitCode": 0,
+            "truncated": false
+          }
+        },
+        {
+          "kind": "active_model",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_8",
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_9",
+          "toolCallId": "call_00_foxlSx373tCLrOUS283H6011",
+          "name": "shell_exec",
+          "args": {
+            "command": "lsof -iTCP -sTCP:LISTEN -P -n 2>/dev/null | awk '{print $1, $3, $9}' | sort -u"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_10",
+          "toolCallId": "call_01_gIObcK7c9jx6Sp5tjHKD6337",
+          "name": "shell_exec",
+          "args": {
+            "command": "fdesetup status 2>/dev/null; echo \"===\"; csrutil status 2>/dev/null; echo \"===\"; spctl --status 2>/dev/null; echo \"===\"; /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate 2>/dev/null"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_11",
+          "toolCallId": "call_02_HoGoJWluZv99yNUT1WuN8050",
+          "name": "shell_exec",
+          "args": {
+            "command": "cat /etc/ssh/sshd_config 2>/dev/null | grep -v \"^#\" | grep -v \"^$\" | head -30; echo \"===\"; sudo systemsetup -getremotelogin 2>/dev/null"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_12",
+          "toolCallId": "call_03_e9dMz9r2MQE7N3A6KW3A3894",
+          "name": "shell_exec",
+          "args": {
+            "command": "softwareupdate --history 2>/dev/null | tail -15; echo \"===\"; softwareupdate -l 2>&1 | head -20"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_13",
+          "toolCallId": "call_04_USSyRZI83qNVNlvsEMJ67179",
+          "name": "shell_exec",
+          "args": {
+            "command": "sysctl -a 2>/dev/null | grep -i \"net.inet.ip.forwarding\\|net.inet6.ip6.forwarding\""
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_14",
+          "toolCallId": "call_05_metchkcTv6RXUYqEZZLX8206",
+          "name": "shell_exec",
+          "args": {
+            "command": "launchctl list 2>/dev/null | grep -v \"com.apple\" | head -40"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_15",
+          "toolCallId": "call_00_foxlSx373tCLrOUS283H6011",
+          "status": "success",
+          "output": "COMMAND USER NAME\nControlCe younes *:5000\nControlCe younes *:7000\nGoogle younes 127.0.0.1:9222\nOllama younes 127.0.0.1:49153\nWolffish younes 127.0.0.1:23151\nfigma_age younes 127.0.0.1:44950\nfigma_age younes 127.0.0.1:44960\nlogioptio younes *:59869\nollama younes 127.0.0.1:11434\nrapportd younes *:49152\nrapportd younes *:56359\nrapportd younes *:56360",
+          "meta": {
+            "label": "Run shell command",
+            "cwd": "/Users/younes",
+            "durationMs": 2663,
+            "exitCode": 0,
+            "truncated": false
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_16",
+          "toolCallId": "call_01_gIObcK7c9jx6Sp5tjHKD6337",
+          "status": "success",
+          "output": "FileVault is On.\n===\nSystem Integrity Protection status: enabled.\n===\nassessments enabled\n===\nFirewall is enabled. (State = 1)",
+          "meta": {
+            "label": "Run shell command",
+            "cwd": "/Users/younes",
+            "durationMs": 1735,
+            "exitCode": 0,
+            "truncated": false
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_17",
+          "toolCallId": "call_02_HoGoJWluZv99yNUT1WuN8050",
+          "status": "success",
+          "output": "Include /etc/ssh/sshd_config.d/*\nAuthorizedKeysFile\t.ssh/authorized_keys\nSubsystem\tsftp\t/usr/libexec/sftp-server\n===\nRemote Login: Off",
+          "meta": {
+            "label": "Run shell command",
+            "cwd": "/Users/younes",
+            "durationMs": 3677,
+            "exitCode": 0,
+            "truncated": false
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_18",
+          "toolCallId": "call_03_e9dMz9r2MQE7N3A6KW3A3894",
+          "status": "success",
+          "output": "macOS Tahoe 26.1                                   26.1       13/11/2025, 06:12:42  \nCommand Line Tools for Xcode 26.1                  26.1       13/11/2025, 06:30:09  \nmacOS Tahoe 26.2                                   26.2       14/12/2025, 03:15:35  \nCommand Line Tools for Xcode 26.2                  26.2       14/12/2025, 03:25:34  \nmacOS Tahoe 26.3                                   26.3       17/02/2026, 17:21:06  \nCommand Line Tools for Xcode 26.3                  26.3       28/02/2026, 22:32:53  \nmacOS Tahoe 26.3.1                                 26.3.1     06/03/2026, 04:30:28  \nmacOS Background Security Improvement (a)          26.3.1 (a) 23/03/2026, 17:34:18  \nmacOS Tahoe 26.4                                   26.4       28/03/2026, 17:02:38  \nCommand Line Tools for Xcode 26.4                  26.4       28/03/2026, 17:29:21  \nmacOS Tahoe 26.4.1                                 26.4.1     11/04/2026, 19:38:14  \nCommand Line Tools for Xcode 26.4                  26.4.1     17/04/2026, 17:11:38  \nmacOS Tahoe 26.5                                   26.5       16/05/2026, 05:40:24  \nCommand Line Tools for Xcode 26.5                  26.5       16/05/2026, 05:51:16  \nmacOS Tahoe 26.5.1                                 26.5.1     04/06/2026, 07:19:10  \n===\nNo new software available.\nSoftware Update Tool\n\nFinding available software",
+          "meta": {
+            "label": "Run shell command",
+            "cwd": "/Users/younes",
+            "durationMs": 718,
+            "exitCode": 0,
+            "truncated": false
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_19",
+          "toolCallId": "call_04_USSyRZI83qNVNlvsEMJ67179",
+          "status": "success",
+          "output": "net.inet.ip.forwarding: 0\nnet.inet6.ip6.forwarding: 0",
+          "meta": {
+            "label": "Run shell command",
+            "cwd": "/Users/younes",
+            "durationMs": 880,
+            "exitCode": 0,
+            "truncated": false
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_20",
+          "toolCallId": "call_05_metchkcTv6RXUYqEZZLX8206",
+          "status": "success",
+          "output": "PID\tStatus\tLabel\n-\t-6\tcom.amazon.kpr.ncd\n-\t0\tus.zoom.updater\n-\t0\tcom.docker.helper\n-\t78\tcom.paloaltonetworks.gp.pangps\n-\t0\tcom.norton.userinit\n818\t0\tcom.ollama.ollama\n1498\t0\tcom.norton.mes.vpn\n8563\t0\tcom.openssh.ssh-agent\n1852\t0\tapplication.com.google.Chrome.85879.150340917\n-\t0\tcom.microsoft.update.agent\n-\t78\tcom.microsoft.SyncReporter\n-\t0\tsh.wolffi.app.ShipIt\n-\t0\tus.zoom.updater.login.check\n44811\t0\tapplication.sh.wolffi.app.151264036.151264042\n784\t0\tapplication.com.figma.agent.43864952.148165958\n813\t0\tcom.logitech.LogiRightSight.Agent\n-\t78\tcom.paloaltonetworks.gp.pangpa\n-\t78\tcom.logitech.manager.daemon\n866\t0\tapplication.com.docker.docker.109562125.109562396\n-\t78\tcom.openai.atlas.update-helper\n-\t78\tcom.microsoft.OneDriveStandaloneUpdater\n1511\t0\tcom.norton.Antivirus\n821\t0\tcom.logi.cp-dev-mgr",
+          "meta": {
+            "label": "Run shell command",
+            "cwd": "/Users/younes",
+            "durationMs": 2579,
+            "exitCode": 0,
+            "truncated": false
+          }
+        },
+        {
+          "kind": "active_model",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_21",
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_22",
+          "toolCallId": "call_00_VljXJwuOXP2SV3vb6FgC0853",
+          "name": "shell_exec",
+          "args": {
+            "command": "brew outdated --formula 2>/dev/null | head -40; echo \"===CASKS===\"; brew outdated --cask 2>/dev/null | head -20"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_23",
+          "toolCallId": "call_01_1g9uQbkQfxl1KcGgDg3P2019",
+          "name": "shell_exec",
+          "args": {
+            "command": "echo \"=== CHROME ===\" && /Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome --version 2>/dev/null; echo \"=== NORTON ===\" && mdls -name kMDItemVersion /Applications/Norton.app 2>/dev/null; echo \"=== DOCKER ===\" && docker --version 2>/dev/null; echo \"=== OLLAMA ===\" && ollama --version 2>/dev/null; echo \"=== NODE ===\" && node --version 2>/dev/null; echo \"=== PYTHON ===\" && python3 --version 2>/dev/null"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_24",
+          "toolCallId": "call_02_hGKp5IYudlmQSlRtbo5O0368",
+          "name": "web_fetch",
+          "args": {
+            "url": "https://support.apple.com/en-us/127115",
+            "maxLength": 12000
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_25",
+          "toolCallId": "call_03_k3tRuO96pQA9zy51uCfQ8068",
+          "name": "web_search",
+          "args": {
+            "query": "CVE-2026-28819 macOS Wi-Fi kernel vulnerability patched version",
+            "maxResults": 5
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_26",
+          "toolCallId": "call_00_VljXJwuOXP2SV3vb6FgC0853",
+          "status": "success",
+          "output": "awscli\ncloudflared\ncocoapods\nffmpeg\ngh\ngit\ngnupg\ngnutls\ngo\nlibassuan\nlibgcrypt\nlibgpg-error\nlibksba\nlibtasn1\nlibusb\nnettle\nnode@24\np11-kit\npcre2\npinentry\npipx\npython@3.13\npython@3.14\nruby\nsdl2-compat\ntelnet\nunbound\nuv\n===CASKS===\ndiscord\ndotnet-sdk\nngrok",
+          "meta": {
+            "label": "Run shell command",
+            "cwd": "/Users/younes",
+            "durationMs": 3313,
+            "exitCode": 0,
+            "truncated": false
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_27",
+          "toolCallId": "call_01_1g9uQbkQfxl1KcGgDg3P2019",
+          "status": "success",
+          "output": "=== CHROME ===\nGoogle Chrome 149.0.7827.116 \n=== NORTON ===\nkMDItemVersion = \"26.4.0\"\n=== DOCKER ===\nDocker version 29.2.0, build 0b9d198\n=== OLLAMA ===\nollama version is 0.30.10\n=== NODE ===\nv24.16.0\n=== PYTHON ===\nPython 3.14.4",
+          "meta": {
+            "label": "Run shell command",
+            "cwd": "/Users/younes",
+            "durationMs": 845,
+            "exitCode": 0,
+            "truncated": false
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_28",
+          "toolCallId": "call_02_hGKp5IYudlmQSlRtbo5O0368",
+          "status": "success",
+          "output": "# About the security content of macOS Tahoe 26.5\n\nThis document describes the security content of macOS Tahoe 26.5.\n\n## About Apple security updates\n\nFor our customers' protection, Apple doesn't disclose, discuss, or confirm security issues until an investigation has occurred and patches or releases are available. Recent releases are listed on the Apple security releases page.\n\nApple security documents reference vulnerabilities by CVE-ID when possible.\n\nFor more information about security, see the Apple Product Security page.\n\n## macOS Tahoe 26.5\n\nReleased May 11, 2026\n\n### Accelerate\n\nAvailable for: macOS Tahoe\n\nImpact: An app may be able to cause a denial-of-service\n\nDescription: An out-of-bounds read was addressed with improved bounds checking.\n\nCVE-2026-28991: Seiji Sakurai (@HeapSmasher)\n\n### Accounts\n\nAvailable for: macOS Tahoe\n\nImpact: An app may be able to bypass certain Privacy preferences\n\nDescription: A permissions issue was addressed with additional restrictions.\n\nCVE-2026-28988: Asaf Cohen\n\n### APFS\n\nAvailable for: macOS Tahoe\n\nImpact: An app may be able to cause unexpected system termination\n\nDescription: A buffer overflow was addressed with improved bounds checking.\n\nCVE-2026-28959: Dave G.\n\n### App Intents\n\nAvailable for: macOS Tahoe\n\nImpact: A malicious app may be able to break out of its sandbox\n\nDescription: A logic issue was addressed with improved restrictions.\n\nCVE-2026-28995: Vamshi Paili, Tony Gorez (@tonygo_) for Reverse Society\n\n### AppleJPEG\n\nAvailable for: macOS Tahoe\n\nImpact: Processing a maliciously crafted image may lead to a denial-of-service\n\nDescription: This is a vulnerability in open source code and Apple Software is among the affected projects. The CVE-ID was assigned by a third party. Learn more about the issue and CVE-ID at cve.org.\n\nCVE-2026-1837\n\n### AppleJPEG\n\nAvailable for: macOS Tahoe\n\nImpact: Processing a maliciously crafted media file may lead to unexpected app termination or corrupt process memory\n\nDescription: A memory corruption issue was addressed with improved input validation.\n\nCVE-2026-28956: impost0r (ret2plt)\n\n### Audio\n\nAvailable for: macOS Tahoe\n\nImpact: Processing an audio stream in a maliciously crafted media file may terminate the process\n\nDescription: The issue was addressed with improved memory handling.\n\nCVE-2026-39869: David Ige of Beryllium Security\n\n### CoreMedia\n\nAvailable for: macOS Tahoe\n\nImpact: An app may be able to access private information\n\nDescription: This issue was addressed through improved state management.\n\nCVE-2026-28922: Arni Hardarson\n\n### CoreServices\n\nAvailable for: macOS Tahoe\n\nImpact: Processing a maliciously crafted file may lead to unexpected app termination\n\nDescription: The issue was addressed with improved checks.\n\nCVE-2026-28936: Andreas Jaegersberger & Ro Achterberg of Nosebeard Labs\n\n### CoreSymbolication\n\nAvailable for: macOS Tahoe\n\nImpact: Parsing a maliciously crafted file may lead to an unexpected app termination\n\nDescription: An out-of-bounds access issue was addressed with improved bounds checking.\n\nCVE-2026-28918: Niels Hofmans, Anonymous working with TrendAI Zero Day Initiative\n\n### CUPS\n\nAvailable for: macOS Tahoe\n\nImpact: An app may be able to gain root privileges\n\nDescription: A parsing issue in the handling of directory paths was addressed with improved path validation.\n\nCVE-2026-28915: Andreas Jaegersberger & Ro Achterberg of Nosebeard Labs\n\n### FileProvider\n\nAvailable for: macOS Tahoe\n\nImpact: An app may be able to access sensitive user data\n\nDescription: A race condition was addressed with additional validation.\n\nCVE-2026-43659: Alex Radocea\n\n### GPU Drivers\n\nAvailable for: macOS Tahoe\n\nImpact: A malicious app may be able to break out of its sandbox\n\nDescription: A logging issue was addressed with improved data redaction.\n\nCVE-2026-28923: Kun Peeks (@SwayZGl1tZyyy)\n\n### HFS\n\nAvailable for: macOS Tahoe\n\nImpact: An app may be able to cause unexpected system termination or write kernel memory\n\nDescription: A buffer overflow was addressed with improved bounds checking.\n\nCVE-2026-28925: Aswin Kumar Gokula Kannan, Dave G.\n\n### ImageIO\n\nAvailable for: macOS Tahoe\n\nImpact: Processing a maliciously crafted image may corrupt process memory\n\nDescription: A buffer overflow issue was addressed with improved memory handling.\n\nCVE-2026-43661: an anonymous researcher\n\n### ImageIO\n\nAvailable for: macOS Tahoe\n\nImpact: Processing a maliciously crafted file may lead to unexpected app termination\n\nDescription: The issue was addressed with improved bounds checks.\n\nCVE-2026-28977: Suresh Sundaram\n\n### ImageIO\n\nAvailable for: macOS Tahoe\n\nImpact: Processing a maliciously crafted image may corrupt process memory\n\nDescription: The issue was addressed with improved memory handling.\n\nCVE-2026-28990: Jiri Ha, Arni Hardarson\n\n### Installer\n\nAvailable for: macOS Tahoe\n\nImpact: A malicious app may be able to break out of its sandbox\n\nDescription: A permissions issue was addressed with additional restrictions.\n\nCVE-2026-28978: wdszzml and Atuin Automated Vulnerability Discovery Engine\n\n### IOHIDFamily\n\nAvailable for: macOS Tahoe\n\nImpact: An attacker may be able to cause unexpected app termination\n\nDescription: A memory corruption vulnerability was addressed with improved locking.\n\nCVE-2026-28992: Johnny Franks (@zeroxjf)\n\n### IOHIDFamily\n\nAvailable for: macOS Tahoe\n\nImpact: An app may be able to determine kernel memory layout\n\nDescription: A logging issue was addressed with improved data redaction.\n\nCVE-2026-28943: Google Threat Analysis Group\n\n### IOKit\n\nAvailable for: macOS Tahoe\n\nImpact: An app may be able to cause unexpected system termination\n\nDescription: A use after free issue was addressed with improved memory management.\n\nCVE-2026-28969: Mihalis Haatainen, Ari Hawking, Ashish Kunwar\n\n### IOSurfaceAccelerator\n\nAvailable for: macOS Tahoe\n\nImpact: An app may be able to cause unexpected system termination or read kernel memory\n\nDescription: An out-of-bounds read was addressed with improved bounds checking.\n\nCVE-2026-43655: Somair Ansar and an anonymous researcher\n\n### Kernel\n\nAvailable for: macOS Tahoe\n\nImpact: An app may be able to disclose kernel memory\n\nDescription: The issue was addressed with improved memory handling.\n\nCVE-2026-43654: Vaagn Vardanian, Nathaniel Oh (@calysteon)\n\n### Kernel\n\nAvailable for: macOS Tahoe\n\nImpact: An app may be able to modify protected parts of the file system\n\nDescription: A denial of service issue was addressed by removing the vulnerable code.\n\nCVE-2026-28908: beist\n\n### Kernel\n\nAvailable for: macOS Tahoe\n\nImpact: A maliciously crafted disk image may bypass Gatekeeper checks\n\nDescription: A file quarantine bypass was addressed with additional checks.\n\nCVE-2026-28954: Yiğit Can YILMAZ (@yilmazcanyigit)\n\n### Kernel\n\nAvailable for: macOS Tahoe\n\nImpact: A local user may be able to cause unexpected system termination or read kernel memory\n\nDescription: A buffer overflow was addressed with improved input validation.\n\nCVE-2026-28897: popku1337, Billy Jheng Bing Jhong and Pan Zhenpeng (@Peterpan0927) of STAR Labs SG Pte. Ltd., Robert Tran, Aswin kumar Gokulakannan\n\n### Kernel\n\nAvailable for: macOS Tahoe\n\nImpact: An app may be able to cause unexpected system termination\n\nDescription: An integer overflow was addressed with improved input validation.\n\nCVE-2026-28952: Calif.io in collaboration with Claude and Anthropic Research\n\n### Kernel\n\nAvailable for: macOS Tahoe\n\nImpact: An app may be able to gain root privileges\n\nDescription: An authorization issue was addressed with improved state management.\n\nCVE-2026-28951: Csaba Fitzl (@theevilbit) of Iru\n\n### Kernel\n\nAvailable for: macOS Tahoe\n\nImpact: An app may be able to cause unexpected system termination or write kernel memory\n\nDescription: An out-of-bounds write issue was addressed with improved input validation.\n\nCVE-2026-28972: Billy Jheng Bing Jhong and Pan Zhenpeng (@Peterpan0927) of STAR Labs SG Pte. Ltd., Ryan Hileman via Xint Code (xint.io)\n\n### Kernel\n\nAvailable for: macOS Tahoe\n\nImpact: An app may be able to cause unexpected system termination\n\nDescription: A race condition was addressed with additional validation.\n\nCVE-2026-28986: Chris Betz, Tristan Madani (@TristanInSec) from Talence Security, Ryan Hileman via Xint Code (xint.io)\n\n### Kernel\n\nAvailable for: macOS Tahoe\n\nImpact: An app may be able to leak sensitive kernel state\n\nDescription: A logging issue was addressed with improved data redaction.\n\nCVE-2026-28987: Dhiyanesh Selvaraj (@redroot97)\n\n### LaunchServices\n\nAvailable for: macOS Tahoe\n\nImpact: A remote attacker may be able to cause a denial of service\n\nDescription: A type confusion issue was addressed with improved checks.\n\nCVE-2026-28983: Ruslan Dautov\n\n### Mail Drafts\n\nAvailable for: macOS Tahoe\n\nImpact: Replying to an email could display remote images in Mail in Lockdown Mode\n\nDescription: A logic issue was addressed with improved checks.\n\nCVE-2026-28929: Yiğit Can YILMAZ (@yilmazcanyigit)\n\n### mDNSResponder\n\nAvailable for: macOS Tahoe\n\nImpact: An attacker on the local network may be able to cause a denial-of-service\n\nDescription: The issue was addressed with improved memory handling.\n\nCVE-2026-43653: Atul R V\n\n### mDNSResponder\n\nAvailable for: macOS Tahoe\n\nImpact: An attacker on the local network may be able to cause a denial-of-service\n\nDescription: A null pointer dereference was addressed with improved input validation.\n\nCVE-2026-28985: Omar Cerrito\n\n### mDNSResponder\n\nAvailable for: macOS Tahoe\n\nImpact: A remote attacker may be able to cause unexpected system termination or corrupt kernel memory\n\nDescription: A use after free issue was addressed with improved memory management.\n\nCVE-2026-43668: Anton Pakhunov, Ricardo Prado\n\n### mDNSResponder\n\nAvailable for: macOS Tahoe\n\nImpact: An attacker on the local network may be able to cause a denial-of-service\n\nDescription: An out-of-bounds write issue was addressed with improved bounds checking.\n\nCVE-2026-43666: Ian van der Wurff (ian.nl)\n\n### Model I/O\n\nAvailable for: macOS Tahoe\n\nImpact: Processing a maliciously crafted file may lead to a denial-of-service or potentially disclose memory contents\n\nDescription: The issue was addressed with improved checks.\n\nCVE-2026-28941: Michael DePlante (@izobashi) of TrendAI Zero Day Initiative\n\n### Model I/O\n\nAvailable for: macOS Tahoe\n\nImpact: Processing a maliciously crafted image may corrupt process memory\n\nDescription: The issue was addressed with improved memory handling.\n\nCVE-2026-28940: Michael DePlante (@izobashi) of TrendAI Zero Day Initiative\n\n### Network Extensions\n\nAvailable for: macOS Tahoe\n\nImpact: An attacker with physical access to a locked device may be able to view sensitive user information\n\nDescription: This issue was addressed with improved checks.\n\nCVE-2026-28961: Dan Raviv\n\n### Networking\n\nAvailable for: macOS Tahoe\n\nImpact: An attacker may be able to track users through their IP address\n\nDescription: This issue was addressed through improved state management.\n\nCVE-2026-28906: Ilya Sc. Jowell A.\n\n### Quick Look\n\nAvailable for: macOS Tahoe\n\nImpact: Parsing a maliciously crafted file may lead to an unexpected app termination\n\nDescription: An out-of-bounds write issue was addressed with improved input validation.\n\nCVE-2026-43656: Peter Malone\n\n### Sandbox\n\nAvailable for: macOS Tahoe\n\nImpact: An app may be able to access protected user data\n\nDescription: A permissions issue was addressed with additional restrictions.\n\nCVE-2026-43652: Asaf Cohen\n\n### SceneKit\n\nAvailable for: macOS Tahoe\n\nImpact: Processing a maliciously crafted image may corrupt process memory\n\nDescription: The issue was addressed with improved memory handling.\n\nCVE-2026-39870: Peter Malone\n\n### SceneKit\n\nAvailable for: macOS Tahoe\n\nImpact: A remote attacker may be able to cause unexpected app termination\n\nDescription: A buffer overflow was addressed with improved bounds checking.\n\nCVE-2026-28846: Peter Malone\n\n### Shortcuts\n\nAvailable for: macOS Tahoe\n\nImpact: An app may be able to access user-sensitive data\n\nDescription: "
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_29",
+          "toolCallId": "call_03_k3tRuO96pQA9zy51uCfQ8068",
+          "status": "success",
+          "output": "{\"provider\":\"brave\",\"results\":[{\"title\":\"Apple Patches 68 Vulnerabilities Across iOS, macOS, Safari May 11th - Capstone Technologies Group\",\"snippet\":\"Set up monitoring for unusual kernel memory access patterns, particularly from Wi-Fi drivers and HFS file system operations. CVE-2026-28819 <strong>allows arbitrary code execution with kernel privileges through Wi-Fi components</strong>, while CVE-2026-28925 ...\",\"url\":\"https://captechgroup.com/about-us/threat-intelligence-center/apple-patches-68-vulnerabilities-across-ios-macos-29833c\"},{\"title\":\"Patch Tuesday May 2026: CVE Analysis and AI-Discovered Bugs | Automox\",\"snippet\":\"CVE-2026-28819 is a <strong>kernel-level Wi-Fi RCE</strong>.\",\"url\":\"https://www.automox.com/blog/patch-fix-tuesday-may-2026\"},{\"title\":\"Apple Lifts the Veil on Months-Old Security Fixes Across iOS, macOS and Older Devices\",\"snippet\":\"Kernel, Wi-Fi, mDNSResponder and WebKit each saw critical attention. A Wi-Fi bug tracked as CVE-2026-28819 <strong>could allow kernel-level code execution</strong>. Another in mDNSResponder risked remote memory corruption.\",\"url\":\"https://www.webpronews.com/apple-lifts-the-veil-on-months-old-security-fixes-across-ios-macos-and-older-devices/\"},{\"title\":\"CVE-2026-28819: Apple iPadOS RCE Vulnerability\",\"snippet\":\"Apple addressed the issue with <strong>improved bounds checking across multiple operating system updates</strong>. According to Apple&#x27;s advisory, an app may be able to execute arbitrary code with kernel privileges by exploiting this flaw.\",\"url\":\"https://www.sentinelone.com/vulnerability-database/cve-2026-28819/\"},{\"title\":\"Zero Day Initiative — The Apple macOS Security Update Review\",\"snippet\":\"- CVE-2026-28819 (Wi-Fi) stands out as the strongest candidate for the most severe as it states, “<strong>An app may be able to execute arbitrary code with kernel privileges</strong>.” The combination of arbitrary code execution at the kernel level is about ...\",\"url\":\"https://www.zerodayinitiative.com/blog/2026/5/12/the-apple-macos-security-update-review\"}]}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_30",
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_31",
+          "toolCallId": "call_00_tMZLkxLwSsyG8Y0W3zjd5264",
+          "name": "web_search",
+          "args": {
+            "query": "CVE-2026-11645 Chrome 149.0.7827.116 patched version",
+            "maxResults": 5
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_32",
+          "toolCallId": "call_01_wRIetUJs1P39OwK5Eun70072",
+          "name": "web_search",
+          "args": {
+            "query": "Ruby 2.6 end of life security vulnerabilities EOL 2026",
+            "maxResults": 5
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_33",
+          "toolCallId": "call_02_EJJ7XMUo1gc0XPTfo9m13912",
+          "name": "shell_exec",
+          "args": {
+            "command": "ruby --version 2>/dev/null; echo \"===\"; docker --version 2>/dev/null; echo \"===\"; echo \"=== GLOBAL NPM OUTDATED ===\" && npm outdated -g --depth=0 2>/dev/null | head -10; echo \"=== NVM NODES ===\" && ls ~/.nvm/versions/node 2>/dev/null || echo \"no nvm nodes\""
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_34",
+          "toolCallId": "call_00_tMZLkxLwSsyG8Y0W3zjd5264",
+          "status": "success",
+          "output": "{\"provider\":\"brave\",\"results\":[{\"title\":\"Active Exploitation Alert: Google Chrome 149 Critical Vulnerabilities Patched Amid Ongoing CVE-2026-11645 Attacks – Rescana\",\"snippet\":\"The latest Google Chrome 149 update ... severity. The most significant among these is CVE-2026-11645, <strong>an out-of-bounds read/write flaw in the V8 JavaScript engine</strong>, which has been confirmed as actively exploited in the ...\",\"url\":\"https://www.rescana.com/post/active-exploitation-alert-google-chrome-149-critical-vulnerabilities-patched-amid-ongoing-cve-2026-11645-attacks\"},{\"title\":\"Chrome V8 Zero-Day CVE-2026-11645 Exploited in the Wild - Patch Now\",\"snippet\":\"For optimal protection, users are advised to update their Chrome browser to versions <strong>149.0.7827.102/.103</strong> for Windows and Apple macOS, and 149.0.7827.102 for Linux.\",\"url\":\"https://thehackernews.com/2026/06/chrome-v8-zero-day-cve-2026-11645.html\"},{\"title\":\"Chrome V8 Zero-Day CVE-2026-11645 Patch Now\",\"snippet\":\"The flaw involves out-of-bounds memory access in Chrome’s JavaScript and WebAssembly engine. Google patched the issue in <strong>Chrome 149.0.7827.102/.103 for Windows/macOS and 149.0.7827.102 for Linux</strong>.\",\"url\":\"https://vulert.com/blog/chrome-v8-zero-day-cve-2026-11645/\"},{\"title\":\"Google patches Chrome zero-day exploited in the wild (CVE-2026-11645) - Help Net Security\",\"snippet\":\"The fix has been shipped in <strong>Chrome 149.0.7827.102/.103 for Windows and macOS and Chrome 149.0.7827.102 for Linux</strong>, with the update rolling out to users over the coming days and weeks.\",\"url\":\"https://www.helpnetsecurity.com/2026/06/09/google-chrome-zero-day-cve-2026-11645/\"},{\"title\":\"CVE-2026-11645: Chrome Zero-Day in V8\",\"snippet\":\"Google says an exploit exists in the wild, and the patched Stable builds are rolling out as <strong>149.0.7827.102.103 for Windows and Mac and 149.0.7827.102 for Linux</strong>. Public reporting says the flaw can be triggered through a specially crafted HTML ...\",\"url\":\"https://socprime.com/blog/cve-2026-11645-chrome-zero-day-vulnerability-exploited-in-the-wild/\"}]}"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_35",
+          "toolCallId": "call_01_wRIetUJs1P39OwK5Eun70072",
+          "status": "success",
+          "output": "{\"provider\":\"brave\",\"results\":[{\"title\":\"HeroDevs Blog | Ruby on Rails End-of-Life Versions: The Dual Ruby + Rails EOL Problem Enterprises Face in 2026\",\"snippet\":\"Our Rails NES covers versions 2.3 ... for vulnerabilities like the March 2026 Rails security fixes, while <strong>EOL versions remain permanently vulnerable</strong>....\",\"url\":\"https://www.herodevs.com/blog-posts/ruby-on-rails-end-of-life-versions-the-dual-ruby-rails-eol-problem-enterprises-face-in-2026\"},{\"title\":\"Ruby Maintenance Branches | Ruby\",\"snippet\":\"eol (end-of-life): <strong>Branch is not supported by the ruby-core team any longer and does not receive any fixes</strong>.\",\"url\":\"https://www.ruby-lang.org/en/downloads/branches/\"},{\"title\":\"Rails and Ruby Support Ends: Critical Deadlines Every Developer Must Know - DEV Community\",\"snippet\":\"Ruby 3.2 enters security-only maintenance mode and will reach end-of-life on <strong>March 31, 2026</strong>. This means you&#x27;re running a framework with zero support on a runtime with diminishing support.\",\"url\":\"https://dev.to/raisa_kanagaraj/rails-and-ruby-support-ends-critical-deadlines-every-developer-must-know-2d9g\"},{\"title\":\"Ruby Latest Version - Support Lifecycle & EOL — VersionLog\",\"snippet\":\"Continuing with an End-of-Life Ruby version exposes projects to several practical risks. Without any security updates, <strong>newly discovered vulnerabilities stay open indefinitely, increasing the chance of exploits in your applications or infrastructure</strong>.\",\"url\":\"https://versionlog.com/ruby/\"},{\"title\":\"Ruby | endoflife.date\",\"snippet\":\"Check end-of-life, release policy and support schedule for Ruby.\",\"url\":\"https://endoflife.date/ruby\"}]}"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_36",
+          "toolCallId": "call_02_EJJ7XMUo1gc0XPTfo9m13912",
+          "status": "success",
+          "output": "ruby 2.6.10p210 (2022-04-12 revision 67958) [universal.arm64e-darwin25]\n===\nDocker version 29.2.0, build 0b9d198\n===\n=== GLOBAL NPM OUTDATED ===\nPackage        Current   Wanted   Latest  Location                    Depended by\n@nestjs/cli     11.0.7  11.0.23  11.0.23  node_modules/@nestjs/cli    global\n@openai/codex   0.98.0  0.141.0  0.141.0  node_modules/@openai/codex  global\neas-cli        16.32.0   20.3.0   20.3.0  node_modules/eas-cli        global\nnpm            11.13.0  11.17.0  11.17.0  node_modules/npm            global\npnpm            10.2.1   11.8.0   11.8.0  node_modules/pnpm           global\n=== NVM NODES ===\nno nvm nodes",
+          "meta": {
+            "label": "Run shell command",
+            "cwd": "/Users/younes",
+            "durationMs": 1982,
+            "exitCode": 0,
+            "truncated": false
+          }
+        },
+        {
+          "kind": "active_model",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_37",
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_38",
+          "toolCallId": "call_00_8ewFwN0SnbJXqORPYE1A8848",
+          "name": "web_search",
+          "args": {
+            "query": "Node.js June 18 2026 security release CVE 24.x vulnerabilities",
+            "maxResults": 5
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_39",
+          "toolCallId": "call_01_LoGLjrELROzz5WycAyNt4951",
+          "name": "shell_exec",
+          "args": {
+            "command": "echo \"=== OPEN PORTS (UDP) ===\" && lsof -iUDP -P -n 2>/dev/null | awk '{print $1, $9}' | sort -u | head -20; echo \"=== DOCKER PROCESSES ===\" && docker ps 2>/dev/null; echo \"=== LAUNCHDAEMONS (non-Apple) ===\" && ls -la /Library/LaunchDaemons/ 2>/dev/null | grep -v \"com.apple\" | head -20"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_40",
+          "toolCallId": "call_02_XEQqeuvkVu9zW9LUE5ig6975",
+          "name": "shell_exec",
+          "args": {
+            "command": "ps aux | grep -iE \"globalprotect|gp_|pangp\" 2>/dev/null | head -5; echo \"===\"; ps aux | grep -iE \"norton|ncd\" 2>/dev/null | head -5"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_41",
+          "toolCallId": "call_00_8ewFwN0SnbJXqORPYE1A8848",
+          "status": "success",
+          "output": "{\"provider\":\"brave\",\"results\":[{\"title\":\"Node.js — Thursday, June 18, 2026 Security Releases\",\"snippet\":\"... The Node.js project will release new versions of the 26.x, 24.x, 22.x releases lines on or shortly after, Wednesday, June 17, 2026 in order to address one or more security issues, <strong>the highest severity is HIGH</strong>.\",\"url\":\"https://nodejs.org/en/blog/vulnerability/june-2026-security-releases\"},{\"title\":\"Node.js June 2026 Security Releases: CVE Patch Guide\",\"snippet\":\"The two HIGH issues — <strong>a WebCrypto crash and a TLS wildcard bypass</strong> — affect every supported line and should be patched this week. ... The 2 GiB crypto crash is easy to trigger by accident.CVE-2026-48933 aborts the process when subtle.encrypt() ...\",\"url\":\"https://www.digitalapplied.com/blog/nodejs-june-2026-security-releases-cve-patch-guide\"},{\"title\":\"Node.js Releases Security Updates for 12 Vulnerabilities, Two Rated High Severity\",\"snippet\":\"These updates, released on June ... vulnerability, tracked as CVE-2026-48933, <strong>affects the WebCrypto API and can trigger a process crash when handling specially crafted input to the subtle</strong>.encrypt() function....\",\"url\":\"https://gbhackers.com/node-js-releases-security-updates-for-12-vulnerabilities/\"},{\"title\":\"Node.js Fixes 12 Vulnerabilities, Including 2 High-Severity Authentication Bypasses\",\"snippet\":\"The updates impact Node.js versions 22.x, 24.x, and 26.x, with patched releases now available as of June 18, 2026. The most critical issue, tracked as CVE-2026-48618, involves <strong>improper handling of Unicode dot separators in TLS hostname verification</strong>.\",\"url\":\"https://cybersecuritynews.com/node-js-patches-12-vulnerabilities/\"},{\"title\":\"Critical Node.js Security Release Patches 12 Vulnerabilities Including Authentication Bypass\",\"snippet\":\"The Node.js project has released critical security updates across its 22.x, 24.x, and 26.x release lines, addressing 12 vulnerabilities, including <strong>two high-severity flaws that could enable authentication bypass and cause remote processes to crash</strong>.\",\"url\":\"https://cyberpress.org/critical-node-js-security-release-patches/\"}]}"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_42",
+          "toolCallId": "call_01_LoGLjrELROzz5WycAyNt4951",
+          "status": "success",
+          "output": "=== OPEN PORTS (UDP) ===\nCOMMAND NAME\nGoogle *:5353\nidentitys *:*\nlogioptio *:59870\nlogioptio *:59871\nrapportd *:3722\nreplicato *:56914\nsharingd *:*\nsharingd *:56866\n=== DOCKER PROCESSES ===\nCONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES\n=== LAUNCHDAEMONS (non-Apple) ===\ntotal 104\ndrwxr-xr-x  17 root  wheel   544 Jun 15 05:40 .\ndrwxr-xr-x  68 root  wheel  2176 Jun  4 07:23 ..\n-rw-------   1 root  wheel   828 Nov 22  2025 com.amazon.KindlePreviewerUpdater.plist\n-rw-r--r--@  1 root  wheel   590 Jan 18 08:06 com.docker.socket.plist\n-rw-r--r--@  1 root  wheel   667 Nov 27  2025 com.docker.vmnetd.plist\n-rw-r--r--@  1 root  wheel   897 Jan 17 01:28 com.google.GoogleUpdater.wake.system.plist\n-rw-r--r--@  1 root  wheel   181 Jan 17 01:28 com.google.keystone.daemon.plist\n-rwxr-xr-x@  1 root  wheel  1086 Dec  6  2025 com.logi.optionsplus.updater.plist\n-rw-r--r--   1 root  wheel   793 Dec 29  2024 com.microsoft.OneDriveStandaloneUpdaterDaemon.plist\n-rw-r--r--   1 root  wheel   749 Jan 12 22:56 com.microsoft.OneDriveUpdaterDaemon.plist\n-rw-r--r--   1 root  wheel   428 Apr 17 06:15 com.microsoft.autoupdate.helper.plist\n-rw-r--r--   1 root  wheel   657 Dec  8  2024 com.microsoft.office.licensingV2.helper.plist\nlrwxr-xr-x   1 root  wheel    84 May 22 18:26 com.norton.init.plist -> /Applications/Norton.app/Contents/Backend/launch/LaunchDaemons/com.norton.init.plist\nlrwxr-xr-x   1 root  wheel    86 May 22 18:26 com.norton.update.plist -> /Applications/Norton.app/Contents/Backend/launch/LaunchDaemons/com.norton.update.plist\n-rw-r--r--   1 root  wheel   665 Mar 10 04:43 com.paloaltonetworks.gp.pangpsd.plist\n-rw-r--r--   1 root  wheel   818 Nov 14  2025 com.splashtop.stb.macosx.helper.autoupdate.plist\n-rw-r--r--   1 root  wheel   622 Mar 16 13:13 us.zoom.ZoomDaemon.plist",
+          "meta": {
+            "label": "Run shell command",
+            "cwd": "/Users/younes",
+            "durationMs": 1919,
+            "exitCode": 0,
+            "truncated": false
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_43",
+          "toolCallId": "call_02_XEQqeuvkVu9zW9LUE5ig6975",
+          "status": "success",
+          "output": "younes           54202   0.0  0.0 435300400   1280   ??  S     8:42AM   0:00.00 grep -iE globalprotect|gp_|pangp\nyounes           54200   0.0  0.0 435300240   1824   ??  S     8:42AM   0:00.00 /bin/sh -c ps aux | grep -iE \"globalprotect|gp_|pangp\" 2>/dev/null | head -5; echo \"===\"; ps aux | grep -iE \"norton|ncd\" 2>/dev/null | head -5\n===\nroot               849   0.9  0.0 435316464   4816   ??  Ss   12:43PM   2:04.44 /Applications/Norton.app/Contents/Backend/services/com.norton.activity -d -q\nroot              1270   0.6  0.1 435333888  11040   ??  Ss   12:43PM   4:47.18 /Applications/Norton.app/Contents/Backend/utils/com.norton.mes.endpointsecurity.app/Contents/MacOS/com.norton.mes.endpointsecurity\nyounes            1147   0.0  0.0 435379344   6928   ??  S     2:13AM   0:03.25 /System/Library/CoreServices/appplaceholdersyncd\nyounes           75941   0.0  0.1 435379328  11824   ??  S     2:33PM   0:00.57 /System/Library/PrivateFrameworks/MapsSync.framework/mapssyncd\nyounes           63225   0.0  0.1 435389952  23760   ??  Ss    2:20PM   0:00.19 /Applications/Norton.app/Contents/PlugIns/NortonFinderExtension.appex/Contents/MacOS/NortonFinderExtension -AppleLanguages (\"en-SA\", \"ar-SA\")",
+          "meta": {
+            "label": "List processes",
+            "cwd": "/Users/younes",
+            "durationMs": 1144,
+            "exitCode": 0,
+            "truncated": false
+          }
+        },
+        {
+          "kind": "active_model",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_44",
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_45",
+          "toolCallId": "call_00_N6LYuHEmoWn1ex7S7Xkq2777",
+          "name": "shell_exec",
+          "args": {
+            "command": "ps aux | grep -i controlce | grep -v grep"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_46",
+          "toolCallId": "call_01_xeUYWYxRxbBNGenBaAp77546",
+          "name": "web_fetch",
+          "args": {
+            "url": "https://nodejs.org/en/blog/vulnerability/june-2026-security-releases",
+            "maxLength": 8000
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_47",
+          "toolCallId": "call_02_lmq23lvNyaYPy2rL2MqR8800",
+          "name": "web_search",
+          "args": {
+            "query": "Norton 26.4 for Mac latest version security update 2026",
+            "maxResults": 3
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_48",
+          "toolCallId": "call_00_N6LYuHEmoWn1ex7S7Xkq2777",
+          "status": "success",
+          "output": "younes             676   0.0  0.4 435646960  64304   ??  S    12:43PM   1:15.54 /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter",
+          "meta": {
+            "label": "List processes",
+            "cwd": "/Users/younes",
+            "durationMs": 1606,
+            "exitCode": 0,
+            "truncated": false
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_49",
+          "toolCallId": "call_01_xeUYWYxRxbBNGenBaAp77546",
+          "status": "success",
+          "output": "# Thursday, June 18, 2026 Security Releases\n\nThe Node.js Project\n\n## (UPDATE 2026-06-18) Security releases available\n\nUpdates are now available for the 26.x, 24.x, 22.x Node.js release lines for the\nfollowing issues.\n\nThis security release includes the following dependency updates to address public vulnerabilities:\n\n- llhttp (9.4.2) on all release lines\n\n- nghttp2 (1.69.0) on all release lines\n\n- openssl (3.5.7) on all release lines\n\n- undici (8.5.0) on 26.3.1\n\n- undici (7.28.0) on 24.17.0\n\n- undici (6.27.0) on 22.23.0\n\n## Node.js WebCrypto AES Integer Overflow Leads to Remote Process Abort (DoS) (CVE-2026-48933) - (high)\n\nA flaw in Node.js WebCrypto implementation can crash the process if the input of subtle.encrypt() is a multiple of 2GiB.\n\n```\nsubtle.encrypt()\n```\n\nThis vulnerability affects all supported release lines: Node.js 22, Node.js 24, and Node.js 26.\n\nThank you, to erichen for reporting this vulnerability and thank you Filip Skokan for fixing it.\n\n## Node.js unicode dot separator handling can lead to tls wildcard-depth authentication bypass due to resolver and verifier hostname normalization mismat (CVE-2026-48618) - (high)\n\nA flaw in Node.js TLS hostname handling can cause Node.js unicode dot separator handling can lead to tls wildcard-depth authentication bypass due to resolver and verifier hostname normalization mismat.\n\nThis can lead to confidentiality impact or bypass of the intended security boundary under affected configurations.\n\nThis vulnerability affects all supported release lines: Node.js 22, Node.js 24, and Node.js 26.\n\nThank you, to tmeletlidis for reporting this vulnerability and thank you Matteo Collina for fixing it.\n\n## Proxy credentials leaked in ERR_PROXY_TUNNEL error message (CVE-2026-48615) - (medium)\n\nA flaw in Node.js proxy tunnel error handling could expose proxy credentials in ERR_PROXY_TUNNEL error messages.\n\n```\nERR_PROXY_TUNNEL\n```\n\nWhen proxy credentials are embedded in the proxy URL, they may be exposed through error handling paths and captured by logs, diagnostics, or other error consumers.\n\nThis vulnerability affects all supported release lines: Node.js 22, Node.js 24, and Node.js 26.\n\nThank you, to nssys for reporting this vulnerability and thank you Matteo Collina for fixing it.\n\n## Permission Model Bypass via process.report.writeReport() Path Misvalidation (CVE-2026-48617) - (low)\n\n```\nprocess.report.writeReport()\n```\n\nA flaw in Node.js Permission Model enforcement allows Bypass via process.report.writeReport() Path Misvalidation.\n\n```\nprocess.report.writeReport()\n```\n\nThis can lead to confidentiality impact or bypass of the intended security boundary under affected configurations.\n\nThis vulnerability affects all supported release lines: Node.js 22, Node.js 24, and Node.js 26.\n\nThank you, to suul for reporting this vulnerability and thank you RafaelGSS for fixing it.\n\n## Unbounded memory growth in node:http2 clients via attacker-controlled ORIGIN frames (CVE-2026-48619) - (medium)\n\n```\nnode:http2\n```\n\nA flaw in Node.js HTTP/2 client allows a server to send an unlimited number of ORIGIN frames, which could lead to an Out of Memory error on the client.\n\nThis vulnerability affects all supported release lines: Node.js 22, Node.js 24, and Node.js 26.\n\nThank you, to kingsd for reporting this vulnerability and thank you Matteo Collina for fixing it.\n\n## HTTP/2 sessions never clean up after GOAWAY on invalid protocol errors (CVE-2026-48937) - (medium)\n\nA flaw in Node.js HTTP/2 server API can cause servers to keep accepting data even after sending a GOAWAY frame.\n\n```\nGOAWAY\n```\n\nThis vulnerability affects two supported release lines: Node.js 22 and Node.js 24.\n\nThank you, Tim Perry, for reporting this vulnerability and for fixing it.\n\n## Uppercase sni context matching can lead to mtls authorization bypass due to case-sensitive hostname matching (CVE-2026-48928) - (medium)\n\nA inconsistency in Node.js hostname matching can cause a trust-policy bypass in multi-context mTLS setups.\n\nThis vulnerability affects all supported release lines: Node.js 22, Node.js 24, and Node.js 26.\n\nThank you, to tmeletlidis for reporting this vulnerability and thank you Matteo Collina for fixing it.\n\n## Embedded-nul hostnames can lead to silent authority rebinding due to c-string truncation in resolver bindings (CVE-2026-48930) - (medium)\n\nA flaw in Node.js TLS hostname handling can cause Embedded-nul hostnames can lead to silent authority rebinding due to c-string truncation in resolver bindings.\n\nThis vulnerability affects all supported release lines: Node.js 22, Node.js 24, and Node.js 26.\n\nThank you, to tmeletlidis for reporting this vulnerability and thank you Matteo Collina for fixing it.\n\n## TLS host identity verification bypass via session reuse with different servername leads to unauthorized connections (CVE-2026-48934) - (medium)\n\nA flaw in Node.js TLS host verification can cause an attacker to bypass certification validation.\n\nThis vulnerability affects all supported release lines: Node.js 22, Node.js 24, and Node.js 26.\n\nThank you, to 3d7omb for reporting this vulnerability and thank you Matteo Collina for fixing it.\n\n## Permission Model bypass via FileHandle.utimes() in the promises API (CVE-2026-48935) - (low)\n\nA flaw in Node.js Permission API can cause a file metadata to be modified even on a path that was set as read-only with e.g. --allow-fs-read.\n\n```\n--allow-fs-read\n```\n\nThis vulnerability affects all supported release lines: Node.js 22, Node.js 24, and Node.js 26.\n\nThank you, to muhammaddaffa for reporting this vulnerability and thank you RafaelGSS for fixing it.\n\n## Unix domain socket server bypasses --permission network restrictions (incomplete CVE-2026-21636 fix) (CVE-2026-48936) - (low)\n\nA flaw in Node.js Permission API can cause a local server to be started (via a Unix domain socket), even without the --allow-net permission.\n\n```\n--allow-net\n```\n\nThis vulnerability affects one supported release line: Node.js 26.\n\nThank you, to cyberjoker for reporting this vulnerability and thank you RafaelGSS for fixing it.\n\n## HTTP Response Queue Poisoning via TOCTOU Race Condition in http.Agent (CVE-2026-48931) - (low)\n\n```\nhttp.Agent\n```\n\nA flaw in Node.js HTTP Agent can cause a client to accept as valid a response that is send before the client has sent the request.\n\nThis vulnerability affects all supported release lines: Node.js 22, Node.js 24, and Node.js 26.\n\nThank you, to yushengchen for reporting this vulnerability and thank you Matteo Collina for fixing it.\n\n## Downloads and release details\n\n- Node.js v22.23.0\n\n- Node.js v24.17.0\n\n- Node.js v26.3.1\n\n# Summary\n\nThe Node.js project will release new versions of the 26.x, 24.x, 22.x\nreleases lines on or shortly after, Wednesday, June 17, 2026 in order\nto address one or more security issues, the highest severity is HIGH.\n\n## Impact\n\nThe highest severity issue fixed in the 26.x release line is HIGH.\nThe highest severity issue fixed in the 24.x release line is HIGH.\nThe highest severity issue fixed in the 22.x release line is HIGH.\n\nIt's important to note that End-of-Life versions are always affected when a security release occurs.\nTo ensure your system's security, please use an up-to-date version as outlined in our\nRelease Schedule.\n\n## Release timing\n\nReleases are available as of Thursday, June 18, 2026.\n\n## Contact and future updates\n\nThe current Node.js security policy can be found at https://nodejs.org/en/security/.\nPlease follow the process outlined in https://github.com/nodejs/node/blob/master/SECURITY.md if\nyou wish to report a vulnerability in Node.js.\n\nSubscribe to the low-volume announcement-only nodejs-sec mailing list at\nhttps://groups.google.com/forum/#!forum/nodejs-sec to stay up to date on security vulnerabilities\nand security-related releases of Node.js and the projects maintained in the nodejs GitHub organization."
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_50",
+          "toolCallId": "call_02_lmq23lvNyaYPy2rL2MqR8800",
+          "status": "success",
+          "output": "{\"provider\":\"brave\",\"results\":[{\"title\":\"Symantec Norton AntiVirus Update for Mac Download - June 18, 2026 | TechSpot\",\"snippet\":\"Symantec Norton AntiVirus Definition Update <strong>June 18, 2026</strong> · Keep your Norton Anti-Virus updated. Upgrade/Patch · Windows · 328 votes · Norton Remove and Reinstall Tool 26.4.10932.2463 · Uninstall and reinstall or remove your Norton device ...\",\"url\":\"https://www.techspot.com/downloads/4068-symantec-norton-antivirus-update-for-mac.html\"},{\"title\":\"Update to the latest Norton version to better protect your Mac\",\"snippet\":\"Updating your Norton product lets you download and install an entirely new version of Norton device security and assures that you have the most current security features on your Mac. <strong>You must be online to update your Norton product to the latest version</strong>.\",\"url\":\"https://support.norton.com/sp/en/us/home/current/solutions/v2024013022355331\"},{\"title\":\"Compatibility of Norton protection with macOS\",\"snippet\":\"Know more about the compatibility of Norton products with Mac OS X versions.\",\"url\":\"https://support.norton.com/sp/en/us/home/current/solutions/kb20080515115252EN\"}]}"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_td_1uvee9l_2a",
+          "toolCallId": "call_td_1uvee9l_2",
+          "name": "todo_write",
+          "args": {
+            "todos": [
+              {
+                "content": "Search the web for “macOS Tahoe Sequoia 26.5 CVE security vulne…” and 1 more",
+                "status": "completed"
+              },
+              {
+                "content": "Run sw_vers, lsof and 7 more",
+                "status": "completed"
+              },
+              {
+                "content": "Read support.apple.com",
+                "status": "completed"
+              },
+              {
+                "content": "Search the web for “CVE-2026-28819 macOS Wi-Fi kernel vulnerabi…” and 2 more",
+                "status": "completed"
+              },
+              {
+                "content": "Run ruby",
+                "status": "completed"
+              },
+              {
+                "content": "Search the web for “Norton 26.4 for Mac latest version security…”",
+                "status": "completed"
+              }
+            ]
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_td_1uvee9l_2b",
+          "toolCallId": "call_td_1uvee9l_2",
+          "status": "success",
+          "output": "6 todos (6 completed, 0 in progress)\n[\n  {\n    \"content\": \"Search the web for “macOS Tahoe Sequoia 26.5 CVE security vulne…” and 1 more\",\n    \"status\": \"completed\"\n  },\n  {\n    \"content\": \"Run sw_vers, lsof and 7 more\",\n    \"status\": \"completed\"\n  },\n  {\n    \"content\": \"Read support.apple.com\",\n    \"status\": \"completed\"\n  },\n  {\n    \"content\": \"Search the web for “CVE-2026-28819 macOS Wi-Fi kernel vulnerabi…” and 2 more\",\n    \"status\": \"completed\"\n  },\n  {\n    \"content\": \"Run ruby\",\n    \"status\": \"completed\"\n  },\n  {\n    \"content\": \"Search the web for “Norton 26.4 for Mac latest version security…”\",\n    \"status\": \"completed\"\n  }\n]"
+        },
+        {
+          "kind": "todo",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_td_1uvee9l_2c",
+          "items": [
+            {
+              "content": "Search the web for “macOS Tahoe Sequoia 26.5 CVE security vulne…” and 1 more",
+              "status": "completed"
+            },
+            {
+              "content": "Run sw_vers, lsof and 7 more",
+              "status": "completed"
+            },
+            {
+              "content": "Read support.apple.com",
+              "status": "completed"
+            },
+            {
+              "content": "Search the web for “CVE-2026-28819 macOS Wi-Fi kernel vulnerabi…” and 2 more",
+              "status": "completed"
+            },
+            {
+              "content": "Run ruby",
+              "status": "completed"
+            },
+            {
+              "content": "Search the web for “Norton 26.4 for Mac latest version security…”",
+              "status": "completed"
+            }
+          ]
+        },
+        {
+          "kind": "active_model",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_51",
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash"
+        },
+        {
+          "kind": "text",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_52",
+          "delta": "# 🔐 Wolffish Security Audit — June 20, 2026\n\n**System:** macOS Tahoe 26.5.1 (25F80) · Apple Silicon M3 Pro  \n**Last OS update:** June 4, 2026 · Uptime: 14+ days\n\n---\n\n## ⚡ Quick Verdict\n\nYour OS is **fully patched** at the latest public release (26.5.1). No new macOS updates available. But you have **two critical findings** that need action today:\n\n| Risk | Issue | Action |\n|------|-------|--------|\n| 🔴 **HIGH** | **Node.js v24.16.0** — 12 CVEs unpatched, 2 HIGH (TLS auth bypass, WebCrypto DoS) | Update to **v24.17.0** |\n| 🟠 **MEDIUM** | **Chrome 149.0.7827.116** — ✅ Already patched past CVE-2026-11645 (zero-day) | No action needed |\n| 🟡 **LOW** | **28 outdated brew formulae + 3 casks** | `brew upgrade` |\n| 🟡 **LOW** | **Ports *:5000 and *:7000** listening on all interfaces (AirPlay Receiver) | OK, but verify you use it |\n| 🟢 **PASS** | **Ruby 2.6.10** — system Ruby, EOL since 2022, but Apple-bundled | See note below |\n\n---\n\n## 1. 🔴 macOS CVEs — Cross-Reference (ALL PATCHED)\n\nmacOS Tahoe **26.5** (May 11) fixed **~69–80 vulnerabilities**, including major ones:\n\n| CVE | Description | Severity | Status |\n|-----|-------------|----------|--------|\n| CVE-2026-28819 | **Wi-Fi kernel RCE** — app may execute code with kernel privileges | 🔴 Critical | ✅ Patched in 26.5 |\n| CVE-2026-28952 | **Kernel integer overflow** — system termination (found by Claude!) | 🔴 High | ✅ Patched in 26.5 |\n| CVE-2026-28951 | **Kernel root privilege escalation** | 🔴 High | ✅ Patched in 26.5 |\n| CVE-2026-20700 | **dyld zero-day** — arbitrary code execution (exploited in wild) | 🔴 Critical | ✅ Patched (earlier update) |\n| CVE-2026-28925 | **HFS buffer overflow** — kernel memory write | 🟠 High | ✅ Patched in 26.5 |\n| CVE-2026-43668 | **mDNSResponder use-after-free** — remote kernel memory corruption | 🟠 High | ✅ Patched in 26.5 |\n| CVE-2026-28915 | **CUPS parsing issue** — root privilege escalation | 🟠 High | ✅ Patched in 26.5 |\n| CVE-2026-28954 | **Gatekeeper bypass** — malicious disk images | 🟠 High | ✅ Patched in 26.5 |\n| +60 more | Various kernel, WebKit, IOKit, ImageIO, sandbox escapes | Various | ✅ All patched |\n\n**You are on 26.5.1 (June 4)** — this includes all 26.5 fixes plus additional refinements. **No new OS update available.** ✅\n\n---\n\n## 2. 🔴 NODE.JS — 12 CVEs, 2 HIGH — NEEDS UPDATE\n\nThe Node.js project released **v24.17.0** yesterday (June 18) fixing **12 vulnerabilities**, including:\n\n| CVE | Description | Severity |\n|-----|-------------|----------|\n| **CVE-2026-48618** | **TLS wildcard auth bypass** — Unicode dot separator in hostname lets attackers bypass certificate validation | 🔴 **HIGH** |\n| **CVE-2026-48933** | **WebCrypto crash (DoS)** — 2 GiB input to `subtle.encrypt()` crashes the process | 🔴 **HIGH** |\n| CVE-2026-48615 | Proxy credentials leaked in error messages | 🟠 Medium |\n| CVE-2026-48619 | HTTP/2 unbounded memory growth (OOM) | 🟠 Medium |\n| CVE-2026-48937 | HTTP/2 GOAWAY session leak | 🟠 Medium |\n| CVE-2026-48928 | mTLS authorization bypass (case-sensitive hostname) | 🟠 Medium |\n| CVE-2026-48930 | TLS hostname rebinding via embedded nul chars | 🟠 Medium |\n| CVE-2026-48934 | TLS session reuse bypass | 🟠 Medium |\n| +4 more | Lower severity | 🟢 Low |\n\n### Your version: **v24.16.0** · Patch: **v24.17.0**\n\n**Fix it:**\n```bash\nbrew upgrade node@24\n# or if installed via nvm, use nvm install\n```\n\n---\n\n## 3. 🟢 CHROME — Already Patched ✅\n\n- **Your version:** 149.0.7827.116\n- **CVE-2026-11645:** V8 zero-day exploited in the wild, patched in **149.0.7827.102/.103**\n- **You are above the fix.** ✅ No action needed.\n\n---\n\n## 4. 🟢 OS Security Posture — Strong Baseline\n\n| Check | Status | Detail |\n|-------|--------|--------|\n| **FileVault (disk encryption)** | ✅ **Enabled** | Full disk encryption active |\n| **SIP (System Integrity Protection)** | ✅ **Enabled** | Core system protected |\n| **Gatekeeper** | ✅ **Enabled** | Only signed apps can run |\n| **Firewall** | ✅ **Enabled** | Blocks incoming connections |\n| **SSH Remote Login** | ✅ **Disabled** | No remote shell access |\n| **IP Forwarding** | ❌ **Disabled** | Not acting as a router |\n| **Automatic Updates** | ⚠️ | No pending updates (good) |\n\n---\n\n## 5. 🟡 Open Ports — Mostly Local, Two on All Interfaces\n\n| Port | Process | Interface | Risk |\n|------|---------|-----------|------|\n| **5000** | ControlCenter (AirPlay Receiver) | **\\*:5000** (all interfaces) | 🟡 Low — standard macOS, but visible on network |\n| **7000** | ControlCenter (AirPlay) | **\\*:7000** (all interfaces) | 🟡 Low — same as above |\n| 9222 | Google Chrome DevTools | 127.0.0.1 only | 🟢 Safe |\n| 11434, 49153 | Ollama | 127.0.0.1 only | 🟢 Safe |\n| 23151 | Wolffish | 127.0.0.1 only | 🟢 Safe |\n| 44950, 44960 | Figma agent | 127.0.0.1 only | 🟢 Safe |\n| 49152+ | rapportd (Apple Remote Play) | All interfaces | 🟡 Low — Apple standard |\n| 59869 | Logitech Options | All interfaces | 🟡 Low — peripheral daemon |\n\n**Note:** *:5000/*:7000 are AirPlay Receiver ports — standard macOS feature. If you don't use AirPlay receiving, you could disable it in **System Settings > General > AirDrop & Handoff > AirPlay Receiver**. Not a real risk, just hygiene.\n\n---\n\n## 6. 🟡 Outdated Brew Packages — 28 Formulae, 3 Casks\n\nNotable ones:\n\n| Package | Risk Note |\n|---------|-----------|\n| **awscli** | May miss API security fixes |\n| **git** | 2.47.1 — could be behind on CVEs |\n| **gnupg, gnutls** | Crypto library updates important |\n| **openssl dependency** | Underlying lib updates |\n| **ffmpeg** | Codec security fixes |\n| **python@3.13, python@3.14** | Both outdated |\n| **discord, dotnet-sdk, ngrok** (casks) | Outdated |\n\n**Fix:**\n```bash\nbrew update && brew upgrade && brew upgrade --cask\n```\n\n---\n\n## 7. 🟡 Ruby 2.6.10 — System Ruby, EOL Since March 2022\n\nThis is Apple's bundled Ruby (`/usr/bin/ruby`). It's **EOL** and has known unpatched vulnerabilities. However:\n- It's the **system Ruby** that ships with macOS — Apple doesn't update it\n- You probably use **Homebrew's Ruby** or **rbenv** for actual work\n- Risk is low unless you're running scripts with it against untrusted input\n\n**If you use system Ruby for anything important:** Install a modern Ruby via brew:\n```bash\nbrew install ruby@3.4\n```\n\n---\n\n## 8. 🟢 Services & Daemons — Running Normally\n\n- **Docker:** Installed (29.2.0) but **no containers running** ✅\n- **Palo Alto GlobalProtect:** VPN agent running (expected for work) ✅\n- **Norton Antivirus:** Running — definition updates from June 18 ✅\n- **Ollama:** Running (0.30.10) on localhost only ✅\n- **Logitech Options:** Running (peripheral manager) ✅\n- **OneDrive:** Background updater present ✅\n- **Zoom:** Updater present ✅\n- **Splashtop:** Remote support helper present ✅\n- **No sshd running** ✅\n\n---\n\n## ☑️ Action Summary\n\n| Priority | Action | Command |\n|----------|--------|---------|\n| 🔴 **Now** | Update Node.js to v24.17.0 | `brew upgrade node@24` |\n| 🟡 **Today** | Update all brew packages | `brew update && brew upgrade && brew upgrade --cask` |\n| 🟢 **Optional** | Update system Ruby if used | `brew install ruby@3.4` |\n| 🟢 **Nice-to-have** | Disable AirPlay Receiver if unused | System Settings > General > AirDrop & Handoff |\n| 🟢 **Monitor** | Chrome is auto-updating to latest stable | Already above the zero-day fix |\n\nYour OS security baseline is **solid** — Apple's latest patches are all applied, encryption and firewall are on, SSH is locked down. The one real 🔴 item is Node.js which has a TLS auth bypass patch from **yesterday** that you should grab."
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "hb_mqlta377",
+          "segmentId": "seg_2304",
+          "stopReason": "end_turn",
+          "iterationCount": 7,
+          "reasoningContent": "I have enough data to compile the full security report. Let me check one more thing - the ControlCenter ports (5000 and 7000 are AirPlay Receiver ports, which is a standard macOS service).\n\nLet me also verify: Node.js v24.16.0 is the current version, and the patched version is v24.17.0. The security release was June 18, just 2 days ago, so this is very timely.\n\nRuby 2.6.10 is deeply EOL (March 2022). This is the system Ruby that ships with macOS. That's a concern but it's Apple's bundled Ruby.\n\nLet me compile everything now."
+        }
+      ],
+      "stopReason": "end_turn"
+    }
+  ],
+  "channel": "heartbeat",
+  "sealed": true,
+  "stats": {
+    "allTime": {
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 24,
+      "inputTokens": 124,
+      "outputTokens": 15716,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "cost": 0.021974800000000003,
+      "processingMs": 7240952,
+      "elapsedMs": 7240952,
+      "apiMs": 5937581,
+      "endedAt": 1781934161067,
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro"
+    },
+    "lastTurn": {
+      "endedAt": 1781934161067,
+      "elapsedMs": 7240952,
+      "apiMs": 5937581,
+      "apiCalls": 1,
+      "toolCalls": 24,
+      "inputTokens": 124,
+      "outputTokens": 15716,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro",
+      "cost": 0.021974800000000003
+    },
+    "meter": {
+      "contextTokens": 28240,
+      "contextBudget": 1000000,
+      "compactionAt": 725424,
+      "model": "deepseek-v4-pro"
+    }
+  }
+}

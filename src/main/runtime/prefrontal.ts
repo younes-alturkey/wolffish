@@ -191,6 +191,12 @@ export type RuntimeContext = {
    */
   phoneNotify?: string
   /**
+   * Browser-notification notice — the Web UI twin of phoneNotify, present
+   * while a browser is signed in and notify_web is registered. Same vehicle,
+   * same once-per-turn flip, same cache rationale.
+   */
+  webNotify?: string
+  /**
    * Screen-indicator notice — present on every iteration from the moment the
    * turn raises the computer-use glow ("Wolffish is capturing your screen")
    * until it lowers it. The user's display is making a claim only
@@ -244,12 +250,18 @@ const DELEGATION_CAPABILITIES: ReadonlySet<string> = new Set(['workflow'])
  * Channel egress capabilities — the live messaging channels register their send
  * tools in-process under these names when connected (TELEGRAM_CAPABILITY_NAME /
  * WHATSAPP_CAPABILITY_NAME / MOBILE_CAPABILITY_NAME in
- * src/main/channels/*\/tools.ts). Their sends hit the channel API directly, so
- * a worker holding them could message the user out-of-band — `phone` even
- * buzzes a pocket. Hard-coded here (not imported) to keep runtime decoupled
- * from the channel layer; the values are stable identifiers.
+ * src/main/channels/*\/tools.ts, WEB_CAPABILITY_NAME in channels/web/notify.ts).
+ * Their sends hit the channel API directly, so a worker holding them could
+ * message the user out-of-band — `phone` and `web-ui` even buzz a pocket.
+ * Hard-coded here (not imported) to keep runtime decoupled from the channel
+ * layer; the values are stable identifiers.
  */
-const CHANNEL_CAPABILITIES: ReadonlySet<string> = new Set(['telegram', 'whatsapp', 'phone'])
+const CHANNEL_CAPABILITIES: ReadonlySet<string> = new Set([
+  'telegram',
+  'whatsapp',
+  'phone',
+  'web-ui'
+])
 
 /**
  * Everything an agent role is denied on top of delegation: channel egress
@@ -364,10 +376,23 @@ const SECTION_TAGS: Record<ContextCategory, string> = {
  * every assembled prompt is written to brain/prefrontal/.debug/ so the
  * exact context can be inspected after the fact.
  */
+/**
+ * What the Web UI channel contributes to the prompt: turn-stable facts about
+ * the deployment (where the app is served, over what, whether this box has
+ * a screen), never counters — see WebServer.promptFacts.
+ */
+export type WebUiPromptFacts = {
+  origin: string
+  scheme: 'http' | 'https'
+  trusted: boolean
+  headless: boolean
+}
+
 export class Prefrontal {
   private cortex: Cortex | null
   private ras: RAS
   private cerebellum: Cerebellum | null
+  private webUiFacts: (() => WebUiPromptFacts | null) | null = null
   private basalganglia: BasalGanglia | null
   private corpus: Corpus | null
   private device: Device | null
@@ -401,11 +426,42 @@ export class Prefrontal {
       bundle.systemPrompt,
       await this.buildRoleBlock(role),
       opts?.localModel ? LOCAL_MODEL_PROMPT : '',
+      this.buildWebUiBlock(),
       opts?.channel ? (CHANNEL_PROMPTS[opts.channel] ?? '') : '',
       await this.buildVideoPromptingBlock(),
       await this.buildVoicePromptingBlock(role)
     ].filter((b) => b && b.length > 0)
     return blocks.join('\n\n')
+  }
+
+  /** The Web UI channel reports its deployment facts through this; null while it is off. */
+  setWebUiFacts(provider: (() => WebUiPromptFacts | null) | null): void {
+    this.webUiFacts = provider
+  }
+
+  /**
+   * The Web UI overlay — present only while the channel is listening. It
+   * tells the model two things the core contract can only describe in the
+   * abstract: the address this app is served at (so a link it hands out is
+   * a real one) and whether this box has a screen at all. Facts only, and
+   * slow-changing ones: the rules live in agents.core.md.
+   */
+  private buildWebUiBlock(): string {
+    const facts = this.webUiFacts?.() ?? null
+    if (!facts) return ''
+    const transport =
+      facts.scheme === 'https'
+        ? facts.trusted
+          ? 'HTTPS with a trusted certificate'
+          : 'HTTPS with a self-signed certificate (a stranger following a link would see a browser warning — public links are handed out on the plain port while it is up)'
+        : 'plain HTTP'
+    const headless = facts.headless
+      ? `This machine is HEADLESS — no desktop window exists, so this is a server (a VPS or similar) and the person you talk to reaches you only through a browser at that address (often a phone), the wolffish CLI, or a messaging channel. Nothing "revealed in Finder" or "opened on screen" is ever seen: deliver with send_file, links and notify_web.`
+      : `The desktop window exists on this machine too; a Web UI visitor may be on another device entirely, so deliver files with send_file and links rather than pointing at the screen.`
+    return `<web_ui>
+Web UI mode is ON: this app is served to browsers at ${facts.origin} over ${transport}, behind the master password. ${headless}
+Everything under that address needs the sign-in — a /files/… link works only in a browser that typed the master password, so it is never a link for someone else. The web-public capability (public_link, public_links, public_unlink) is how anything leaves this box for a person who is NOT signed in: it publishes a file, a folder as a static site, or a local port as a proxy at ${facts.origin}/p/<token>, which needs no sign-in. Use it on your own initiative whenever the task implies sharing, publishing, a download for someone, or a page to open elsewhere — then put the URL in your reply.
+</web_ui>`
   }
 
   /**
@@ -972,6 +1028,9 @@ function formatRuntimeBody(runtime: RuntimeContext | undefined): string {
     // Phone-notification notice (a phone is paired) — same vehicle, same
     // reason.
     if (runtime.phoneNotify) lines.push(`  ${runtime.phoneNotify}`)
+    // Browser-notification notice (a browser is signed in to the Web UI) —
+    // same vehicle, same reason.
+    if (runtime.webNotify) lines.push(`  ${runtime.webNotify}`)
     // Screen-indicator notice (a computer-use glow this turn raised is up) —
     // same vehicle, same reason.
     if (runtime.screenIndicator) lines.push(`  ${runtime.screenIndicator}`)

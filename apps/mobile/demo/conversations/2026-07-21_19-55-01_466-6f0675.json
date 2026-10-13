@@ -1,0 +1,82 @@
+{
+  "id": "2026-07-21_19-55-01_466-6f0675",
+  "title": "Hourly (55): Just Hi and Context Check",
+  "model": null,
+  "createdAt": 1784652901466,
+  "updatedAt": 1784652909675,
+  "messages": [
+    {
+      "id": "m_1784652901466_9ff5ca",
+      "role": "user",
+      "content": "do nothing just hi what is your context atm?",
+      "timestamp": 1784652901466
+    },
+    {
+      "id": "m_1784652909675_96186b",
+      "role": "assistant",
+      "content": "Hey Younes 👋\n\nHere's what I've got loaded right now:\n\n**Identity layer** — soul.md + your user.md, so I know who I am (🐟) and who you are (Younes, Riyadh, building Wolffish on macOS).\n\n**Runtime** — your machine specs (M-series MacBook Pro, macOS 26.5.2, 16GB RAM, ~926GB disk). Shell is zsh.\n\n**Prefrontal** — the core agents.md discipline (operating manual, memory discipline, tool usage rules, loop discipline, all that), plus a lean summary of recent failures/corrections from the last 7 days (~5100 tool calls, 96% success rate).\n\n**Capabilities** — ~40 installed, with the essentials pre-loaded: WhatsApp, Telegram, web search, shell, filesystem, system tools, operating manual, and a few others. Everything else loads on demand.\n\n**Memory map** — I know I've got ~21,500 conversation records, ~19,350 task runs, ~2,200 artifacts, ~800 conversations on disk, all indexed back to mid-June 2026. But the map is just coverage — I don't have the actual content unless I search for it.\n\nIn short: I know who I am, who you are, what I can do, and that I can look up anything I've ever done. What's up?",
+      "timestamp": 1784652909675,
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "hb_mruw9bve",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "hb_mruw9bve",
+          "segmentId": "seg_2",
+          "delta": "Hey Younes 👋\n\nHere's what I've got loaded right now:\n\n**Identity layer** — soul.md + your user.md, so I know who I am (🐟) and who you are (Younes, Riyadh, building Wolffish on macOS).\n\n**Runtime** — your machine specs (M-series MacBook Pro, macOS 26.5.2, 16GB RAM, ~926GB disk). Shell is zsh.\n\n**Prefrontal** — the core agents.md discipline (operating manual, memory discipline, tool usage rules, loop discipline, all that), plus a lean summary of recent failures/corrections from the last 7 days (~5100 tool calls, 96% success rate).\n\n**Capabilities** — ~40 installed, with the essentials pre-loaded: WhatsApp, Telegram, web search, shell, filesystem, system tools, operating manual, and a few others. Everything else loads on demand.\n\n**Memory map** — I know I've got ~21,500 conversation records, ~19,350 task runs, ~2,200 artifacts, ~800 conversations on disk, all indexed back to mid-June 2026. But the map is just coverage — I don't have the actual content unless I search for it.\n\nIn short: I know who I am, who you are, what I can do, and that I can look up anything I've ever done. What's up?"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "hb_mruw9bve",
+          "segmentId": "seg_296",
+          "stopReason": "end_turn",
+          "iterationCount": 1,
+          "reasoningContent": "The user wants me to say hi and tell them about my current context. This is a purely trivial turn - no need for operating_manual. Let me just check what's in my prompt and summarize it for them."
+        }
+      ],
+      "stopReason": "end_turn"
+    }
+  ],
+  "channel": "heartbeat",
+  "icon": "🫀",
+  "sealed": true,
+  "stats": {
+    "allTime": {
+      "processingMs": 8209,
+      "apiMs": 7993,
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 60,
+      "outputTokens": 341,
+      "cacheReadTokens": 18048,
+      "cacheCreationTokens": 0,
+      "cost": 0.00047978760000000006
+    },
+    "lastTurn": {
+      "endedAt": 1784652909675,
+      "elapsedMs": 8209,
+      "apiMs": 7993,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 60,
+      "outputTokens": 341,
+      "cacheReadTokens": 18048,
+      "cacheCreationTokens": 0,
+      "cost": 0.00047978760000000006,
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro"
+    },
+    "meter": {
+      "contextTokens": 18108,
+      "contextBudget": 1000000,
+      "compactionAt": 725424,
+      "model": "deepseek-v4-pro"
+    }
+  }
+}

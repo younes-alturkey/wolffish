@@ -338,10 +338,9 @@ export function wrapText(text, indent = 0, max = width()) {
 /**
  * The wordmark, in whichever alphabet this console can actually draw.
  *
- * Two variants because the installers already have two: install.sh prints the
- * box-drawing form, install.ps1 prints the hash form, for exactly this reason.
- * Reusing both keeps the CLI and the installer looking like one product on
- * each platform rather than one product on POSIX and mojibake on Windows.
+ * Two variants: the box-drawing form for consoles that render it, the hash
+ * form for the rest. The split keeps the wordmark readable on every platform
+ * rather than one product on POSIX and mojibake on Windows.
  */
 const WORDMARK_UNICODE = [
   '  \u2566 \u2566\u2554\u2550\u2557\u2566  \u2554\u2550\u2557\u2554\u2550\u2557\u2566\u2554\u2550\u2557\u2566 \u2566',

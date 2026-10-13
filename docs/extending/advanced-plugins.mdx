@@ -1,0 +1,445 @@
+---
+title: "Advanced Plugins"
+description: "Advanced patterns for Wolffish capability plugins"
+---
+
+# Beyond the Basics
+
+This guide covers advanced patterns for capability plugins beyond the basics in [Creating Capabilities](/capabilities/creating-capabilities). These patterns handle real-world complexity: dependencies, long-running operations, state management, and multi-tool plugins.
+
+## Plugin Dependencies
+
+Add a `package.json` next to your `SKILL.md` to declare npm dependencies. The cerebellum installs them lazily on first load:
+
+```
+brain/cerebellum/my-capability/
+  SKILL.md
+  package.json
+  plugin/
+    index.mjs
+```
+
+```json
+{
+  "name": "wolffish-my-capability",
+  "private": true,
+  "dependencies": {
+    "node-fetch": "^3.3.0",
+    "cheerio": "^1.0.0"
+  }
+}
+```
+
+<Info>
+  Dependencies are installed with `npm install --production` in the capability folder. The cerebellum runs this once and caches the result. Delete `node_modules/` to force a reinstall.
+</Info>
+
+## Skill Dependencies
+
+Use the `requires` field in SKILL.md frontmatter to declare that your capability depends on other capabilities being loaded:
+
+```yaml
+---
+name: git-workflow
+description: Advanced git operations with branch management
+requires:
+  - shell
+triggers:
+  - git
+  - branch
+  - merge
+tools:
+  - name: git_workflow
+    description: Execute complex git workflows
+    parameters:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [create-branch, merge, rebase, cherry-pick]
+        target:
+          type: string
+      required: [action]
+---
+```
+
+If `shell` isn't loaded, cerebellum logs a warning and skips your capability.
+
+## Long-Running Tools with Cancellation
+
+Use the `signal` (AbortSignal) from context to support cancellation. The motor cortex passes this when the user clicks Stop or a task timeout fires:
+
+```javascript
+export default {
+  name: 'long-task',
+  tools: ['run_analysis'],
+
+  async execute(toolName, args, context) {
+    const { signal } = context
+
+    for (const item of args.items) {
+      // Check for cancellation before each unit of work
+      if (signal?.aborted) {
+        return {
+          success: false,
+          output: '',
+          error: 'Task cancelled by user'
+        }
+      }
+
+      await processItem(item)
+    }
+
+    return { success: true, output: 'Analysis complete' }
+  }
+}
+```
+
+<Tip>
+  Always check `signal.aborted` inside loops and before expensive operations. The motor cortex retries on failure 3x — but a cancellation should not be retried.
+</Tip>
+
+## Background Processes
+
+Plugins can spawn detached child processes for dev servers, watchers, or other long-running programs. Return the PID so the agent can reference it later:
+
+```javascript
+import { spawn } from 'child_process'
+
+export default {
+  name: 'dev-server',
+  tools: ['start_server', 'stop_server'],
+
+  _processes: new Map(),
+
+  async execute(toolName, args) {
+    if (toolName === 'start_server') {
+      const child = spawn('npm', ['run', 'dev'], {
+        cwd: args.directory,
+        detached: true,
+        stdio: 'ignore'
+      })
+      child.unref()
+
+      this._processes.set(child.pid, child)
+
+      return {
+        success: true,
+        output: `Dev server started with PID ${child.pid}`
+      }
+    }
+
+    if (toolName === 'stop_server') {
+      const child = this._processes.get(args.pid)
+      if (child) {
+        process.kill(-args.pid) // Kill process group
+        this._processes.delete(args.pid)
+        return { success: true, output: `Stopped PID ${args.pid}` }
+      }
+      return { success: false, output: '', error: `No process with PID ${args.pid}` }
+    }
+  },
+
+  async destroy() {
+    // Clean up all spawned processes on shutdown
+    for (const [pid] of this._processes) {
+      try { process.kill(-pid) } catch {}
+    }
+  }
+}
+```
+
+## File I/O Patterns
+
+Use `context.workspaceRoot` to read/write workspace files and `context.pluginDir` for plugin-local configuration:
+
+```javascript
+import { readFile, writeFile, mkdir } from 'fs/promises'
+import { join } from 'path'
+
+export default {
+  name: 'notes',
+  tools: ['save_note', 'read_notes'],
+
+  async execute(toolName, args, context) {
+    const notesDir = join(context.workspaceRoot, 'brain', 'knowledge', 'notes')
+    const cacheDir = join(context.pluginDir, '.cache')
+
+    if (toolName === 'save_note') {
+      await mkdir(notesDir, { recursive: true })
+      const filepath = join(notesDir, `${args.title}.md`)
+      await writeFile(filepath, args.content, 'utf-8')
+      return { success: true, output: `Saved note: ${filepath}` }
+    }
+
+    if (toolName === 'read_notes') {
+      // Plugin-local cache for performance
+      await mkdir(cacheDir, { recursive: true })
+      const cachePath = join(cacheDir, 'index.json')
+      // ... read and cache logic
+    }
+  }
+}
+```
+
+<Warning>
+  Always use `context.workspaceRoot` — never hardcode paths. Users can move their workspace anywhere.
+</Warning>
+
+## Multi-Tool Plugins
+
+A single plugin can export multiple tools. Route by `toolName` in `execute()`:
+
+```javascript
+export default {
+  name: 'http-client',
+  tools: ['http_get', 'http_post', 'http_put', 'http_delete'],
+
+  async execute(toolName, args) {
+    const method = toolName.replace('http_', '').toUpperCase()
+
+    const options = {
+      method,
+      headers: args.headers || { 'Content-Type': 'application/json' }
+    }
+
+    if (args.body && method !== 'GET') {
+      options.body = JSON.stringify(args.body)
+    }
+
+    try {
+      const response = await fetch(args.url, options)
+      const text = await response.text()
+
+      if (!response.ok) {
+        return {
+          success: false,
+          output: '',
+          error: `${response.status} ${response.statusText}: ${text.slice(0, 500)}`
+        }
+      }
+
+      return { success: true, output: text.slice(0, 4000) }
+    } catch (err) {
+      return { success: false, output: '', error: err.message }
+    }
+  }
+}
+```
+
+## Error Handling
+
+Always return a `ToolResult` with `success: false` and an error message on failure. Never throw — the motor cortex catches exceptions but retries 3x, which wastes tokens if the error is deterministic:
+
+```javascript
+async execute(toolName, args) {
+  // Validate inputs before doing work
+  if (!args.url) {
+    return { success: false, output: '', error: 'Missing required parameter: url' }
+  }
+
+  if (!args.url.startsWith('http')) {
+    return { success: false, output: '', error: 'URL must start with http:// or https://' }
+  }
+
+  try {
+    const result = await riskyOperation(args)
+    return { success: true, output: result }
+  } catch (err) {
+    // Return error — don't throw
+    return {
+      success: false,
+      output: '',
+      error: `Operation failed: ${err.message}`
+    }
+  }
+}
+```
+
+<Info>
+  The motor cortex retries failed tool calls up to 3 times with exponential backoff (2s, 6s, 18s). Return clear error messages so the LLM can adjust its approach on the next attempt.
+</Info>
+
+## Stateful Plugins
+
+`init()` runs once on load, `destroy()` on shutdown. Store state in closures or module scope:
+
+```javascript
+let db = null
+let refreshInterval = null
+
+export default {
+  name: 'stateful-example',
+  tools: ['query_data'],
+
+  async init(context) {
+    // Open connection, load config, set up watchers
+    const configPath = join(context.pluginDir, 'config.json')
+    const config = JSON.parse(await readFile(configPath, 'utf-8'))
+
+    db = await openDatabase(config.dbPath)
+
+    // Periodic refresh
+    refreshInterval = setInterval(() => db.refresh(), 60_000)
+  },
+
+  async execute(toolName, args) {
+    if (!db) {
+      return { success: false, output: '', error: 'Database not initialized' }
+    }
+    const rows = await db.query(args.sql)
+    return { success: true, output: JSON.stringify(rows, null, 2) }
+  },
+
+  async destroy() {
+    clearInterval(refreshInterval)
+    await db?.close()
+    db = null
+  }
+}
+```
+
+## Tool Result Formatting
+
+The output string is shown to the LLM for its next turn. Make it informative but concise — the LLM has limited context:
+
+```javascript
+// Good: structured, concise, actionable
+return {
+  success: true,
+  output: `Found 3 open PRs:\n- #142 "Fix login bug" (2 reviews, CI passing)\n- #139 "Add dark mode" (needs review)\n- #137 "Refactor auth" (CI failing)`
+}
+
+// Bad: raw JSON dump that wastes tokens
+return {
+  success: true,
+  output: JSON.stringify(entireApiResponse) // Could be 50KB
+}
+```
+
+<Tip>
+  Truncate long outputs. The LLM doesn't need every detail — give it enough to make a decision. A good rule: keep tool output under 4000 characters.
+</Tip>
+
+## Inter-Plugin Communication
+
+Plugins cannot call other plugins directly. If your plugin needs another capability's output, emit the need as part of your result and let the LLM orchestrate:
+
+```javascript
+return {
+  success: true,
+  output: 'Found 5 matching files. To proceed, I need their contents read via file_read.'
+}
+```
+
+The LLM reads this output and decides to call `file_read` next. This keeps the architecture clean — the LLM is the orchestrator, plugins are tools.
+
+## Security Model
+
+Plugins run with full Node.js access in the main Electron process. They can do anything: file system, network, child processes, native modules. The amygdala is the only gate — it decides whether the LLM is allowed to invoke a tool based on danger patterns.
+
+<Warning>
+  Only install plugins you trust. A malicious plugin has the same access as Wolffish itself. Review plugin code before adding it to your workspace, especially community plugins.
+</Warning>
+
+## Testing Plugins
+
+Two approaches for testing:
+
+<Tabs>
+  <Tab title="Isolated Testing">
+    Create a mock context and call `execute()` directly:
+
+    ```javascript
+    import plugin from './plugin/index.mjs'
+
+    const mockContext = {
+      workspaceRoot: '/tmp/test-workspace',
+      pluginDir: '/tmp/test-plugin',
+      signal: new AbortController().signal
+    }
+
+    await plugin.init(mockContext)
+    const result = await plugin.execute('my_tool', { input: 'test' }, mockContext)
+    console.assert(result.success === true)
+    await plugin.destroy()
+    ```
+  </Tab>
+  <Tab title="Live Testing">
+    Load Wolffish in dev mode (`npm run dev`) and trigger your plugin via chat. Check:
+
+    - `brain/corpus/` logs for `tool.called` and `tool.completed` events
+    - `brain/motor/tasks/` for execution details and timing
+    - `brain/prefrontal/.debug/` to verify your tool definitions appear in context
+  </Tab>
+</Tabs>
+
+## Real-World Example: Paginated API Client
+
+A complete plugin that makes HTTP API calls, handles pagination, and returns structured results:
+
+```javascript
+export default {
+  name: 'api-client',
+  tools: ['api_fetch_all'],
+
+  async execute(toolName, args, context) {
+    const { url, headers = {}, maxPages = 5, pageParam = 'page' } = args
+    const { signal } = context
+    const allResults = []
+    let page = 1
+    let hasMore = true
+
+    while (hasMore && page <= maxPages) {
+      if (signal?.aborted) {
+        return {
+          success: false,
+          output: '',
+          error: `Cancelled after fetching ${page - 1} pages`
+        }
+      }
+
+      const separator = url.includes('?') ? '&' : '?'
+      const pageUrl = `${url}${separator}${pageParam}=${page}`
+
+      try {
+        const res = await fetch(pageUrl, { headers, signal })
+
+        if (!res.ok) {
+          return {
+            success: false,
+            output: '',
+            error: `HTTP ${res.status} on page ${page}: ${res.statusText}`
+          }
+        }
+
+        const data = await res.json()
+        const items = Array.isArray(data) ? data : data.items || data.results || []
+
+        if (items.length === 0) {
+          hasMore = false
+        } else {
+          allResults.push(...items)
+          page++
+        }
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          return { success: false, output: '', error: 'Request cancelled' }
+        }
+        return { success: false, output: '', error: `Fetch error: ${err.message}` }
+      }
+    }
+
+    // Format concisely for the LLM
+    const summary = `Fetched ${allResults.length} items across ${page - 1} pages.`
+    const preview = allResults.slice(0, 10)
+      .map(item => `- ${item.title || item.name || JSON.stringify(item).slice(0, 80)}`)
+      .join('\n')
+
+    return {
+      success: true,
+      output: `${summary}\n\nFirst 10 items:\n${preview}${allResults.length > 10 ? `\n\n...and ${allResults.length - 10} more` : ''}`
+    }
+  }
+}
+```

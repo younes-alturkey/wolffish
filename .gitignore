@@ -18,3 +18,39 @@ __pycache__/
 
 # Compiled terminal-client binaries (scripts/cli/build.mjs)
 build/cli/
+
+# ---- bundled packages (apps/mobile, packages/relay, packages/extension) ----
+# One root .gitignore for the monorepo; the per-repo ones were folded in here.
+
+# Expo / React Native (apps/mobile)
+.expo/
+web-build/
+expo-env.d.ts
+.kotlin/
+.metro-health-check*
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
+apps/mobile/ios/
+apps/mobile/android/
+
+# Cloudflare Workers (packages/relay)
+.wrangler/
+.dev.vars
+packages/relay/playground/out/
+
+# Chrome extension (packages/extension — pnpm + turbo)
+.env
+.env.*
+.turbo/
+.idea/
+coverage/
+dist-zip/
+packages/extension/**/build/
+packages/extension/chrome-extension/manifest.js
+packages/extension/packages/i18n/lib/i18n.ts
+tailwind-output.css

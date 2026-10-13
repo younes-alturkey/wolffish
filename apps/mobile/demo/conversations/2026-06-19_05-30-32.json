@@ -1,0 +1,201 @@
+{
+  "id": "2026-06-19_05-30-32",
+  "title": "Run ping",
+  "model": "",
+  "createdAt": 1781836232861,
+  "updatedAt": 1781836314684,
+  "messages": [
+    {
+      "id": "m_1781836314684_1186bf",
+      "role": "user",
+      "content": "Run ping",
+      "timestamp": 1781836314684
+    },
+    {
+      "id": "m_1781836314684_8d9375",
+      "role": "assistant",
+      "content": "**0% packet loss, 113ms avg** — your connection's solid. Nothing to worry about. 🐟",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781836232867_l9nw5o",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1781836232867_l9nw5o",
+          "segmentId": "seg_2",
+          "toolCallId": "call_00_2UPxEJuFwpaNnKw7LHEG9799",
+          "name": "shell_exec",
+          "args": {
+            "command": "ping -c 4 google.com"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1781836232867_l9nw5o",
+          "segmentId": "seg_3",
+          "toolCallId": "call_00_2UPxEJuFwpaNnKw7LHEG9799",
+          "status": "success",
+          "output": "PING google.com (142.250.181.206): 56 data bytes\n64 bytes from 142.250.181.206: icmp_seq=0 ttl=113 time=129.982 ms\n64 bytes from 142.250.181.206: icmp_seq=1 ttl=113 time=96.463 ms\n64 bytes from 142.250.181.206: icmp_seq=2 ttl=113 time=102.661 ms\n64 bytes from 142.250.181.206: icmp_seq=3 ttl=113 time=122.586 ms\n\n--- google.com ping statistics ---\n4 packets transmitted, 4 packets received, 0.0% packet loss\nround-trip min/avg/max/stddev = 96.463/112.923/129.982/13.790 ms",
+          "meta": {
+            "label": "Run shell command",
+            "cwd": "/Users/younes",
+            "durationMs": 3217,
+            "exitCode": 0,
+            "truncated": false
+          }
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781836232867_l9nw5o",
+          "segmentId": "seg_4",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1781836232867_l9nw5o",
+          "segmentId": "seg_5",
+          "delta": "**0% packet loss, 113ms avg** — your connection's solid. Nothing to worry about. 🐟"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1781836232867_l9nw5o",
+          "segmentId": "seg_28",
+          "stopReason": "end_turn",
+          "iterationCount": 2,
+          "reasoningContent": "The ping was successful - 4 packets sent, 4 received, 0% packet loss. Average latency around 113ms to google.com which is fine. Just report the results simply."
+        }
+      ],
+      "toolTimings": {
+        "call_00_2UPxEJuFwpaNnKw7LHEG9799": {
+          "startedAt": 1781836250303,
+          "endedAt": 1781836253520
+        }
+      },
+      "stopReason": "end_turn",
+      "timestamp": 1781836314684
+    },
+    {
+      "id": "m_1781836314684_27b1f9",
+      "role": "user",
+      "content": "Use the ping skill",
+      "timestamp": 1781836314684
+    },
+    {
+      "id": "m_1781836314684_1d514a",
+      "role": "assistant",
+      "content": "No dedicated ping skill in my cerebellum — just the planning one. But the command works fine:0% packet loss again. Smooth sailing. 🐟",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781836291586_ru19hz",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1781836291586_ru19hz",
+          "segmentId": "seg_2",
+          "delta": "No dedicated ping skill in my cerebellum — just the planning one. But the command works fine:"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1781836291586_ru19hz",
+          "segmentId": "seg_21",
+          "toolCallId": "call_00_MsbcIoTs7smbFpmDaHTM6925",
+          "name": "shell_exec",
+          "args": {
+            "command": "ping -c 4 google.com"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1781836291586_ru19hz",
+          "segmentId": "seg_22",
+          "toolCallId": "call_00_MsbcIoTs7smbFpmDaHTM6925",
+          "status": "success",
+          "output": "PING google.com (142.250.181.206): 56 data bytes\n64 bytes from 142.250.181.206: icmp_seq=0 ttl=113 time=119.489 ms\n64 bytes from 142.250.181.206: icmp_seq=1 ttl=113 time=96.040 ms\n64 bytes from 142.250.181.206: icmp_seq=2 ttl=113 time=93.270 ms\n64 bytes from 142.250.181.206: icmp_seq=3 ttl=113 time=167.057 ms\n\n--- google.com ping statistics ---\n4 packets transmitted, 4 packets received, 0.0% packet loss\nround-trip min/avg/max/stddev = 93.270/118.964/167.057/29.576 ms",
+          "meta": {
+            "label": "Run shell command",
+            "cwd": "/Users/younes",
+            "durationMs": 3199,
+            "exitCode": 0,
+            "truncated": false
+          }
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781836291586_ru19hz",
+          "segmentId": "seg_23",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1781836291586_ru19hz",
+          "segmentId": "seg_24",
+          "delta": "0% packet loss again. Smooth sailing. 🐟"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1781836291586_ru19hz",
+          "segmentId": "seg_34",
+          "stopReason": "end_turn",
+          "iterationCount": 2,
+          "reasoningContent": "The user just said \"Use the ping skill\" and the ping command ran successfully. 0% packet loss, 119ms average. Nothing more to do here."
+        }
+      ],
+      "toolTimings": {
+        "call_00_MsbcIoTs7smbFpmDaHTM6925": {
+          "startedAt": 1781836308721,
+          "endedAt": 1781836311920
+        }
+      },
+      "stopReason": "end_turn",
+      "timestamp": 1781836314684
+    }
+  ],
+  "stats": {
+    "allTime": {
+      "turns": 2,
+      "apiCalls": 2,
+      "toolCalls": 2,
+      "inputTokens": 7,
+      "outputTokens": 361,
+      "cacheReadTokens": 12570,
+      "cacheCreationTokens": 12400,
+      "cost": 0.005426299999999999,
+      "processingMs": 2000,
+      "elapsedMs": 2000,
+      "apiMs": 1640,
+      "endedAt": 1781836314684,
+      "provider": "",
+      "model": ""
+    },
+    "lastTurn": {
+      "endedAt": 1781836314684,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "apiCalls": 1,
+      "toolCalls": 1,
+      "inputTokens": 5,
+      "outputTokens": 193,
+      "cacheReadTokens": 12570,
+      "cacheCreationTokens": 0,
+      "provider": "",
+      "model": "",
+      "cost": 0.0005909
+    },
+    "meter": {
+      "contextTokens": 12768,
+      "contextBudget": 1000000,
+      "compactionAt": 725424,
+      "model": ""
+    }
+  }
+}

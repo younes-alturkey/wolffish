@@ -181,6 +181,22 @@ export async function service(client, args) {
     out(`${icon.ok()} autostart registered ${c.gray(`(${state.mechanism})`)}`)
     if (state.location) out(c.gray(`  ${shortPath(state.location)}`))
     if (state.warning) out(`  ${icon.warn()} ${c.yellow(state.warning)}`)
+    // The service is the half that keeps a certificate renewing; the other
+    // half is getting one. Point at it, with the commands this OS will
+    // otherwise stop on, while the box still speaks plain HTTP.
+    const web = await client.invoke('web:status').catch(() => null)
+    if (web && web.enabled && web.scheme !== 'https') {
+      out()
+      for (const line of httpsNextSteps({
+        root: typeof process.getuid === 'function' && process.getuid() === 0,
+        url: Array.isArray(web.urls)
+          ? (web.urls.find((u) => !u.includes('localhost') && !u.includes('127.0.0.1')) ??
+            web.urls[0] ??
+            null)
+          : null
+      }))
+        out(line)
+    }
     return 0
   }
 
@@ -235,6 +251,59 @@ export async function service(client, args) {
   out(c.red(`unknown: wolffish service ${sub}`))
   out(c.gray('  status | install [--headless] | uninstall | stop | logs'))
   return 2
+}
+
+/**
+ * What to do once the service is in place, for the OS this box runs: open
+ * the two ports Let's Encrypt and browsers use, clear the low-port rule the
+ * preflight would otherwise stop on, then the one command. Printed only
+ * while HTTPS is off; a box with its certificate needs nothing from here.
+ */
+export function httpsNextSteps({ platform = process.platform, root = false, url = null } = {}) {
+  const lines = []
+  const say = (text = '') => lines.push(text)
+  const cmd = (text) => lines.push(`    ${c.bold(text)}`)
+  say(c.bold('Next: HTTPS'))
+  if (platform === 'linux') {
+    say(
+      c.gray(
+        '  Open ports 80 and 443 at your provider (security group or cloud firewall) — and locally if a firewall is on:'
+      )
+    )
+    cmd('sudo ufw allow 80,443/tcp')
+    if (!root) {
+      say(c.gray('  Not root, so let this user bind the low ports (survives updates):'))
+      cmd(
+        "sudo sysctl -w net.ipv4.ip_unprivileged_port_start=80 && echo 'net.ipv4.ip_unprivileged_port_start=80' | sudo tee /etc/sysctl.d/60-wolffish-ports.conf"
+      )
+    }
+  } else if (platform === 'darwin') {
+    say(
+      c.gray(
+        '  macOS lets only root bind 80 and 443 — forward them with pf to 8080 and 8443, and point Wolffish there:'
+      )
+    )
+    cmd(
+      "printf 'rdr pass inet proto tcp from any to any port 80 -> 127.0.0.1 port 8080\\nrdr pass inet proto tcp from any to any port 443 -> 127.0.0.1 port 8443\\n' | sudo tee /etc/pf.anchors/wolffish"
+    )
+    cmd(
+      'printf \'rdr-anchor "wolffish"\\nload anchor "wolffish" from "/etc/pf.anchors/wolffish"\\n\' | sudo tee -a /etc/pf.conf && sudo pfctl -ef /etc/pf.conf'
+    )
+    cmd(
+      'wolffish settings set channels.web.httpsPort 8443 && wolffish settings set channels.web.httpPort 8080'
+    )
+    say(c.gray('  On a home network, forward 80 and 443 on the router to this Mac.'))
+  } else if (platform === 'win32') {
+    say(c.gray('  Open the firewall, in an Administrator PowerShell:'))
+    cmd(
+      "New-NetFirewallRule -DisplayName 'Wolffish HTTPS' -Direction Inbound -Protocol TCP -LocalPort 80,443 -Action Allow"
+    )
+    say(c.gray('  On a home network, forward 80 and 443 on the router to this PC.'))
+  }
+  say(c.gray("  Then get the certificate — checks first, Let's Encrypt second, HTTPS on 443:"))
+  cmd('wolffish web https enable')
+  if (url) say(c.gray(`  Or from a phone: ${url} → Settings → Channels → Web UI → HTTPS`))
+  return lines
 }
 
 /**

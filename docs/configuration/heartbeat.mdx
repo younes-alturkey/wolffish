@@ -1,0 +1,347 @@
+---
+title: "Heartbeat & Scheduling"
+description: "Configure autonomous scheduled tasks with the brainstem heartbeat"
+---
+
+# Autonomous Jobs on a Timer
+
+The heartbeat is how Wolffish does things on its own — a morning briefing at 8, an inbox sweep every 15 minutes, a one-off reminder in 2 days. Jobs live in `brain/brainstem/heartbeat.md`, parsed by the brainstem module and run through the full agent pipeline when they fire.
+
+You rarely edit this file by hand. Just ask Wolffish — *"every morning, summarize my unread emails"* or *"in 2 days remind me to renew my domain"* — and it creates, edits, and removes jobs for you through its **`automations`** capability (`automation_list`, `automation_create`, `automation_edit`, `automation_delete`, `automation_check`, `automation_run`). Hand-editing still works, and the format is below.
+
+## How It Works
+
+Each `##` heading in `heartbeat.md` defines a job. **The heading *is* the schedule** (e.g. `## Daily (08:00)`) — there's no separate job name. The body below it is the instruction, sent to the agent as a user message when the schedule fires.
+
+```markdown
+## Daily (08:00)
+
+Summarize my unread emails and calendar events for today.
+List any GitHub notifications. Keep it brief.
+
+## Every (30m)
+
+Check my open pull requests on GitHub. If any have new
+reviews or comments, give me a one-line summary of each.
+```
+
+## Schedule Formats
+
+All times use your system's local timezone, 24-hour format. There's no UTC conversion — `Daily (09:00)` means 9 AM wherever you are.
+
+### One-time (runs once, then deletes itself)
+
+| Format | Meaning | Example |
+|---|---|---|
+| `Once (YYYY-MM-DD HH:MM)` | Once, at an absolute local date-time | `Once (2026-12-31 23:30)` |
+
+After a one-time job runs, it **removes its own entry** from the file.
+
+<Info>
+  **`In (15m)` / `In (2h)` / `In (2d)` is not a heading format** — the brainstem never parses `In (...)` from `heartbeat.md`, so writing it as a `##` heading does nothing. It's shorthand you use when *asking* Wolffish (*"in 2 days, remind me to renew my domain"*): the `automations` capability resolves the relative delay to an absolute `Once (...)` at creation — a relative countdown couldn't survive a restart — so what actually lands in the file is always a `Once (...)`. To hand-write a one-time job, use `Once (...)`.
+</Info>
+
+### Recurring (fires until you remove it)
+
+| Format | Meaning | Example |
+|---|---|---|
+| `Startup` | Runs once each time the brainstem initializes | `Startup` |
+| `Every (Nm)` | Repeating interval in minutes | `Every (5m)` |
+| `Every (Nh)` | Repeating interval in hours | `Every (2h)` |
+| `Hourly (MM)` | Once per hour at minute mark | `Hourly (30)` |
+| `Daily (HH:MM)` | Once per day | `Daily (09:00)` |
+| `Nightly (HH:MM)` | Once per day (alias for Daily) | `Nightly (23:00)` |
+| `Weekday (HH:MM)` | Monday through Friday only | `Weekday (08:30)` |
+| `Weekly (Day HH:MM)` | Once per week on a named day | `Weekly (Monday 09:00)` |
+| `Monthly (DD HH:MM)` | Once per month on a day number | `Monthly (1 10:00)` |
+| `Cron (expression)` | Raw 5-field cron syntax | `Cron (*/15 * * * *)` |
+
+### Several times a day, week or month
+
+One automation, one heading — list the times or days with commas:
+
+| Format | Meaning | Example |
+|---|---|---|
+| `Daily (HH:MM, HH:MM, …)` | Every day, at each listed time | `Daily (08:00, 14:00, 20:00)` |
+| `Weekday (HH:MM, HH:MM, …)` | Monday through Friday, at each listed time | `Weekday (09:00, 17:00)` |
+| `Weekly (Day, Day, … HH:MM)` | Each listed day of the week (full name or `Mon`, `Tue`, …) | `Weekly (Monday, Wednesday, Friday 09:00)` |
+| `Monthly (DD, DD, … HH:MM)` | Each listed day of the month | `Monthly (1, 15 09:00)` |
+
+Days and times can both be lists — every listed day runs at every listed time, so `Weekly (Monday, Friday 09:00, 17:00)` is four runs a week. The times don't need to share a minute (`Daily (08:00, 12:30, 18:00)` works). For anything the lists can't say, `Cron (…)` takes several expressions joined by `;`.
+
+In the Automations page, the pills above the schedule field build these for you: pick **Once / Twice / 3 times / 4 times / 5 times**, then **Every day / week / month**, and the runs are spread evenly across the period starting from now.
+
+<Info>
+  Out-of-range schedules are rejected up front — `Every (0m)`, `Daily (99:99)`, or a `Once (...)` in the past won't be silently accepted and then never fire. If you hand-edit a malformed heading, it shows up flagged when Wolffish lists your automations.
+</Info>
+
+## Job Execution
+
+Heartbeat jobs run through the full agent pipeline — same brain, same capabilities, same memory. What differs from a normal conversation:
+
+- **Auto-approval**: Tool calls bypass amygdala confirmation (no approval dialogs).
+- **Sealed conversation**: Each run creates its own conversation, visible in history.
+- **No streaming**: Responses are generated in the background without UI interruption.
+
+<Warning>
+  Because heartbeat jobs auto-approve every tool call, be careful what you schedule. A job that says "delete old files" will execute without asking. Write defensive instructions — "list files older than 30 days and tell me what you'd delete" beats "delete files older than 30 days." See [What to Schedule](/configuration/what-to-schedule) for the full safety decision layer.
+</Warning>
+
+### Job setting markers
+
+A job's body may **start** with setting-marker lines — they're settings, not instruction text, and are stripped before the instruction reaches the agent:
+
+```markdown
+## Daily (08:00)
+
+mode: workflow
+icon: 📰
+project: 1f3a2b…
+
+Good morning routine. Summarize overnight messages, list today's
+calendar events, and highlight the top 3 priorities.
+```
+
+| Marker | What it does |
+|---|---|
+| `mode: single` / `mode: workflow` | How the run executes — one model direct, or a [workflow](/configuration/workflow-mode) that can plan phases and drive parallel agents. No marker ⇒ whatever chat mode is active when it fires. |
+| `icon: <emoji>` | The job's **face**: shown on its card on the Automations page and stamped on every conversation its runs create, so the conversations list tells you at a glance which job an overnight run belongs to. |
+| `project: <id>` | Binds the job to a [project](/configuration/projects) — its runs get the project's instructions and file list, and their conversations register under the project. |
+
+You rarely write these by hand: the Automations page sets them from its editor, and Wolffish sets them itself when you ask it to schedule something (`automation_create` / `automation_edit` take optional `mode` and `icon`; the `automation_*` tools preserve marker lines automatically when editing).
+
+### Up to three at once, queued — never dropped
+
+Jobs run **up to three at a time**, side by side. If a job fires while all three slots are busy, it **queues** and runs as soon as a slot frees rather than being skipped. The queue is coalesced per job — a job that fires while it's already running or waiting folds into the pending run instead of stacking copies — so a slow job can't pile up a backlog of its own ticks. You don't need to spread jobs out to avoid collisions.
+
+Since **v1.0.258**, "queued" tells you which of its two very different meanings applies. **Waiting for a slot** means the run will start on its own, shortly — and the message says **how many runs are holding the pool**, worth knowing because [procedure](/configuration/procedures) runs, [compaction](/memory/consolidation) and [reflection](/memory/reflection) share those same three slots and draw no card unless you've asked them to. **Folded into a run already going** means there will be no second run at all — the button did nothing, by design. The app, your phone and the terminal all say which, and so is the model, so it stops re-firing an automation that was already lined up. The same release fixed the two faults that could leave runs queued behind **nothing at all**: automations are now tracked by their heading rather than their position in the file (so a mid-run edit can't hand one job's identity to another), and a slot is released no matter how its start-announcement goes (so a window closing at the wrong moment can't hold a slot for the life of the app).
+
+### Missed runs catch up
+
+If Wolffish was closed when a job was due, it runs once on the next launch — **collapsed**: a recurring job that missed several fires during the downtime runs a *single* catch-up, not one per missed tick. Only misses within the last **24 hours** are replayed; older ones are dropped. A one-time job past its time runs if it's within that window, then deletes itself; if it's older, it's quietly retired without running.
+
+## The Automations Page
+
+The in-app home for the heartbeat is the **Automations tab of the Library page**. Since **v1.0.286** Automations, [Projects](/configuration/projects) and [Procedures](/configuration/procedures) are **one Library destination with three tabs** rather than three sidebar rows opening three near-identical grids — the back button leads, the tabs sit beside it, and the grid fills the rest. Nothing on the cards changed, and **the tab you left on is the one you come back to** after a detour through chat. [The phone](/integrations/mobile-app) made the same move in its v1.0.56.
+
+Each job is a card wearing an **emoji of its own** — 📧 for the inbox sweep, 📰 for the news digest — with its schedule in plain English, its instruction, and its last-run status in view.
+
+Two chips share the card's top row, pushed to its two edges:
+
+- **When it runs next**, as a countdown — *Next run in 3 hours* (**v1.0.281**). Inside the final minute it counts down by the second, and when the moment passes the card **rolls forward to the next occurrence by itself** rather than sitting on a time that has gone. A switched-off automation wears the chip greyed out rather than promising a run that isn't coming. A [list schedule](#several-times-a-day-week-or-month) shows **its next run, not its first** — an automation firing at 08:00, 14:00 and 20:00 reads 14:00 when you look at lunchtime.
+- **The rule it runs by** (**v1.0.292**) — `Daily (09:00)`, `Weekly (Mon 09:00)`, a raw cron line — wearing **the glyph of its period**: a sun for daily, a briefcase for weekdays, a calendar for weekly and monthly, a stopwatch for hourly, a rocket for one that fires at startup, angle brackets for raw cron. A long cron drops to its own line rather than squeezing.
+
+Below them, a small monospace line holds only what it was always for: the exact wall-clock moment of the next run, the project the job belongs to, and when you last edited it.
+
+Editing opens a **full-height panel that slides in from the edge** (**v1.0.281**) — the same surface the logs, files and conversations sheets use, so the form scrolls while the title and the Done bar stay put:
+
+- **Schedule chips** for the common shapes — daily, weekday, weekly, monthly, interval, hourly, startup, one-time, and full cron — so you pick a form instead of remembering syntax.
+- A real **time input** rather than a text field to get `HH:MM` right.
+- A live **next-run preview** that shows exactly when the job will fire, computed from the schedule you're building, *before* you save.
+- **Autosave** with the same discipline as the procedures editor — no Save button, just Done.
+- The **prompt sits directly under the name and project** since **v1.0.283**, with files and folders beneath it, and it is a real editor in place rather than a preview you click. The button beside it opens the same **full-height expanded sheet** the file and PDF viewers use (**v1.0.283**), with a close button and Escape — and a stray click on the backdrop no longer shuts the editor mid-draft.
+- The editor **previews the very same countdown chip** the card will wear once you save.
+
+The raw markdown view of `heartbeat.md` stays one click away on the desktop for hand-editing, and everything below about the file format remains true — the page and the file are two views of the same jobs. ([The phone shows cards only](/integrations/mobile-app) since its v1.0.56: on a phone the cards *are* the schedule, and a second surface for the same store was a second place to get it wrong.) The card's emoji is stamped on every conversation the job's runs create, so automation runs are recognizable at a glance in the conversations list and History.
+
+You can also **paste anything** into an automation's prompt without worrying about the file's own grammar: a pasted document carrying its own `## ` headings, `---` rules or HTML comment markers used to be silently truncated at the first one, and since **v1.0.246** the editor **escapes those lines the moment it saves** — respelled in the closest form the file reads as plain text, proven against the engine's own parsers, and byte-identical to what the phone's editor writes. The agent's own `automation_*` tools take the other road: they decline such a prompt and say how to rephrase it.
+
+### A job picks its own thinking level
+
+A job used to run at **whatever thinking level your chat happened to be set to** — so a nightly summary that needed a light pass could quietly run at maximum, and a deep analysis could run at minimum because you had switched the composer down earlier in the day. Since **v1.0.310** the effort a job deserves is a property of **the job**.
+
+A **thinking switch sits on the card**, beside the mode toggle it already had, offering **off, on, high and max**:
+
+| Level | What it means |
+| --- | --- |
+| **off** | Thinking off — a direct answer |
+| **on** | Thinking on, no effort control |
+| **high** | Thinking on, standard effort |
+| **max** | Thinking on, maximum effort |
+
+- **New automations start from the mode you are running right now**, so nothing changes until you say so; after that the job decides, and its runs use it.
+- **Anything saved before v1.0.310 carries no setting** and keeps following your chat exactly as it always did — so nothing you already have behaves differently.
+- **The levels offered are the ones your selected model actually honours**, sent from the runtime rather than guessed, so a card can never present a level the model would silently ignore.
+
+The same switch appears on the same card on [your phone](/integrations/mobile-app#the-workspace-editable), reading and writing **the very same value** — flip it on one and the other shows it, because they are one setting seen from two places rather than two copies taking turns. From a terminal:
+
+```bash
+wolffish procedures thinking <id> high
+wolffish procedures thinking <id> default   # hand the decision back to your chat
+```
+
+Both the procedures and automations lists show **a thinking column**, so you can see at a glance what each one runs at, and the browsable menus offer a picker for the same setting.
+
+### Steering a run mid-flight
+
+A scheduled run works unattended for minutes at a time — which is exactly when you most want to say *that post text is wrong, fix it before you publish.* Until **v1.0.306** you could not: **an automation, a procedure or a heartbeat job took no mid-turn message at all.** Typing into one was refused outright — your bubble went up and came straight back down — and your words then waited **on no screen at all** until the run ended and the window sent them as a brand-new turn, far too late to matter. Those runs do not travel the same track a chat turn does, so nothing had ever registered them as steerable.
+
+They now **borrow the very same inbox** the chat uses, which means all of it:
+
+- The same **acceptance**, and the same pending row saying it will be read at the next step.
+- The **same button to take it back** before it is read, with your words returned to the composer.
+- The same **return of anything the run never got around to reading** — re-sent as a normal turn, or handed back as a draft when re-sending would restart work you deliberately stopped.
+- The message lands as a **real message of yours at the exact point it was read**, and the run **adjusts without redoing** the work your message did not touch.
+
+<Note>
+  A message sent in **the sliver where a turn is closing** used to disappear with nothing to show for it, because the composer had already been emptied the moment you pressed Enter. It now **stays on screen saying it is waiting for the current turn to finish**, and taking it back hands the words to the composer rather than dropping them. The instant a run actually reads your message, **it appears at the point it was read** — on the desktop, on your phone and in the terminal — instead of waiting out the pacing the rest of a turn pays.
+</Note>
+
+The full mechanics, including how a message is never lost between surfaces, are on [Waiting](/architecture/waiting#saying-something-while-it-works).
+
+### Watching runs live
+
+A firing job never takes over the app — and since **v1.0.288** it no longer tries to.
+
+The **floating live card** that used to pin itself over whatever screen you were on while an automation, a procedure, a [compaction](/memory/consolidation) or a [reflection](/memory/reflection) ran has been **removed**, along with its four switches (automations and procedures shared one under Settings → Channels → In-app; compaction and reflection had their own under Knowledge). They shipped switched off and were best left that way: each of those runs already reports itself on its own page, and the card only ever sat in front of what you were reading. Nothing about the runs themselves changed — same schedules, same notifications, same logs.
+
+The one overlay that stays is the **memory index rebuild**, because that one really does mean Wolffish has stopped answering, and being left to guess why is worse than a card.
+
+On the page itself, a job that's currently running or queued says so on its card, and its **Run now** button rests until the run ends — pressing it again would only fold into the pending run anyway. A run that fails raises a toast naming what broke. To watch a run as it happens, open its conversation: every autonomous run creates one **before it starts**, and it streams live.
+
+### A run you can open and watch
+
+Before **v1.0.236** an autonomous run happened somewhere you couldn't reach. Its conversation appeared in the list only once the run was over, and if the app quit halfway everything the run had written was lost.
+
+Every autonomous run — automations and [procedures](/configuration/procedures) alike — now **creates its conversation before it starts**:
+
+- It takes its place in the conversations list immediately, with the **same processing pulse a [Telegram](/channels/telegram) turn gets**.
+- You can **open it and watch the reply arrive live**, exactly like a chat you typed.
+- The **Stop button works on it** — the same button, the same gesture, for a run nobody typed.
+- Progress is **written to disk while the run works**, so quitting or crashing halfway leaves a real transcript rather than a bare prompt.
+- Reopening the app mid-run finds the automation **still going** instead of sitting idle.
+
+### Edit stamps
+
+Each card shows when its job was last **edited** — and the stamp comes from the engine watching `heartbeat.md` itself, not from the page. Any writer counts: the card editor, the raw markdown view, Wolffish's own `automation_*` tools, an external editor, even an edit made while the app was closed. Toggling a job on or off deliberately doesn't restamp it — only a real change to the schedule, settings, or instruction does. The page also refreshes itself live when the file changes underneath it: ask Wolffish mid-chat to add an automation and watch the card appear.
+
+## Managing Jobs
+
+### Through Wolffish (recommended)
+
+Just talk to it:
+
+- *"What automations do I have?"* → lists them with their schedule and last-run status
+- *"Every weekday at 7:45, give me a morning briefing"* → creates a recurring job
+- *"In 2 days, remind me to renew my domain"* → creates a one-time job that self-deletes
+- *"Change the morning briefing to 8am"* / *"Delete the PR watcher"* → edits or removes
+- *"Run my email check now"* → fires a job immediately to test it
+
+Changes apply live — the brainstem reloads the schedule as soon as the file changes, no restart needed.
+
+### By hand
+
+Edit `heartbeat.md` directly. To **disable** a job without deleting it, comment it out with HTML comments:
+
+```markdown
+## Daily (08:00)
+
+Summarize my unread emails and calendar events for today.
+
+<!--
+## Every (1h)
+
+This job is disabled and won't run.
+-->
+```
+
+<Tip>
+  The brainstem watches `heartbeat.md` and reloads on save, so hand edits take effect without restarting. The commented examples shipped in the file are a menu — uncomment one to activate it.
+</Tip>
+
+## Practical Examples
+
+### Morning Briefing
+
+```markdown
+## Weekday (07:45)
+
+Give me a morning briefing:
+1. Unread emails — summarize the important ones
+2. Today's calendar — list meetings with times
+3. GitHub — any PRs that need my review
+4. Weather — current conditions and forecast
+
+Keep each section to 2-3 lines max.
+```
+
+### Email Triage
+
+```markdown
+## Every (2h)
+
+Check my email for anything urgent or time-sensitive.
+If you find something that needs immediate attention,
+flag it and write a one-sentence summary.
+Ignore newsletters and marketing emails.
+```
+
+### PR Monitoring
+
+```markdown
+## Every (30m)
+
+Check my open pull requests on GitHub.
+Report only PRs with new activity since your last check:
+- New reviews or approvals
+- CI status changes (especially failures)
+- New comments or requested changes
+
+If nothing changed, respond with "No PR updates."
+```
+
+### One-time Reminder
+
+```markdown
+## Once (2026-12-31 23:30)
+
+Wish me a happy new year and give me a short recap of my
+biggest wins this year, drawn from my episodes and knowledge.
+```
+
+This fires once at 11:30 PM on Dec 31, then removes itself from the file.
+
+## Memory Compaction
+
+Memory compaction (hippocampus consolidation) is a separate scheduled process configured in **Settings → Knowledge → Compaction**, not in `heartbeat.md`. The brainstem runs it on its own daily/weekly schedule, and it won't appear when Wolffish lists your automations.
+
+<Info>
+  Compaction consolidates daily episodes into weekly summaries and promotes important information to knowledge files. It runs independently of heartbeat jobs.
+</Info>
+
+## Full Example File
+
+```markdown
+# Heartbeat
+
+## Startup
+
+Run a quick health check. Verify that all configured
+providers are reachable and report any issues.
+
+## Weekday (07:45)
+
+Give me a morning briefing:
+1. Unread emails — summarize the important ones
+2. Today's calendar — list meetings with times
+3. GitHub — any PRs that need my review
+
+## Every (30m)
+
+Check my open pull requests on GitHub for new activity.
+Only report changes since last check.
+
+## Nightly (18:00)
+
+Write a brief end-of-day summary of completed tasks
+and pending items for tomorrow.
+
+## Once (2026-12-31 23:30)
+
+Wish me a happy new year and recap my biggest wins this year.
+```
+
+## See Also
+
+- [What to Schedule](/configuration/what-to-schedule) — which workflows are safe to run autonomously, and how to make a risky one safe
+- [Self-Authoring Skills](/capabilities/self-authoring-skills) — the sibling self-management capability

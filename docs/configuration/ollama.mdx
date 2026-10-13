@@ -1,0 +1,181 @@
+---
+title: "Ollama"
+description: "Run AI models locally with zero internet dependency using Ollama"
+---
+
+# Ollama Integration
+
+Wolffish has complete, first-class integration with [Ollama](https://ollama.com) — an open-source local model runtime that lets you run LLMs entirely on your hardware. No API keys, no cloud dependency, no data leaving your machine.
+
+## Why Ollama?
+
+The deep goal of Wolffish is to run **completely local with zero exposure to the internet**. Every piece of data — memory, conversations, skills, task logs — already lives on your machine. The only component that traditionally requires the cloud is the LLM itself. Ollama closes that gap.
+
+For power users with capable hardware, this means:
+
+- **Total privacy** — Your prompts, responses, and tool outputs never leave your machine
+- **Zero recurring cost** — No API bills, no token counting, no rate limits
+- **Offline capability** — Full agentic workflows on an airplane, in a bunker, or behind an air-gapped network
+- **No vendor dependency** — Your agent works regardless of API outages, pricing changes, or service discontinuation
+
+This is the vision: a fully autonomous personal AI agent that operates as a local process on your own hardware, answering to no one but you.
+
+## How It Works
+
+Wolffish communicates with Ollama via its local HTTP API:
+
+```
+POST http://localhost:11434/api/chat
+```
+
+When you install Ollama and pull a model, Wolffish can:
+
+1. **Detect** Ollama when you go looking for it in Settings → Models → Ollama (since **v1.0.289** launch itself asks Ollama nothing)
+2. **Browse** available models on your machine
+3. **Pull** new models directly from the Wolffish UI — no terminal needed
+4. **Stream** responses using NDJSON streaming
+5. **Call tools** via structured JSON in the model's response
+
+The integration is seamless — select a local model and start chatting. Wolffish handles the message formatting, tool-call parsing, and streaming normalization internally.
+
+## Setting Up Ollama
+
+<Steps>
+  <Step title="Install Ollama">
+    Download from [ollama.com](https://ollama.com) and install. On macOS it's a single `.dmg`, on Linux a one-line curl command, on Windows a standard installer.
+  </Step>
+
+  <Step title="Pull a model">
+    Either use the terminal (`ollama pull qwen3:14b`) or let Wolffish pull it for you from Settings → Models → Ollama.
+  </Step>
+
+  <Step title="Select in Wolffish">
+    Open the **model card beside the chat input** and pick your model. Since **v1.0.279** there is **no Local/Cloud switch** — one chip shows the model that will answer, and **choosing a model *is* the switch**: pick an Ollama model and you are running local, pick a cloud model and you are running that provider. Your local model always keeps a row of its own in the list, so it is there to pick even when Ollama isn't answering. (Settings → Models → Ollama is where the pull UI lives.)
+  </Step>
+</Steps>
+
+<Tip>
+  Since **v1.0.236** the model card **lists the Ollama models you have installed**; since **v1.0.288** it reads an answer that has **already settled** rather than asking Ollama every time you open it — the app watches the daemon in the background, so the local group is there exactly when Ollama can answer, the same way a cloud provider's group is there exactly when it has a key. Opening the card costs nothing and nothing shifts under your cursor. That turns "switch to local" and "pick which local model" into a single click instead of a trip through Settings, and choosing a model you've already downloaded no longer pretends to download it again.
+</Tip>
+
+<Note>
+  Ollama is **optional, and opt-in**. Since **v1.0.289** it is not part of [onboarding](/getting-started/first-launch#onboarding-flow) at all — no install page, no model-picker page, and no probe at launch. You reach it when you want it, from Settings → Models → Ollama. Wolffish will still prompt you to configure at least one provider before you can start chatting.
+</Note>
+
+<Note>
+  **Finishing a download keeps you where you are.** It used to throw you out of Settings and into the chat, because the picker was built as a step in a flow rather than a panel you had opened on purpose. Since **v1.0.289** the list comes back with your new model marked as current, and the panel re-reads what Ollama actually holds — so re-downloading a model your configuration already names no longer leaves the card offering "Install". The buttons that belonged to that flow — *Skip for now*, *Back to chat*, *Continue to chat* — are gone; Settings' own sidebar and back chevron were always the way out of a panel.
+</Note>
+
+<Warning>
+  **Delete a model with `ollama rm` and Wolffish now notices.** It used to carry on believing it still had one: the composer stayed live, the notice pointing you at Settings stayed hidden, and you found out by sending a message and getting a raw provider error back. Since **v1.0.289** the chat reads the **daemon's live state** — a background watch the app already keeps — and says plainly that your local model is no longer installed, with a one-click path to Settings → Models. A daemon that is merely switched off is left alone, and so is one that stumbles for a moment before answering. The **Stop button is gated on nothing at all**, so a turn running on a model that vanished mid-generation can still be stopped.
+</Warning>
+
+## Model Requirements for Agentic Tasks
+
+Not all local models are equal. Wolffish's agentic capabilities — tool calling, multi-step reasoning, code execution, file manipulation — place specific demands on the model. Here's what you need to know:
+
+### The Parameter Threshold
+
+| Model Size | Conversational | Simple Tools | Multi-Step Agentic | Reliable Autonomous |
+|-----------|---------------|-------------|-------------------|-------------------|
+| 1B–3B | Basic chat only | Unreliable | No | No |
+| 7B–8B | Good | Inconsistent | Struggles | No |
+| 14B | Good | Mostly reliable | Basic chains | Fragile |
+| 32B–35B | Excellent | Reliable | Handles well | Sometimes |
+| 70B+ | Excellent | Reliable | Reliable | Yes |
+
+**The minimum for reliable agentic tool use is ~14B parameters**, but even then, complex multi-step workflows (research → write → format → post) will hit failure modes. For truly autonomous execution — where the agent chains 10+ tool calls without human intervention — you need **32B+ parameters** at minimum, and **70B+** for production-level reliability.
+
+### Why Small Models Fail at Agentic Tasks
+
+Tool calling requires the model to:
+
+1. **Understand the instruction** — Parse what the user wants accomplished
+2. **Plan the sequence** — Decide which tools to call, in what order
+3. **Format tool calls correctly** — Output valid JSON with correct parameter names and types
+4. **Interpret tool results** — Read the output and decide the next action
+5. **Maintain context across turns** — Remember what it's already done across a multi-step chain
+6. **Handle errors gracefully** — Retry, adjust, or ask for help when a tool fails
+
+Small models (7B and below) typically fail at steps 3–6. They hallucinate parameter names, lose track of multi-step plans, output malformed JSON that breaks the tool-calling pipeline, and can't recover from errors. The result is a frustrating loop of retries that never converges.
+
+### Recommended Models by Hardware
+
+| RAM / VRAM | Model | Parameters | Agentic Reliability |
+|-----------|-------|-----------|-------------------|
+| 8GB | Qwen 3 8B, Gemma 3 4B | 4B–8B | Conversation only |
+| 16GB | Qwen 3 14B, Gemma 3 12B | 12B–14B | Simple single-tool calls |
+| 32GB | Qwen 3 32B, QwQ 32B | 32B | Multi-step workflows |
+| 48GB+ | Llama 3 70B, Qwen 2.5 72B | 70B+ | Full autonomous agentic |
+| 64GB+ / GPU | DeepSeek-V2, Llama 3.1 405B (quantized) | 70B+ | Production-grade |
+
+<Warning>
+  Quantization matters. A 70B model quantized to Q4_0 fits in less RAM but loses capability. For agentic tasks, prefer Q5_K_M or higher quantization levels — the precision directly affects tool-call reliability.
+</Warning>
+
+### The Honest Truth
+
+If you have a standard laptop with 8–16GB RAM, local models will handle conversations, summarization, and simple Q&A well. But for the kind of autonomous multi-step workflows Wolffish excels at — researching topics, writing reports, managing files, executing shell commands in sequence — you'll get dramatically better results with a cloud provider like Claude or GPT-4.
+
+The sweet spot for local-only agentic use:
+
+- **Mac Studio / Mac Pro with 64GB+ unified memory** — Run 70B models at acceptable speed
+- **Desktop with 24GB+ VRAM GPU** — Full-speed 70B inference via CUDA
+- **High-end workstation with 128GB RAM** — Run quantized 100B+ models
+
+For everyone else, we recommend: **cloud providers for complex agentic tasks, Ollama for privacy-sensitive conversations and offline fallback.**
+
+## One Unified Path
+
+Local models are not second-class citizens. A local model runs through exactly the same pipeline as a cloud model:
+
+- **Same lean context** — the same ~5k-token system prompt, capability index, and memory map that a cloud model gets. Nothing is stripped because the model runs on your hardware.
+- **Same core toolset** — the full always-loaded core tools, plus [tool discovery](/capabilities/overview) for everything else (`tool_search` works identically on local models).
+- **Same memory** — full access to search, recall, conversation history, and knowledge saving.
+
+The only local-specific artifact is a small self-qualifying prompt overlay: the model is told it's running locally and asked to be honest when a task exceeds what it can do reliably — say so plainly and suggest switching to a capable cloud model rather than hallucinating capability. But if you insist, it complies fully. It's a request for honesty, not a restriction; nothing is withheld.
+
+<Note>
+  Earlier versions had per-local-model context toggles ("stateless" and "restricted" local modes). Those are gone — there is one path now, and stale keys are stripped from existing configs on launch.
+</Note>
+
+### Small context windows
+
+Models with small context windows automatically get a slimmed **bootstrap toolset** — retrieval, discovery, files, and shell — so the prompt and tool schemas don't pin the window before the conversation starts. This is keyed on the *measured* context budget, never on provider identity: a small-window cloud model triggers it identically, and a local 128K-context model gets the full core set.
+
+### Hardware protection
+
+The **Restrict powerful local models** toggle (Settings → Preferences, on by default) blocks the Ollama panel from installing local models whose memory footprint exceeds what your system can handle comfortably (~55% of total RAM). This is an *installation* gate, not a context restriction — it exists to prevent swap thrashing, and you can turn it off to install anything regardless of hardware limits (not recommended).
+
+## Reasoning modes
+
+Thinking on Ollama is **binary and automatic** — no effort tiers, and nothing to pick. Wolffish reads each pulled model's capabilities from Ollama's `/api/show` and sends a top-level `think` field only to models that advertise the `thinking` capability; every other model never sees the field at all.
+
+There is no reasoning control for a local model. The **Thinking** chip row inside the model card reads whichever *cloud* model is selected, so in **Local Only** mode it shows *"Reasoning is not supported by this model."* — thinking is settled by the pulled model's own capability rather than by a switch you set.
+
+**On Ollama:** Models that advertise a thinking capability (e.g. qwen3, deepseek-r1, gpt-oss) can reason; the rest can't. No API key and no cost either way, since it runs locally.
+
+## Local-Only Mode
+
+Wolffish includes a "Local Only" toggle that restricts all inference to Ollama — no data ever touches a cloud API, no matter which Brain model is selected. Turn it on from the **model card beside the chat input** — flip the switch to **Local** — when you need absolute privacy for a sensitive task.
+
+In local-only mode:
+- Inference is forced to the local Ollama model regardless of which Brain you've selected
+- No network requests are made for LLM inference
+- Memory consolidation uses the local model
+- All other features (memory, tools, capabilities) work normally
+
+## Limitations
+
+- **Speed** — Local inference is slower than cloud APIs, especially on CPU-only machines. Expect 5–30 tokens/second depending on model size and hardware, versus 80–150 tokens/second from cloud providers.
+- **Context window** — Most local models support 4K–32K context. Cloud models offer 128K–200K. Wolffish automatically slims the toolset for small windows (see above), but long conversations or large documents may still exceed local model limits.
+- **Tool-call formatting** — Smaller models sometimes output malformed tool calls. Wolffish has retry logic, but repeated failures will end the turn.
+- **Computer-use** — Screen interaction depends on vision capabilities that most local models lack. The capability isn't withheld — a vision-capable local model can use it — but expect poor results below the frontier.
+
+## The Vision
+
+We built Ollama integration because we believe the future of personal AI is local. Today, the best models are cloud-hosted. But model sizes are shrinking while capabilities grow. The gap between a 70B local model and a cloud frontier model narrows with every release.
+
+Wolffish is built for that future — where a single machine runs a fully capable AI agent with no internet connection, no subscription, no data leaving your control. Every architectural decision (model-agnostic design, markdown-first, local memory) is designed so that the day a 14B model can reliably execute 20-tool agentic chains, Wolffish is ready. No code changes needed — just swap the model: local models already run the exact same path as cloud ones.
+
+Until then, use cloud providers for the heavy lifting and Ollama for what it does best: private, offline, always-available local inference.

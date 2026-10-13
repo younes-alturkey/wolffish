@@ -1,0 +1,162 @@
+---
+title: "SKILL.md Reference"
+description: "Complete reference for the SKILL.md frontmatter and body format"
+---
+
+# Anatomy of a SKILL.md
+
+Every capability requires a `SKILL.md` file. It has two parts: YAML frontmatter (machine-readable metadata) and a markdown body (LLM-readable instructions).
+
+## Frontmatter Fields
+
+```yaml
+---
+name: my-capability
+version: 1.0.0
+description: A short description of what this capability does
+triggers:
+  - keyword1
+  - keyword2
+  - keyword3
+tools:
+  - name: my_tool
+    description: What this tool does
+    parameters:
+      type: object
+      properties:
+        arg1:
+          type: string
+          description: What arg1 is for
+        arg2:
+          type: number
+          description: What arg2 is for
+      required:
+        - arg1
+danger_patterns:
+  - "rm -rf"
+  - "sudo"
+confirm_patterns:
+  - "npm install"
+  - "git push"
+requires:
+  - shell
+---
+```
+
+### Field Reference
+
+| Field | Required | Description |
+|---|---|---|
+| `name` | Yes | Unique identifier for the capability |
+| `version` | No | Semantic version for update logic |
+| `description` | Yes | Short description shown in tool definitions |
+| `triggers` | Yes | Keywords for relevance matching. Use `"*"` for always-on (see below) |
+| `tools` | No | JSON Schema tool definitions for the LLM API |
+| `danger_patterns` | No | Regex patterns that amygdala will **block** |
+| `confirm_patterns` | No | Regex patterns that amygdala will **require approval** for |
+| `requires` | No | Other capabilities this one depends on |
+
+### Always-On Triggers
+
+Use the wildcard `"*"` as a trigger to make a skill inject on **every message**, regardless of what the user says:
+
+```yaml
+triggers:
+  - "*"
+```
+
+Always-on skills don't count against the trigger-match limit — they're injected first, then up to 3 keyword-matched skills are added on top. This is ideal for pure skills that define agent-wide behaviour (planning discipline, output formatting, safety rules) rather than responding to specific topics.
+
+<Info>
+  Always-on triggers only affect pure skills (no `tools` defined). Plugin capabilities with tools are always visible in the `<tools>` section regardless of triggers.
+</Info>
+
+## Tools Schema
+
+The `tools` array follows the standard JSON Schema format used by LLM tool-calling APIs. Each tool needs a `name`, `description`, and `parameters` object.
+
+```yaml
+tools:
+  - name: shell_exec
+    description: Execute a shell command and return stdout/stderr
+    parameters:
+      type: object
+      properties:
+        command:
+          type: string
+          description: The shell command to execute
+        background:
+          type: boolean
+          description: Run the command detached in the background
+      required:
+        - command
+```
+
+<Warning>
+  Tool names must be unique across all loaded capabilities. If two capabilities define the same tool name, the second one will overwrite the first.
+</Warning>
+
+## Danger and Confirm Patterns
+
+These are regex patterns matched against `toolName + " " + JSON.stringify(args)`. The amygdala uses them to gate tool calls.
+
+- **danger_patterns**: Matched calls are **blocked**. The LLM receives a denial message.
+- **confirm_patterns**: Matched calls trigger an **approval dialog** in the UI. The user must approve before execution.
+
+Calls that match neither pattern are classified as **safe** and execute immediately.
+
+## Pure Skills (No Plugin)
+
+A capability with `tools: []` (or no `tools` field) is a **pure skill**. It has no plugin code and no callable tools — only the markdown body, which is injected into a `<skills>` section in the system prompt when the skill's triggers match.
+
+Pure skills guide the LLM's behaviour without adding new tools. Use them for:
+
+- **Planning discipline** — force the agent to plan before executing multi-step tasks
+- **Output formatting** — enforce structured responses, language preferences, or tone
+- **Procedure guides** — teach the agent how to use existing tools for specific workflows (e.g. git operations via `shell_exec`)
+- **Safety rules** — add constraints that apply across all tool usage
+
+```yaml
+---
+name: planning
+description: Think before acting. Plan multi-step tasks before executing.
+triggers:
+  - "*"
+tools: []
+---
+
+# Planning
+
+Before executing any task that involves 2 or more tool calls, state your
+plan first. Each phase is one line: what you'll do → how you'll verify.
+```
+
+Plugin capabilities (with tools) appear in the `<tools>` section automatically. Pure skills appear in the `<skills>` section only when triggered. The two sections are independent — a message can activate both.
+
+## Markdown Body
+
+Everything below the frontmatter `---` is the markdown body. The LLM reads this at runtime when the capability is relevant. Write it as direct instructions to the LLM:
+
+```markdown
+---
+name: git
+triggers:
+  - git
+  - commit
+  - branch
+  - merge
+---
+
+# Git Operations
+
+You have access to git through shell commands. When the user asks about git:
+
+1. Always run `git status` first to understand the current state
+2. Use conventional commit format: `type(scope): description`
+3. Never force-push without explicit confirmation
+4. Show diffs before committing when the user hasn't reviewed changes
+```
+
+<Tip>
+  The markdown body is where you encode expert knowledge. Write the instructions as if you're teaching a smart junior developer how to use the tool correctly. The better the instructions, the better the agent performs.
+</Tip>

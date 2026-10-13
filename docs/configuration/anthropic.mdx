@@ -1,0 +1,72 @@
+---
+title: "Anthropic"
+description: "Set up Anthropic (Claude) — complex reasoning, instruction following, and computer-use"
+---
+
+# Anthropic (Claude)
+
+```
+POST https://api.anthropic.com/v1/messages
+```
+
+Uses SSE streaming. Tool calls arrive as `tool_use` content blocks.
+
+Best for: Complex reasoning, detailed instruction following, nuanced tool use, computer-use (screen interaction).
+
+<Note>
+  Anthropic is the only provider that supports **computer-use** (screen interaction). If you need Wolffish to drive a browser or desktop UI, you need an Anthropic key.
+</Note>
+
+## Getting an API Key
+
+1. Go to [console.anthropic.com](https://console.anthropic.com)
+2. Sign up or log in
+3. Navigate to **API Keys** and create a new key
+4. Paste it into Wolffish → Settings → Models → Anthropic
+
+## Models
+
+| Model | Context | Modes | Input / Output (per MTok) | Notes |
+|-------|---------|-------|--------------------------|-------|
+| **claude-fable-5** | 1M | Off, High, Max | $10.00 / $50.00 | Frontier reasoning. Cached: $1.00/MTok. |
+| claude-opus-4-8 | 1M | Off, High, Max | $5.00 / $25.00 | Strong reasoning. Cached: $0.50/MTok. |
+| claude-opus-4-7 | 1M | Off, High, Max | $5.00 / $25.00 | Strong reasoning. Cached: $0.50/MTok. |
+| claude-sonnet-4-6 | 1M | Off, High, Max | $3.00 / $15.00 | Best balance of quality and cost. Cached: $0.30/MTok. |
+| claude-opus-4-6 | 1M | Off, High, Max | $5.00 / $25.00 | Reasoning. Cached: $0.50/MTok. |
+| claude-opus-4-5-20251101 | 200K | Off, High, Max | $5.00 / $25.00 | Previous gen. Cached: $0.50/MTok. |
+| claude-sonnet-4-5-20250929 | 200K | Off, High, Max | $3.00 / $15.00 | Previous gen. Cached: $0.30/MTok. |
+| claude-haiku-4-5-20251001 | 200K | Off, High | $1.00 / $5.00 | Fast and cheap. Not recommended for agentic tasks. Cached: $0.10/MTok. |
+| claude-opus-4-1-20250805 | 200K | Off, High, Max | $15.00 / $75.00 | Legacy. Cached: $1.50/MTok. |
+
+## Reasoning modes
+
+How this model reasons is set in the **model card beside the chat input** — hover the model switch to preview the card, click to pin it open. The top chip row, labelled **Thinking**, is the control: pick a chip and it applies from your next message. Two separate ideas combine here:
+
+### Thinking — *whether* the model reasons
+
+- **Off** — the model answers immediately. Fastest and cheapest; ideal for simple, direct tasks.
+- **On** (the chip reads **Normal**) — the model first works through the problem in a dedicated reasoning pass before replying. Slower and uses more tokens, but markedly more accurate on multi-step, logical, or ambiguous tasks.
+
+### Effort — *how hard* it thinks
+
+Only effort-capable models expose this; it applies once thinking is on.
+
+- **High** — standard reasoning depth. The right default for most agentic work.
+- **Max** — the model reasons longer and deeper for the hardest problems. More tokens and latency in exchange for higher quality on complex work.
+
+### The chip row
+
+| Chip | Icon | Meaning |
+|------|------|---------|
+| Off | lightning | Thinking off — direct answer |
+| Normal | brain | Thinking on — no effort control |
+| High | AI brain | Thinking on, standard effort |
+| Max | flame | Thinking on, maximum effort |
+
+The active chip is tinted; the rest sit quiet. Each model shows only the chips it genuinely supports — a model that always reasons has no **Off**, a model with a single mode shows that one chip inert, and a model that can't reason at all replaces the row with *"Reasoning is not supported by this model."* Wolffish remembers your choice per model. (Before **v1.0.236** this was a colour-coded brain button on the composer; it moved into the model card, beside the Single/Workflow row, so every model knob sits in one panel.)
+
+**On Anthropic:** Opus, Sonnet and Fable models support Off / High / Max; Haiku supports Off / High. On the newest models (Opus 4-8 and 4-7) thinking is adaptive — the model chooses its own depth — and Anthropic does not return the reasoning text; 4-6 and earlier stream their reasoning.
+
+<Note>
+  All models support tool calling with no hard tool-count limit. Anthropic uses ephemeral prefix caching for cost savings on repeated context.
+</Note>

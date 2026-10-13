@@ -1,0 +1,122 @@
+---
+title: "OpenRouter"
+description: "Set up OpenRouter — a model aggregator for accessing any provider through a single API key"
+---
+
+# OpenRouter (Aggregator)
+
+```
+POST https://openrouter.ai/api/v1/chat/completions
+```
+
+Uses SSE streaming with OpenAI-compatible tool-calling format. Routes requests to any model from any provider through a single API key.
+
+**OpenRouter is a model aggregator** — a single API endpoint that proxies requests to Anthropic, OpenAI, DeepSeek, Qwen, xAI, Meta, Mistral, Google, and dozens more. One key, one billing account, access to everything.
+
+Best for: Experimenting with models you haven't set up directly, unified billing, accessing niche models not yet natively supported by Wolffish.
+
+<Warning>
+  **We recommend configuring providers directly whenever possible.** Direct integration gives you lower latency (no proxy hop), accurate cost tracking, provider-specific features (Anthropic's ephemeral caching, DeepSeek's FIM), and no middleman markup. OpenRouter adds a routing layer that can introduce latency and occasionally inconsistent behavior across providers.
+
+  Use OpenRouter when you want to experiment with models you haven't set up directly, or as a convenient fallback for providers where you don't want to manage a separate API key.
+</Warning>
+
+## Getting an API Key
+
+1. Go to [openrouter.ai](https://openrouter.ai)
+2. Sign up or log in
+3. Navigate to **Keys** and create a new key
+4. Paste it into Wolffish → Settings → Models → OpenRouter
+
+## Models
+
+OpenRouter routes to hundreds of models across dozens of providers. The table below is a curated top-20 of the most popular models — the picker exposes many more once your key is connected:
+
+| Model | Context | Modes | Input / Output (per MTok) | Cached |
+|-------|---------|-------|---------------------------|--------|
+| **anthropic/claude-opus-4.1** | 200K | Off, High | $15.00 / $75.00 | — |
+| anthropic/claude-sonnet-4.5 | 1M | Off, High | $3.00 / $15.00 | — |
+| openai/gpt-5 | 400K | Off, High | $1.25 / $10.00 | — |
+| openai/gpt-5-mini | 400K | Off, High | $0.25 / $2.00 | — |
+| openai/o3 | 200K | Off, High | $2.00 / $8.00 | — |
+| openai/o4-mini | 200K | Off, High | $1.10 / $4.40 | — |
+| openai/gpt-4o | 128K | — | $2.50 / $10.00 | — |
+| openai/gpt-4.1 | 1M | — | $2.00 / $8.00 | — |
+| google/gemini-2.5-pro | 1M | Off, High | $1.25 / $10.00 | — |
+| google/gemini-2.5-flash | 1M | Off, High | $0.30 / $2.50 | — |
+| deepseek/deepseek-r1 | 164K | Off, High | $0.70 / $2.50 | — |
+| deepseek/deepseek-chat-v3.1 | 164K | Off, High | $0.21 / $0.79 | — |
+| x-ai/grok-4.3 | 1M | Off, High | $1.25 / $2.50 | — |
+| qwen/qwen3-235b-a22b | 131K | Off, High | $0.45 / $1.82 | — |
+| z-ai/glm-4.6 | 203K | Off, High | $0.43 / $1.74 | — |
+| meta-llama/llama-4-maverick | 1M | — | $0.15 / $0.60 | — |
+| meta-llama/llama-3.3-70b-instruct | 131K | — | $0.10 / $0.32 | — |
+| mistralai/mistral-large | 128K | — | $2.00 / $6.00 | — |
+| mistralai/mistral-medium-3 | 131K | — | $0.40 / $2.00 | — |
+| moonshotai/kimi-k3 | 1M | Off, High | $3.00 / $15.00 | — |
+
+<Note>
+  This is a curated shortlist, not the full catalogue. OpenRouter exposes hundreds of models through one key — the picker lists many more than the popular ones shown here. Wolffish doesn't track per-token cache discounts for routed models, so the Cached column is unavailable across the board.
+</Note>
+
+## Direct Integration vs. OpenRouter
+
+| | Direct Provider | OpenRouter |
+|--|----------------|------------|
+| **Latency** | Lowest — direct API call | Higher — extra proxy hop |
+| **Cost** | Provider pricing only | Provider pricing + OpenRouter margin |
+| **Features** | Full provider-specific features | Normalized subset |
+| **Billing** | Separate per provider | Single unified bill |
+| **Model access** | Only configured providers | Hundreds of models, one key |
+| **Caching** | Provider-native (Anthropic ephemeral, DeepSeek, etc.) | Varies by underlying provider |
+
+### When to Use OpenRouter
+
+**Good fit:**
+- Trying models from providers you haven't configured yet
+- Quick A/B testing across different model families
+- Unified billing when you only want one API bill
+- Accessing niche or newer models not yet natively supported
+
+**Use direct integration instead when:**
+- The provider is already natively supported (DeepSeek, Anthropic, OpenAI, etc.)
+- You need the lowest possible latency
+- You want provider-specific features (caching, prompt prefixes, etc.)
+- You're running high-volume production workloads where the proxy hop adds up
+
+<Tip>
+  If you're already using DeepSeek, Anthropic, or any other natively supported provider, keep that direct connection. Add OpenRouter only for models you can't access directly — then select an OpenRouter model as your Brain when you want to use it. There's no cascade; the model you select is the one that runs.
+</Tip>
+
+## Reasoning modes
+
+How this model reasons is set in the **model card beside the chat input** — hover the model switch to preview the card, click to pin it open. The top chip row, labelled **Thinking**, is the control: pick a chip and it applies from your next message. Two separate ideas combine here:
+
+### Thinking — *whether* the model reasons
+
+- **Off** — the model answers immediately. Fastest and cheapest; ideal for simple, direct tasks.
+- **On** (the chip reads **Normal**) — the model first works through the problem in a dedicated reasoning pass before replying. Slower and uses more tokens, but markedly more accurate on multi-step, logical, or ambiguous tasks.
+
+### Effort — *how hard* it thinks
+
+Only effort-capable models expose this; it applies once thinking is on.
+
+- **High** — standard reasoning depth. The right default for most agentic work.
+- **Max** — the model reasons longer and deeper for the hardest problems. More tokens and latency in exchange for higher quality on complex work.
+
+### The chip row
+
+| Chip | Icon | Meaning |
+|------|------|---------|
+| Off | lightning | Thinking off — direct answer |
+| Normal | brain | Thinking on — no effort control |
+| High | AI brain | Thinking on, standard effort |
+| Max | flame | Thinking on, maximum effort |
+
+The active chip is tinted; the rest sit quiet. Each model shows only the chips it genuinely supports — a model that always reasons has no **Off**, a model with a single mode shows that one chip inert, and a model that can't reason at all replaces the row with *"Reasoning is not supported by this model."* Wolffish remembers your choice per model. (Before **v1.0.236** this was a colour-coded brain button on the composer; it moved into the model card, beside the Single/Workflow row, so every model knob sits in one panel.)
+
+**On OpenRouter:** Reasoning depends on the routed model. Reasoning-capable models show Off / High; non-reasoning models have no control. OpenRouter caps effort at High, and some endpoints (e.g. GPT-5, DeepSeek-R) reason mandatorily — there 'Off' falls back to minimal reasoning.
+
+## Using OpenRouter as Your Model
+
+There's no provider cascade and no priority order. To use an OpenRouter model, select it as your Brain from the **model switch beside the chat input** (or let the master pick it for an agent in [workflow mode](/configuration/workflow-mode)). The model you select is the one that runs — OpenRouter is not an automatic fallback behind your other providers.

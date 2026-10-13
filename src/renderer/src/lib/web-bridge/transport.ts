@@ -1,0 +1,269 @@
+/**
+ * The Web UI's socket to the main process — what stands in for the preload
+ * when the renderer runs in a browser.
+ *
+ * Same protocol as the CLI's local socket, over WebSocket: `invoke` frames
+ * keyed by the renderer's own IPC channel names, `event` frames for
+ * everything the app pushes. Bytes cross as `{ $bin: base64 }` and come
+ * back as Uint8Array, which is what every Blob-building caller in the
+ * renderer already accepts.
+ *
+ * Reconnects on its own with a short backoff — a phone that locks and
+ * unlocks loses the socket every time — and replays nothing: the renderer
+ * re-fetches what it shows on `conversation:changed`-style events, and a turn
+ * that streamed while the socket was down is recovered the way a window
+ * reopened mid-turn recovers it (chat:turnMirror). A close with code 4001
+ * means this browser was signed out, and that is final.
+ */
+
+export type HelloFrame = {
+  version: string
+  /** The daemon's pid — a different one after a reconnect means the app restarted. */
+  pid: number
+  clientId: string
+  sessionId: string
+  secure: boolean
+  notificationsEnabled: boolean
+  vapidPublicKey: string | null
+}
+
+export type ConnectionState = 'connecting' | 'open' | 'closed' | 'signed-out'
+
+type Pending = { resolve: (value: unknown) => void; reject: (error: Error) => void }
+
+const INVOKE_TIMEOUT_MS = 10 * 60_000
+const RECONNECT_MIN_MS = 800
+const RECONNECT_MAX_MS = 10_000
+
+function toBase64(bytes: Uint8Array): string {
+  let binary = ''
+  const chunk = 0x8000
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk))
+  }
+  return btoa(binary)
+}
+
+function fromBase64(text: string): Uint8Array {
+  const binary = atob(text)
+  const out = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i)
+  return out
+}
+
+export function encodeForWire(value: unknown): unknown {
+  if (value === null || typeof value !== 'object') return value
+  if (value instanceof Uint8Array) return { $bin: toBase64(value) }
+  if (value instanceof ArrayBuffer) return { $bin: toBase64(new Uint8Array(value)) }
+  if (Array.isArray(value)) return value.map(encodeForWire)
+  const out: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(value)) {
+    if (typeof v === 'function') continue
+    out[k] = encodeForWire(v)
+  }
+  return out
+}
+
+export function decodeFromWire(value: unknown): unknown {
+  if (value === null || typeof value !== 'object') return value
+  if (Array.isArray(value)) return value.map(decodeFromWire)
+  const obj = value as Record<string, unknown>
+  if (typeof obj.$bin === 'string' && Object.keys(obj).length === 1) return fromBase64(obj.$bin)
+  const out: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(obj)) out[k] = decodeFromWire(v)
+  return out
+}
+
+export class WebTransport {
+  private ws: WebSocket | null = null
+  private nextId = 1
+  private readonly pending = new Map<number, Pending>()
+  private readonly listeners = new Map<string, Set<(payload: unknown) => void>>()
+  private readonly connectionListeners = new Set<(state: ConnectionState) => void>()
+  private reconnectDelay = RECONNECT_MIN_MS
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  private helloWaiters: Array<{ resolve: (h: HelloFrame) => void; reject: (e: Error) => void }> = []
+  hello: HelloFrame | null = null
+  state: ConnectionState = 'closed'
+
+  constructor() {
+    // A phone coming back from its lock screen gets its socket back at once
+    // rather than after the backoff it was in the middle of.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && this.state === 'closed') this.open()
+    })
+    window.addEventListener('online', () => {
+      if (this.state === 'closed') this.open()
+    })
+  }
+
+  private setState(next: ConnectionState): void {
+    if (this.state === next) return
+    this.state = next
+    for (const listener of this.connectionListeners) {
+      try {
+        listener(next)
+      } catch {
+        // a listener's problem is not the transport's
+      }
+    }
+  }
+
+  onConnection(listener: (state: ConnectionState) => void): () => void {
+    this.connectionListeners.add(listener)
+    return () => this.connectionListeners.delete(listener)
+  }
+
+  /** Open the socket; resolves with the server's hello. */
+  connect(): Promise<HelloFrame> {
+    if (this.hello && this.state === 'open') return Promise.resolve(this.hello)
+    return new Promise((resolve, reject) => {
+      this.helloWaiters.push({ resolve, reject })
+      this.open()
+    })
+  }
+
+  private open(): void {
+    if (this.state === 'signed-out') return
+    if (
+      this.ws &&
+      (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)
+    )
+      return
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+    this.setState('connecting')
+    const scheme = location.protocol === 'https:' ? 'wss' : 'ws'
+    const ws = new WebSocket(`${scheme}://${location.host}/ws`)
+    this.ws = ws
+    ws.onmessage = (event) => this.onFrame(String(event.data))
+    ws.onclose = (event) => {
+      if (this.ws !== ws) return
+      this.ws = null
+      this.failPending(new Error('connection lost'))
+      if (event.code === 4001 || event.code === 1008) {
+        this.setState('signed-out')
+        for (const w of this.helloWaiters) w.reject(new Error('signed out'))
+        this.helloWaiters = []
+        return
+      }
+      this.setState('closed')
+      this.scheduleReconnect()
+    }
+    ws.onerror = () => {
+      // onclose follows and carries the retry
+    }
+  }
+
+  private scheduleReconnect(): void {
+    if (this.reconnectTimer || this.state === 'signed-out') return
+    const delay = this.reconnectDelay
+    this.reconnectDelay = Math.min(RECONNECT_MAX_MS, Math.round(this.reconnectDelay * 1.7))
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null
+      this.open()
+    }, delay)
+  }
+
+  private failPending(error: Error): void {
+    for (const [, p] of this.pending) p.reject(error)
+    this.pending.clear()
+  }
+
+  private onFrame(raw: string): void {
+    let frame: {
+      t?: string
+      id?: number
+      ok?: boolean
+      value?: unknown
+      error?: string
+      channel?: string
+      payload?: unknown
+    }
+    try {
+      frame = JSON.parse(raw)
+    } catch {
+      return
+    }
+    if (frame.t === 'hello') {
+      this.hello = frame as unknown as HelloFrame
+      this.reconnectDelay = RECONNECT_MIN_MS
+      this.setState('open')
+      for (const w of this.helloWaiters) w.resolve(this.hello)
+      this.helloWaiters = []
+      return
+    }
+    if (frame.t === 'result' && typeof frame.id === 'number') {
+      const p = this.pending.get(frame.id)
+      if (!p) return
+      this.pending.delete(frame.id)
+      if (frame.ok) p.resolve(decodeFromWire(frame.value))
+      else p.reject(new Error(frame.error ?? 'request failed'))
+      return
+    }
+    if (frame.t === 'event' && typeof frame.channel === 'string') {
+      this.emitLocal(frame.channel, decodeFromWire(frame.payload))
+    }
+  }
+
+  /** Deliver an event to local subscribers — also used by the bridge for synthetic progress ticks. */
+  emitLocal(channel: string, payload: unknown): void {
+    const set = this.listeners.get(channel)
+    if (!set) return
+    for (const listener of [...set]) {
+      try {
+        listener(payload)
+      } catch (err) {
+        console.error(`[web] listener for ${channel} threw`, err)
+      }
+    }
+  }
+
+  subscribe<T>(channel: string, listener: (payload: T) => void): () => void {
+    let set = this.listeners.get(channel)
+    if (!set) {
+      set = new Set()
+      this.listeners.set(channel, set)
+    }
+    const wrapped = listener as (payload: unknown) => void
+    set.add(wrapped)
+    return () => {
+      set.delete(wrapped)
+    }
+  }
+
+  invoke(channel: string, ...args: unknown[]): Promise<unknown> {
+    const ws = this.ws
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      // Give a reconnect in progress a moment rather than failing a tap that
+      // landed in the gap between lock screen and socket.
+      return this.connect().then(() => this.invoke(channel, ...args))
+    }
+    const id = this.nextId++
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.pending.delete(id)
+        reject(new Error(`${channel} timed out`))
+      }, INVOKE_TIMEOUT_MS)
+      this.pending.set(id, {
+        resolve: (value) => {
+          clearTimeout(timer)
+          resolve(value)
+        },
+        reject: (error) => {
+          clearTimeout(timer)
+          reject(error)
+        }
+      })
+      try {
+        ws.send(JSON.stringify({ t: 'invoke', id, channel, args: encodeForWire(args) }))
+      } catch (err) {
+        this.pending.delete(id)
+        clearTimeout(timer)
+        reject(err instanceof Error ? err : new Error(String(err)))
+      }
+    })
+  }
+}

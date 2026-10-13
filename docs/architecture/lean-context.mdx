@@ -1,0 +1,152 @@
+---
+title: "The Lean Context System"
+description: "Why a fresh Wolffish request is ~9.4K tokens instead of ~94K — and how the model retrieves everything else on demand"
+---
+
+# Essentials In, Everything Else One Call Away
+
+Wolffish used to front-load the system prompt: whole memory files, a two-day episode dump, and a 16K-token prose catalog of every tool. The lean context redesign (v1.0.203) inverts that. The prompt now carries only the essentials plus two compact indexes — a **capability index** and a **memory map** — and the model *retrieves* everything else with tools, on demand, in milliseconds.
+
+A fresh conversation's system prompt is ~5,000 tokens (was ~44,000). Add the core tool schemas (~4K) and a fresh request costs **≈9.4K tokens vs ~94K before — a 10× reduction**.
+
+```
+System prompt (~5K tokens, byte-stable)
+  <identity>      — soul.md + user.md
+  <device>        — static device facts
+  <prefrontal>    — agents.core.md contract + learned-preferences digest
+  <capabilities>  — one line per installed capability
+  <memory_map>    — coverage map of everything recallable
+  <runtime>       — slimmed loop state
+
++ Core tool schemas (~4K tokens)
++ Conversation messages
+```
+
+## What a Fresh Prompt Contains
+
+| Section | Contents | Size |
+|---|---|---|
+| `<identity>` | `soul.md` + `user.md` — user-owned, unchanged | yours to control |
+| `<device>` | Static device facts | ~40 tokens |
+| `<prefrontal>` | The rewritten `agents.core.md` operating contract (~1.4K tokens effective — it replaced a 39KB manual) plus the bounded learned-preferences digest from the basalganglia (~500 tokens, unchanged) | ~1.9K tokens |
+| `<capabilities>` | One line per installed capability: name, ≤90-char description, tool count, `[loaded]` marker for callable ones | ~800 tokens |
+| `<memory_map>` | A coverage map of everything recallable — per-source record counts, date ranges, knowledge topics, conversation/artifact counts. Never content. | small |
+| `<runtime>` | Slimmed loop state — live counters ride the outbound volatile tail, not the prompt | small |
+
+Conditional sections appear only when they apply:
+
+- `<variables>` — your user-defined variables from `config.json` (only when you've defined any)
+- **Role overlay** — master/agent instructions in [workflow mode](/configuration/workflow-mode), including the master's `<workflow_models>` catalog of spawnable models
+- `<channel>` — channel formatting rules (e.g. WhatsApp's no-Markdown overlay)
+- `<local_model>` — a small honesty overlay for local (Ollama) models: acknowledge when out of depth, suggest a more capable model, but comply fully if the user insists. Nothing is withheld — local models get the same lean context, full core toolset, memory map, and tool discovery as cloud models.
+
+## What's Gone
+
+Four things were **deleted** from context assembly:
+
+| Removed | What it was |
+|---|---|
+| `<memory>` | Whole memory files injected by the cortex on every turn |
+| `<recent>` | The last-two-days episode dump |
+| `<tools>` | The 16K-token prose tool catalog |
+| Skill-body injection | Keyword/`"*"`-triggered SKILL.md bodies pasted into the prompt |
+
+None of that information is lost. It all lives on disk, indexed by the cortex, one tool call away — see [Retrieval Tools](/memory/retrieval-tools).
+
+## The Token Economics
+
+| | Before | After |
+|---|---|---|
+| System prompt (fresh conversation) | ~44,000 tokens | ~5,000 tokens |
+| Tool schemas shipped | every installed tool | core set, ~4,000 tokens |
+| Fresh request total | ~94,000 tokens | ≈9,400 tokens |
+
+Measured live, not projected:
+
+- An hourly automation went from **96,442 input tokens ($0.046/run)** to **~5.1K prompt tokens ($0.019/run)**.
+- The prompt prefix is byte-stable, yielding **~99% provider prompt-cache hits** measured across 50 conversations.
+- Worst case — the 10 heaviest capabilities all activated at once — is base ~9.6K + activations ≈ **41.5K tokens**, still under half the old floor.
+
+Three deliberate design choices keep the prefix byte-stable for provider caching:
+
+1. **The memory map regenerates once per calendar day** and rounds counts to coarse buckets, so it doesn't churn between turns.
+2. **Live counters** (iteration number, tools called) ride the outbound volatile tail instead of the system prompt.
+3. **Tool activation is conversation-scoped** — loading `github` in a heartbeat run never invalidates a live chat's prompt cache.
+
+## The Capability Index
+
+Instead of shipping every tool's schema, the `<capabilities>` section lists every installed capability — including MCP servers — in one line each:
+
+```xml
+<capabilities>
+Installed capabilities ([loaded] = callable right now; anything else is
+one tool_search/tool_activate away):
+- filesystem (6 tools) — Read, write, and patch files [loaded]
+- introspect (12 tools) — Check Wolffish's own status, performance, and memory [loaded]
+- shell (3 tools) — Execute shell commands [loaded]
+- github (14 tools) — Manage repos, issues, and pull requests
+- notion (9 tools) — Read and write Notion pages and databases
+- git (guide) — Git operations via shell commands
+</capabilities>
+```
+
+The model always *knows* what exists without carrying schemas. `[loaded]` marks the capabilities whose tools are callable right now (the core set plus anything activated this conversation); everything else loads on demand via `tool_search` or `tool_activate`, and its tools become callable the same turn.
+
+Past 60 capabilities, the unloaded remainder collapses to a grouped count (`…plus 23 more capabilities (187 tools) — tool_search finds any of them`), so the index's prompt cost is **O(1) in installed-capability count** — you can install a hundred MCP servers without growing the prompt.
+
+See [Capabilities Overview](/capabilities/overview) for how discovery, activation, and the core set work.
+
+## The Memory Map
+
+The `<memory_map>` tells the model *what exists to be recalled* — never the content itself:
+
+```xml
+<memory_map>
+Everything you have ever done, said, produced, or spent is indexed on
+disk — this is the coverage map, NOT the content. It is never evidence
+of absence: memory_search (2-3 phrasings) before concluding something
+was not recorded.
+- episode: ~150 records (2026-01-12 → 2026-07-03)
+- conversation: ~2500 records (2026-01-12 → 2026-07-03)
+- knowledge: 14 records
+- task: ~90 records (2026-02-01 → 2026-07-02)
+- conversations on disk: ~350 (conversation_list / conversation_read)
+- generated/uploaded files: ~200 (memory_search sources: artifact)
+- knowledge topics — projects: Wolffish, Docs site | preferences:
+  Development, Communication (memory_get the file for details)
+</memory_map>
+```
+
+It carries per-source record counts, date ranges, knowledge-file topics, and conversation/artifact counts. Counts are rounded to coarse buckets (exact under 20, then nearest 10, then nearest 50) and the whole block is **cached per calendar day**, so it stays byte-identical across every turn of the day — prompt-cache friendly by construction.
+
+<Info>
+  The memory map is a map, not the territory. A count of "~150 episode records" tells the model there's history worth searching — it never substitutes for retrieving the actual content.
+</Info>
+
+## Retrieval Instead of Injection
+
+The operating contract (`agents.core.md`) teaches the model to treat its context window as a **lean working set**: what's in the prompt is the essentials, not the extent of what it knows. Recall is driven by the *intent* of your message, unprompted:
+
+- **Definite references** — "send me *the* flight plan", "that file", "like last time" — mean you know it has it. It searches first.
+- **Repeat-task smell** — "send an email to Sarah" — triggers a quick search for prior instances: there may be an established pattern or template to reuse.
+- **Preferences** — it checks the learned-preferences digest in the prompt, then searches before guessing.
+- **Pure-present tasks** — weather, a calculation — need no recall. It just acts.
+
+And the hard rule: **two differently-worded searches before ever claiming it doesn't remember**. A search miss is never evidence of absence.
+
+The same philosophy applies to conversation history: long conversations converge to a rolling summary plus a verbatim tail, and anything folded away is recoverable with `conversation_read` — see [Context Compaction](/architecture/context-compaction).
+
+<CardGroup cols={2}>
+  <Card title="Retrieval Tools" icon="magnifying-glass" href="/memory/retrieval-tools">
+    The full memory_search / memory_get / conversation_read reference.
+  </Card>
+  <Card title="Capabilities Overview" icon="puzzle-piece" href="/capabilities/overview">
+    How tool discovery and the capability system work.
+  </Card>
+  <Card title="Context Compaction" icon="compress" href="/architecture/context-compaction">
+    How long conversations stay within the context window.
+  </Card>
+  <Card title="Stateless by Design" icon="server" href="/architecture/stateless-model">
+    Why every request carries the full conversation.
+  </Card>
+</CardGroup>

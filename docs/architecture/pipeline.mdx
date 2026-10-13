@@ -1,0 +1,119 @@
+---
+title: "The Agent Pipeline"
+description: "How a message flows through Wolffish from input to response"
+---
+
+# The Message Path
+
+Every message follows this exact path through the system. No exceptions, no shortcuts.
+
+```
+User message
+  → prefrontal.buildContext()
+    → thalamus.stream()
+      → broca.streamToUI()
+        → wernicke.parse()
+          → [if tool calls: amygdala → motor → cerebellum → loop]
+            → hippocampus.appendEpisode()
+              → basalganglia.recordOutcome()
+                → done   [async: conversation summarizer, when due]
+```
+
+## Step-by-Step
+
+### 1. Message Received
+
+The user sends a message from the chat UI. It arrives in the main process via IPC and enters the agent loop.
+
+### 2. Context Assembly (prefrontal)
+
+This is the most important step — and it is lean by design. A fresh conversation's system prompt is ~5,000 tokens (it used to be ~44,000). The prefrontal cortex assembles only:
+
+1. `<identity>` — `soul.md` + `user.md`, user-owned
+2. `<device>` — static device facts (~40 tokens)
+3. `<prefrontal>` — the `agents.core.md` operating contract (~1.4k tokens) plus the bounded learned-preferences digest from `basalganglia` (~500 tokens)
+4. `<capabilities>` — a one-line-per-capability index: name, a ≤90-character description, tool count, and a `[loaded]` marker on capabilities that are callable right now. ~800 tokens; past 60 installed capabilities the unloaded remainder collapses to grouped counts, so the cost is O(1) in how much you install
+5. `<memory_map>` — a coverage map of what exists to be recalled: per-source record counts (rounded to coarse buckets), date ranges, knowledge-file topics, conversation and artifact counts. It is a map, never content, and it is cached per calendar day so it never churns the provider prompt cache
+6. `<runtime>` — slimmed; the live loop counters ride a volatile tail at the very end of the outbound message array, not the prompt
+7. Conditional overlays: role (workflow master/agent — the master's overlay includes its `<workflow_models>` catalog of spawnable models), channel formatting (WhatsApp), and a `<local_model>` honesty overlay for locally-run models
+
+What is deliberately **not** in the prompt: no memory dumps, no episode history, no prose tool catalog, no skill bodies. All of that is indexed on disk and retrieved surgically when a turn actually needs it — `memory_search` for memory, `tool_search` for tools.
+
+A debug snapshot of every assembled prompt is written to `brain/prefrontal/.debug/` (capped at 50 files with rotation).
+
+<Info>
+  You can inspect exactly what the LLM received by reading the debug snapshot files. This is how you debug "why did Wolffish do that?" questions.
+</Info>
+
+### 3. Tool Selection (cerebellum)
+
+Full JSON schemas ship only for the **core set** — roughly 29–47 tools depending on what's connected: tool-discovery, introspect, filesystem, shell, ask, utilities (`send_file`), web-search, secrets, system, workflow (master-gated), and the telegram/whatsapp/electron send tools while those channels are connected. That's ~4k tokens of schemas, bringing a fresh request to ≈9.4k tokens total (vs ~94k before the lean redesign).
+
+Everything else — github, google, notion, browser, computer-use, media and document tools, all MCP servers — is discoverable:
+
+- `tool_search(query)` — term search over capability names, descriptions, triggers, and tool names; the best match auto-loads and its tools are callable the **same turn**.
+- `tool_activate(capability)` — explicit load by name.
+- Calling a known-but-unloaded tool directly just works (auto-activation). A truly unknown tool returns a deterministic error pointing at `tool_search`.
+
+Activation is **conversation-scoped**: each conversation carries its own active set (LRU-capped at 10 non-core capabilities), so loading github in a heartbeat run never invalidates a live chat's prompt cache. Eviction is invisible — calling an evicted tool auto-reactivates it and it executes normally. `pinnedCapabilities` in `config.json` adds extra always-loaded capabilities (hand-edit; no UI).
+
+The system prompt and tool schemas are **pinned at turn start** and reused across loop iterations — rebuilt only when this conversation's toolset actually changes (a mid-turn `tool_search` activation, a skill created or edited, an MCP surface change). Worst case, base plus the 10 heaviest activations is ≈41.5k tokens — still under half the old floor.
+
+### 4. LLM Call (thalamus)
+
+The assembled context goes to `thalamus.stream()`, which:
+
+1. Checks `net.isOnline()` for instant offline detection
+2. Calls the **Brain** model — the one you explicitly selected from the chat composer's model switch (and, in [workflow mode](/configuration/workflow-mode), resolves each agent's master-chosen model)
+3. On a transient error, retries the **same** cloud Brain on a backoff schedule; there's no automatic cascade to another provider
+4. Returns a unified `StreamChunk` async generator
+
+### 5. Response Streaming (broca)
+
+`broca` receives the stream chunks and pipes them to the renderer via IPC for real-time display in the chat UI.
+
+### 6. Response Parsing (wernicke)
+
+`wernicke` parses the streamed response, normalizing across provider formats:
+- **DeepSeek**: OpenAI-compatible `function_call` objects
+- **Anthropic**: `tool_use` content blocks
+- **OpenAI**: `function_call` objects
+- **Ollama**: structured JSON in response
+
+All four are normalized into a single `ToolCall` type: `{ name, args, id }`.
+
+### 7. Tool Execution Loop (if tool calls detected)
+
+If `wernicke` finds tool calls, the loop begins. There is no numeric iteration cap — the model reads its own loop position from the live runtime counters and owns termination:
+
+1. **amygdala.classify()** — Checks the tool call against danger patterns loaded from SKILL.md files. Three outcomes: `safe` (proceed), `confirm` (show approval dialog), `block` (deny).
+2. **motor.execute()** — Creates a `TASK-{id}.md` file, logs the step, calls the plugin with retry logic (3x with 2s/6s/18s backoff).
+3. **cerebellum.executeTool()** — Routes the call to the correct capability plugin.
+4. Results go back to the LLM for the next iteration.
+
+Long-conversation history is handled **before** the turn even starts: past ~120k characters of growth, older turns replay as a persisted rolling summary plus the last 8 messages verbatim, and stale bulky tool results (≥2k chars, older than the last 2 exchanges) replay as recovery-pointer stubs. Within a turn, an in-turn safety net remains: if the message array exceeds 75% of the model's context budget (calibrated against the provider's real billed tokens), stale messages are proportionally truncated in place and a single LLM call produces a structured summary with a continuation nudge — plus an overflow-400 forced retry and a context-full guard for the pathological cases.
+
+<Card title="Context Compaction" icon="compress" href="/architecture/context-compaction">
+  How the persisted rolling summary, verbatim tail, and in-turn safety net keep long conversations running without losing information.
+</Card>
+
+### 8. Memory (hippocampus + basalganglia)
+
+After the response is complete:
+- `hippocampus` appends an origin-tagged summary of the turn (`## HH:MM [heartbeat] — …`) to today's episode file (`brain/hippocampus/episodes/YYYY-MM-DD.md`)
+- `basalganglia` records the outcome (success/failure/denial) to today's feedback file
+- a fire-and-forget summarizer checks the saved conversation: when the unsummarized region exceeds ~120k characters, it folds everything before a turn boundary into one persisted summary (≤6k chars), keeping the last 8 messages verbatim. One summarization call per ~120k characters of growth, ever — and the original messages are never modified or deleted.
+
+### Ending a Turn
+
+The pipeline above describes what happens when the model has something to say. Sometimes it does not: the work is done, the files are delivered, the notification has landed, and the reply is already written. Since **v1.0.309** there is a **`close_turn`** tool whose only job is to end the turn at that point.
+
+It exists because of a bug that could not be fixed by instruction. The runtime used to tell a finished turn to close with **an entirely empty response — zero characters** — and no provider carries an empty message: the content channel cannot be empty, which is why the app itself refuses to store one. So a turn with nothing left to say had exactly one legal move: **type a stand-in for the silence** and send it. `(no output)`, `(no content)`, `[Empty response]`, `[(empty — nothing further)]`. **The instruction was impossible, and the workaround was the bug.**
+
+`close_turn` makes ending a turn something a model can actually *do* — a tool call, not a zero-character message. It stays **model-led end to end**: nothing rewrites, strips or suppresses a character the model wrote, and the model still decides when the turn is over. In practice you will rarely see it, because the contract is that **a turn that did real work ends by talking to you**.
+
+Behind it, the guard that catches a faked silence became **structural** rather than a hand-written phrase list that kept losing the race to the next phrasing — see [`close-turn`](/capabilities/built-in-capabilities#core-system) for the mechanism.
+
+### What's Not in the Pipeline
+
+There are no LLM calls for classification, routing, or context selection. Those are all deterministic code operations. The LLM is called exactly once for the response (plus once per tool-use iteration). The only other LLM call is the asynchronous rolling-summary fold — at most one per ~120k characters of conversation growth, and never in the message path. This keeps the pipeline fast, cheap, and predictable.

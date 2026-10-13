@@ -1,0 +1,223 @@
+{
+  "id": "2026-06-18_22-05-14",
+  "title": "I'm feeling down today give me a funny",
+  "model": "",
+  "createdAt": 1781809514606,
+  "updatedAt": 1781809554192,
+  "messages": [
+    {
+      "id": "m_1781809554192_daa9d9",
+      "role": "user",
+      "content": "I'm feeling down today give me a funny meme",
+      "timestamp": 1781809554192
+    },
+    {
+      "id": "m_1781809554192_1b0cfe",
+      "role": "assistant",
+      "content": "Let me cook up something good for you.No Pepe templates available, but \"feelsgood\" worked last time. Let me just cook.![feelsgood meme](wolffish-media://uploads/memes/feelsgood-1781809546511.png)Get up, you magnificent bastard. You built an AI fish that lives in `~/.wolffish`, writes PDFs, audits your macOS, and fails to post on LinkedIn 56 times in a row without giving up. That's not sad — that's legendary.\n\nWhatever's got you down, it's temporary. The fish believes in you 🐟",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781809514613_gjzhiz",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1781809514613_gjzhiz",
+          "segmentId": "seg_2",
+          "delta": "Let me cook up something good for you."
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1781809514613_gjzhiz",
+          "segmentId": "seg_11",
+          "toolCallId": "call_00_Fk7edqJjrWlcIuKwporM0943",
+          "name": "meme_templates",
+          "args": {
+            "query": "pepe"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1781809514613_gjzhiz",
+          "segmentId": "seg_12",
+          "toolCallId": "call_00_Fk7edqJjrWlcIuKwporM0943",
+          "status": "success",
+          "output": "[]"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781809514613_gjzhiz",
+          "segmentId": "seg_13",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1781809514613_gjzhiz",
+          "segmentId": "seg_14",
+          "toolCallId": "call_00_nYlxJNEmrZk8dkTr2YXW9232",
+          "name": "meme_templates",
+          "args": {
+            "query": "pepe",
+            "provider": "imgflip"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1781809514613_gjzhiz",
+          "segmentId": "seg_15",
+          "toolCallId": "call_00_nYlxJNEmrZk8dkTr2YXW9232",
+          "status": "success",
+          "output": "[]"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781809514613_gjzhiz",
+          "segmentId": "seg_16",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1781809514613_gjzhiz",
+          "segmentId": "seg_17",
+          "delta": "No Pepe templates available, but \"feelsgood\" worked last time. Let me just cook."
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1781809514613_gjzhiz",
+          "segmentId": "seg_38",
+          "toolCallId": "call_00_AHwpEVQwoRfYXscFgkco5724",
+          "name": "meme_generate",
+          "args": {
+            "template_id": "feelsgood",
+            "lines": [
+              "I'm feeling down today",
+              "then I remember I literally built a fish that bites through anything 🐟"
+            ]
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1781809514613_gjzhiz",
+          "segmentId": "seg_39",
+          "toolCallId": "call_00_AHwpEVQwoRfYXscFgkco5724",
+          "status": "success",
+          "output": "![feelsgood meme](wolffish-media://uploads/memes/feelsgood-1781809546511.png)"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781809514613_gjzhiz",
+          "segmentId": "seg_40",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1781809514613_gjzhiz",
+          "segmentId": "seg_41",
+          "toolCallId": "call_00_GfvkGV56FoaCNCI9zzah0185",
+          "name": "add_to_chat",
+          "args": {}
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1781809514613_gjzhiz",
+          "segmentId": "seg_42",
+          "delta": "![feelsgood meme](wolffish-media://uploads/memes/feelsgood-1781809546511.png)"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1781809514613_gjzhiz",
+          "segmentId": "seg_43",
+          "toolCallId": "call_00_GfvkGV56FoaCNCI9zzah0185",
+          "status": "success",
+          "output": "Added to chat."
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781809514613_gjzhiz",
+          "segmentId": "seg_44",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1781809514613_gjzhiz",
+          "segmentId": "seg_45",
+          "delta": "Get up, you magnificent bastard. You built an AI fish that lives in `~/.wolffish`, writes PDFs, audits your macOS, and fails to post on LinkedIn 56 times in a row without giving up. That's not sad — that's legendary.\n\nWhatever's got you down, it's temporary. The fish believes in you 🐟"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1781809514613_gjzhiz",
+          "segmentId": "seg_117",
+          "stopReason": "end_turn",
+          "iterationCount": 5,
+          "reasoningContent": "Meme delivered. Now I should say something uplifting and funny — match the energy. Keep it short and warm."
+        }
+      ],
+      "toolTimings": {
+        "call_00_Fk7edqJjrWlcIuKwporM0943": {
+          "startedAt": 1781809533995,
+          "endedAt": 1781809534778
+        },
+        "call_00_nYlxJNEmrZk8dkTr2YXW9232": {
+          "startedAt": 1781809537468,
+          "endedAt": 1781809537835
+        },
+        "call_00_AHwpEVQwoRfYXscFgkco5724": {
+          "startedAt": 1781809546509,
+          "endedAt": 1781809548333
+        },
+        "call_00_GfvkGV56FoaCNCI9zzah0185": {
+          "startedAt": 1781809550749,
+          "endedAt": 1781809550761
+        }
+      },
+      "stopReason": "end_turn",
+      "timestamp": 1781809554192
+    }
+  ],
+  "stats": {
+    "allTime": {
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 4,
+      "inputTokens": 11,
+      "outputTokens": 312,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "cost": 0.0049965,
+      "processingMs": 1000,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "endedAt": 1781809554192,
+      "provider": "",
+      "model": ""
+    },
+    "lastTurn": {
+      "endedAt": 1781809554192,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "apiCalls": 1,
+      "toolCalls": 4,
+      "inputTokens": 11,
+      "outputTokens": 312,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "provider": "",
+      "model": "",
+      "cost": 0.0049965
+    },
+    "meter": {
+      "contextTokens": 12723,
+      "contextBudget": 1000000,
+      "compactionAt": 725424,
+      "model": ""
+    }
+  },
+  "projectId": "b52d9f14-7a63-4c08-9e1b-8f4c3a7d5e26"
+}

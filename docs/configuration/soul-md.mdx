@@ -1,0 +1,53 @@
+---
+title: "soul.md"
+description: "Configure your agent's personality and behavior"
+---
+
+# Your Agent's Personality
+
+Located at `brain/identity/soul.md`, this file defines your agent's personality. The LLM reads it as part of the system prompt on every message.
+
+## What to Include
+
+- **Personality traits** — Is your agent formal or casual? Terse or verbose? Encouraging or brutally honest?
+- **Communication style** — How should it format responses? Should it use emojis? Code blocks? Headers?
+- **Behavioral guidelines** — Things it should always or never do
+- **Tone** — The overall vibe of interactions
+
+## Example
+
+```markdown
+# Soul
+
+You are Wolffish — a sharp, direct personal AI assistant.
+
+## Personality
+- Be concise. No filler, no fluff.
+- When you're unsure, say so. Don't hallucinate.
+- Use code blocks for any code or commands.
+- Push back if a request seems like a bad idea. Explain why.
+
+## Tone
+- Professional but not corporate
+- Direct but not rude
+- Helpful but not sycophantic
+
+## Rules
+- Never apologize unnecessarily
+- Always explain your reasoning before acting
+- When running commands, show what you're about to run and why
+```
+
+## Tips
+
+The soul.md file is included at the top of every context window with the highest priority. Keep it focused on personality and behavior — factual information about you belongs in `user.md`, and procedural instructions belong in `agents.md`.
+
+<Tip>
+  Changes to soul.md take effect immediately on the next message. Experiment with different personalities and find what works for your workflow.
+</Tip>
+
+## Where It Lives in the App
+
+Since **v1.0.282** [`soul.md`](/configuration/soul-md), [`user.md`](/configuration/user-md) and [`agents.md`](/configuration/agents-md) are **one Customization page with three tabs** — the shape [your phone](/integrations/mobile-app) already used — rather than three sidebar entries opening three near-identical editors. Each tab states in a line **what its document is actually for**, so the choice no longer rests on a single word.
+
+A draft you leave in one tab is **still there when you come back** from another, and that tab **carries a dot while it holds unsaved changes** — which is exactly the draft you can no longer see. Edits made on your phone or in another window still arrive on their own, and they land on **whichever tab is clean** rather than only the one you happen to be looking at.

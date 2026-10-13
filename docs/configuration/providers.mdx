@@ -1,0 +1,417 @@
+---
+title: "Choosing a Provider"
+description: "Configure LLM providers: DeepSeek, Xiaomi MiMo, Kimi, MiniMax, Anthropic, OpenAI, OpenRouter, and Ollama"
+---
+
+# Providers
+
+Wolffish communicates with LLMs via ten native cloud providers, an aggregator (OpenRouter), and a local option (Ollama), all using pure `fetch()` — no SDKs. Each provider has its own streaming format and tool-calling convention, which `wernicke.ts` normalizes into a single interface. All cloud providers support tool calling with no hard tool-count limit.
+
+## Choosing a Provider
+
+All supported cloud providers can handle agentic tasks — including complex multi-step tool chains. The difference is cost vs. ceiling.
+
+**Cost-efficient tier — DeepSeek, MiMo, Qwen, Kimi, MiniMax, and Stepfun** handle complex agentic tasks well — including long multi-step tool chains, research workflows, code generation, and autonomous automations. They should be your default. At 5–25× cheaper than the premium tier, the savings compound fast. Start here and only upgrade if you find execution isn't reliable enough for a specific workflow.
+
+**Mid-range tier — xAI** sits between budget and premium, offering Grok models with strong reasoning, vision, and code generation at moderate pricing.
+
+**Premium tier — Anthropic and OpenAI** deliver the strongest raw model capability. Claude Opus 4.8 and GPT-5.5 excel where the cost-efficient tier falls short — the hardest reasoning, and edge cases where execution reliability on the cheaper models isn't sufficient. (Computer use, once an Anthropic-only affair, now runs on **any vision-capable Brain** — since v1.0.253 every vision model receives the actual screenshots.)
+
+| Tier | Provider | Flagship Model | Input / Output (per MTok) | Best For |
+|------|----------|---------------|--------------------------|----------|
+| Cost-efficient | **DeepSeek** | deepseek-v4-flash | $0.22–0.44 / $0.66–1.32 | Default for most agentic tasks (peak/off-peak billing) |
+| Cost-efficient | **MiMo** | mimo-v2.5-pro | $0.20 / $2.00 | Cheapest option, multilingual |
+| Cost-efficient | **Qwen** | qwen3.8-max | $2.00 / $6.00 | Wide model range, ultra-cheap flash |
+| Cost-efficient | **Kimi** | kimi-k3 | $3.00 / $15.00 | Frontier reasoning, 1M context, vision |
+| Cost-efficient | **MiniMax** | MiniMax-M3 | $0.30 / $1.20 | Reasoning and code |
+| Cost-efficient | **Stepfun** | step-3.7-flash | $0.83 / $6.94 | Always-on reasoning |
+| Cost-efficient | **Z.ai** | glm-5.2 | $1.40 / $4.40 | GLM models, 1M-context frontier flagship |
+| Mid-range | **xAI** | grok-4.6 | $2.00 / $6.00 | Frontier reasoning, vision, code |
+| Premium | **Anthropic** | claude-opus-4-8 | $5.00 / $25.00 | Hardest tasks |
+| Premium | **OpenAI** | gpt-5.5 | $5.00 / $30.00 | Hardest tasks, broad knowledge |
+| Local | **Ollama** | varies | Free | Privacy, offline fallback |
+
+### When to reach for the premium tier
+
+- **Computer-use / screen interaction** — only Anthropic supports this; no alternative
+- **Execution not reliable enough** — if you've tried a task on DeepSeek or MiMo and the agent keeps failing or producing poor results, upgrade to Anthropic or OpenAI for that specific workflow
+
+### Our recommendation
+
+Start with DeepSeek or MiMo. They handle complex agentic tasks — long tool chains, research pipelines, code generation, autonomous automations — at a fraction of the cost. Experiment with your actual workflows. If a specific task isn't executing reliably, switch to Anthropic or OpenAI for that task. Most users find they rarely need to.
+
+<Tip>
+  Select DeepSeek or MiMo as your Brain model from the model switch beside the chat input. If a task isn't executing reliably on the cost-efficient tier, switch your Brain to Anthropic or OpenAI for that work. There's no automatic fallback — you control which model runs by your explicit choice.
+</Tip>
+
+## DeepSeek (Recommended)
+
+```
+POST https://api.deepseek.com/chat/completions
+```
+
+Uses SSE streaming with OpenAI-compatible tool-calling format.
+
+**DeepSeek is Wolffish's recommended default provider for agentic tasks.** The V4 family delivers frontier-class reasoning and tool-use reliability at a fraction of what competing frontier models charge on output-heavy workloads — while matching or exceeding their agentic performance on multi-step tool chains. It's also MIT-licensed, so you can self-host for $0 in API fees if you have the infra. Connecting DeepSeek auto-selects **V4 Flash**; **V4 Pro**, the frontier model of the pair, is one pick away for heavier reasoning. Billing is peak/off-peak since August 2026 — see [the DeepSeek page](/configuration/deepseek) for the ranges. And since **August 21, 2026** DeepSeek has its first vision option: [**deepseek-v4-flash-vision-exp**](/configuration/deepseek#vision) — V4 Flash with eyes, at the same price.
+
+Best for: Agentic multi-step workflows, tool calling, research chains, cost-efficient daily automations.
+
+<Tip>
+  If you're setting up Wolffish for the first time and want one provider that does it all — reliable tool use, strong reasoning, fast responses, minimal cost — start with DeepSeek. You can always add Anthropic or OpenAI later for specific use cases.
+</Tip>
+
+### Getting an API Key
+
+1. Go to [platform.deepseek.com](https://platform.deepseek.com)
+2. Sign up or log in
+3. Navigate to **API Keys** and create a new key
+4. Paste it into Wolffish → Settings → Models → DeepSeek
+
+### Models
+
+| Model | Context | Max Output | Input / Output (per MTok) | Notes |
+|-------|---------|------------|--------------------------|-------|
+| **deepseek-v4-pro** | 1M | 32K | $0.66–1.32 / $1.98–3.96 | The frontier model of the pair — the heavier reasoning tier. Cached: $0.022–0.044/MTok. |
+| deepseek-v4-flash | 1M | 32K | $0.22–0.44 / $0.66–1.32 | Auto-selected on connect. Fast, strong agentic performance, cheap. Cached: $0.007–0.014/MTok. |
+| deepseek-v4-flash-vision-exp | 1M | 32K | $0.22–0.44 / $0.66–1.32 | Flash with experimental vision. Cached: $0.007–0.014/MTok. |
+
+Prices read as ranges because DeepSeek bills **peak/off-peak** since August 2026 — peak 01:00–04:00 and 06:00–10:00 UTC, off-peak half price.
+
+---
+
+## Xiaomi MiMo
+
+```
+POST https://api.xiaomimimo.com/v1/chat/completions
+```
+
+Uses SSE streaming with OpenAI-compatible tool-calling format. Supports vision (base64 images) and PDF document input.
+
+Following [Xiaomi's permanent price cut of up to 99%](https://www.studioglobal.ai/ms/discover/answers/what-prompted-xiaomi-to-cut-its-mimo-v2-5-6a179fe3f9dbfce068be8b7e) — matching DeepSeek V4 Pro rates — MiMo V2.5 is one of the cheapest cloud providers available.
+
+Best for: Cost-efficient agentic workflows, multilingual tasks, multi-step tool chains, high-volume automations.
+
+### Getting an API Key
+
+1. Go to [platform.xiaomimimo.com](https://platform.xiaomimimo.com)
+2. Sign up or log in
+3. Navigate to **API Keys** and create a new key
+4. Paste it into Wolffish → Settings → Models → Xiaomi Mimo
+
+### Models
+
+| Model | Context | Max Output | Input / Output (per MTok) | Notes |
+|-------|---------|------------|--------------------------|-------|
+| **mimo-v2.5-pro** | 1M | 64K | $0.20 / $2.00 | Best MiMo model. Strong reasoning and multilingual. |
+| mimo-v2.5 | 1M | 32K | $0.08 / $0.80 | Good balance of quality and cost. |
+| mimo-v2-flash | 256K | 16K | $0.01 / $0.30 | Ultra-cheap for high-volume tasks. |
+
+---
+
+## Kimi (Moonshot AI)
+
+```
+POST https://api.moonshot.ai/v1/chat/completions
+```
+
+Uses SSE streaming with OpenAI-compatible tool-calling format. Supports vision and reasoning content — the whole k2.5+ line (and K3) is natively multimodal.
+
+Best for: Agentic workflows, long-context tasks, reasoning-heavy workloads — with K3 as a frontier option at a 1M-token window.
+
+### Getting an API Key
+
+1. Go to [platform.moonshot.ai](https://platform.moonshot.ai)
+2. Sign up or log in
+3. Navigate to **API Keys** and create a new key
+4. Paste it into Wolffish → Settings → Models → Kimi
+
+### Models
+
+| Model | Context | Max Output | Input / Output (per MTok) | Notes |
+|-------|---------|------------|--------------------------|-------|
+| **kimi-k3** | 1M | 128K | $3.00 / $15.00 | Frontier flagship and the default. Vision + reasoning (Off / High / Max). |
+| kimi-k2.6 | 256K | 64K | $0.95 / $4.00 | Strong reasoning at mid-range cost. |
+| kimi-k2.5 | 256K | 64K | $0.60 / $3.00 | Good balance of cost and quality. |
+| moonshot-v1-128k | 128K | 16K | $2.00 / $5.00 | Long-context. |
+| moonshot-v1-32k | 32K | 8K | $1.00 / $3.00 | Mid-context. |
+
+---
+
+## MiniMax
+
+```
+POST https://api.minimaxi.chat/v1/chat/completions
+```
+
+Uses SSE streaming with OpenAI-compatible tool-calling format. Supports reasoning content.
+
+Best for: Reasoning-heavy workloads, code generation, agentic workflows. DeepSeek and MiMo remain cheaper and more capable for most workloads.
+
+### Getting an API Key
+
+1. Go to [minimax.io/platform](https://www.minimax.io/platform)
+2. Sign up or log in
+3. Navigate to **API Keys** and create a new key
+4. Paste it into Wolffish → Settings → Models → MiniMax
+
+### Models
+
+| Model | Context | Max Output | Input / Output (per MTok) | Notes |
+|-------|---------|------------|--------------------------|-------|
+| **MiniMax-M3** | 1M | 64K | $0.30 / $1.20 | Latest flagship. Strong reasoning. |
+| MiniMax-M2.7 | 200K | 32K | $0.30 / $1.20 | Previous gen. |
+| MiniMax-M2.5 | 200K | 32K | $0.30 / $1.20 | Balanced quality and cost. |
+
+---
+
+## Qwen (Alibaba Cloud)
+
+```
+POST https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions
+```
+
+Uses SSE streaming with OpenAI-compatible tool-calling format. Supports vision and reasoning content.
+
+Best for: Cost-efficient agentic workflows, code generation, multilingual tasks.
+
+### Getting an API Key
+
+1. Go to [qwencloud.com](https://www.qwencloud.com)
+2. Sign up or log in
+3. Navigate to **API Keys** and create a new key
+4. Paste it into Wolffish → Settings → Models → Qwen
+
+### Models
+
+| Model | Context | Max Output | Modes | Input / Output (per MTok) | Notes |
+|-------|---------|------------|-------|--------------------------|-------|
+| **qwen3.8-max** | 1M | 64K | None, High, Max | $2.00 / $6.00 | Flagship. Frontier reasoning, with vision. |
+| qwen3.7-max | 1M | 64K | None, High, Max | $2.50 / $7.50 | Previous flagship. |
+| qwen3.7-plus | 1M | 64K | None, High, Max | $0.40 / $1.60 | Strong reasoning, mid-range price. |
+| qwen3.5-flash | 1M | 64K | None, High, Max | $0.06 / $0.24 | Ultra-cheap reasoning. |
+| qwen3-coder-plus | 131K | 32K | None, High, Max | $0.40 / $1.60 | Code-optimized. |
+
+---
+
+## Stepfun
+
+```
+POST https://api.stepfun.ai/v1/chat/completions
+```
+
+Uses SSE streaming with OpenAI-compatible tool-calling format. Supports vision and reasoning content.
+
+Best for: Reasoning-heavy tasks where you always want the model to think.
+
+### Getting an API Key
+
+1. Go to [platform.stepfun.ai](https://platform.stepfun.ai)
+2. Sign up or log in
+3. Navigate to **API Keys** and create a new key
+4. Paste it into Wolffish → Settings → Models → Stepfun
+
+### Models
+
+| Model | Context | Max Output | Modes | Input / Output (per MTok) | Notes |
+|-------|---------|------------|-------|--------------------------|-------|
+| **step-3.7-flash** | 128K | 32K | Always-on | $0.83 / $6.94 | Latest. Frontier reasoning. |
+| step-3.5-flash | 128K | 32K | Always-on | $0.83 / $6.94 | Fast reasoning. |
+
+---
+
+## Z.ai (Zhipu GLM)
+
+```
+POST https://api.z.ai/api/paas/v4/chat/completions
+```
+
+OpenAI-compatible SSE streaming with tool-calling — the same wire format as Kimi. GLM thinking is binary (on/off, no effort levels), and GLM-5.2 offers a 1M-token context window.
+
+Best for: Cost-efficient agentic work and long-context workflows.
+
+### Getting an API Key
+
+1. Go to [z.ai](https://z.ai)
+2. Sign up or log in
+3. Open **API Keys** and create a new key
+4. Paste it into Wolffish → Settings → Models → Z.ai
+
+### Models
+
+| Model | Context | Max Output | Modes | Input / Output (per MTok) | Notes |
+|-------|---------|------------|-------|--------------------------|-------|
+| **glm-4.6** | 200K | 64K | Thinking on/off | $0.60 / $2.20 | Recommended. Cost-efficient workhorse. |
+| glm-4.5-air | 128K | 64K | Thinking on/off | $0.20 / $1.10 | Cheapest. |
+| glm-5.2 | 1M | 64K | Thinking on/off | $1.40 / $4.40 | Flagship. Largest context. |
+
+For the full GLM lineup and per-model details, see the [Z.ai page](/configuration/zai).
+
+---
+
+## Anthropic (Claude)
+
+```
+POST https://api.anthropic.com/v1/messages
+```
+
+Uses SSE streaming. Tool calls arrive as `tool_use` content blocks.
+
+Best for: Complex reasoning, detailed instruction following, nuanced tool use.
+
+### Getting an API Key
+
+1. Go to [console.anthropic.com](https://console.anthropic.com)
+2. Sign up or log in
+3. Navigate to **API Keys** and create a new key
+4. Paste it into Wolffish → Settings → Models → Anthropic
+
+### Models
+
+| Model | Context | Max Output | Modes | Input / Output (per MTok) | Notes |
+|-------|---------|------------|-------|--------------------------|-------|
+| claude-opus-4-8 | 1M | 32K | None, High, Max | $5.00 / $25.00 | Latest. Frontier reasoning. |
+| **claude-sonnet-4-6** | 1M | 64K | None, High, Max | $3.00 / $15.00 | Best balance of quality and cost. |
+| claude-haiku-4-5 | 200K | 8K | None, High | $1.00 / $5.00 | Fast and cheap. Not recommended for agentic tasks. |
+
+<Note>
+  **Computer-use** (screen interaction) is no longer Anthropic-only: since v1.0.253 every vision-capable model receives the actual screenshots, so any vision Brain can drive it. Anthropic remains a strong choice for it — but no longer the gate.
+</Note>
+
+---
+
+## xAI (Grok)
+
+```
+POST https://api.x.ai/v1/chat/completions
+```
+
+Uses SSE streaming with OpenAI-compatible tool-calling format. Supports vision and reasoning content.
+
+Best for: Reasoning-heavy workflows, code generation, vision tasks.
+
+### Getting an API Key
+
+1. Go to [console.x.ai](https://console.x.ai)
+2. Sign up or log in
+3. Navigate to **API Keys** and create a new key
+4. Paste it into Wolffish → Settings → Models → xAI
+
+### Models
+
+| Model | Context | Max Output | Modes | Input / Output (per MTok) | Notes |
+|-------|---------|------------|-------|--------------------------|-------|
+| **grok-4.6** | 500K | 64K | On, High, Max | $2.00 / $6.00 | Flagship and the connect default. Frontier, vision + reasoning. |
+| grok-4.5 | 500K | 64K | On, High, Max | $2.00 / $6.00 | Vision + reasoning. |
+| grok-4.3 | 1M | 64K | None, High, Max | $1.25 / $2.50 | The value pick — full 1M context. Vision + reasoning. |
+| grok-build-0.1 | 256K | 32K | On | $1.00 / $2.00 | Code-optimized. |
+| grok-3-mini | 131K | 32K | None, High | $0.30 / $0.50 | Fast and cheap. |
+
+---
+
+## OpenAI (GPT)
+
+```
+POST https://api.openai.com/v1/chat/completions
+```
+
+Uses SSE streaming. Tool calls arrive as `function_call` objects.
+
+Best for: General-purpose tasks, broad knowledge, fast responses.
+
+### Getting an API Key
+
+1. Go to [platform.openai.com](https://platform.openai.com)
+2. Sign up or log in
+3. Navigate to **API Keys** and create a new key
+4. Paste it into Wolffish → Settings → Models → OpenAI
+
+### Models
+
+| Model | Context | Max Output | Modes | Input / Output (per MTok) | Notes |
+|-------|---------|------------|-------|--------------------------|-------|
+| **gpt-5.5** | 1M | 64K | None, High, Max | $5.00 / $30.00 | Flagship. Strong reasoning. |
+| gpt-5.4-mini | 1M | 64K | None, High, Max | $0.75 / $4.50 | Fast reasoning. |
+| gpt-5.4-nano | 1M | 64K | None, High, Max | $0.20 / $1.25 | Ultra-cheap reasoning. |
+
+---
+
+## OpenRouter (Aggregator)
+
+```
+POST https://openrouter.ai/api/v1/chat/completions
+```
+
+Uses SSE streaming with OpenAI-compatible tool-calling format. Routes requests to any model from any provider through a single API key.
+
+**OpenRouter is a model aggregator** — a single API endpoint that proxies requests to Anthropic, OpenAI, DeepSeek, Qwen, xAI, Meta, Mistral, Google, and dozens more. One key, one billing account, access to everything.
+
+<Warning>
+  **We recommend configuring providers directly whenever possible.** Direct integration gives you lower latency (no proxy hop), accurate cost tracking, provider-specific features (Anthropic's ephemeral caching, DeepSeek's FIM), and no middleman markup. OpenRouter adds a routing layer that can introduce latency and occasionally inconsistent behavior across providers.
+
+  Use OpenRouter when you want to experiment with models you haven't set up directly, or as a convenient fallback for providers where you don't want to manage a separate API key.
+</Warning>
+
+### Getting an API Key
+
+1. Go to [openrouter.ai](https://openrouter.ai)
+2. Sign up or log in
+3. Navigate to **Keys** and create a new key
+4. Paste it into Wolffish → Settings → Models → OpenRouter
+
+### Supported Models
+
+OpenRouter supports hundreds of models. Wolffish normalizes output caps to match each provider's native limits:
+
+| Model (via OpenRouter) | Max Output | Notes |
+|------------------------|-----------|-------|
+| anthropic/claude-* | 32K | Matches native Anthropic caps. |
+| openai/gpt-5* | 64K | Matches native OpenAI caps. |
+| openai/o3, openai/o4 | 64K | Reasoning models. |
+| deepseek/* | 32K | Matches native DeepSeek caps. |
+| x-ai/grok-* | 32K | Matches native xAI caps. |
+| google/gemini-* | 64K | Google Gemini models. |
+| meta-llama/* | 16K | Meta Llama models. |
+| qwen/* | 32K | Matches native Qwen caps. |
+| mistralai/* | 32K | Mistral models. |
+
+### When to Use OpenRouter
+
+**Good fit:**
+- Trying models from providers you haven't configured yet
+- Quick A/B testing across different model families
+- Unified billing when you only want one API bill
+- Accessing niche or newer models not yet natively supported
+
+**Use direct integration instead when:**
+- The provider is already natively supported (DeepSeek, Anthropic, OpenAI, etc.)
+- You need the lowest possible latency
+- You want provider-specific features (caching, prompt prefixes, etc.)
+- You're running high-volume production workloads where the proxy hop adds up
+
+<Tip>
+  If you're already using DeepSeek, Anthropic, or any other natively supported provider, keep that direct connection. Add OpenRouter only for models you can't access directly — then pick an OpenRouter model as your Brain when you want it, or let a [workflow](/configuration/workflow-mode) master spawn an agent on it. There's no cascade; the model you select is the one that runs.
+</Tip>
+
+---
+
+## Ollama (Local)
+
+```
+POST http://localhost:11434/api/chat
+```
+
+Uses NDJSON streaming. Tool calls arrive as structured JSON in the response. No API key needed — runs entirely on your machine. See the [Ollama integration guide](/configuration/ollama) for model requirements and hardware recommendations.
+
+Best for: Privacy, offline use, zero-cost experimentation, always-available fallback.
+
+## Retries & Health
+
+The selected Brain model runs every turn — there's no fallback to other providers. When a cloud Brain hits a transient error, `thalamus` retries the **same** model on a backoff schedule (it also checks `net.isOnline()` for instant offline detection). Agents in [workflow mode](/configuration/workflow-mode) are single-shot and don't retry on their own; any failure surfaces to the master, which owns the retry decision. Health tracking informs this retry logic and diagnostics — it does not route you to a different provider.
+
+## Choosing Your Brain Model
+
+Select your Brain model explicitly from the **model switch beside the chat input** — one provider, one model. The model you choose is the one that runs; there's no fallback order and no "primary" with a chain behind it. Connect API keys in **Settings → Models**, then pick the model that powers Wolffish.
+
+Want parallel work across models? Switch the chat into [workflow mode](/configuration/workflow-mode) — the master spawns agents and picks each one's model from your connected providers. There's still no automatic cascade — every model that runs is an explicit choice, yours or the master's.
+
+All providers are optional — you only need the one (or two) you select. To run on Ollama, select it as your Brain model; for offline work, switch your Brain to Ollama before you go offline, since there's no automatic fall-through to local.

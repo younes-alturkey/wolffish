@@ -1,0 +1,445 @@
+---
+title: "الإضافات المتقدمة"
+description: "أنماط متقدمة لإضافات القدرات في وولفيش"
+---
+
+# ما وراء الأساسيات
+
+يغطي هذا الدليل الأنماط المتقدمة لإضافات القدرات بما يتجاوز الأساسيات الموجودة في [إنشاء القدرات](/ar/capabilities/creating-capabilities). تتعامل هذه الأنماط مع التعقيدات الواقعية: التبعيات، العمليات طويلة التشغيل، إدارة الحالة، والإضافات متعددة الأدوات.
+
+## تبعيات الإضافة
+
+أضف ملف `package.json` بجانب ملف `SKILL.md` للتصريح عن تبعيات npm. يقوم cerebellum بتثبيتها بشكل كسول عند أول تحميل:
+
+```
+brain/cerebellum/my-capability/
+  SKILL.md
+  package.json
+  plugin/
+    index.mjs
+```
+
+```json
+{
+  "name": "wolffish-my-capability",
+  "private": true,
+  "dependencies": {
+    "node-fetch": "^3.3.0",
+    "cheerio": "^1.0.0"
+  }
+}
+```
+
+<Info>
+  يتم تثبيت التبعيات باستخدام `npm install --production` في مجلد القدرة. يقوم cerebellum بتشغيل هذا مرة واحدة ويخزن النتيجة مؤقتًا. احذف `node_modules/` لفرض إعادة التثبيت.
+</Info>
+
+## تبعيات المهارات
+
+استخدم حقل `requires` في البيانات الوصفية لملف SKILL.md للتصريح بأن قدرتك تعتمد على قدرات أخرى يجب تحميلها:
+
+```yaml
+---
+name: git-workflow
+description: Advanced git operations with branch management
+requires:
+  - shell
+triggers:
+  - git
+  - branch
+  - merge
+tools:
+  - name: git_workflow
+    description: Execute complex git workflows
+    parameters:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [create-branch, merge, rebase, cherry-pick]
+        target:
+          type: string
+      required: [action]
+---
+```
+
+إذا لم يكن `shell` محملاً، يسجل cerebellum تحذيرًا ويتخطى قدرتك.
+
+## الأدوات طويلة التشغيل مع الإلغاء
+
+استخدم `signal` (AbortSignal) من السياق لدعم الإلغاء. يمرر motor cortex هذا عندما ينقر المستخدم على إيقاف أو عند انتهاء مهلة المهمة:
+
+```javascript
+export default {
+  name: 'long-task',
+  tools: ['run_analysis'],
+
+  async execute(toolName, args, context) {
+    const { signal } = context
+
+    for (const item of args.items) {
+      // Check for cancellation before each unit of work
+      if (signal?.aborted) {
+        return {
+          success: false,
+          output: '',
+          error: 'Task cancelled by user'
+        }
+      }
+
+      await processItem(item)
+    }
+
+    return { success: true, output: 'Analysis complete' }
+  }
+}
+```
+
+<Tip>
+  تحقق دائمًا من `signal.aborted` داخل الحلقات وقبل العمليات المكلفة. يعيد motor cortex المحاولة عند الفشل 3 مرات - لكن الإلغاء يجب ألا يُعاد محاولته.
+</Tip>
+
+## العمليات الخلفية
+
+يمكن للإضافات تشغيل عمليات فرعية منفصلة لخوادم التطوير أو المراقبين أو البرامج الأخرى طويلة التشغيل. أرجع معرف العملية PID حتى يتمكن الوكيل من الرجوع إليه لاحقًا:
+
+```javascript
+import { spawn } from 'child_process'
+
+export default {
+  name: 'dev-server',
+  tools: ['start_server', 'stop_server'],
+
+  _processes: new Map(),
+
+  async execute(toolName, args) {
+    if (toolName === 'start_server') {
+      const child = spawn('npm', ['run', 'dev'], {
+        cwd: args.directory,
+        detached: true,
+        stdio: 'ignore'
+      })
+      child.unref()
+
+      this._processes.set(child.pid, child)
+
+      return {
+        success: true,
+        output: `Dev server started with PID ${child.pid}`
+      }
+    }
+
+    if (toolName === 'stop_server') {
+      const child = this._processes.get(args.pid)
+      if (child) {
+        process.kill(-args.pid) // Kill process group
+        this._processes.delete(args.pid)
+        return { success: true, output: `Stopped PID ${args.pid}` }
+      }
+      return { success: false, output: '', error: `No process with PID ${args.pid}` }
+    }
+  },
+
+  async destroy() {
+    // Clean up all spawned processes on shutdown
+    for (const [pid] of this._processes) {
+      try { process.kill(-pid) } catch {}
+    }
+  }
+}
+```
+
+## أنماط إدخال/إخراج الملفات
+
+استخدم `context.workspaceRoot` لقراءة/كتابة ملفات مساحة العمل و `context.pluginDir` لتكوين الإضافة المحلي:
+
+```javascript
+import { readFile, writeFile, mkdir } from 'fs/promises'
+import { join } from 'path'
+
+export default {
+  name: 'notes',
+  tools: ['save_note', 'read_notes'],
+
+  async execute(toolName, args, context) {
+    const notesDir = join(context.workspaceRoot, 'brain', 'knowledge', 'notes')
+    const cacheDir = join(context.pluginDir, '.cache')
+
+    if (toolName === 'save_note') {
+      await mkdir(notesDir, { recursive: true })
+      const filepath = join(notesDir, `${args.title}.md`)
+      await writeFile(filepath, args.content, 'utf-8')
+      return { success: true, output: `Saved note: ${filepath}` }
+    }
+
+    if (toolName === 'read_notes') {
+      // Plugin-local cache for performance
+      await mkdir(cacheDir, { recursive: true })
+      const cachePath = join(cacheDir, 'index.json')
+      // ... read and cache logic
+    }
+  }
+}
+```
+
+<Warning>
+  استخدم دائمًا `context.workspaceRoot` - لا تقم أبدًا بتثبيت المسارات في الكود. يمكن للمستخدمين نقل مساحة العمل إلى أي مكان.
+</Warning>
+
+## الإضافات متعددة الأدوات
+
+يمكن لإضافة واحدة تصدير أدوات متعددة. قم بالتوجيه حسب `toolName` في `execute()`:
+
+```javascript
+export default {
+  name: 'http-client',
+  tools: ['http_get', 'http_post', 'http_put', 'http_delete'],
+
+  async execute(toolName, args) {
+    const method = toolName.replace('http_', '').toUpperCase()
+
+    const options = {
+      method,
+      headers: args.headers || { 'Content-Type': 'application/json' }
+    }
+
+    if (args.body && method !== 'GET') {
+      options.body = JSON.stringify(args.body)
+    }
+
+    try {
+      const response = await fetch(args.url, options)
+      const text = await response.text()
+
+      if (!response.ok) {
+        return {
+          success: false,
+          output: '',
+          error: `${response.status} ${response.statusText}: ${text.slice(0, 500)}`
+        }
+      }
+
+      return { success: true, output: text.slice(0, 4000) }
+    } catch (err) {
+      return { success: false, output: '', error: err.message }
+    }
+  }
+}
+```
+
+## معالجة الأخطاء
+
+أرجع دائمًا ToolResult مع `success: false` ورسالة خطأ عند الفشل. لا ترمي استثناءات أبدًا - يلتقط motor cortex الاستثناءات لكنه يعيد المحاولة 3 مرات، مما يهدر الرموز إذا كان الخطأ حتميًا:
+
+```javascript
+async execute(toolName, args) {
+  // Validate inputs before doing work
+  if (!args.url) {
+    return { success: false, output: '', error: 'Missing required parameter: url' }
+  }
+
+  if (!args.url.startsWith('http')) {
+    return { success: false, output: '', error: 'URL must start with http:// or https://' }
+  }
+
+  try {
+    const result = await riskyOperation(args)
+    return { success: true, output: result }
+  } catch (err) {
+    // Return error — don't throw
+    return {
+      success: false,
+      output: '',
+      error: `Operation failed: ${err.message}`
+    }
+  }
+}
+```
+
+<Info>
+  يعيد motor cortex محاولة استدعاءات الأدوات الفاشلة حتى 3 مرات مع تراجع أسي (2 ثانية، 6 ثوانٍ، 18 ثانية). أرجع رسائل خطأ واضحة حتى يتمكن نموذج اللغة من تعديل نهجه في المحاولة التالية.
+</Info>
+
+## الإضافات ذات الحالة
+
+تعمل `init()` مرة واحدة عند التحميل، و `destroy()` عند الإغلاق. خزّن الحالة في الإغلاقات أو نطاق الوحدة:
+
+```javascript
+let db = null
+let refreshInterval = null
+
+export default {
+  name: 'stateful-example',
+  tools: ['query_data'],
+
+  async init(context) {
+    // Open connection, load config, set up watchers
+    const configPath = join(context.pluginDir, 'config.json')
+    const config = JSON.parse(await readFile(configPath, 'utf-8'))
+
+    db = await openDatabase(config.dbPath)
+
+    // Periodic refresh
+    refreshInterval = setInterval(() => db.refresh(), 60_000)
+  },
+
+  async execute(toolName, args) {
+    if (!db) {
+      return { success: false, output: '', error: 'Database not initialized' }
+    }
+    const rows = await db.query(args.sql)
+    return { success: true, output: JSON.stringify(rows, null, 2) }
+  },
+
+  async destroy() {
+    clearInterval(refreshInterval)
+    await db?.close()
+    db = null
+  }
+}
+```
+
+## تنسيق نتائج الأدوات
+
+يُعرض نص الإخراج على نموذج اللغة للدورة التالية. اجعله مفيدًا لكن موجزًا - نموذج اللغة لديه سياق محدود:
+
+```javascript
+// Good: structured, concise, actionable
+return {
+  success: true,
+  output: `Found 3 open PRs:\n- #142 "Fix login bug" (2 reviews, CI passing)\n- #139 "Add dark mode" (needs review)\n- #137 "Refactor auth" (CI failing)`
+}
+
+// Bad: raw JSON dump that wastes tokens
+return {
+  success: true,
+  output: JSON.stringify(entireApiResponse) // Could be 50KB
+}
+```
+
+<Tip>
+  اقتطع المخرجات الطويلة. لا يحتاج نموذج اللغة لكل التفاصيل - أعطه ما يكفي لاتخاذ قرار. قاعدة جيدة: أبقِ مخرجات الأداة أقل من 4000 حرف.
+</Tip>
+
+## التواصل بين الإضافات
+
+لا تستطيع الإضافات استدعاء إضافات أخرى مباشرة. إذا احتاجت إضافتك لمخرجات قدرة أخرى، أصدر الحاجة كجزء من نتيجتك ودع نموذج اللغة ينسق:
+
+```javascript
+return {
+  success: true,
+  output: 'Found 5 matching files. To proceed, I need their contents read via file_read.'
+}
+```
+
+يقرأ نموذج اللغة هذا الإخراج ويقرر استدعاء `file_read` بعد ذلك. هذا يحافظ على نظافة البنية - نموذج اللغة هو المنسق، والإضافات هي الأدوات.
+
+## نموذج الأمان
+
+تعمل الإضافات بصلاحيات Node.js الكاملة في عملية Electron الرئيسية. يمكنها فعل أي شيء: نظام الملفات، الشبكة، العمليات الفرعية، الوحدات الأصلية. amygdala هي البوابة الوحيدة - تقرر ما إذا كان مسموحًا لنموذج اللغة باستدعاء أداة بناءً على أنماط الخطر.
+
+<Warning>
+  ثبّت فقط الإضافات التي تثق بها. الإضافة الخبيثة لديها نفس صلاحيات وولفيش نفسه. راجع كود الإضافة قبل إضافتها لمساحة العمل، خاصة إضافات المجتمع.
+</Warning>
+
+## اختبار الإضافات
+
+هناك طريقتان للاختبار:
+
+<Tabs>
+  <Tab title="الاختبار المعزول">
+    أنشئ سياقًا وهميًا واستدعِ `execute()` مباشرة:
+
+    ```javascript
+    import plugin from './plugin/index.mjs'
+
+    const mockContext = {
+      workspaceRoot: '/tmp/test-workspace',
+      pluginDir: '/tmp/test-plugin',
+      signal: new AbortController().signal
+    }
+
+    await plugin.init(mockContext)
+    const result = await plugin.execute('my_tool', { input: 'test' }, mockContext)
+    console.assert(result.success === true)
+    await plugin.destroy()
+    ```
+  </Tab>
+  <Tab title="الاختبار المباشر">
+    حمّل وولفيش في وضع التطوير (`npm run dev`) وشغّل إضافتك عبر المحادثة. تحقق من:
+
+    - سجلات `brain/corpus/` لأحداث `tool.called` و `tool.completed`
+    - `brain/motor/tasks/` لتفاصيل التنفيذ والتوقيت
+    - `brain/prefrontal/.debug/` للتحقق من ظهور تعريفات أدواتك في السياق
+  </Tab>
+</Tabs>
+
+## مثال واقعي: عميل API مع ترقيم الصفحات
+
+إضافة كاملة تقوم باستدعاءات HTTP API، وتتعامل مع ترقيم الصفحات، وتعيد نتائج منظمة:
+
+```javascript
+export default {
+  name: 'api-client',
+  tools: ['api_fetch_all'],
+
+  async execute(toolName, args, context) {
+    const { url, headers = {}, maxPages = 5, pageParam = 'page' } = args
+    const { signal } = context
+    const allResults = []
+    let page = 1
+    let hasMore = true
+
+    while (hasMore && page <= maxPages) {
+      if (signal?.aborted) {
+        return {
+          success: false,
+          output: '',
+          error: `Cancelled after fetching ${page - 1} pages`
+        }
+      }
+
+      const separator = url.includes('?') ? '&' : '?'
+      const pageUrl = `${url}${separator}${pageParam}=${page}`
+
+      try {
+        const res = await fetch(pageUrl, { headers, signal })
+
+        if (!res.ok) {
+          return {
+            success: false,
+            output: '',
+            error: `HTTP ${res.status} on page ${page}: ${res.statusText}`
+          }
+        }
+
+        const data = await res.json()
+        const items = Array.isArray(data) ? data : data.items || data.results || []
+
+        if (items.length === 0) {
+          hasMore = false
+        } else {
+          allResults.push(...items)
+          page++
+        }
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          return { success: false, output: '', error: 'Request cancelled' }
+        }
+        return { success: false, output: '', error: `Fetch error: ${err.message}` }
+      }
+    }
+
+    // Format concisely for the LLM
+    const summary = `Fetched ${allResults.length} items across ${page - 1} pages.`
+    const preview = allResults.slice(0, 10)
+      .map(item => `- ${item.title || item.name || JSON.stringify(item).slice(0, 80)}`)
+      .join('\n')
+
+    return {
+      success: true,
+      output: `${summary}\n\nFirst 10 items:\n${preview}${allResults.length > 10 ? `\n\n...and ${allResults.length - 10} more` : ''}`
+    }
+  }
+}
+```

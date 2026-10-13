@@ -1,0 +1,121 @@
+---
+title: "كتابة الإضافات"
+description: "كيفية كتابة كود الإضافات لقدرات وولفيش"
+---
+
+# ماذا تضيف الإضافة
+
+تمنح الإضافة قدرةً ما كودًا قابلًا للتنفيذ. بينما تعتمد المهارات النقية (SKILL.md فقط) على استخدام نموذج اللغة لأدوات موجودة مثل `shell_exec`، فإن الإضافات تعرّف أدواتها الخاصة بمنطق مخصص.
+
+## بنية الإضافة
+
+```
+brain/cerebellum/my-capability/
+├── SKILL.md
+└── plugin/
+    └── index.mjs        # نقطة دخول الإضافة
+```
+
+## واجهة وولفيشPlugin
+
+يجب أن تصدّر إضافتك كائنًا يحقق هذه الواجهة:
+
+```typescript
+interface WolffishPlugin {
+  name: string
+  tools: string[]              // Tool names this plugin handles
+  init?(context: PluginContext): Promise<void>
+  execute(toolName: string, args: Record<string, unknown>): Promise<ToolResult>
+  destroy?(): Promise<void>
+}
+
+interface PluginContext {
+  pluginDir: string            // Absolute path to this plugin's folder
+  workspaceRoot: string        // Absolute path to ~/.wolffish/workspace/
+}
+
+interface ToolResult {
+  success: boolean
+  output: string
+  error?: string
+}
+```
+
+## مثال إضافة
+
+إليك إضافة بسيطة توفر أداة `hello_world`:
+
+```javascript
+// brain/cerebellum/hello/plugin/index.mjs
+
+export default {
+  name: 'hello',
+  tools: ['hello_world'],
+
+  async init(context) {
+    // Called once when the plugin is loaded
+    // context.pluginDir = path to this plugin's folder
+    // context.workspaceRoot = path to ~/.wolffish/workspace/
+  },
+
+  async execute(toolName, args) {
+    if (toolName === 'hello_world') {
+      return {
+        success: true,
+        output: `Hello, ${args.name || 'world'}!`
+      }
+    }
+    return { success: false, output: '', error: `Unknown tool: ${toolName}` }
+  },
+
+  async destroy() {
+    // Called when the plugin is unloaded (app shutdown)
+  }
+}
+```
+
+وملف SKILL.md المقابل:
+
+```yaml
+---
+name: hello
+description: A simple greeting capability
+triggers:
+  - hello
+  - greet
+tools:
+  - name: hello_world
+    description: Say hello to someone
+    parameters:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name to greet
+      required: []
+---
+
+# Hello World
+
+When the user asks you to say hello or greet someone, use the `hello_world` tool.
+```
+
+## دورة حياة الإضافة
+
+1. **الاكتشاف** — يمسح `cerebellum.ts` مجلد `brain/cerebellum/` عند بدء التشغيل
+2. **الاستيراد** — إذا كان `plugin/index.mjs` موجودًا، فإنه يُستورَد ديناميكيًا
+3. **التهيئة** — يُستدعى `init(context)` مع تمرير مجلد الإضافة وجذر مساحة العمل
+4. **التنفيذ** — يُستدعى `execute(toolName, args)` في كل مرة يستدعي فيها نموذج اللغة أداة
+5. **التدمير** — يُستدعى `destroy()` عند إغلاق التطبيق للتنظيف
+
+## ملاحظات مهمة
+
+<Warning>
+  الإضافات هي ملفات `.mjs` (وحدات ES)، وليست `.ts`. تعمل في عملية Electron الرئيسية بصلاحيات Node.js الكاملة. هذا يعني أنها تستطيع فعل أي شيء — إدخال/إخراج الملفات، وطلبات الشبكة، والعمليات الفرعية. بوابة الأمان في amygdala هي الشيء الوحيد بين الإضافة والتنفيذ.
+</Warning>
+
+<Tip>
+  استخدم `context.pluginDir` لتحليل المسارات النسبية لإضافتك (لملفات التكوين والقوالب وما إلى ذلك)، و`context.workspaceRoot` للوصول إلى بيانات على مستوى مساحة العمل.
+</Tip>
+
+ينبغي أن تتعامل الإضافات مع أخطائها بأناقة وأن تُرجع دائمًا `ToolResult`. إذا أطلقت إضافتك استثناءً، فسيلتقطه motor.ts ويعيد المحاولة حتى 3 مرات بتراجع أسّي.

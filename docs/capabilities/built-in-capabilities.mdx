@@ -1,0 +1,905 @@
+---
+title: "Built-in Capabilities"
+description: "All 20+ capabilities that ship with Wolffish by default"
+---
+
+# What Ships by Default
+
+These capabilities are included in the default workspace when Wolffish creates `~/.wolffish/workspace/` on first launch. Each lives in its own folder under `brain/cerebellum/`.
+
+<Note>
+**No artificial guardrails.** Wolffish is built for smarter, more capable models. We've removed hard-coded timeouts, result caps, and arbitrary limits from all capability plugins — including the old file-size gates (100MB for documents and spreadsheets, 500MB for audio), which fell in v1.0.224 when attachments went [fully model-led](/architecture/context-compaction#model-led-attachments): file content is read on demand through tools, so a huge file costs nothing until it's actually consulted. The LLM decides when to set a timeout and how many results to request. Commands run until they finish naturally. The only limit that remains is the 100KB tool-output buffer — it protects memory, not functionality.
+</Note>
+
+<Note>
+**Not everything is in context at once.** Every capability below registers at startup and appears in the model's capability index, but only the **core set** ships full tool schemas on every request — `tool-discovery`, `introspect`, `filesystem`, `shell`, `ask`, `utilities`, `web-search`, `secrets`, `system`, `video`, the `operating-manual` loader and the `pdf-design` / `web-design` / `dataviz` manuals, plus the workflow and channel capabilities when active. Everything else (GitHub, Google, browsers, media, documents, MCP servers) loads on demand via `tool_search` / `tool_activate` and is callable the same turn. See [Capabilities Overview](/capabilities/overview) for how exposure works.
+</Note>
+
+## Self-Management
+
+Wolffish can read, manage, and **write its own capabilities** at runtime — no code change, no restart. This is the heart of what makes it extensible: a workflow you do often can become a permanent tool just by asking.
+
+<AccordionGroup>
+  <Accordion title="skills — Manage and author its own capabilities" defaultOpen>
+    **Type:** Plugin
+
+    **Triggers:** skill, skills, capability, create a skill, new skill, teach yourself, add a tool, list skills, disable skill, enable skill, delete skill, what can you do, extend yourself
+
+    Lets Wolffish manage — and write — its own capabilities at runtime. It can list and search what it has, read a skill's source to learn the pattern, toggle skills on and off (built-ins included, e.g. "turn off the browser"), delete ones you created, and author brand-new skills from a request like "do this every time."
+
+    **Tools:**
+    - `skill_list` — List every skill: name, description, enabled/official status, tool count
+    - `skill_search` — Search skills by keyword across name, description, triggers, and tool names
+    - `skill_read_source` — Read a skill's SKILL.md and plugin code before amending it or learning from it
+    - `skill_enable` / `skill_disable` — Toggle any skill on or off (reversible; the load-bearing **core** capabilities can't be disabled — see [Customizing Capabilities](#customizing-capabilities))
+    - `skill_delete` — Permanently remove a skill you created (official/built-in skills are protected)
+    - `skill_create` — Author a new pure skill or plugin capability from scratch
+    - `skill_reload` — Re-scan the workspace so changes take effect
+
+    Changes persist and take effect on the next turn. This is how Wolffish extends itself without a code change — see [Self-Authoring Skills](/capabilities/self-authoring-skills) for the full create → test → edit loop and a complete copy-paste example.
+  </Accordion>
+
+  <Accordion title="automations — Manage its own scheduled heartbeat jobs">
+    **Type:** Plugin
+
+    **Triggers:** automation, automations, automate, schedule, scheduled, heartbeat, cron, recurring, every morning, every day, daily, weekly, remind me, run automatically, from now on
+
+    Lets Wolffish manage its own [heartbeat](/configuration/heartbeat) — the jobs that run autonomously on a schedule. Ask for something recurring ("every morning…") or one-time ("in 2 days remind me…") and it writes, edits, or removes the job for you, applied live without a restart. It picks **one-time vs recurring** from how you phrase it; one-time jobs (`In (15m)` / `Once (2026-...)`) fire once and delete themselves.
+
+    **Tools:**
+    - `automation_list` — List every automation: schedule, plain-English timing, instruction, and whether it's valid/running
+    - `automation_create` — Create a job (recurring or one-time) from a schedule + instruction, with an optional `mode` ([single or workflow](/configuration/workflow-mode)) and an optional `icon` — an emoji Wolffish picks to fit the job (📧 for an inbox sweep, 📰 for a news digest), shown on the job's card and stamped on its run conversations
+    - `automation_edit` — Change a job's schedule, instruction, and/or mode
+    - `automation_delete` — Permanently remove a job (asks you to confirm)
+    - `automation_check` — Runtime status: what's running now and how recent runs went
+    - `automation_run` — Run a job immediately, to test it
+
+    A job's body can also carry [setting markers](/configuration/heartbeat#job-setting-markers) — `mode:`, `icon:`, and `project:` lines that bind a job to a [project](/configuration/projects) so its runs get the project's context. The tools preserve the markers automatically.
+
+    Heartbeat jobs run with tool calls **auto-approved**, so it confirms anything recurring or consequential with you before scheduling it. Memory compaction is configured separately in Settings, not here.
+  </Accordion>
+
+  <Accordion title="procedures — Manage saved prompts you run on demand">
+    **Type:** Plugin
+
+    **Triggers:** procedure, procedures, saved prompt, reusable prompt, prompt template, playbook, run my, save this as
+
+    Lets Wolffish manage the [Procedures page](/configuration/procedures) — reusable prompts you run on demand with a Play button, as opposed to [automations](/configuration/heartbeat), which run on a schedule. Say "save this as a procedure" or "run my morning brief" and it creates, edits, or fires one for you. A run executes in the background as its own fresh conversation (visible in History with a Play icon) and never touches the chat you're in.
+
+    **Tools:**
+    - `procedure_list` — List every saved procedure: number, title, and a one-line prompt preview
+    - `procedure_view` — Show one procedure's full title and complete prompt
+    - `procedure_create` — Save a new procedure (title + self-contained prompt, optional [single/workflow](/configuration/workflow-mode) mode)
+    - `procedure_edit` — Change a procedure's title, prompt, and/or mode
+    - `procedure_delete` — Permanently remove a procedure
+    - `procedure_run` — Run a procedure now, in a fresh background conversation
+
+    Every procedure wears an **emoji icon** (shown on its card and stamped on its run conversations in the conversations list), and a procedure can be **bound to a [project](/configuration/projects)** so its runs get the project's instructions and files.
+  </Accordion>
+
+  <Accordion title="projects — Manage projects: standing instructions plus files">
+    **Type:** Plugin
+
+    **Triggers:** project, projects, new project, project instructions, project files, add to project, workspace context
+
+    Lets Wolffish manage your [projects](/configuration/projects) — the named bundles of standing instructions and files that brief every conversation started inside them. Say "make a project for the kitchen renovation with these PDFs" and it creates the project, sets the instructions, and attaches the files — the same things the Projects page does by hand.
+
+    **Tools:**
+    - `project_list` — Every project: number, icon, title, file count, last-edited time
+    - `project_view` — One project in full: icon, title, complete instructions, and its file list with per-file existence and size
+    - `project_create` — Create a project (title, optional emoji icon, optional instructions)
+    - `project_update` — Change a project's title, icon, and/or instructions
+    - `project_add_files` — Attach files by path; each source is **copied into the project's own folder** (`uploads/project-<id>/`), so a project never dangles on a moved or deleted original
+    - `project_remove_file` — Detach a file (the project's own copy is deleted; originals outside the workspace are never touched)
+    - `project_conversations` — List every conversation belonging to a project: title, message count, last activity
+    - `project_delete` — Permanently remove a project; its past conversations stay in history and simply lose the project context on future turns
+  </Accordion>
+
+  <Accordion title="workflow — Design and drive a model-led multi-agent run">
+    **Type:** Plugin (master-gated — available only in [workflow mode](/configuration/workflow-mode), and only to the master; agents never see these tools)
+
+    Lets the workflow master architect a run: declare phases, fan independent slices out to live parallel agents on models it picks per slice, collect each report the moment it lands, steer or cancel agents mid-flight, and synthesize one answer. Everything renders on the chat's live workflow card, drawn from harness telemetry.
+
+    **Tools:**
+    - `workflow_plan` — Declare (or revise) the run's phases; they light up on the workflow card as their agents run and complete
+    - `agent_spawn` — Start a live background agent on a self-contained task, with an optional per-agent `model` (`provider/model-id`), reasoning `effort`, and `phase`
+    - `agent_send` — Send a follow-up to an idle agent; it runs again with its prior context intact
+    - `agents_await` — Block until the **next** agent lands and return its full report (first landing, not all)
+    - `agent_cancel` — Cancel an agent immediately, aborting its in-flight tool call
+  </Accordion>
+
+  <Accordion title="mcp — Manage its own MCP server connections">
+    **Type:** Plugin
+
+    **Triggers:** mcp, model context protocol, mcp server, connect a server, add a server, tool server, external tools
+
+    Lets Wolffish manage its own [MCP server connections](/integrations/mcp) — the external tool servers whose tools it can call. Say "connect the tafsir MCP server", "which MCP servers are connected?", or "remove that one" and it does exactly what the Settings → MCP page does; changes reflect there live, and manual changes are visible to it. A newly added server's tools become callable on the next turn.
+
+    **Tools:**
+    - `mcp_list` — Every configured server: name, local/remote, live status, tool count
+    - `mcp_add` — Add and immediately connect a server (a command for local, an http(s) URL for remote; optional name and env vars)
+    - `mcp_test` — Verify a server now; kicks an offline one into reconnecting
+    - `mcp_enable` / `mcp_disable` — Pause or resume a server without deleting it
+    - `mcp_remove` — Permanently remove a server and its stored sign-in (asks you to confirm)
+    - `mcp_authorize` — Start the browser sign-in flow for a remote server that requires it
+  </Accordion>
+</AccordionGroup>
+
+### Asking Wolffish to build a skill for itself
+
+You don't write any code — you describe the ability in plain language and Wolffish authors the capability for you. The clearest requests signal a **recurring** need:
+
+- *"From now on, whenever I send you a CSV, clean it up and reply with a summary table."*
+- *"Make yourself a skill that posts a daily standup to our Slack channel."*
+- *"You keep doing this resize-and-watermark dance by hand — turn it into a reusable tool."*
+- *"Teach yourself to look up parcel tracking from a tracking number."*
+
+When you ask, Wolffish:
+
+1. **Picks the kind of skill** — a *pure skill* (a written procedure it follows with tools it already has), a *plugin skill* (a real new tool backed by JavaScript), or a plugin with npm dependencies — choosing the smallest that does the job.
+2. **Writes the files** via `skill_create` — the `SKILL.md` (name, description, triggers) plus `plugin/index.mjs` and a `package.json` only when a real new tool is needed.
+3. **Loads and tests it live**, then it's available from your next message — listed in the capability index and found by `tool_search` whenever your wording matches its triggers.
+
+<Tip>
+  Be specific about the **trigger** ("whenever I…", "every time a…") and the **outcome** you want. Wolffish builds reusable skills, not one-offs — for a single task it just does the work directly instead of creating a skill. You can always say "list your skills" to see what it has, or "delete that skill" to remove one it made.
+</Tip>
+
+## Core System
+
+<AccordionGroup>
+  <Accordion title="tool-discovery — Find and load tools on demand" defaultOpen>
+    **Type:** Plugin (registered by the runtime itself, not a workspace folder)
+
+    Not every tool is preloaded into the model's context. The capability index in the system prompt lists everything that exists; these two tools make any of it callable:
+
+    **Tools:**
+    - `tool_search` — Search every installed capability (including MCP servers) by what you need to do. Matches capability names, descriptions, trigger keywords, and tool names; the best match is auto-loaded and its tools are callable the same turn.
+    - `tool_activate` — Load a specific capability by exact name, taken from the capability index or a `tool_search` result.
+
+    Activations are per-conversation and capped at 10 non-core capabilities, evicted least-recently-used. Eviction is invisible: calling an evicted (or never-activated) tool directly auto-reactivates its capability and the call executes normally. Always loaded.
+  </Accordion>
+
+  <Accordion title="shell — Execute shell commands">
+    **Type:** Plugin
+
+    **Triggers:** run, execute, command, terminal, shell, bash, npm, npx, git, pip, docker, curl
+
+    Wraps Node.js `child_process` to execute shell commands. The workhorse tool that many other capabilities depend on.
+
+    **Tools:**
+    - `shell_exec` — Run a command with optional cwd and timeout. Commands run until they exit naturally. Pass `timeout` only when you want fast failure (e.g. 5000ms for a quick `which` check). Omit for installs, builds, or anything with unpredictable duration.
+    - `shell_jobs` — List the background jobs this conversation started: what is running, and since when
+    - `shell_stop` — Stop one background job, or all of them
+
+    Since **v1.0.288** commands **run in the conversation's working folder by default** rather than your home directory, so `npm test` and `git status` land in the project without being told where it is. Output comes back with ANSI colour codes stripped (`NO_COLOR=1`, `PAGER=cat`), and long output **keeps the last 2000 lines or 50 KB** — the end of a log, which is where a failure is reported — with **the full text written to a file under `<workspace>/tool-output/` that the result names**, so nothing is lost and the agent can search the log instead of re-running the build. A command shaped like a **dev server or a watcher is refused in the foreground** rather than hanging the turn: it is started in the background instead, listed by `shell_jobs` and endable with `shell_stop` before the turn finishes.
+
+    **Safety:**
+    - **Block:** `mkfs`, `dd if=` (disk-level destruction)
+    - **Destructive:** `rm -rf`, `sudo` (requires approval)
+    - **Confirm:** package installs, docker operations
+
+    Elevation (`sudo` / `doas`) authenticates through the app's **saved admin session**: you type your password into at most one native OS dialog per app run, and later privileged commands reuse the in-memory session — no TTY needed. The session is app-wide, so [workflow](/configuration/workflow-mode) agents and scheduled runs elevate through the same session as the chat.
+
+    Background mode (`background: true`) detaches the process and returns its PID immediately — use for dev servers, watchers, and long-running processes.
+  </Accordion>
+
+  <Accordion title="filesystem — Read, write, and edit files">
+    **Type:** Plugin
+
+    **Triggers:** file, read, write, edit, create, save, open, patch, modify, folder, directory
+
+    Wraps Node.js `fs` for precise file operations without needing shell access.
+
+    **Tools:**
+    - `file_read` — Read a file or list a directory. Lines come back numbered `N: text` (the number is never part of the content); reads are **streamed**, so pulling a slice out of a gigabyte log costs only the slice. A missing path answers with nearby names instead of a bare error.
+    - `file_edit` — **Since v1.0.288.** A surgical, exact-string change: it touches only the matched text, keeps everything you did not touch byte-identical, **refuses an ambiguous match** rather than guessing, and returns a real diff. This is the tool for changing an existing file.
+    - `file_write` — Create or overwrite a whole file (supports append mode). For new files and deliberate whole-file replacements.
+    - `file_grep` — **Since v1.0.288.** Search file *contents* with ripgrep across a codebase of any size, gitignore-aware.
+    - `file_glob` — **Since v1.0.288.** Find files by *name* pattern (`**/*.test.ts`, `src/**/*.tsx`), gitignore-aware. Returns up to 100 absolute paths.
+    - `file_patch` — **Deprecated**, kept as an alias of `file_edit` with `replaceAll`. Replaces every occurrence of a literal string.
+    - `image_view` — Return an image's actual pixels to a vision model on demand — the model-led way to *look* at an image instead of having it auto-injected. Since **v1.0.254** the model chooses the view: a **crop region** to read one part at native sharpness (a crop is cheaper too — the price follows the pixels actually sent), a **resolution** when small text needs resolving, and **lossless PNG** for screenshots, interfaces and charts where JPEG smearing hurts. A view too big to send is shrunk automatically, and since v1.0.253 the pixels genuinely reach **every vision-capable model** — Grok, Kimi, Qwen, StepFun, GLM, the MiniMax/Mimo `-VL` variants and DeepSeek's [`deepseek-v4-flash-vision-exp`](/configuration/deepseek#vision) included, not just Claude and GPT
+
+    Prefer these over `shell_exec` for file operations — they're faster, safer, and produce cleaner audit trails. Search rather than guess: `file_grep` when you know what a file *contains*, `file_glob` when you know roughly what it is *called*. Every `file_edit` and `file_write` is **snapshotted before the first change of a turn**, which is what [`changes_revert`](#core-system) restores from — and in the [desktop app, terminal and phone](/capabilities/coding) an edit renders as a real unified diff rather than a generic tool card.
+  </Accordion>
+
+  <Accordion title="changes — Undo a turn's file edits">
+    **Type:** Runtime (registered by the runtime, not a workspace folder) · **Core** — always callable
+
+    **Since v1.0.288.** Before the first change a turn makes to a file, Wolffish **keeps the original bytes**. That snapshot is what makes "that fix made it worse, put it back" a single sentence rather than a recovery operation.
+
+    **Tools:**
+    - `changes_list` — List the file changes recorded in this conversation, newest turn first: which files each turn edited or created
+    - `changes_revert` — Restore files to their state before a turn. Edited files get their original bytes back; files the turn *created* are deleted. Defaults to the latest turn; pass a turn id from `changes_list`, and a `path` to revert a single file of it.
+
+    It needs **no git** and works in any folder, and it keeps the **last twenty turns** of each conversation. It is always callable — reverting never costs a [tool-discovery](#core-system) hop.
+  </Accordion>
+
+  <Accordion title="todo — The model's task list">
+    **Type:** Runtime · **Core** and **locked**
+
+    **Since v1.0.288.** When a job runs to three steps or more, the agent keeps a checklist, and that checklist appears in the conversation as a **card that updates in place** — exactly one item in progress, an item ticked off only after the check that proves it really ran. A long run therefore leaves *one* list in the transcript showing where things stand, rather than a new copy printed on every revision.
+
+    **Tools:**
+    - `todo_write` — Write the task list for multi-step work: the items, and which one is in progress
+
+    The card is the progress bar on **every surface** — desktop, [terminal](/getting-started/cli), [phone](/integrations/mobile-app) — and it travels into the exported PDF the same way. The runtime will not let a turn end with items the agent actually finished still open, and a list left unfinished by an interrupted run is **picked back up and resolved on the original card**, where you first saw it, rather than restarted as a second one.
+  </Accordion>
+
+  <Accordion title="wait — Block the turn for a chosen duration">
+    **Type:** Runtime · **Core** and **locked**
+
+    **Since v1.0.303.** Until then a turn with time to kill had three bad options: a shell `sleep` you could neither see nor interrupt, calling the same tool over and over in a poll loop, or handing the job back and starting over from nothing.
+
+    **Tools:**
+    - `wait` — Block the turn for `seconds`, with a required `reason` in the user's own words
+
+    It has **no ceiling** — ten seconds or four hours, whatever the job needs, asked for once. A cap was deliberately refused, because a clamp just returns you to the poll loop the tool exists to replace. While it blocks, a **card says why the agent is idle and when it wakes**, counting down, with **an input that ends it early** — and anything you send from anywhere (that box, the composer, your phone, Telegram, WhatsApp) does the same. **One wait per conversation**: a second concurrent call is a model bug, so it is refused rather than queued.
+
+    Three exits, and the tool result names which: **`elapsed`** (the timer ran out), **`interrupted`** (a message arrived — its text is *not* consumed here, it stays in the mid-turn inbox and arrives as the next user message), and **`canceled`** (the run was stopped). All three funnel through one guarded `settle()`, so no timer or record outlives its wait.
+
+    Three tools look similar and are not: **`wait`** keeps this turn and everything in it; **`countdown`** is for an action that must land *after* the reply is sent; **`automation_create`** with a one-time schedule starts a *fresh* run hours or days later from only what was written into its instruction. See [Waiting](/architecture/waiting).
+  </Accordion>
+
+  <Accordion title="close-turn — End a turn that has nothing left to say">
+    **Type:** Runtime · **Core** and **locked**
+
+    **Since v1.0.309.** The runtime used to tell a finished turn to close with **an entirely empty response — zero characters** — and no provider carries an empty message. So a turn with nothing left to say had exactly one legal move: **type a stand-in for the silence** (`(no output)`, `[Empty response]`, `[(empty — nothing further)]`) and send it to you. The instruction was impossible and the workaround was the bug.
+
+    **Tools:**
+    - `close_turn` — End the turn when everything is already said and delivered
+
+    Saying "nothing further" is now a **tool call**, something a model can actually produce, instead of a zero-character message it cannot. It stays **model-led end to end**: nothing rewrites, strips or suppresses a character the model wrote — the model still decides when the turn is over, it just has a real way to say so. In practice you will rarely see it: a turn that did real work ends by talking to you.
+
+    Behind it, the guard that catches faked silence became **structural** rather than a hand-written phrase list that kept losing the race to the next phrasing. A short bracketed group that closes a reply and is *about* the absence of content trips it — including a marker glued directly onto the end of prose, and including the same set phrases in **Chinese, simplified and traditional**, since seven of the providers Wolffish talks to are Chinese labs. Ordinary parentheticals stay content: `The build ran clean (no output)` and `Blockers: (none)` are never second-guessed. The guard **observes and tells; it never edits**.
+  </Accordion>
+
+  <Accordion title="countdown — Arm an action to run after the reply">
+    **Type:** Runtime · **Core** and **locked**
+
+    **Since v1.0.294.** One rule underlies this capability: **nothing that would cut off the agent's own reply runs inside the turn**. An action like that is **armed rather than run** — the agent finishes its answer, the conversation is saved, and only then does a **countdown card** appear in the chat carrying the action's name, a bar draining over about ten seconds, and an **Abort** button. When the bar empties the call runs; press Abort and it never does.
+
+    **Tools:**
+    - `countdown_start` — Arm any tool call to run a few seconds after the reply is finished, on that card
+
+    The armed call is checked against **exactly the same safety rules as calling it directly**, and if it needs your approval the approval card is raised **at the moment it is armed** — never later, when nobody is there to answer. The card is a real part of the conversation, so it reaches [your phone](/integrations/mobile-app) with a working Abort button, and a conversation opened later says what happened: **ran, aborted by you, or dropped** because the turn was stopped before its reply landed. Nothing stays pending across a relaunch. **One countdown is pending at a time** — arming a second replaces the first — and [automations](/configuration/heartbeat) cannot arm one at all, because nobody is watching their card.
+
+    This is how `system_power` restarts, shuts down and logs out (see [system](#desktop-automation)), and on a chat channel `/cancel` aborts it.
+  </Accordion>
+
+  <Accordion title="package-manager — Cross-platform package installation">
+    **Type:** Plugin
+
+    **Triggers:** install, package, brew, winget, apt, dependency
+
+    Detects and uses the system package manager: Homebrew (macOS), winget (Windows), apt (Debian/Ubuntu), dnf (Fedora/RHEL). Installs run until completion — no timeout.
+
+    **Tools:**
+    - `pkg_check` — Check which package manager is available
+    - `pkg_install_manager` — Install Homebrew on macOS if missing (no-op elsewhere)
+    - `pkg_install` — Install a package with platform-specific name resolution
+
+    Other capabilities declare their system dependencies via the `packages` field in SKILL.md — the package-manager resolves the correct name per platform.
+  </Accordion>
+
+  <Accordion title="node — Node.js runtime">
+    **Type:** Plugin
+
+    **Triggers:** node, npm, npx, nvm, javascript, js, typescript, ts
+
+    Checks for Node.js installation and installs it via package-manager if missing. Install runs until complete.
+
+    **Tools:**
+    - `node_check` — Verify Node.js is installed and get version
+    - `node_install` — Install Node.js via system package manager
+
+    Once installed, use `shell_exec` for `node`, `npm`, and `npx` commands.
+  </Accordion>
+</AccordionGroup>
+
+## File Delivery
+
+<AccordionGroup>
+  <Accordion title="utilities — Deliver files and openable location cards">
+    **Type:** Plugin
+
+    **Triggers:** send file, attach, attachment, deliver file, share file, upload file, open folder, reveal in finder
+
+    Small always-loaded helpers that don't belong to a bigger capability — delivering files, and handing you openable locations.
+
+    **Tools:**
+    - `send_file` — Deliver any file, of any type and any size, to you as an attachment in the conversation you're in. Renders as a file card in the desktop app and uploads natively on Telegram and WhatsApp. The in-app chat and the terminal impose no size limit of their own; Telegram and WhatsApp enforce their own upload ceilings and say so when a file is too big to send there.
+    - `show_path` — Push an **openable location card** into the in-app chat: a folder gets an **Open** button (straight into your OS file manager), a file gets **Reveal** (its folder opens with the file selected). This is how a *place* is delivered — a folder Wolffish scaffolded or organized, a batch of outputs, a file deliberately left where you asked. Nothing is parsed out of prose: the card exists only when the tool is called, and the path must actually exist. In-app only — on Telegram and WhatsApp the path is named in prose instead.
+
+    **This is the only way a file reaches you.** No generation tool auto-delivers its output — not `pdf_create`, not ffmpeg, not the browser, not a shell script. Wolffish treats delivery as part of the task: the moment a file-producing task finishes, `send_file` is the final tool call — even for tiny text files, even when the content was also shown in chat. Ending with "saved to ~/path" is not delivery. If you explicitly ask for a file to just be saved somewhere, that's respected — and when Wolffish is genuinely unsure, it asks rather than silently withholding. The runtime lists files already sent this turn, so you never receive the same file twice.
+
+    Paths can be absolute, `~/`-relative, or workspace-relative; files outside the workspace are copied into `files/` so the in-app viewer can load them.
+  </Accordion>
+</AccordionGroup>
+
+## Web & Search
+
+<AccordionGroup>
+  <Accordion title="web-search — Search the web and read pages">
+    **Type:** Plugin
+
+    **Triggers:** search, google, look up, find online, web, browse, latest, news, documentation
+
+    Provides web search and page fetching for current information.
+
+    **Tools:**
+    - `web_search` — Search the web. Returns titles, snippets and URLs — **never a page**. Defaults to 5 results, no upper limit enforced. Each query spends real money, so it's for settling one fact or finding which URL to open.
+    - `web_fetch` — One plain HTTP GET of a URL, returned as text. Instant and free, but it sees only what the server sends a bare request: JS-rendered pages come back empty, and paywalls, logins, consent walls and bot checks defeat it.
+
+    **These are one of three routes, not the only one.** Since v1.0.236 the skill teaches the trade-off explicitly, and the third route — the [browser extension](/integrations/browser-extension#three-routes-to-the-web), driving your real browser — is the default whenever reach or reliability matters: a named site, a logged-in or paid-for page, anything JS-rendered, anything needing a click, or a task spanning more than a page or two. Two failed fetches cost more than opening the browser would have.
+
+    A page that comes back as a few hundred characters, a cookie banner, "enable JavaScript", a login form, or a subscribe wall **did not load** — it failed quietly with a 200. The agent is taught to read what came back before trusting it, and to escalate rather than re-fetch or answer from the fragment.
+
+    If a Brave API key is configured in Variables, the agent prefers the Brave search tool instead.
+  </Accordion>
+
+  <Accordion title="browser — Headless browser automation">
+    **Type:** Plugin
+
+    **Triggers:** browser, web, website, navigate, login, scrape, screenshot, form, click, automate
+
+    Launches a headless Chromium instance for interactive web tasks — filling forms, clicking buttons, navigating SPAs, and scraping JS-rendered content. Navigation uses Playwright's default timeout unless you explicitly pass `timeout_ms`.
+
+    **Tools:**
+    - `browser_launch` — Start a browser session (headed/headless, viewport size, locale)
+    - `browser_navigate` — Go to a URL
+    - `browser_click` — Click an element by CSS selector
+    - `browser_type` — Type text into an input
+    - `browser_screenshot` — Capture the current page
+    - `browser_evaluate` — Execute JavaScript in the page context
+    - `browser_close` — End the session
+
+    Use `web_fetch` for static pages — only use the browser when you need interaction.
+  </Accordion>
+</AccordionGroup>
+
+## Documents & Media
+
+<AccordionGroup>
+  <Accordion title="document — Word documents and rich text">
+    **Type:** Plugin
+
+    **Triggers:** document, word, docx, report, letter, memo, template, convert document
+
+    Read, create, modify, and convert documents (docx, html, markdown, plain text).
+
+    **Tools:**
+    - `document_read` — Extract content as text, HTML, or markdown from any document
+    - `document_create` — Create .docx with headings, paragraphs, tables, images, lists, headers/footers
+    - `document_modify` — Edit existing documents
+    - `document_convert` — Convert between formats
+    - `document_merge` — Combine multiple documents
+  </Accordion>
+
+  <Accordion title="pdf — PDF creation and manipulation">
+    **Type:** Plugin
+
+    **Triggers:** pdf, merge pdf, split pdf, watermark, form fill, encrypt pdf, compress pdf, figure, diagram, chart, render page, extract images
+
+    Full PDF toolkit with RTL/Arabic support — built to handle **PDFs the size of books**. The reading engine is lazy and cached: a document is parsed once per conversation, page counts are probed from the file's own index without a full load, and nothing about a PDF is ever auto-injected into context — Wolffish consults it through these tools when its content matters.
+
+    **Tools:**
+    - `pdf_info` — A PDF's facts without reading it: page count, metadata, size — the first call on any big document
+    - `pdf_search` — Full-text search inside a PDF, returning matching pages with snippets — how a 3,000-page book gets navigated
+    - `pdf_read` — Extract text by page range (lazy and cached, so successive reads of a huge document stay fast)
+    - `pdf_create` — Create PDFs with headings, paragraphs, images, tables (supports RTL with custom fonts)
+    - `pdf_modify` — Edit an existing PDF (pages, content)
+    - `pdf_form` — Read and fill PDF form fields
+    - `pdf_render_pages` — Render whole pages to PNG/JPEG — **how a figure, chart, algorithm or table gets shown**, since it captures the page as printed
+    - `pdf_extract_images` — Save the photos and raster figures **embedded in named pages** as image files
+    - `pdf_merge` — Combine multiple PDFs
+    - `pdf_split` — Extract page ranges into separate files
+    - `pdf_secure` — Encrypt/decrypt with passwords
+    - `pdf_compress` — Reduce file size
+
+    **Showing a figure vs. extracting one.** A textbook figure is usually *drawn* — vector lines, boxes and text laid down by the page's content stream — with no image stored in the file at all. So "show me Figure 7.2" is answered by `pdf_render_pages` (which captures the page as printed and always works), and `pdf_extract_images` is for the assets a PDF genuinely stores: a photograph, a scanned plate, an illustration wanted on its own. Both take a `pages` selection and are page-scoped, so neither needs the document split first — and extraction over a whole book is never the right call, since a large reference text stores tens of thousands of sub-kilobyte fragments. Fragments under 80px are skipped by default.
+
+    Design guidance for *authored* documents lives in the `pdf-design` manual below — the agent loads it before creating anything styled; `pdf_create` remains the plain, unstyled fallback.
+  </Accordion>
+
+  <Accordion title="pdf-design — the document design manual (core)">
+    **Type:** Plugin — **Core**, always loaded, can't be disabled
+
+    **Triggers:** pdf design, document design, report layout, styled document
+
+    One tool with one job: `pdf_design` loads the **document design manual** into context, and the operating contract requires the agent to call it **before authoring any PDF or styled document you'll read**. Generated documents used to swing between genuinely good and visibly broken because the design recipe lived where the model rarely read it; the manual is now that recipe in one place — a page-planning step so no page ships half empty, a fixed-sheet page architecture with running footers and real page numbers, one type scale, one accent color with light body pages always, a component kit (cover, table of contents, section openers, stat tiles, hairline tables, callouts, provenance pills), Arabic/RTL rules, chart integration, and a **mandatory verify pass**: the agent renders sample pages as images with `pdf_render_pages` and looks at them before delivering anything.
+
+    **Tools:**
+    - `pdf_design` — Load the document design manual (the manual body costs nothing until called — always-on is just the schema line)
+
+    Your own instructions always win — an automation that asks for a minimal layout keeps getting exactly that.
+  </Accordion>
+
+  <Accordion title="dataviz — charts that earn their place (core)">
+    **Type:** Plugin — **Core**, always loaded, can't be disabled
+
+    **Triggers:** chart, graph, plot, visualize, data
+
+    `dataviz` loads the **visualization manual** the agent consults before laying out numbers — when a chart earns its place (and when a number or a table is the honest answer), which chart form fits which data, and how to label, order, and source it. It covers both output paths:
+
+    - **Interactive chart cards in the app chat.** The agent writes a spec file ending in **`.chart.json`** and delivers it with `send_file`; the app renders it as a live, app-themed chart card in light and dark. Eleven types — column, bar, line, area, pie, donut, scatter, heatmap, radar, gauge, funnel — with tooltips, legends, an expandable full-screen view with a **Chart ⇄ Data** toggle, and **Save as image**. An invalid or oversized (over 1 MB) spec degrades to a plain file card, still downloadable.
+    - **Charts inside generated PDFs**, drawn to the same visual system with print-perfect geometry and a fixed 8-slot, colorblind-validated palette assigned in order.
+
+    On WhatsApp and Telegram a `.chart.json` arrives as a plain document attachment, so the agent is taught to prefer a text table there.
+
+    **Tools:**
+    - `dataviz` — Load the visualization manual
+  </Accordion>
+
+  <Accordion title="web-design — the web design manual (core)">
+    **Type:** Plugin — **Core**, always loaded, can't be disabled
+
+    **Triggers:** web design, website, web page, html page, info site, docs site, microsite, landing page, interactive report, one-pager
+
+    The third design manual, and the newest. Ask for a guide, a handbook, or a report **as a web page** and what came back used to depend on the model's mood that day. `web_design` loads the **web design manual** into context, and the operating contract requires the agent to call it **before writing a line of HTML** for anything a person will open in a browser — exactly as `pdf-design` already works for documents.
+
+    The manual carries:
+
+    - **Treatment calibration and a section map** — a planning step before any markup, so the page's shape is decided rather than discovered.
+    - **A rail-and-column architecture** that stays responsive from desktop down to phone widths.
+    - **Dual light and dark themes** — system preference plus a toggle override — built on one set of tokens.
+    - **Type voices** from system font stacks, and a component kit: cover plate, index rail, notes, figure plates, hairline tables, pills, card grids, Q&A, steps, checklists.
+    - **Hand-drawn SVG figure rules**, themed to the page rather than dropped in as stock art.
+    - **JS as enhancement** — a page must read complete with scripts switched off, and arrives as **one self-contained file**.
+    - **Arabic and RTL rules**, the same discipline the document manual applies.
+    - A **mandatory verify pass**: the agent screenshots the finished page with `browser_screenshot` and looks at it through `image_view` — **both themes, desktop and phone widths** — before handing it over.
+
+    **Tools:**
+    - `web_design` — Load the web design manual (the manual body costs nothing until called — always-on is just the schema line). Takes an optional `page` line naming what you're about to design; stating it commits the agent to the manual.
+
+    Because the preview card in chat is deliberately sandboxed, every website card now carries an **Open in browser** button — the live page, from its real location, with its scripts running.
+
+    Your own instructions always win — a prompt or automation that fully specifies the design keeps getting exactly that.
+  </Accordion>
+
+  <Accordion title="spreadsheet — Excel and CSV files">
+    **Type:** Plugin
+
+    **Triggers:** spreadsheet, excel, xlsx, csv, tsv, table, data, formula, chart
+
+    Read, create, modify, and analyze spreadsheet files.
+
+    **Tools:**
+    - `spreadsheet_read` — Read xlsx/csv/tsv with optional sheet selection and cell range
+    - `spreadsheet_create` — Create new spreadsheets with multiple sheets, columns, rows, and styles
+    - `spreadsheet_modify` — Edit existing files (add rows, update cells, add sheets)
+    - `spreadsheet_analyze` — Compute statistics, summaries, and derived columns
+
+    **Values are stored with the formulas** *(v1.0.301)*. A workbook full of formulas used to be able to come back as **a grid of empty cells** — the formulas were written but no value was stored beside them, and anything reading the file without opening Excel sees nothing. Every formula write now **recalculates the whole workbook** and stores the computed value alongside it, so the file reads back as numbers everywhere — and the result **names any cell that evaluated to an error** (`#DIV/0!`, `#REF!`, `#VALUE!`) so it gets fixed before the file reaches you. Charts are **native Excel charts** that Excel, Numbers and LibreOffice all draw and you can restyle — seven kinds — instead of pictures pasted in.
+
+    Wolffish works to a stated standard for what makes a workbook good: **formulas instead of numbers it worked out itself**, every assumption in its own labelled cell, and the analyst's colour convention — blue for inputs, black for formulas — in financial models.
+
+    An `.xlsx` in the chat **renders as a grid that kept the file's formatting** — fills, fonts, borders, number formats, merged cells, frozen panes, column widths and sheet tabs — since **v1.0.301**. See [Office documents in the feed](/capabilities/office-viewers).
+  </Accordion>
+
+  <Accordion title="presentation — PowerPoint decks">
+    **Type:** Plugin
+
+    **Triggers:** presentation, powerpoint, pptx, deck, slides, pitch
+
+    Read, create, edit and verify `.pptx` / `.potx` decks.
+
+    **Tools:**
+    - `deck_design` — Load the **deck design manual** before building anything: the slide-map planning step (one idea per slide, titles that make a claim rather than name a topic), the theme table, every layout the engine offers and its fields, the writing rules for slides, and chart guidance. Required before authoring.
+    - `presentation_read` — Read anyone's deck: every slide's text and speaker notes, in order. Editing someone else's deck starts here, never with a guess at the wording.
+    - `presentation_create` — Build a deck from a layout per slide. It is **a layout engine, not a shape placer**: you say what each slide *is* — a title, a section break, bullets, two columns, cards, stats, steps, a table, a chart, an image, a quote, a closing — and the engine owns the geometry, the type scale and the palette. The colour themes are **the same eight tested palettes the PDF documents use**, so a deck and its report match.
+    - `presentation_modify` — Exact-match text replacement that leaves PowerPoint's own structure untouched, because a generic rewrite is what makes PowerPoint refuse a file.
+    - `presentation_validate` — Structural check. **Mandatory on the result**: it catches the faults that make PowerPoint declare a file corrupt while every other tool opens it happily.
+    - `presentation_render` — Render the slides, then look at them: `presentation_render` → `pdf_render_pages` → `image_view` is how the pages actually get seen before sending.
+
+    Since **v1.0.301** a deck in the chat **renders as its actual slides**, with chevrons to page through them — see [Office documents in the feed](/capabilities/office-viewers).
+  </Accordion>
+
+  <Accordion title="archive — Zip archives, without a shell">
+    **Type:** Plugin
+
+    **Triggers:** zip, unzip, archive, compress, extract, unpack, pack, make a zip, what's in the zip, bundle files
+
+    Four tools for `.zip` files, working in-process — no `unzip` or `zip` binary needed, same behaviour on macOS and Windows. A `.zip` is also a **first-class attachment** (up to 512 MB), so an archive arrives somewhere the tools can reach it.
+
+    **Tools:**
+    - `archive_list` — List what's inside **without unpacking**: entry paths, unpacked sizes, dates, top-level layout, totals, and which entries are encrypted. Reads only the archive's index, so it's fast at any size. Pages with `offset`/`limit` and filters by glob — and never truncates silently.
+    - `archive_read` — Read one text file **straight out of the zip**, nothing written to disk. Pages with `start_line`/`end_line`; a binary entry returns its size and the right tool to open it, not garbage bytes.
+    - `archive_extract` — Unpack everything, or only the entries you name. Without a destination it creates a new folder beside the archive (an uploaded one unpacks into the workspace `files/` folder) and never overwrites an existing folder.
+    - `archive_create` — Pack files and folders into a new `.zip`. A folder keeps its own name as the archive root, so unzipping produces a folder instead of loose files. Warns when `node_modules`, `.git` or `venv` went in, so you can re-run with `exclude`.
+
+    **The contract is look-before-you-unpack.** An archive is opaque until it's listed, and unpacking is a side effect on your disk — so a zip dropped in with no instructions gets listed, described in a line ("a 212-file React project — `src/`, `public/`, `package.json`, plus a 40 MB video"), and then you're **asked what you want done with it**. A request that already answers the question ("unzip this", "what does the README say") just gets done.
+
+    **Safety:** entries that would write outside the destination are refused outright, symlink entries are stored as plain files, and `__MACOSX/`, `.DS_Store` and `Thumbs.db` are skipped with the count reported. Encrypted archives still list (the index isn't encrypted); `archive_read` and `archive_extract` take a password.
+
+    Zip only — and the file's actual signature is checked, not its extension. A `.tar.gz`, `.7z` or `.rar` is rejected with the exact shell command that handles it. Office files (`.docx`, `.xlsx`, `.pptx`, `.epub`) *are* zips and open here, but that's a debugging move: use the document tools for those.
+  </Accordion>
+
+  <Accordion title="ffmpeg — Audio and video processing">
+    **Type:** Plugin
+
+    **Triggers:** ffmpeg, video, audio, convert, transcode, compress
+
+    Wraps the FFmpeg CLI for multimedia processing. Runs until completion — no timeout, regardless of file size or encoding complexity.
+
+    **Tools:**
+    - `ffmpeg_check` — Verify ffmpeg is installed
+    - `ffmpeg_install` — Install via package-manager
+    - `ffmpeg_run` — Run any ffmpeg command (pass args after `ffmpeg`)
+
+    The capability auto-checks for ffmpeg and offers to install it if missing.
+  </Accordion>
+
+  <Accordion title="video — Generate video with MiniMax H3">
+    **Type:** Plugin
+
+    **Triggers:** video, generate video, make a video, text to video, image to video, animate, clip, cinematic, footage, b-roll, minimax, hailuo, h3
+
+    Generates video through **MiniMax H3** — text to video, image to video, first-and-last-frame transitions, or reference images, clips and audio for consistent subjects, motion and voice. The prompt is written by **your current chat model**, not by you and not by H3: see [Video Generation](/integrations/video-generation) for director mode, limits, and setup.
+
+    **Tools:**
+    - `video_check` — Confirm the service is configured and the key works. Free, spends no credits.
+    - `video_generate` — Start a render; returns a task id immediately and raises a live task card in the chat
+    - `video_await` — Park until the task lands and return the saved mp4's absolute path
+    - `video_status` — Non-blocking snapshot of this conversation's video tasks
+    - `video_cancel` — Cancel a queued or running task server-side
+
+    Rendering takes minutes, so the flow is asynchronous by design: generate → await → deliver with `send_file` (or `telegram_send_video` / `whatsapp_send_video`). A render that outlives its turn is finished by the app itself — polled, saved, and delivered to the channel it came from. Runs on its own key under **Settings → Services → Video generation**, deliberately separate from the MiniMax chat provider.
+  </Accordion>
+</AccordionGroup>
+
+## Voice
+
+<AccordionGroup>
+  <Accordion title="speech-to-text — Transcribe audio with faster-whisper">
+    **Type:** Plugin
+
+    **Triggers:** transcribe, speech to text, stt, whisper, audio to text, dictation
+
+    Local speech-to-text using **faster-whisper** (CTranslate2 + PyAV) — far lighter than reference Whisper (no PyTorch, no external ffmpeg). Supports 99+ languages with automatic detection and runs entirely on your machine — no API keys, no cloud, fully offline after setup. Transcription runs until it finishes regardless of file size.
+
+    **Tools:**
+    - `stt_transcribe` — Transcribe an audio file at a given path
+    - `stt_transcribe_upload` — Transcribe a file uploaded in the current conversation
+    - `stt_transcribe_voice_memo` — Transcribe a voice memo generated by text-to-speech
+    - `stt_detect_language` — Detect the spoken language without a full transcription
+
+    Models available: tiny, base (default), small, medium, large — larger is more accurate but slower. The engine installs into a managed Python runtime automatically on first use (or on demand from Settings → Services → Speech-to-Text); the chosen model downloads once and caches.
+  </Accordion>
+
+  <Accordion title="text-to-speech — Generate voice memos">
+    **Type:** Plugin
+
+    **Triggers:** voice, speak, say, audio, read aloud, voice memo, tts
+
+    Fully local neural text-to-speech using **Kokoro** — no cloud, no API keys, no Microsoft. Synthesis runs entirely on-device and produces an MP3. Generation runs until complete — no timeout.
+
+    **Tools:**
+    - `voice_generate` — Convert text to MP3 (returns file path)
+    - `voice_respond` — Respond entirely as a voice memo (the audio IS the response)
+    - `voice_list` — List all voice memo files in the workspace
+
+    English voices only — American (`af_`/`am_`, e.g. the default **`af_bella`**) and British (`bf_`/`bm_`). The voice and speech rate are chosen in **Settings → Services → Text-to-Speech** and applied automatically; the model installs into a managed Python runtime on first use (or on demand from Settings, with a live progress bar and a real in-app preview).
+  </Accordion>
+</AccordionGroup>
+
+## Version Control & Code
+
+<AccordionGroup>
+  <Accordion title="git — Git operations (pure skill)">
+    **Type:** Pure Skill (no plugin)
+
+    **Triggers:** git, commit, branch, merge, push, pull, PR, diff, stash, rebase
+
+    Teaches the LLM how to use `shell_exec` for Git with the user's conventions. Instructions include:
+
+    - Always run `git status` before making changes
+    - Use Conventional Commits format: `type(scope): subject`
+    - Show diffs and proposed commit messages before executing
+    - Branch naming: `feature/`, `fix/`, `chore/` prefixes with kebab-case
+
+    Since this is a pure skill, it has no plugin — it relies on the shell capability.
+  </Accordion>
+
+  <Accordion title="github — GitHub API integration">
+    **Type:** Plugin
+
+    **Triggers:** github, pull request, PR, issue, repo, CI, actions, workflow, release, gist
+
+    Full GitHub API access via Octokit. Requires a personal access token (Settings → Services → GitHub).
+
+    **Tools:** list repos, create/read/update issues, create/list/merge PRs, list branches, trigger workflows, create releases, manage gists, manage labels/milestones, review PRs, list notifications, star/fork repos, compare branches.
+
+    **Pagination:** GitHub hard-caps `per_page` at 100. For larger result sets, page through with multiple calls.
+
+    See [GitHub Integration](/integrations/github) for full setup and usage.
+  </Accordion>
+</AccordionGroup>
+
+## External Services
+
+<AccordionGroup>
+  <Accordion title="google — Google Workspace">
+    **Type:** Plugin
+
+    **Triggers:** google, gmail, email, inbox, drive, calendar, events, contacts, tasks, sheets
+
+    Gmail, Drive, Calendar, Contacts, Tasks, and Sheets via OAuth. Multi-account support. All API calls run until completion — no artificial timeouts.
+
+    **Tools:** gmail search/read/send/reply/archive, drive list/upload/download, calendar events CRUD, contacts, tasks, sheets read/write.
+
+    See [Google Workspace Integration](/integrations/google-workspace) for full setup.
+  </Accordion>
+
+  <Accordion title="notion — Notion pages and databases">
+    **Type:** Plugin
+
+    **Triggers:** notion, workspace, wiki, knowledge base, database, page, kanban, board
+
+    Read, create, and manage Notion content via the Notion API.
+
+    **Tools:** search, read pages, read blocks, create pages, update pages, append blocks, create/query databases, add comments.
+
+    See [Notion Integration](/integrations/notion) for full setup.
+  </Accordion>
+
+  <Accordion title="cloudflared — Expose local services">
+    **Type:** Plugin
+
+    **Triggers:** cloudflare, tunnel, cloudflared, expose, public url
+
+    Create quick Cloudflare Tunnels to expose local ports to the internet. Install runs until complete.
+
+    **Tools:**
+    - `cloudflared_check` — Check if cloudflared is installed
+    - `cloudflared_install` — Install via package-manager
+    - `cloudflared_tunnel` — Create a tunnel for a local port (returns public URL)
+
+    Always requires user confirmation before exposing a local service.
+  </Accordion>
+</AccordionGroup>
+
+## Desktop Automation
+
+<AccordionGroup>
+  <Accordion title="computer-use — Screen interaction">
+    **Type:** Plugin
+
+    **Triggers:** screenshot, click, screen, desktop, mouse, keyboard, computer use, automate, UI
+
+    Desktop automation for visual tasks — rebuilt in **v1.0.260** around **verification instead of hope**, hardened in **v1.0.262** with clicks that cannot lie, and rebuilt again in **v1.0.298** so that driving the screen **no longer takes your mouse away from you**. The toolset grew from twelve tools to **thirty-one** in that release.
+
+    ### It does not take your pointer
+
+    Every click used to move **your** pointer, every keystroke went to whatever had focus, and a nudge of the mouse mid-action sent the click somewhere else. Clicks, typing, shortcuts, scrolls and drags are now **posted straight to the target window in the background**, through a native driver on macOS, Windows, and Linux (X11, and Wayland where the compositor allows): **your pointer does not move, the window is not raised, and you keep working beside it.**
+
+    When an app genuinely cannot take background input, Wolffish **steps down one rung on purpose** — a brief foreground delivery with the pointer restored — and **says which rung ran, in the result**, rather than failing quietly. `computer_hover` is the one tool that deliberately moves the real pointer, because tooltips and hover menus need it.
+
+    ### Two ways to find a thing
+
+    - **By pixels** — screenshot → zoom → aim → click. Every image a tool returns becomes the *current frame*, and the model reads coordinates straight off it; the plugin does all the translation (downscaling, HiDPI, multi-monitor offsets, window-local pixels). Every screenshot carries a **crosshair through the exact cursor pixel**, a small or crowded target is **zoomed before it is ever clicked**, and the zoom **warns when the region is too wide to truly magnify**.
+    - **By name** — `computer_find` reads the app's **accessibility tree**, the same structure a screen reader uses, and finds a button, field, checkbox or menu item by its name; `computer_click_element` then clicks it by reference, with **no pixel aim at all**. Menu paths like *File › Save As…* are invoked directly rather than aimed at. **Native apps expose rich trees; web content in browsers and Electron apps usually exposes only the window chrome — and the result says so plainly** rather than leaving the model to guess.
+
+    Even on a pixel click, **the element the app reports under the point is echoed back**, so a wrong aim is caught by one accessibility lookup instead of by eyesight.
+
+    ### Evidence on every action
+
+    Each action returns one evidence line: **how it was delivered**, the driver's verdict on whether it took effect (`confirmed`, `partial`, `unverifiable`, `suspected noop`, `refused`), an **objective before-and-after pixel comparison** of the screen, the element under the point, and — for a rare foreground delivery — **whether your mouse moved during it**, in which case Wolffish refuses to repeat anything with side effects. That evidence rides into the next step alongside what the model said it *expected*, so **the model verifies before it plans**. The model is also explicitly forbidden from **re-clicking a send-style control on the report alone**.
+
+    ### The screen indicator, and a shadow cursor
+
+    While Wolffish drives, the display wears a **blue glow around all four edges** plus a small translucent notice in the center — **"Wolffish is capturing your screen"**, in your app's language — invisible in its own screenshots. Since **v1.0.298** they travel with a **shadow cursor**: an arrow that glides to the exact point before every action, pulses on the press, and parks there with a small label naming the target. It is a drawing on the indicator layer, so it **never touches your real pointer** and never appears in Wolffish's own captures. If the system takes the indicator's window down — a display unplugged, a sleep — the next action **puts it back on a display that exists**, so *on* always means visibly on.
+
+    **Wolffish itself turns the indicator on before its first look at your screen and off as its final act**, so on means watched and off means not.
+
+    **Tools (31):**
+
+    | Group | Tools |
+    |---|---|
+    | Indicator & access | `computer_glow_on`, `computer_glow_off`, `computer_check_access` |
+    | Capture | `computer_screenshot`, `computer_zoom`, `computer_window_screenshot`, `computer_list_windows`, `computer_list_displays` |
+    | Elements | `computer_find`, `computer_click_element`, `computer_read_element`, `computer_set_value`, `computer_window_state`, `computer_focus_window`, `computer_menu` |
+    | Mouse | `computer_mouse_move`, `computer_hover`, `computer_mouse_click`, `computer_mouse_down`, `computer_mouse_up`, `computer_mouse_drag`, `computer_mouse_scroll` |
+    | Keyboard | `computer_keyboard_type`, `computer_keyboard_press`, `computer_key_down`, `computer_key_up` |
+    | Waiting | `computer_wait`, `computer_wait_for` |
+    | Clipboard & batching | `computer_clipboard_read`, `computer_clipboard_write`, `computer_batch` |
+
+    `computer_wait_for` replaces guessed delays — wait until the screen is stable, until a window with a given title appears, or until a control appears or disappears. `computer_window_screenshot` captures a window **even when it is covered**. `computer_batch` runs a sequence you are sure of in one call and **stops at the first miss**.
+
+    ### Permissions, asked up front
+
+    `computer_check_access` tells Wolffish — and you — exactly what this machine allows **before a session starts**: Accessibility and Screen Recording on macOS with the settings pane to open, the session type and compositor on Linux, elevation limits on Windows, and whether the background driver loaded. Turning the indicator on runs the same check, so **a missing grant is named at the first step with its fix**, never discovered as a cryptic error halfway through. The Computer Use settings page shows an **Open System Settings** button next to any grant that is missing, and nothing next to one that is not.
+
+    <Note>
+      **Windows needs three rules of its own**, all learned from a live verification run: the **DWM-cloaked shell windows** Windows keeps around (the Start menu, Search, a closed Settings) are never treated as targets; **right and middle clicks, and typing into browsers and Electron apps**, take the brief foreground rung, because those apps drop posted input; and whenever Wolffish does borrow the pointer, **it puts it back where it was**. A window running **as administrator** cannot receive input from a non-elevated Wolffish (UIPI) — reported as a limit, not a blocker.
+    </Note>
+
+    ### Capture quality and cost
+
+    Since **v1.0.280** the **resolution and format of every capture are chosen by the agent, per screenshot**, rather than being two settings you tune once and live with. An ordinary hunt for a button stays small and fast; **reading a page of code, judging spacing and colour, or handing you a screenshot to keep** goes up to 2560 pixels and lossless PNG. Ask for a sharper screenshot mid-conversation and it simply takes one. The two settings rows are gone from the desktop, the terminal and the phone accordingly. (The [browser extension](/integrations/browser-extension) keeps its own screenshot settings.) Older screenshots are retired from the model's context as fresh ones arrive, so long sessions stay grounded on the current screen — and affordable.
+
+    Must be enabled in Settings → Services → Computer Use — and it needs a **vision-capable Brain**: if the active model cannot accept images the runtime strips the screenshots and the tools tell the model to stop and ask you to switch, and the panel says so plainly rather than letting a blind model click by imagination. Since **v1.0.287** [`deepseek-flash`](/configuration/deepseek#vision) qualifies, so DeepSeek is no longer a provider you have to switch away from to drive the screen.
+
+    Approval cards for screen actions **name the app and window** the action is going to, and **"Allow for this conversation" allows that app** rather than one tool name.
+
+    ### Sessions and refusals (v1.0.299)
+
+    The screen driver's session used to expire after **five idle minutes**, and a single silent API call was enough to cross that line — after which *every* screen action refused for the rest of the turn. The session is now **kept alive for as long as the indicator is up**, and if it does lapse the next action **reconnects and repeats itself** without you ever seeing a failure.
+
+    Refusals that cannot change on another attempt — a point outside the current picture, a key name the driver does not know, an action taken before the indicator is on — now come back **immediately, with the fix**, instead of burning three identical retries. Key names like `period`, `comma` and `slash` are understood, and long text is typed **in one call** with the character count reported, so a paragraph that arrived short is visible rather than silent.
+  </Accordion>
+
+  <Accordion title="system — Apps, paths, and machine power">
+    **Type:** Plugin · **Core**
+
+    **Triggers:** open app, quit app, restart, shutdown, sleep, lock, log out, reveal, open folder
+
+    Control of the machine itself and the applications on it.
+
+    **Tools:**
+    - `app_open` — Launch an application
+    - `app_quit` — Quit a running application
+    - `app_list` — List the applications that are running
+    - `open_path` — Open a file or folder in the system's default handler
+    - `system_power` — Restart, shut down, sleep, lock, or log out
+
+    **`restart`, `shutdown` and `logout` are never run by the call itself.** Since **v1.0.294** they are armed on a [turn-end countdown](#core-system) — the agent finishes its answer, the conversation is saved, and a card with an **Abort** button counts down in the chat before the command runs. Before that, the agent handed the job to a hidden detached timer that could not be cancelled on macOS or Linux, and a timer that failed to start was reported to you as success. `sleep` and `lock` do not cut off a reply, so they still run directly.
+  </Accordion>
+
+  <Accordion title="mobile-simulators — Run and drive iOS and Android apps">
+    **Type:** Plugin
+
+    **Triggers:** simulator, emulator, iOS, Android, device, app build, tap, screen
+
+    Arrived in **v1.0.288** and rebuilt in **v1.0.299** around one vocabulary for both platforms — **37 `mobile_` tools**, iOS on macOS and Android everywhere. *"Does the new screen look right?"* is a question the agent answers by running the app, looking at it and touching it, rather than by reading the source and guessing.
+
+    <Warning>
+      The `sim_` and `adb_` tool names v1.0.288 shipped are **gone**. One `mobile_` vocabulary covers both platforms now, and the backend is chosen from the device you are on.
+    </Warning>
+
+    ### Touches go to a reference, not a guess
+
+    A touch never goes to a coordinate read off an old screenshot. Wolffish reads the app's **accessibility tree** — `mobile_snapshot` returns every button, field and cell with **a reference of its own** — and `mobile_tap` taps the reference.
+
+    Every touch returns **proof**: a close-up patch of the exact spot with a crosshair on it, and an objective verdict on whether the screen actually changed. **"Changed: no" means re-aim from a fresh look, not press again.**
+
+    Typing goes in as keystrokes for plain text and **through the pasteboard for Arabic, other scripts and emoji**, so what you asked for is what arrives.
+
+    ### You can see the device being driven
+
+    A simulator moving by itself is unsettling if you do not know why. Whenever Wolffish is looking at or touching a device, a **blue frame sits around that device's window** with a pill reading *"Wolffish is driving iPhone 16 Pro"*, and **a ripple appears wherever a touch lands** — a stroke drawn across the screen for a swipe. It follows the window if you drag or resize it, clicks pass straight through it so it never gets in your way, and **the tools that see or touch the device refuse to run until it is up** (build, lifecycle and log tools do not need it). It comes down as the last act of the turn, and if a turn ever ends with it still on — finished, given up on, or failed — the app takes it down itself, so the frame on your screen always means what it says.
+
+    **Tools (37):**
+
+    | Group | Tools |
+    |---|---|
+    | Devices | `mobile_devices`, `mobile_use`, `mobile_boot`, `mobile_shutdown`, `mobile_erase`, `mobile_doctor` |
+    | Apps | `mobile_apps`, `mobile_install`, `mobile_uninstall`, `mobile_launch`, `mobile_terminate`, `mobile_open_url` |
+    | Seeing | `mobile_screenshot`, `mobile_zoom`, `mobile_snapshot`, `mobile_wait_for` |
+    | Touching | `mobile_tap`, `mobile_long_press`, `mobile_swipe`, `mobile_drag`, `mobile_type`, `mobile_key`, `mobile_button`, `mobile_batch` |
+    | Indicator | `mobile_indicator_on`, `mobile_indicator_off` |
+    | Device state | `mobile_location`, `mobile_push`, `mobile_privacy`, `mobile_appearance`, `mobile_status_bar`, `mobile_orientation` |
+    | Diagnostics | `mobile_log`, `mobile_record`, `mobile_playbook` |
+    | Element backend | `axe_check`, `axe_install` |
+
+    Beyond driving: **screenshots and native-resolution zoom**, **video recording**, the **device log** for crashes and print output, and simulated **locations, push notifications, permission grants, dark mode, the status bar and rotation**.
+
+    Reading a device screenshot needs a **vision-capable Brain**, the same as [computer-use](#desktop-automation). iOS needs Xcode and its command-line tools; Android needs the SDK platform-tools. `mobile_doctor` reports what is missing.
+  </Accordion>
+
+  <Accordion title="xcode — Build, test and run an Xcode project">
+    **Type:** Plugin · **macOS only**
+
+    **Triggers:** xcode, xcodebuild, scheme, swift, ios build, simulator run
+
+    **New in v1.0.299.** Point Wolffish at a folder and it finds what is there — **Xcode workspaces and projects, Swift packages, Flutter, Expo, React Native and Gradle** — and how each one is run.
+
+    **Tools:**
+    - `xcode_discover` — Find the projects, workspaces and frameworks in a folder, and how each is run
+    - `xcode_schemes` — List a project's schemes
+    - `xcode_bundle_id` — Resolve a scheme's bundle identifier
+    - `xcode_defaults` — Set scheme, project, configuration and device **once for the conversation**, so they are left out of every call after that
+    - `xcode_build` — Build, returning the `.app` bundle path that [`mobile_install`](#desktop-automation) takes
+    - `xcode_test` — Run the project's tests
+    - `xcode_run` — **Build, install on the simulator and launch with logs streaming, in one call**
+
+    When a build fails, the errors come back as **file and line** — not a thousand lines of `xcodebuild` output. Whatever the framework, the loop closes the same way: run the app, then **read and touch it on the device** instead of guessing from the code.
+  </Accordion>
+</AccordionGroup>
+
+## Interaction
+
+<AccordionGroup>
+  <Accordion title="ask — Ask the user with multiple-choice cards">
+    **Type:** Plugin
+
+    **Triggers:** ask the user, ask me, which option, let me choose, give me options, clarify, confirm with me, multiple choice, quiz me
+
+    Lets Wolffish put a decision back to you with concrete choices instead of guessing. It pauses the turn, renders an interactive question card, then resumes the moment you answer.
+
+    **Tools:**
+    - `ask_user` — Pose **one or more** multiple-choice questions and wait for the answers. Each question carries 2–5 numbered options with short descriptions, plus (unless disabled) a free-text box for your own instructions. Returns every answer at once.
+
+    Related decisions arrive as **one card, not a chain**: in the desktop app a multi-question card shows the questions as chip tabs — flip through, answer everything, and the turn resumes with all the answers. On Telegram and WhatsApp the same request walks you through the questions **one message at a time, in order**, collecting each numbered reply (or your own text) before the work continues. Quizzes and knowledge checks run through this card too — every question posed up front, graded and explained after you answer, never a quiz pasted as text with the answers visible below. If the run is stopped without an answer, Wolffish falls back to a sensible default instead of re-asking in a loop.
+  </Accordion>
+</AccordionGroup>
+
+## Memory & Self-Awareness
+
+<AccordionGroup>
+  <Accordion title="introspect — Memory retrieval and self-awareness">
+    **Type:** Plugin
+
+    **Triggers:** status, health, performance, how are you, what do you know, recall, remember when, search memory, list files, uptime, stats (and many more)
+
+    Wolffish's window into its own memory and state. The retrieval tools ride the cortex index — one full-text index over everything it has ever seen: every message and tool call of every past conversation, daily episodes, long-term knowledge, weekly digests, task runs, tool-outcome feedback, usage/cost records, event logs, app logs, and generated files. Always loaded.
+
+    **Retrieval tools:**
+    - `memory_search` — Ranked full-text search across all memory sources, filterable by source and date range. Returns snippets with refs to follow up on.
+    - `memory_get` — Fetch the full stored content behind a ref; `file:` refs return the actual file (workspace-confined)
+    - `conversation_list` — Enumerate past conversations: id, title, channel, dates, message count — optionally ranked by a content query
+    - `conversation_read` — Read a specific past conversation with pagination, including tool calls and results. Also recovers turns of the *current* conversation that were summarized out of context.
+    - `memory_save` — Durably save one self-contained fact to long-term knowledge (deduplicated), typed as projects, people, preferences, technical, or decisions
+    - `usage_report` — Wolffish's own LLM spend: requests, tokens, and cost, total and per model, for a chosen period
+    - `wolffish_recall` — Keyword-and-date recall, kept as a stable alias and now served from the index
+
+    **Status tools:**
+    - `wolffish_status` — Uptime, active provider, loaded capabilities, and system health
+    - `channel_status` — Whether each messaging channel (Telegram, WhatsApp, in-app) is connected, and the exact steps to reconnect one that isn't
+    - `wolffish_performance` — Task success rates, most used tools, error rates
+    - `wolffish_memory` — Recent conversation topics and knowledge areas at a glance
+    - `wolffish_list_files` — Structured file tree of the workspace (and only the workspace)
+
+    Read-only except `memory_save`. Wolffish uses these unprompted: a definite reference ("the flight plan", "that file") triggers a search before answering, and it tries two differently-worded searches before ever claiming it doesn't remember — a search miss is never treated as proof something didn't happen. It also checks `channel_status` before sending you an out-of-band message — Telegram and WhatsApp are connected channels reached through their own tools, never desktop apps to launch.
+  </Accordion>
+</AccordionGroup>
+
+## Fun
+
+<AccordionGroup>
+  <Accordion title="memes — Generate and find memes">
+    **Type:** Plugin
+
+    **Triggers:** meme, funny, gif, laugh, humor, joke, celebrate, lol
+
+    Create captioned memes from popular templates or search for reaction GIFs. No result caps — request as many GIFs as needed.
+
+    **Tools:**
+    - `meme_generate` — Create a meme from a template (drake, fry, buzz, distracted-boyfriend, this-is-fine, etc.)
+    - `meme_templates` — List available templates
+    - `gif_search` — Search for reaction GIFs
+    - `gif_trending` — Get trending GIFs
+    - `add_to_chat` — Insert the generated meme/GIF into the conversation
+
+    Uses memegen (zero-config) or imgflip (with credentials) as the backend. A meme reaches the chat only when `add_to_chat` is called — generation alone doesn't deliver it.
+  </Accordion>
+</AccordionGroup>
+
+## Task Execution (Motor Runtime)
+
+The motor cortex executes all tool calls with these defaults:
+
+- **Output buffer:** 100KB per tool result — the LLM sees substantial output without truncation. Shell output is the exception since **v1.0.288**: it keeps the **last** 2000 lines or 50 KB rather than the first, because a failure is reported at the end of a log, and the full text is spilled to a file the result names.
+- **Retries:** Up to 10 attempts for retryable errors (network, timeout). Non-retryable errors (permission, validation, not-found) bail immediately. Backoff scales up to 60s between attempts.
+- **No global timeout:** Tools run until they complete or the user stops them
+
+## Customizing Capabilities
+
+Built-in capabilities are managed and updated by Wolffish — don't edit them directly, as your changes will be overwritten on the next update. Instead:
+
+- **Disable** a built-in capability from Settings if you don't need it (the load-bearing **core** ones are protected — see below)
+- **Fork** it — copy the folder to a new name, then edit the copy however you like
+- **Create your own** from scratch following the same structure
+
+Changes to custom capabilities take effect on the next message — no restart needed.
+
+<Note>
+  A handful of built-ins are **load-bearing** and can't be turned off: the [workflow](/configuration/workflow-mode) engine, your secrets, the `skills` capability, [projects](/configuration/projects), [automations](/configuration/heartbeat), [procedures](/configuration/procedures), `introspect`, [`knowledge`](/memory/knowledge), the `todo` task list, the `countdown` arming mechanism, the `operating-manual`, the `pdf-design`, `dataviz` and `web-design` manuals, and the shared file-delivery tools the rest leans on. In **Settings → Capabilities** these wear a **Core** badge, sort to the **bottom** of the list, and show a locked **Always on** marker where their switch would be — so a stray click can't pull the floor out from under a feature you depend on. Everything you imported yourself stays fully toggleable.
+</Note>
+
+<Warning>
+  Custom capabilities are not backed up automatically. If you delete a capability you created, it's gone — Wolffish has no copy of it. Use git or keep a manual backup of your `brain/cerebellum/` folder. Built-in capabilities are always restored automatically on launch.
+</Warning>
+
+<Tip>
+  Start by reading the SKILL.md of any built-in capability to understand the pattern. Then create your own following the same structure. See [Creating Capabilities](/capabilities/creating-capabilities) for a step-by-step guide.
+</Tip>

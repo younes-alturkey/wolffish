@@ -78,7 +78,7 @@ export class WolffishOAuthProvider implements OAuthClientProvider {
   get clientMetadata(): OAuthClientMetadata {
     return {
       client_name: 'Wolffish',
-      client_uri: 'https://wolffi.sh',
+      client_uri: 'https://github.com/younes-alturkey/wolffish',
       redirect_uris: [this.redirectUrl],
       grant_types: ['authorization_code', 'refresh_token'],
       response_types: ['code'],

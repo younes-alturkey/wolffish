@@ -1,0 +1,148 @@
+{
+  "id": "2026-07-01_17-37-37",
+  "title": "Do nothing",
+  "model": "gemma4:e2b",
+  "createdAt": 1782916657882,
+  "updatedAt": 1782916720683,
+  "messages": [
+    {
+      "id": "m_1782916720683_0534f3",
+      "role": "user",
+      "content": "do nothing",
+      "timestamp": 1782916720683,
+      "attachments": [
+        {
+          "type": "image",
+          "filePath": "uploads/conv-2026-07-01_17-37-37/1306.jpg",
+          "originalName": "1306.jpg",
+          "mimeType": "image/jpeg",
+          "sizeBytes": 0
+        },
+        {
+          "type": "image",
+          "filePath": "uploads/conv-2026-07-01_17-37-37/ai-agent-space-forgot.gif",
+          "originalName": "ai-agent-space-forgot.gif",
+          "mimeType": "image/gif",
+          "sizeBytes": 0
+        },
+        {
+          "type": "pdf",
+          "filePath": "uploads/conv-2026-07-01_17-37-37/fable5-briefing-2026-06-18.pdf",
+          "originalName": "fable5-briefing-2026-06-18.pdf",
+          "mimeType": "application/pdf",
+          "sizeBytes": 0
+        },
+        {
+          "type": "other",
+          "filePath": "uploads/conv-2026-07-01_17-37-37/linkedin-post-2026-06-18-115800.txt",
+          "originalName": "linkedin-post-2026-06-18-115800.txt",
+          "mimeType": "text/plain",
+          "sizeBytes": 0
+        },
+        {
+          "type": "video",
+          "filePath": "uploads/conv-2026-07-01_17-37-37/sample.mp4",
+          "originalName": "sample.mp4",
+          "mimeType": "video/mp4",
+          "sizeBytes": 0
+        },
+        {
+          "type": "other",
+          "filePath": "uploads/conv-2026-07-01_17-37-37/sample.docx",
+          "originalName": "sample.docx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "sizeBytes": 0
+        },
+        {
+          "type": "other",
+          "filePath": "uploads/conv-2026-07-01_17-37-37/sample.csv",
+          "originalName": "sample.csv",
+          "mimeType": "text/csv",
+          "sizeBytes": 0
+        },
+        {
+          "type": "other",
+          "filePath": "uploads/conv-2026-07-01_17-37-37/wolffish-x-promotion-2026-06-24.md",
+          "originalName": "wolffish-x-promotion-2026-06-24.md",
+          "mimeType": "text/markdown",
+          "sizeBytes": 0
+        },
+        {
+          "type": "audio",
+          "filePath": "uploads/conv-2026-07-01_17-37-37/sample.wav",
+          "originalName": "sample.wav",
+          "mimeType": "audio/wav",
+          "sizeBytes": 0
+        }
+      ]
+    },
+    {
+      "id": "m_1782916720683_f8b8e3",
+      "role": "assistant",
+      "content": "Done nothing. Successfully. 🐟",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782916713513_g6ttt2",
+          "segmentId": "seg_1",
+          "provider": "anthropic",
+          "model": "claude-sonnet-4-6"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782916713513_g6ttt2",
+          "segmentId": "seg_2",
+          "delta": "Done nothing. Successfully. 🐟"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1782916713513_g6ttt2",
+          "segmentId": "seg_4",
+          "stopReason": "end_turn",
+          "iterationCount": 1,
+          "reasoningContent": "The user said \"do nothing\" — so I should do nothing. Just acknowledge it briefly."
+        }
+      ],
+      "stopReason": "end_turn",
+      "timestamp": 1782916720683
+    }
+  ],
+  "stats": {
+    "allTime": {
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 7383,
+      "outputTokens": 15,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "cost": 0.006881399999999999,
+      "processingMs": 1000,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "endedAt": 1782916720683,
+      "provider": "local",
+      "model": "gemma4:e2b"
+    },
+    "lastTurn": {
+      "endedAt": 1782916720683,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 7383,
+      "outputTokens": 15,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "provider": "local",
+      "model": "gemma4:e2b",
+      "cost": 0.006881399999999999
+    },
+    "meter": {
+      "contextTokens": 19798,
+      "contextBudget": 131072,
+      "compactionAt": 73728,
+      "model": "gemma4:e2b"
+    }
+  }
+}

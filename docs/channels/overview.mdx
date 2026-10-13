@@ -1,0 +1,187 @@
+---
+title: "Channels Overview"
+description: "How Wolffish communicates — Electron UI, the terminal, Telegram, WhatsApp, and your paired phone"
+---
+
+# Same Brain, Every Channel
+
+Wolffish communicates through five channels: the Electron desktop UI, a [terminal](/getting-started/cli), a Telegram bot, WhatsApp direct messaging, and a [paired phone](/integrations/mobile-app). All five run the same brain pipeline — the only difference is how input arrives and how output is rendered.
+
+## The Five Channels
+
+<CardGroup cols={1}>
+  <Card title="Electron UI" icon="desktop">
+    The native desktop interface. Real-time streaming, rich markdown, approval dialogs, and full conversation management.
+  </Card>
+  <Card title="Terminal" icon="terminal">
+    The [`wolffish` command](/getting-started/cli) — an interactive session or a one-shot prompt, attached to the running agent. Markdown rendered in ANSI, approvals answered with a keystroke, files as paths in both directions. The only channel that works on a [headless server](/getting-started/server-deployment).
+  </Card>
+  <Card title="Telegram" icon="paper-plane">
+    A personal bot that responds to your private messages. Inline buttons for approvals, HTML formatting, file handling.
+  </Card>
+  <Card title="WhatsApp" icon="message">
+    Direct messaging via WhatsApp Web protocol. Text-based approvals, voice note transcription, automatic reconnection.
+  </Card>
+  <Card title="Phone" icon="mobile">
+    The [mobile companion](/integrations/mobile-app), paired to this desktop over an end-to-end encrypted tunnel. Not a message stream but a second view of the whole app — and a message sent from it runs a real turn here.
+  </Card>
+</CardGroup>
+
+## Architecture
+
+Every channel feeds into the same pipeline. The channel is just a transport layer — it receives user input, hands it to the brain, and renders whatever comes back.
+
+```
+User ─┬─ Electron UI ──┐
+      ├─ Terminal ──────┤
+      ├─ Telegram Bot ──┼──► TurnRunner ──► Agent Pipeline ──► TurnRouter ──► Channel ──► User
+      ├─ WhatsApp ──────┤
+      └─ Phone ─────────┘
+```
+
+## The TurnSink Interface
+
+Each channel implements the `TurnSink` interface — the contract for receiving pipeline output:
+
+```typescript
+interface TurnSink {
+  onSegment(segment: StreamSegment): void     // Streamed text/tool-use chunks
+  onTurnEvent(event: TurnEvent): void         // Status changes (thinking, executing, done)
+  onApprovalRequest(req: ApprovalRequest): void  // Amygdala flagged a tool call
+  onDone(summary: TurnSummary): void          // Turn completed successfully
+  onError(error: TurnError): void             // Turn failed
+}
+```
+
+The Electron UI renders `onSegment` as real-time streaming markdown. Telegram formats segments as HTML messages. WhatsApp sends plain text. Same data, different presentation.
+
+## The TurnRunner
+
+The TurnRunner serializes turns **per conversation**, not globally. A single conversation is one ordered transcript — its own turns queue behind each other so they never interleave — but turns for *different* conversations run in parallel, whichever channel they arrive on. Each turn runs in its own isolated scope with its own per-turn state, so concurrent turns never corrupt each other.
+
+```
+Conversation A (Electron) → [running] ─┐
+Conversation B (Telegram) → [running] ─┼── in parallel
+Conversation C (WhatsApp) → [running] ─┘
+
+Conversation A, next message → [queued behind A's running turn]
+```
+
+A conversation's own second message waits for its first to finish (preserving transcript order and preventing races in that conversation's memory writes and context assembly), while an unrelated conversation on any channel proceeds immediately. Your morning WhatsApp thread and a long in-app task no longer block each other.
+
+Every turn also broadcasts its lifecycle — started, done, canceled, error — back to the desktop app, which is what drives the [conversations list's](/channels/overview) live status chips for in-app, Telegram, and WhatsApp runs alike.
+
+<Note>
+  A new message on a busy chat is **queued behind the running turn**, not merged into it — Telegram and WhatsApp park it and run it next, in order (see each channel's *Queued Messages*). The TurnRunner still supports preempting a conversation's own in-flight turn by aborting it first — which is exactly what `/stop` does — but a plain message no longer triggers that, and nothing ever preempts a *different* conversation.
+</Note>
+
+## The TurnRouter
+
+When the amygdala flags a tool call for approval, the TurnRouter routes the approval request to whichever channel owns the active turn. If you started a conversation in Telegram, the approval button appears in Telegram — not in the Electron UI.
+
+The routing logic is straightforward:
+
+1. Each turn carries a `channelId` (electron, cli, telegram, whatsapp, or mobile)
+2. When `amygdala.classify()` returns `confirm`, the TurnRunner emits an approval request
+3. The TurnRouter looks up the active turn's `channelId` and calls `onApprovalRequest` on that channel's sink
+4. The channel presents the approval in its native format (dialog, inline button, or text prompt)
+5. The user's response flows back to the TurnRunner to continue or abort
+
+## Shared State
+
+All channels share the same brain state:
+
+- **Memory** — same hippocampus episodes, same cortex index
+- **Knowledge** — same workspace markdown files
+- **Conversations** — a conversation started anywhere can be continued anywhere (see below)
+- **Capabilities** — same loaded skills and plugins
+
+<Tip>
+  You can start a long-running task in the desktop UI, leave your desk, and check on progress or continue the conversation from Telegram on your phone.
+</Tip>
+
+## Every Conversation Is Continuable Everywhere
+
+Conversations are fully two-way across channels — nothing is read-only:
+
+- **Phone → desktop, live.** A conversation that started on Telegram or WhatsApp opens in the app as a live chat: the composer works, and you continue it with a real keyboard. If a turn is **running on the phone right now** — or an automation is working the conversation — the desktop reflects it as it happens: the reply **streams into the feed as it's written**, the **Stop** button genuinely stops that run whichever device started it, and a message you type mid-run **queues and sends itself** when the run lands. Opening the window in the middle of a run still shows it as live. Messages that land on your phone appear in place, and voice notes survive the round-trip untouched.
+- **Automations too.** A finished automation or procedure run isn't a sealed record — continue it in the app to ask the follow-up question, and it becomes a live conversation again.
+- **Desktop → phone.** `/resume` on either channel opens a numbered picker over **every conversation Wolffish has** — all channels, newest first, 25 to a page with `next`, each row tagged with its origin. Scheduled automation runs are hidden from it by default (a per-channel settings toggle), while staying in `/delete` and the app.
+- **Replies land where they belong.** When Wolffish messages a channel out of band — an automation reporting a finished job, an in-app conversation dropping you a note — that chat re-points itself at the sending conversation, so your reply continues exactly the conversation that messaged you.
+- **Projects travel too.** `/project` on either channel starts a conversation inside one of your [projects](/configuration/projects) — briefed with its standing instructions and files, exactly like a project chat opened in the app. The binding lives on the conversation itself, so continuing it anywhere keeps the project context.
+
+In the app, the conversations list and History mark each conversation with a small **origin badge** — the terminal, Telegram, WhatsApp, the phone, an automation, or a procedure run — so a mixed list stays legible. In-app chats carry no badge: the app is the default. Conversations that belong to a project or were run by an automation or procedure also wear that source's **emoji** on their chip.
+
+## File Delivery
+
+When Wolffish produces a file — a PDF, a converted video, a spreadsheet — delivering it is a deliberate act by the agent: its `send_file` tool. Nothing auto-delivers. A tool writing a file to disk never sends it by itself, and paths mentioned in tool output are never sniffed and auto-uploaded — if the agent doesn't send it, you don't receive it, and the agent's operating contract requires it to send the result the moment a file-producing task is done.
+
+`send_file` renders natively on every surface:
+
+| Channel | How a sent file arrives |
+|---|---|
+| Electron UI | File card in the chat (image, audio, video, document, or generic file) |
+| Terminal | The path, printed — the terminal and the agent share one filesystem, so nothing is uploaded or encoded |
+| Telegram | Real upload — document, photo, audio, or video message |
+| WhatsApp | Real upload — media message or document |
+| Phone | File card in the mirrored feed; the bytes stream over the encrypted tunnel when you open it |
+| Web UI | File card in the chat, streamed from the server behind the sign-in |
+
+Every one of those lands with *you*. When a result is for someone else — a report to forward, a page built for a client, a dashboard the team should open — the agent publishes it with `public_link` instead: a file, a folder served as a static site, or a local port reverse-proxied, at `https://<your address>/p/<token>` with no sign-in. The token is the whole permission, the link can carry an expiry, and Settings → Channels → Web UI (or `wolffish web public`) lists and revokes what is public. The agent reaches for it on its own when the task is shaped like sharing; it only exists while the Web UI is on.
+
+## The Clean Feed
+
+Each channel has a **Show all tool activity** toggle that controls how much of the agent's step-by-step work you see. It is **off by default**, which keeps a clean feed:
+
+- **Off (clean feed)** — the replies, the delivered files, **the [code edits and shell runs](/capabilities/coding#every-change-arrives-as-a-diff)**, the questions and approvals, the reasoning and the [task lists](/capabilities/coding#the-task-list), and errors. Only genuine mechanics stay out of sight — routine tool calls, successful tool results, and compaction notices. In the desktop UI the active-model chip is also kept.
+- **On** — every tool call and tool result is surfaced as well, the way the turn ran step by step.
+
+<Note>
+  The switch was called **Verbose task results** until **v1.0.288**, on four different surfaces — a name describing its setting rather than what you would see. It is now **Show all tool activity** everywhere: desktop, phone, terminal, Telegram and WhatsApp. What a clean feed shows **grew** in the same release: a change in your project is not tool mechanics, so edits and commands draw their compact row whatever the switch says.
+</Note>
+
+The toggle lives in each channel's own settings, all under **Settings → Channels**:
+
+| Channel | Where | What the toggle affects |
+|---|---|---|
+| In-App | Settings → Channels → In-App | What the desktop feed **displays** |
+| Terminal | Settings → Channels → CLI | What the terminal **displays** — with `--tools` / `--clean` overriding it for a single command |
+| Telegram | Settings → Channels → Telegram | What is **relayed** to the chat |
+| WhatsApp | Settings → Channels → WhatsApp | What is **relayed** to the chat |
+| Phone | Settings → Channels → Mobile | What is **relayed** to the phone's feed (connection logging is separate and always on) |
+
+<Note>
+  The switch only changes what is **shown** or **relayed** — never what the agent does. Every segment is still saved to history and memory in full, so flipping the toggle simply re-renders the feed; nothing is lost when it is off.
+</Note>
+
+[Workflow-mode](/configuration/workflow-mode) runs are the one addition on top of this: on Telegram and WhatsApp they always report deterministic progress — the phase plan when the run starts, a line as each phase completes, and a closing summary with totals — while the switch adds a landing line per agent (name, model, duration, tool calls). In the app the same information lives on the workflow card.
+
+## Channels Are Connections, Not Apps
+
+Telegram and WhatsApp are **connections** Wolffish talks to you through — not desktop apps installed on your machine. Wolffish reaches them only through their own tools (`telegram_send`, `whatsapp_send`, …), never by launching or clicking a "Telegram"/"WhatsApp" window. A channel's send tools exist only while it's connected, so their presence is itself the signal that the channel is live.
+
+When Wolffish needs to message you out-of-band — a finished background task, a scheduled job — it first checks `channel_status` (or `wolffish_status`, which lists connectivity). If the channel is down it won't guess or retry; it tells you the channel is disconnected and relays the exact reconnect steps (Telegram → bot token from @BotFather; WhatsApp → scan the QR code).
+
+## Channel Comparison
+
+| Feature | Electron UI | Terminal | Telegram | WhatsApp | Phone |
+|---|---|---|---|---|---|
+| Streaming | Real-time chunks | Real-time chunks | Batched messages | Batched messages | Real-time chunks |
+| Formatting | Rich markdown | Markdown → ANSI | HTML subset | Plain text | Rich markdown |
+| Approvals | Native dialog | `[y]es / [n]o / [a]lways` card | Inline buttons | Text prompt | Native card |
+| Files | Drag and drop | Paths, both directions | Attachments | Media messages | Chunked upload / download |
+| Voice | N/A | N/A | Voice notes | Voice notes | Voice notes |
+| Reconnection | Always on | Attach / detach at will | Persistent | Auto-reconnect | Re-handshakes on foreground |
+| Verbose feed | Display toggle, off by default | Display toggle + per-command override | Relay toggle, off by default | Relay toggle, off by default | Relay toggle, off by default |
+
+<CardGroup cols={2}>
+  <Card title="Terminal CLI" icon="terminal" href="/getting-started/cli">
+    The whole app in a terminal — and on a server.
+  </Card>
+  <Card title="Telegram Channel" icon="paper-plane" href="/channels/telegram">
+    Set up and use the Telegram bot.
+  </Card>
+  <Card title="WhatsApp Channel" icon="message" href="/channels/whatsapp">
+    Set up and use WhatsApp messaging.
+  </Card>
+</CardGroup>

@@ -1,0 +1,82 @@
+{
+  "id": "2026-07-07_00-32-19_638-bb87cc",
+  "title": "Well Hey There",
+  "model": "deepseek-v4-pro",
+  "createdAt": 1783373539638,
+  "updatedAt": 1783373549216,
+  "messages": [
+    {
+      "id": "m_1783373539647_e86fcb",
+      "role": "user",
+      "content": "hey",
+      "timestamp": 1783373539647
+    },
+    {
+      "id": "m_1783373539647_ba47c0",
+      "role": "assistant",
+      "content": "Hey Younes. What's on the agenda today? 🐟",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783373539647_bjwgs2",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro",
+          "conversationId": "2026-07-07_00-32-19_638-bb87cc"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1783373539647_bjwgs2",
+          "segmentId": "seg_2",
+          "delta": "Hey Younes. What's on the agenda today? 🐟",
+          "conversationId": "2026-07-07_00-32-19_638-bb87cc"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1783373539647_bjwgs2",
+          "segmentId": "seg_15",
+          "stopReason": "end_turn",
+          "iterationCount": 1,
+          "reasoningContent": "The user is just saying \"hey\" - a casual greeting. I should respond in kind, matching their energy. Younes is my creator/builder, we have an established relationship. Keep it short and warm, with a touch of the fish personality.\n\nLet me also check if there's anything recent I should be aware of - but this seems like just a greeting, so I'll keep it light and not overthink it.",
+          "conversationId": "2026-07-07_00-32-19_638-bb87cc"
+        }
+      ],
+      "stopReason": "end_turn",
+      "timestamp": 1783373539647
+    }
+  ],
+  "stats": {
+    "allTime": {
+      "processingMs": 9511,
+      "apiMs": 3261,
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 21,
+      "outputTokens": 103,
+      "cacheReadTokens": 13184,
+      "cacheCreationTokens": 0,
+      "cost": 0.00021344580000000002
+    },
+    "lastTurn": {
+      "endedAt": 1783373549158,
+      "elapsedMs": 9511,
+      "apiMs": 3261,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 21,
+      "outputTokens": 103,
+      "cacheReadTokens": 13184,
+      "cacheCreationTokens": 0,
+      "cost": 0.00021344580000000002,
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro"
+    },
+    "meter": {
+      "contextTokens": 13205,
+      "contextBudget": 1000000,
+      "compactionAt": 725424,
+      "model": "deepseek-v4-pro"
+    }
+  }
+}

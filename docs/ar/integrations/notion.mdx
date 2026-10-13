@@ -1,0 +1,221 @@
+---
+title: "Notion"
+description: "الصفحات وقواعد البيانات وقواعد المعرفة في Notion"
+---
+
+# الصفحات وقواعد البيانات
+
+يربط تكامل Notion تطبيق وولفيش بمساحة عمل Notion للبحث والقراءة والإنشاء والاستعلام في الصفحات وقواعد البيانات. يستخدم رمز تكامل Notion الداخلي للمصادقة.
+
+## الإعداد
+
+<Steps>
+  <Step title="إنشاء تكامل">
+    انتقل إلى [notion.so/my-integrations](https://www.notion.so/my-integrations) واضغط "تكامل جديد". أعطه اسمًا (مثل "وولفيش") واختر مساحة العمل.
+  </Step>
+  <Step title="نسخ الرمز">
+    بعد الإنشاء، انسخ رمز التكامل الداخلي (يبدأ بـ `ntn_` أو `secret_`).
+  </Step>
+  <Step title="التهيئة في وولفيش">
+    افتح **الإعدادات ← الخدمات ← Notion**، واضغط **إضافة**، وأعطِ الاتصال تسمية (مثل «شخصي»)، والصق الرمز. زرّ **اختبار** يتحقق منه ويعرض مساحة العمل التي يقود إليها.
+  </Step>
+  <Step title="مشاركة الصفحات مع التكامل">
+    في Notion، افتح كل صفحة أو قاعدة بيانات تريد أن يصل إليها وولفيش. اضغط قائمة "..." > "الاتصالات" > ابحث عن تكاملك واربطه.
+  </Step>
+</Steps>
+
+<Warning>
+  لا يمكن للتكامل الوصول إلا إلى الصفحات وقواعد البيانات التي شُوركت معه صراحةً. إذا لم يتمكن وولفيش من إيجاد صفحة، تحقق من أن اتصالات الصفحة تتضمن تكاملك.
+</Warning>
+
+## عدّة مساحات عمل
+
+يمكنك ربط أي عدد من مساحات عمل Notion، كلٌّ منها اتصالٌ بتسميته الخاصة («شخصي»، «عمل»). وكلّ أدوات `notion_*` تقبل معامل `connection` اختيارياً يسمّي التسمية:
+
+- **اتصال واحد مُهيّأ** — يُستخدم تلقائياً؛ لا تحتاج لتمرير شيء.
+- **عدّة اتصالات** — تطلب الأدوات التسمية عند الالتباس، وأداة `notion_connections` الجديدة تسرد المتاح. في المحادثة يكفي أن تقول أيّ مساحةٍ تقصد: «أضفه إلى Notion العمل».
+
+الإعدادات القديمة برمزٍ واحد تنتقل تلقائياً إلى اتصالٍ بتسمية.
+
+## الأدوات المتاحة
+
+### البحث والقراءة
+
+| الأداة | الوصف |
+|---|---|
+| `notion_search` | البحث في كلّ صفحة وقاعدة بيانات يصل إليها التكامل |
+| `notion_read_page` | قراءة خصائص صفحة (العنوان والحالة والتواريخ والعلاقات) |
+| `notion_read_blocks` | قراءة محتوى كتل صفحةٍ أو كتلة |
+| `notion_connections` | سرد الاتصالات المهيّأة والحساب الذي يحلّ إليه كلٌّ منها |
+
+### الإنشاء والتحديث
+
+| الأداة | الوصف |
+|---|---|
+| `notion_create_page` | إنشاء صفحة — والأب (قاعدة بيانات أو صفحة) إلزاميّ، فلا افتراضيّ هنا |
+| `notion_update_page` | تحديث خصائص الصفحة أو أيقونتها أو غلافها أو أرشفتها (لا متنها) |
+| `notion_append_blocks` | إلحاق كتل بصفحةٍ أو كتلة |
+| `notion_update_block` | تحديث محتوى كتلة قائمة، أو أرشفتها |
+| `notion_delete_block` | أرشفة كتلة، فتُزال من الصفحة |
+
+### قواعد البيانات
+
+| الأداة | الوصف |
+|---|---|
+| `notion_read_database` | استعلام قاعدة بيانات بفلاتر وترتيبٍ اختياريَّين؛ ويعيد كائنات الصفحات |
+| `notion_get_database` | قراءة بيانات قاعدة البيانات الوصفيّة و**مخطّط** خصائصها (أسماء الأعمدة وأنواعها) |
+| `notion_create_database` | إنشاء قاعدة بيانات تحت صفحةٍ قائمة، بمخطّطٍ محدَّد |
+| `notion_update_database` | تحديث عنوان قاعدة البيانات أو وصفها أو مخطّط خصائصها |
+
+### المستخدمون والتعليقات
+
+| الأداة | الوصف |
+|---|---|
+| `notion_list_users` | سرد مستخدمي مساحة العمل (الأعضاء والروبوتات) |
+| `notion_get_user` | تفاصيل مستخدمٍ واحد بمعرّفه |
+| `notion_add_comment` | التعليق على صفحةٍ أو نقاشٍ قائم |
+| `notion_list_comments` | سرد التعليقات على صفحةٍ أو كتلة |
+
+### مخرج الطوارئ
+
+| الأداة | الوصف |
+|---|---|
+| `notion_api` | طلب مُصادَق خام إلى أيّ نقطة نهاية في واجهة Notion — لكلّ ما لا تغطّيه الأدوات أعلاه |
+
+## استعلام قواعد البيانات
+
+تدعم أداة `notion_read_database` صيغة الفلترة والترتيب في Notion:
+
+```json
+{
+  "database_id": "abc123...",
+  "filter": {
+    "property": "Status",
+    "status": {
+      "equals": "In Progress"
+    }
+  },
+  "sorts": [
+    {
+      "property": "Priority",
+      "direction": "descending"
+    }
+  ]
+}
+```
+
+الفلاتر المركّبة مدعومة:
+
+```json
+{
+  "filter": {
+    "and": [
+      {
+        "property": "Status",
+        "status": { "equals": "In Progress" }
+      },
+      {
+        "property": "Assignee",
+        "people": { "contains": "user-id-here" }
+      }
+    ]
+  }
+}
+```
+
+<Tip>
+  لا تحتاج لكتابة JSON الفلترة الخام بنفسك. فقط صِف ما تريده — "أرني المهام المسندة إليّ التي قيد التنفيذ" — وسيبني النموذج اللغوي الفلتر المناسب.
+</Tip>
+
+## أنواع الكتل المدعومة
+
+عند إنشاء أو إلحاق محتوى، يدعم وولفيش أنواع كتل Notion التالية:
+
+| نوع الكتلة | الوصف |
+|---|---|
+| `paragraph` | فقرة نصية عادية |
+| `heading_1` | عنوان كبير |
+| `heading_2` | عنوان متوسط |
+| `heading_3` | عنوان صغير |
+| `bulleted_list_item` | عنصر قائمة نقطية |
+| `numbered_list_item` | عنصر قائمة مرقّمة |
+| `toggle` | كتلة قابلة للطي |
+| `code` | كتلة شفرة برمجية مع تلوين بناء الجملة |
+| `quote` | اقتباس |
+| `callout` | تنبيه مع أيقونة |
+| `divider` | فاصل أفقي |
+| `table` | كتلة جدول |
+| `bookmark` | رابط محفوظ |
+
+## المحفّزات
+
+تُفعّل قدرة Notion عندما تتطابق رسالتك مع أي من هذه الأنماط:
+
+```
+notion, workspace, wiki, knowledge base, database, page, note, document,
+kanban, board, table, task tracker, project management, block, property,
+relation, rollup, filter, sort, view, gallery, list, timeline, calendar, template
+```
+
+## أمثلة على سير العمل
+
+<AccordionGroup>
+  <Accordion title="البحث في مساحة العمل">
+    ```
+    You: "Search my Notion for the API spec"
+    Wolffish: Calls notion_search with "API spec" and returns matching pages
+    with titles and parent locations.
+    ```
+  </Accordion>
+  <Accordion title="إضافة صفحة إلى قاعدة بيانات">
+    ```
+    You: "Add a new task to my project database: implement login flow, priority high"
+    Wolffish: Calls notion_create_page with the database as parent and sets
+    the Title, Status, and Priority properties.
+    ```
+  </Accordion>
+  <Accordion title="استعلام المهام قيد التنفيذ">
+    ```
+    You: "What tasks are in progress?"
+    Wolffish: Calls notion_read_database with a Status = "In Progress" filter
+    and returns matching entries with their properties.
+    ```
+  </Accordion>
+  <Accordion title="إلحاق محتوى بصفحة">
+    ```
+    You: "Add a section about error handling to my API documentation page"
+    Wolffish: Searches for the page, then calls notion_append_blocks with
+    heading and paragraph blocks containing the new content.
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## مرجع التهيئة
+
+تُخزَّن الاتصالات في `config.json` كمصفوفةٍ بتسميات:
+
+```json
+{
+  "notion": {
+    "connections": [
+      {
+        "id": "nt-a1b2c3",
+        "label": "شخصي",
+        "token": "ntn_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "name": "Wolffish",
+        "email": "you@example.com"
+      }
+    ]
+  }
+}
+```
+
+حقلا `name` و`email` يُستنتَجان تلقائياً عند اختبار الرمز. والشكل القديم برمزٍ واحد (`{ "token": "…" }`) ينتقل تلقائياً إلى اتصالٍ بتسمية "Default" عند أول حفظ.
+
+<Info>
+  واجهة Notion API لديها حدود استخدام (3 طلبات في الثانية للتكاملات). يتعامل وولفيش مع إعادة المحاولات بتأخير تصاعدي تلقائيًا عبر وحدة `motor`. إذا كنت تجري عمليات جماعية، قد تكون الاستجابات أبطأ قليلًا من المعتاد.
+</Info>
+
+<Warning>
+  لا تشارك أبدًا رمز تكامل Notion. أي شخص يملك الرمز يمكنه قراءة وتعديل جميع الصفحات التي يملك التكامل صلاحية الوصول إليها. إذا اشتبهت بتسرّب الرمز، قم بتدويره فورًا في [notion.so/my-integrations](https://www.notion.so/my-integrations).
+</Warning>

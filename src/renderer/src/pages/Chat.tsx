@@ -54,7 +54,8 @@ import {
 import { RTL_LOCALES } from '@lib/i18n'
 import { cn } from '@lib/utils/cn'
 import { formatBytesL, formatCompact } from '@lib/utils/format'
-import { pageTopPadding } from '@lib/utils/platform'
+import { isWeb, pageTopPadding } from '@lib/utils/platform'
+import { finalizeAttachments } from '@lib/web-bridge/attachments'
 import {
   changedDirectories,
   collectChangedFiles,
@@ -2270,12 +2271,16 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
       )
       let status: 'pending' | 'no_live_turn'
       try {
+        // Mid-turn on the web the picked files go up now too.
+        const attachments = isWeb
+          ? await finalizeAttachments(conversationId, item.attachments)
+          : item.attachments
         status = (
           await window.api.chat.interject({
             conversationId,
             messageId,
             text: item.text,
-            attachments: item.attachments,
+            attachments,
             ...(item.voicePrompt ? { voicePrompt: true } : {}),
             ...(item.voiceLang ? { voiceLang: item.voiceLang } : {})
           })
@@ -2346,6 +2351,20 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
 
       try {
         const conversationId = await ensureConversationId()
+
+        // The Web UI holds picked files in the page until now: they go up
+        // here, each becoming a real attachment, before anything is composed
+        // or shown. A failure puts the draft and the chips back.
+        if (isWeb) {
+          try {
+            attachments = await finalizeAttachments(conversationId, attachments)
+          } catch (err) {
+            toast.show({ message: err instanceof Error ? err.message : String(err), tone: 'error' })
+            setDraft((prev) => (prev.trim().length > 0 ? prev : content))
+            setPendingAttachments((prev) => (prev.length > 0 ? prev : attachments))
+            return
+          }
+        }
 
         const userMessage: ChatMessage = {
           id: cryptoId(),
@@ -2487,7 +2506,8 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
       planMode,
       scrollToBottom,
       markSending,
-      sessionKey
+      sessionKey,
+      toast
     ]
   )
 
@@ -3427,7 +3447,7 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
       <TouchedFolders folders={folderStrip} />
       <div
         ref={scrollerRef}
-        className="relative flex flex-1 flex-col-reverse overflow-y-auto px-6 py-8"
+        className="relative flex flex-1 flex-col-reverse overflow-x-hidden overflow-y-auto px-6 py-8 max-sm:px-3 max-sm:py-5"
       >
         <div className="pointer-events-none absolute inset-x-0 top-0 z-10 px-6 pt-2">
           <div className="pointer-events-auto">
@@ -3725,7 +3745,11 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
               </div>
             )}
           </div>
-          <div className="flex w-full items-center gap-1 px-1.5 pb-1.5">
+          {/* Below 640px the footer wraps into two rows — the chips (model,
+              meter, logs, files) then the action buttons — because seven
+              controls plus a model name never fit one 360px line without
+              squeezing the send button off the end. */}
+          <div className="flex w-full items-center gap-1 px-1.5 pb-1.5 max-sm:flex-wrap">
             {/* Reasoning effort and chat mode ride INSIDE this card's chip
                 rows now (two rows above the model search) — one panel for
                 every model knob instead of three composer pills. */}
@@ -3825,6 +3849,8 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
                 title={planMode ? t('chat.planMode.onTitle') : t('chat.planMode.offTitle')}
                 className={cn(
                   'me-1 flex h-7 shrink-0 cursor-pointer items-center gap-1 rounded-full border px-2 text-xs font-medium',
+                  // Leads the wrapped action row on phones.
+                  'max-sm:ms-auto',
                   planMode
                     ? 'border-accent/40 bg-accent/10 text-accent'
                     : 'border-border bg-surface text-muted hover:text-fg'
@@ -3934,7 +3960,7 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
                   title={staging ? t('chat.upload.copyingWait') : t('chat.send')}
                   aria-label={t('chat.send')}
                   className={cn(
-                    'flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full',
+                    'flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full max-sm:h-9 max-sm:w-9',
                     'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
                     'disabled:cursor-not-allowed disabled:opacity-50',
                     'bg-primary text-primary-fg enabled:hover:brightness-110'
@@ -3964,7 +3990,7 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
                 title={!busy && staging ? t('chat.upload.copyingWait') : undefined}
                 aria-label={busy ? t('chat.stop') : t('chat.send')}
                 className={cn(
-                  'flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full',
+                  'flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full max-sm:h-9 max-sm:w-9',
                   'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
                   'disabled:cursor-not-allowed disabled:opacity-50',
                   busy
@@ -4016,7 +4042,7 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
               role="dialog"
               aria-modal="true"
               onClick={(e) => e.stopPropagation()}
-              className="wf-sheet-panel-end border-border bg-surface absolute inset-y-0 inset-e-0 flex w-[80vw] max-w-full flex-col overflow-hidden border-s shadow-xl"
+              className="wf-sheet-panel-end border-border bg-surface absolute inset-y-0 inset-e-0 flex w-[80vw] max-w-full flex-col max-sm:w-[92vw] overflow-hidden border-s shadow-xl"
             >
               <div className="border-border flex shrink-0 items-center justify-between border-b px-5 py-3">
                 <h2 className="text-fg min-w-0 flex-1 truncate text-sm font-semibold">
@@ -4061,7 +4087,7 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
               role="dialog"
               aria-modal="true"
               onClick={(e) => e.stopPropagation()}
-              className="wf-sheet-panel-end border-border bg-surface absolute inset-y-0 inset-e-0 flex w-[80vw] max-w-full flex-col overflow-hidden border-s shadow-xl"
+              className="wf-sheet-panel-end border-border bg-surface absolute inset-y-0 inset-e-0 flex w-[80vw] max-w-full flex-col max-sm:w-[92vw] overflow-hidden border-s shadow-xl"
             >
               <div className="border-border flex shrink-0 items-center justify-between border-b px-5 py-3">
                 <h2 className="text-fg min-w-0 flex-1 truncate text-sm font-semibold">
@@ -4088,7 +4114,7 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
                   {t('chat.files.fileCount', { count: presentFiles.length })}
                 </span>
               </div>
-              <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-4">
+              <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-4 max-sm:px-3">
                 <AttachmentList attachments={presentFiles} variant="grid" />
               </div>
             </aside>
@@ -4167,7 +4193,7 @@ function CompactionStartedCard({
   }, [])
   const elapsedMs = now - startedAt
   return (
-    <div className="border-border bg-surface w-full max-w-[85%] self-start rounded-2xl border px-4 py-3 text-sm">
+    <div className="border-border bg-surface w-full max-w-[85%] max-sm:max-w-full self-start rounded-2xl border px-4 py-3 text-sm">
       <div className="flex items-center justify-between gap-3">
         <span className="inline-flex items-center rounded-full bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-600 animate-pulse dark:text-blue-400">
           {t('chat.compactionCard.title')}
@@ -4427,7 +4453,14 @@ function WorkingFolderButton({
   const cardVisible = (open || pinned) && hasFolders
 
   return (
-    <div ref={rootRef} className="relative" onMouseEnter={onEnter} onMouseLeave={onLeave}>
+    // Reference folders are a machine act and the phone composer row has no
+    // space for them — desktop widths only.
+    <div
+      ref={rootRef}
+      className="relative max-sm:hidden"
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
+    >
       <button
         type="button"
         onClick={() => {
@@ -4540,7 +4573,7 @@ function TimelineList({
   const eventNumbers = entries.map((e) => (e.kind === 'turn.started' ? 0 : ++running))
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-3">
+    <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-3 max-sm:px-3">
       <div className="flex flex-col gap-1">
         {entries.map((entry, i) => {
           const isLast = i === entries.length - 1
@@ -5013,14 +5046,14 @@ function UserBubble({
   return (
     <div className="flex w-full flex-col gap-1.5 items-end">
       {transcribing ? (
-        <div className="bg-primary text-primary-fg max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed wrap-break-word">
+        <div className="bg-primary text-primary-fg max-w-[85%] max-sm:max-w-full rounded-2xl px-4 py-2.5 text-sm leading-relaxed wrap-break-word">
           <span className="animate-pulse">{t('chat.voice.transcribing')}</span>
         </div>
       ) : (
         hasContent && (
           <div
             data-select-root
-            className="bg-primary text-primary-fg max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed wrap-anywhere [&_h1]:text-inherit [&_h2]:text-inherit [&_h3]:text-inherit [&_h4]:text-inherit [&_code]:text-inherit [&_code]:bg-primary-fg/15 [&_pre_pre]:bg-primary-fg/10 [&_pre_pre]:text-inherit [&_pre_pre]:border-primary-fg/20 [&_a]:text-primary-fg [&_blockquote]:text-inherit [&_blockquote]:border-primary-fg/40 [&_table]:border-primary-fg/20 [&_th]:border-primary-fg/20 [&_td]:border-primary-fg/20 [&_thead]:bg-primary-fg/10 [&_hr]:border-primary-fg/30"
+            className="bg-primary text-primary-fg max-w-[85%] max-sm:max-w-full rounded-2xl px-4 py-2.5 text-sm leading-relaxed wrap-anywhere [&_h1]:text-inherit [&_h2]:text-inherit [&_h3]:text-inherit [&_h4]:text-inherit [&_code]:text-inherit [&_code]:bg-primary-fg/15 [&_pre_pre]:bg-primary-fg/10 [&_pre_pre]:text-inherit [&_pre_pre]:border-primary-fg/20 [&_a]:text-primary-fg [&_blockquote]:text-inherit [&_blockquote]:border-primary-fg/40 [&_table]:border-primary-fg/20 [&_th]:border-primary-fg/20 [&_td]:border-primary-fg/20 [&_thead]:bg-primary-fg/10 [&_hr]:border-primary-fg/30"
           >
             <Markdown content={content} />
           </div>
@@ -5217,7 +5250,7 @@ function AssistantBubble({
   return (
     <div className="flex w-full flex-col gap-2 items-start">
       {showThinking ? (
-        <div className="bg-surface border-border text-fg max-w-[85%] rounded-2xl border px-4 py-2.5 text-sm leading-relaxed wrap-break-word">
+        <div className="bg-surface border-border text-fg max-w-[85%] max-sm:max-w-full rounded-2xl border px-4 py-2.5 text-sm leading-relaxed wrap-break-word">
           <span className="text-muted italic">
             {awaitingApproval ? (
               <span className="animate-pulse">{t('chat.awaitingPermission')}</span>
@@ -5344,7 +5377,7 @@ function renderSegments(
       <div
         key={`md-${textRun}`}
         data-select-root
-        className="bg-surface border-border text-fg max-w-[85%] rounded-2xl border px-4 py-2.5 text-sm leading-relaxed self-start wrap-anywhere"
+        className="bg-surface border-border text-fg max-w-[85%] max-sm:max-w-full rounded-2xl border px-4 py-2.5 text-sm leading-relaxed self-start wrap-anywhere"
       >
         <Markdown content={textBuffer} />
       </div>

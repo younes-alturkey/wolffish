@@ -1,0 +1,82 @@
+{
+  "id": "2026-07-07_11-07-45_095-1b15f0",
+  "title": "Opening Greeting",
+  "model": "deepseek-v4-pro",
+  "createdAt": 1783411665094,
+  "updatedAt": 1783411672965,
+  "messages": [
+    {
+      "id": "m_1783411665111_ea7ece",
+      "role": "user",
+      "content": "hello",
+      "timestamp": 1783411665111
+    },
+    {
+      "id": "m_1783411665111_641f80",
+      "role": "assistant",
+      "content": "Hey Younes. What are we biting into today? 🐟",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783411665112_20ahak",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro",
+          "conversationId": "2026-07-07_11-07-45_095-1b15f0"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1783411665112_20ahak",
+          "segmentId": "seg_2",
+          "delta": "Hey Younes. What are we biting into today? 🐟",
+          "conversationId": "2026-07-07_11-07-45_095-1b15f0"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1783411665112_20ahak",
+          "segmentId": "seg_15",
+          "stopReason": "end_turn",
+          "iterationCount": 1,
+          "reasoningContent": "The user just said \"hello.\" They've been working on Wolffish — a local-first AI desktop agent. This is a casual greeting. Let me keep it brief and warm. I should check if there's any ongoing context I should be aware of, but for a simple \"hello\" I'll just respond naturally.\n\nActually, let me check if there's been anything recent I should follow up on. A quick memory check might be good — they might be coming back after a break and expecting me to pick up where we left off.\n\nLet me just respond naturally first and see where they want to go.",
+          "conversationId": "2026-07-07_11-07-45_095-1b15f0"
+        }
+      ],
+      "stopReason": "end_turn",
+      "timestamp": 1783411665111
+    }
+  ],
+  "stats": {
+    "allTime": {
+      "processingMs": 7799,
+      "apiMs": 4269,
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 21,
+      "outputTokens": 138,
+      "cacheReadTokens": 13184,
+      "cacheCreationTokens": 0,
+      "cost": 0.0002438958
+    },
+    "lastTurn": {
+      "endedAt": 1783411672911,
+      "elapsedMs": 7799,
+      "apiMs": 4269,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 21,
+      "outputTokens": 138,
+      "cacheReadTokens": 13184,
+      "cacheCreationTokens": 0,
+      "cost": 0.0002438958,
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro"
+    },
+    "meter": {
+      "contextTokens": 13205,
+      "contextBudget": 1000000,
+      "compactionAt": 725424,
+      "model": "deepseek-v4-pro"
+    }
+  }
+}

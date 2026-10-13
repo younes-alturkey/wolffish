@@ -1,0 +1,55 @@
+---
+title: "user.md"
+description: "Tell Wolffish about yourself"
+---
+
+# Telling Wolffish About You
+
+Located at `brain/identity/user.md`, this file tells Wolffish about you. The more context you provide, the more relevant and personalized the agent's responses become.
+
+## What to Include
+
+- Your name and role
+- Tech stack and tools you use
+- Projects you're working on
+- Preferences (coding style, commit conventions, etc.)
+- Anything that helps the agent understand your context
+
+## Example
+
+```markdown
+# User Profile
+
+## About Me
+- Name: Younes
+- Role: Senior Full-stack Engineer
+- OS: macOS
+- Editor: VS Code
+
+## Tech Stack
+- TypeScript, React, Node.js, Electron
+- Tailwind CSS, Vite
+- Git with conventional commits
+
+## Current Projects
+- Wolffish: Local-first AI desktop agent
+- Using npm, not yarn or pnpm
+
+## Preferences
+- Prefer concise code with clear variable names
+- Always use TypeScript strict mode
+- Prefer explicit imports over barrel exports
+- Test with Vitest
+```
+
+## How It's Used
+
+`user.md` is included in the identity section of the context window (15% budget allocation). The RAS doesn't filter it — it's always included because identity context is always relevant.
+
+The LLM uses this information to tailor responses: suggesting the right package manager, using your preferred coding patterns, understanding the context of your questions without you having to explain your setup every time.
+
+## Where It Lives in the App
+
+Since **v1.0.282** [`soul.md`](/configuration/soul-md), [`user.md`](/configuration/user-md) and [`agents.md`](/configuration/agents-md) are **one Customization page with three tabs** — the shape [your phone](/integrations/mobile-app) already used — rather than three sidebar entries opening three near-identical editors. Each tab states in a line **what its document is actually for**, so the choice no longer rests on a single word.
+
+A draft you leave in one tab is **still there when you come back** from another, and that tab **carries a dot while it holds unsaved changes** — which is exactly the draft you can no longer see. Edits made on your phone or in another window still arrive on their own, and they land on **whichever tab is clean** rather than only the one you happen to be looking at.

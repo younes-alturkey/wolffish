@@ -29,7 +29,18 @@ import {
 import type { AskUserRequest, AskUserResponse } from '@main/runtime/cerebellum'
 import { turnScope, type CorpusEvents } from '@main/runtime/corpus'
 import type { ChatHistoryMessage } from '@preload/index'
-import type { WebContents } from 'electron'
+
+/**
+ * Where a turn's frames go: a renderer's WebContents, or a Web UI socket
+ * wearing the same two methods. Structural on purpose — the channel never
+ * needed more of WebContents than this, and the web server hands it a
+ * per-connection object so a chat:send from a browser streams back to that
+ * browser alone, exactly as a window's does to that window.
+ */
+export type TurnSender = {
+  send: (channel: string, payload: unknown) => void
+  isDestroyed: () => boolean
+}
 
 /**
  * Min gap between live mirror snapshots of an in-flight in-app turn — same
@@ -147,7 +158,7 @@ export class ElectronChannel {
 
   /** chat:send IPC handler. Returns the turnId synchronously. */
   send(
-    sender: WebContents,
+    sender: TurnSender,
     payload: {
       history: ChatHistoryMessage[]
       conversationId?: string | null
@@ -431,7 +442,7 @@ export class ElectronChannel {
   private createSink(
     turnId: string,
     conversationId: string | null,
-    sender: WebContents,
+    sender: TurnSender,
     userMessage: ConversationMessage | null,
     /** The turn's accumulator, owned by send() so the checkpoint can read it too. */
     acc: AssistantAccumulator,

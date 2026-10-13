@@ -436,3 +436,27 @@ textarea,
 .docx-surface {
   max-width: 100%;
 }
+
+/* The Web UI — the same bundle in a browser (main.tsx flags the document).
+   No titlebar drag strip (it is a fixed 40px band that would swallow taps),
+   the dynamic-viewport height so the composer sits above a phone's browser
+   toolbar, and the home-indicator inset on a phone that keeps the app on its
+   home screen. */
+html.wf-web .app-titlebar {
+  display: none;
+}
+
+html.wf-web {
+  height: 100dvh;
+  -webkit-text-size-adjust: 100%;
+}
+
+html.wf-web body {
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.wf-web #root {
+  padding-bottom: env(safe-area-inset-bottom);
+  box-sizing: border-box;
+}

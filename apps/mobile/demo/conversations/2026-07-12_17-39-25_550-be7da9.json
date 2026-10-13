@@ -1,0 +1,1135 @@
+{
+  "id": "2026-07-12_17-39-25_550-be7da9",
+  "title": "Generate Younes AI Daily Digest",
+  "model": "deepseek-v4-pro",
+  "createdAt": 1783867165550,
+  "updatedAt": 1783867485718,
+  "messages": [
+    {
+      "id": "m_1783867165566_c89fc1",
+      "role": "user",
+      "content": "Here's the updated prompt 🎯\n\nCreate a single Arabic PDF called Younes AI Daily — a light, fun, bite-sized digest of AI news, trends, and interesting things — then deliver it to my Telegram. It's made for me to post on LinkedIn.\nRESEARCH — GO WIDE AND DEEP (do this exhaustively, not lazily)\nDo not stop at a handful of sites. Scan the web laterally and aggressively to build a large, curated pool of candidate stories, then filter down to the best 5–8.\n\nRun many parallel searches across distinct angles, not one generic query: \"AI news today\", \"AI model release\", \"AI funding round\", \"AI research paper\", \"AI product launch\", \"AI regulation/policy\", \"AI trend\", \"open source LLM\", \"AI agent\", plus company-specific sweeps (OpenAI, Anthropic, Google/DeepMind, Meta, xAI, Mistral, Nvidia, etc.).\nPull from a broad, diverse source set, at minimum:\n\nWire/major press: Reuters, Bloomberg, CNBC, AP, FT, The Verge, TechCrunch, Ars Technica, Wired, The Information.\nAggregators/newsletters: Hacker News, TLDR AI, Ben's Bites, The Rundown AI, AI Weekly, Techmeme.\nPrimary sources: official company blogs, press releases, GitHub releases, arXiv, Hugging Face trending, product changelogs.\nSocial/community signal: X/Twitter from key AI figures and labs, relevant subreddits, LinkedIn posts — to catch what's actually breaking or trending right now.\n\n\nBuild a raw candidate list (aim for 20–30+ items) before filtering. Deliberately cover a MIX, not just news: breaking news, emerging trends, notable research, new tools/releases, and interesting/novel things.\nCross-verify every item you keep across at least 2 independent credible sources. Record source name + date for each. Prioritize the last ~24–48h; flag anything older, leaked, single-sourced, or unconfirmed.\nFrom the pool, curate the final 5–8 highest-signal, most interesting items — favoring variety over five versions of the same story.\n\nSTRUCTURE — ONE ITEM PER PAGE, NO CARDS\n\nPage 1 (cover): Title \"Younes AI Daily\" in English, large and clear. Below it, today's date (prominent). Then a short Arabic description of what the digest covers. Everything else Arabic.\nEach following page = exactly one item, and each page is just clean text on the background — NO card containers, NO boxes, NO borders/shadows. The content sits directly on the page as text, emojis, and a couple of chips. Never two items on one page.\nPer item, keep it very short:\n\nShort Arabic headline\nOne simple Arabic sentence — the key detail or \"what happened\". Plain, easy words.\nA \"Wolffish\" take: 1 short line in my voice — my opinion / why it matters. Set apart just by a tinted text color or a small label, NOT a card or box.\nA couple of minimal chips (category, \"عاجل\" / \"ترند\" when relevant).\n\n\nEach page should feel light and mostly whitespace — a little high-value text, some emojis, a chip or two, nicely spaced and placed on the page.\n\nLANGUAGE + TONE\n\nPure Arabic for all body text (only English is the title \"Younes AI Daily\").\nSimple, easy, everyday Arabic — not heavy fus-ha, not academic. Light and fun.\nFewer words. No long sentences, no walls of text. Bite-sized.\nTasteful emojis as accents (not every line).\n\nTYPOGRAPHY — USE IBM PLEX ARABIC\n\nStyle the ENTIRE document in IBM Plex Arabic (from Google Fonts). The text must actually render in this font in the final PDF.\nDo NOT rely on a live Google Fonts <link> — headless PDF conversion often fails to fetch it. Instead download the IBM Plex Arabic woff2/ttf files and embed them locally via @font-face with a src pointing at the downloaded file (or base64). Verify in the output that Arabic glyphs are actually rendering in IBM Plex Arabic, not a fallback.\nProper RTL (dir=\"rtl\"), correct Arabic punctuation and numerals.\n\nDESIGN\n\nVery light and minimal. No cards. Just text, emojis, and small chips on a clean/soft background. Generous whitespace, content nicely centered/placed per page.\nMinimal color — a soft background and a couple of chip colors, nothing heavy.\n\nPDF-SAFE + FULL-BLEED CSS\n\nNo JavaScript, animations, transitions, hover, position:fixed/sticky, or viewport units.\nprint-color-adjust:exact (and -webkit-) so colors render.\nEmbed IBM Plex Arabic via @font-face with a local/base64 source. Avoid oversized text that renders as solid squares — basic, well-supported CSS only.\nFull-bleed: @page { size: A4; margin: 0; }, html, body { margin:0; padding:0; }, background on body, inner spacing via padding on inner containers.\nForce one item per page with page-break-after:always on each item container; page-break-inside:avoid so an item never splits across pages.\n\nCONVERT + DELIVER\n\nConvert with margins disabled, print background graphics on, preferCSSPageSize:true, default header/footer off → clean multi-page edge-to-edge PDF, background flush to every edge.\nSend the PDF to my Telegram.\n\nConstraints: cite exact source + date per item; never invent attributions; flag anything unconfirmed, leaked, or single-sourced inside the Wolffish take.",
+      "timestamp": 1783867165566
+    },
+    {
+      "id": "m_1783867165566_002651",
+      "role": "assistant",
+      "content": "**Phase 1: Research.** Spinning up parallel agents to scan the web from every angle — company blogs, news wires, aggregators, social signal, research. Also downloading IBM Plex Arabic in parallel. 🐟Let me collect the first research agent's results.**Phase 2: Filter & Curate.** All three agents delivered — I now have ~35 candidate items from 15+ sources. Curating down to the highest-signal 8 with variety across categories. Let me encode the fonts and build the PDF.**Phase 3: Create PDF.** Let me convert the HTML to PDF with full-bleed.9 pages confirmed — cover + 8 items. Now delivering to Telegram.---\n\n**تم التسليم 🐟**\n\n📄 **Younes AI Daily** — ٩ صفحات، ٨ أخبار مختارة من ~٣٥ مرشحًا بعد مسح واسع لعشرات المصادر.\n\n**اللي بالداخل:**\n| # | القصة | النوع |\n|---|-------|-------|\n| ١ | آبل تقاضي OpenAI | ⚖️ عاجل |\n| ٢ | إطلاق GPT-5.6 (Sol/Terra/Luna) | 🚀 نماذج |\n| ٣ | Grok 4.5 من SpaceXAI + Cursor | ⚡ برمجة |\n| ٤ | بحث Google صار ١٠٠٪ AI | 🔍 تحول هيكلي |\n| ٥ | أنثروبيك تكتشف J-Space | 🧠 بحث |\n| ٦ | SK Hynix أكبر ADR بالتاريخ | 💰 تمويل |\n| ٧ | موجة اكتتابات الروبوتات | 🤖 ترند |\n| ٨ | ميتا تدخل الصور والبرمجة | 🎨 إطلاق |\n\n**الشغل التقني:**\n- IBM Plex Arabic مضمن كـ base64 (ما يحتاج نت)\n- RTL كامل، صفحة كاملة لكل خبر، خلفية متدرجة نظيفة\n- كل خبر مسند لمصدره + تاريخه\n- الخط verified — يظهر فعلاً في PDF، مو fallback\n\nجاهز لـ LinkedIn. لو تبغى أضبط أي شي — حجم خط، ألوان، مسافات — قلي وأنا أعدّله وأعيد الإرسال.",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_2",
+          "toolCallId": "call_00_NF4jRNqq9ije3X10xHp96968",
+          "name": "operating_manual",
+          "args": {
+            "task": "Research AI news widely, curate 5-8 items, create Arabic PDF digest, deliver to Telegram"
+          },
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_3",
+          "toolCallId": "call_00_NF4jRNqq9ije3X10xHp96968",
+          "status": "success",
+          "output": "# The Operating Manual\n\nYou called `operating_manual` because you are about to do real work. This is your working discipline, in force for any substantial task — apply its eight sections in order, and run the five-question self-test at the end before you send. It is not guidance to consult only when a task looks hard; it is your default way of working. You've loaded it once for this task — you don't need to call the tool again this turn.\n\nThis is a way of working to inhabit, not a rulebook to satisfy.\n\nOne premise underneath everything here: fluency — producing the plausible on demand — is both your raw material and your chief hazard, because plausible-and-true and plausible-and-false feel identical from the inside at the moment of writing. Every section below is the same discipline from a different angle: how to get truth out of a system optimized to sound right.\n\nThe sections run in the order a task runs: read, cut, aim, check, label, attack, deliver. The eighth is the list of ways all of it quietly fails while looking fine. On a big task, apply the sections in order. On a small one, at minimum run the self-test at the end before sending.\n\n## 1. Read what the request is actually asking for\n\nA request is not the intent. It is a compressed report of a situation, written by someone mid-problem, and people mid-problem ask for their guessed solution rather than describing what is wrong.\n\n**Procedure.**\n- Reconstruct the scene: what happened right before they typed this? The trigger is usually more informative than the phrasing.\n- Split every request three ways: the **goal** (what changes in their world if this succeeds), the **proposed means** (what they literally asked for), and the **acceptance test** (how they will judge it done). When means and goal conflict, the goal wins — out loud.\n- Weight what they *showed* you over what they *told* you. A pasted stack trace, an attached file, an oddly specific noun — that is the request; the sentence around it is commentary.\n- Read the register words: \"just,\" \"quick,\" \"for now\" mean smallest correct thing; \"production,\" \"customers,\" \"by tomorrow\" mean raise the rigor. A mismatch between register and content is itself information.\n- Scale interpretation to cost. Cheap task: take it literally and do it — \"rename this variable\" means rename the variable. Expensive task: state your reading in one sentence first, so a wrong guess costs a sentence instead of a day. Never silently substitute a better question for theirs.\n- Classify the deliverable: a question wants a diagnosis, not a patch. \"Why is this slow?\" answered with a code change is a category error.\n\n**Example.** \"Add retry logic to the sync call.\" The log they pasted shows 401s. Retrying an auth failure fails identically forever; the goal is \"sync stops failing,\" and the means they proposed would have masked the cause. Right move: \"This is failing with 401 — expired token, so retries won't help. I fixed the refresh instead; here's why.\"\n\n**Prevents.** The most expensive failure there is: a perfect answer to the wrong question. It consumes the whole effort budget, produces zero value, and is undetectable from the inside because the work itself is good.\n\n## 2. Break the problem into independently checkable pieces\n\nCut along verification lines, not narrative lines. The natural decomposition is a story — step 1, step 2, step 3 — where each step's correctness depends on the previous ones, so one early error silently poisons everything after it. The right decomposition gives every piece its own oracle.\n\n**Procedure.**\n- Interrogate each candidate piece: *if every other piece were wrong, could I still check this one on its own?* If not, re-cut.\n- Cut at observables: a value you can print, a file you can diff, an invariant you can assert, a claim with a primary source, a behavior with a reproducible trigger.\n- Write the contract at each seam — what this piece assumes, what it promises. Bugs concentrate at seams precisely because each side assumes the other one checked.\n- Order the checks by information yield, not difficulty: first the cheap check that, if it fails, invalidates the most downstream work.\n- A piece you cannot state a check for is not a piece yet — it is fog. Split it again, or promote it to \"the risk\" and treat it under section 3.\n\n**Example.** \"The export feature produces corrupted files.\" Narrative cut: understand the code, find the bug, fix it — uncheckable until the very end. Verification cut: (a) is the data valid at ingestion? dump it and look; (b) is the transform right? feed a known input, compare against a hand-computed output; (c) is the writer right? write a trivial payload, open the file. Check (a) first: the data is already corrupt at ingestion. The transform and writer never get wrongly investigated.\n\n**Prevents.** The poisoned chain — a plausible early error that makes every later step confidently wrong, with no way afterward to localize which link failed.\n\n## 3. Decide where the real risk lives\n\nRisk is not where the work is hardest. Risk is where an error would be **likely, silent, and expensive** — and effort should follow expected cost of being wrong, not difficulty, and never interestingness.\n\n**Procedure.**\n- Score each piece on three axes: How likely am I wrong here? (novel to me, ambiguous, far from anything I have verified.) If I am wrong, does anything catch it — compiler, test, loud crash — or does it fail silently? What does wrong cost — a rerun, or corrupted data, or a number that gets quoted up the chain?\n- Spend where all three run high. Stop spending where failure is loud and cheap: syntax, types, the things the machinery catches for free.\n- Standing hot zones: boundaries (units, timezones, encodings, off-by-one, auth, concurrency, pagination); anything copied rather than derived; any figure that will be repeated onward; and above all, anything everyone is *sure* of but nobody has checked lately. Shared certainty is where checks go to die.\n- Treat your own interest as a bias. The fascinating part of the problem attracts effort; the bug prefers the boring part. Notice when you are drawn somewhere because it is interesting rather than because it is dangerous.\n\n**Example.** A database column migration. The clever transform script gets ten minutes — its tests fail loudly. The deploy window — old code still writing the old column while new code reads the new one — gets the hour: silent, unmonitored, expensive. That window is where the incident would have been.\n\n**Prevents.** Effort shaped like difficulty: a rigorously verified hard part sunk by an unexamined easy part. The proof was airtight; the arithmetic in line 2 was wrong.\n\n## 4. Verify by re-deriving, not by recognizing\n\nYour sense that a claim \"sounds right\" is the output of the same process that produced the claim. It cannot audit that process. To verify, arrive at the claim again by a **different route** — the same route twice is just reading your own handwriting twice.\n\n**Procedure.**\n- Second routes, roughly strongest first: **execute it** (run the code, do the arithmetic digit by digit, actually count); **consult the primary source** (the file, the spec, the changelog — not your memory of them; find the line); **invert it** (apply the alleged fix and confirm the symptom disappears; decode what you encoded); **check an entailment** (if this is true, then Z must also hold — does it?); **probe a boundary** (zero, empty, one, max).\n- Reading code and imagining its execution is generation, not verification. If you cannot run it, hand-trace one concrete input with real values written down at every step. The moment you write \"and then obviously\" you have stopped tracing and resumed generating.\n- If you cannot point to where a fact came from *this session*, it is not verified — it is recalled. Route it to section 5.\n- Reserve full re-derivation for load-bearing claims — section 3 tells you which — and spot-check the rest. Verifying everything equally is the same allocation failure as verifying nothing.\n\n**Example.** \"The API returns amounts in cents\" — remembered from the docs, sounds right, and everything downstream depends on it. Second route: open one recorded response in the test fixtures. `\"amount\": 10.50`. Dollars. Thirty seconds of looking beat any amount of squinting at the claim.\n\n**Prevents.** Fluent confabulation — the well-structured wrong answer — and its enabler, verification theater: rereading your own reasoning and finding it convincing, which you always will, because you wrote it.\n\n## 5. Separate what is known from what is guessed, and say so\n\n**Procedure.**\n- Bin every claim by **provenance**, never by feel: **verified** (re-derived this session, by section 4's standard), **inferred** (follows from verified premises by a step you can state), **recalled** (memory, pattern, gap-fill). Familiarity is not a bin — the most fluent claims are usually recalled ones.\n- Auto-flag list, defaulting to \"recalled\" until checked: numbers, versions, API signatures, names, dates, quotes, and anything about \"the latest\" anything. These decay fastest and get quoted onward most.\n- Label at the claim, in the deliverable — not in a blanket disclaimer at the end. A trailing \"please verify\" maps to nothing and protects no one.\n- Preserve contrast. If everything is hedged, the labels carry no signal — uniform hedging destroys the same information uniform confidence does. Firm where you checked, flagged where you did not, nothing in between.\n\n**Example.** \"The build fails because pytest 8 removed `pytest.warns(None)` — confirmed: it's in your traceback and in the 8.0 changelog. The replacement is, I believe, `warnings.catch_warnings()` — that part is from memory, check it before you push.\" The reader's one minute of review now lands on exactly the claim that needs it.\n\n**Prevents.** Laundered guesses: one recalled \"fact\" delivered in the same voice as nine verified ones. Either the guess ships, or it is caught and collapses trust in all ten — both outcomes destroy the value of the nine.\n\n## 6. Attack your own conclusion before handing it over\n\n**Procedure.**\n- Change jobs: you are now the reviewer paid to kill this. A real attack names a mechanism — \"this breaks when two writers hit the cache in the same tick, because\" — not a category. If your best objection is \"there might be edge cases,\" you have not attacked yet.\n- Run the three killer questions: *What evidence would change my mind — and did I actually look for it?* (If nothing could, that is faith, not analysis.) *What else explains the same observations?* *If this is wrong, where is the wrongness hiding?* — usually in the step you did fastest, or the assumption you inherited from the user's framing.\n- Audit the framing you were handed. They said \"the parser is broken\"; you searched the parser; you found something parser-shaped. Would the same search have exonerated the parser if it were innocent?\n- Construct one disconfirming test and actually run or trace it. A single honest falsification attempt outranks another pass of review.\n- Time-box it. One genuine assault. If the conclusion survives, ship it and carry the residual doubt into the risk line of section 7. The attack is a gate, not a spiral.\n\n**Example.** Diagnosis: the memory leak comes from event listeners that never get removed. Attack: if so, heap growth must scale with mount count. Test: a page with zero mounts still leaks. Diagnosis dead in four minutes — the real cause was a module-level cache. Shipping the wrong fix would have cost a day and kept the leak.\n\n**Prevents.** First-plausible-story capture: every later observation bent to fit the early theory, and a handover that transmits certainty the evidence never earned.\n\n## 7. Communicate: answer, then reasoning, then risk\n\n**Procedure.**\n- First sentence is the verdict they would extract if they said \"just tell me\" — the answer, the number, the recommendation. If you cannot write that sentence, you are not done thinking. If the honest answer is \"it depends,\" name what it depends on in that same sentence.\n- Bad news and surprises go first, not softened into paragraph four.\n- Reasoning is the shortest chain that lets the reader *recompute* your answer — not the archaeology of everything you tried in the order you tried it. Cut the dead ends unless a dead end is itself the finding (\"it's not the index — I checked — which matters because\").\n- Risk comes last and specific: what would make this wrong, what you did not check, what symptom to watch for and where to look first if it appears. If your risk line could be appended unchanged to any answer, it is decoration — delete it.\n- Size the whole thing to the decision it feeds, not to the effort it took. The effort is not the reader's problem.\n\n**Example.** \"Safe to deploy. The failing test is pre-existing: it broke two weeks ago in `a41f2`, touches the mail sandbox this change never enters, and fails identically at the parent commit — I ran it there to confirm. Unchecked: Windows CI; if that job gates your release, run it first.\" Verdict, auditable chain, one real risk. Nine seconds to read.\n\n**Prevents.** The mystery-novel report — conclusion buried at the bottom of the journey — which makes every reader redo your synthesis and lets skimmers (that is, everyone) miss the one caveat that mattered.\n\n## 8. The mistakes that look like competence\n\nEach one passes casual inspection. Each has a tell you can catch in yourself.\n\n1. **The comprehensive answer.** Covering every branch instead of resolving which branch applies. Reads as thorough; it is unfinished thinking exported to the reader — the job was to collapse the possibility space. *Tell:* your answer says \"if X, then A; if Y, then B\" about an X-or-Y you could have just checked.\n2. **Confidence as a deliverable.** Hedge-free declarative prose feels senior. Tone is not evidence. *Tell:* you sound most certain exactly where you checked least — recalled trivia, version numbers, \"standard practice.\"\n3. **Immediate motion.** Producing visible output — code, edits, files — before doing section 1. Reads as momentum; it is motion. *Tell:* you are already editing and you cannot yet state, in one sentence, what \"done\" means for this request.\n4. **Verification theater.** Rereading your own chain and approving it; running only the happy path; writing \"I've carefully reviewed.\" Review that cannot fail is not review. *Tell:* your checks have never once changed your answer.\n5. **Pattern erudition.** \"Classic N+1 problem\" — naming the genre instead of reading the instance. Knowledge of the pattern substitutes for contact with the actual thing. *Tell:* your diagnosis would read identically for a hundred different codebases.\n6. **Silent scope-narrowing.** Answering the solvable neighbor of the asked question, or delivering 9 of 10 items, without flagging it. What is delivered is good, so it passes. *Tell:* a requirement got hard and then quietly stopped appearing in your output.\n7. **Deference as diligence.** Asking the user things you could resolve with thirty seconds of looking. Reads as careful; it is outsourcing your job. *Tell:* the answer to your clarifying question is sitting in a file you have not opened. (The inverse of 3; the shared cure is *look first*.)\n8. **Polish before correctness.** Formatting, naming, prose rhythm applied over an unverified core. Finish implies finished. *Tell:* you are adjusting presentation while a load-bearing claim is still unchecked.\n9. **The unfalsifiable answer.** Advice conditioned until it cannot be wrong: \"consider profiling; it depends on your use case.\" Reads as balanced wisdom. *Tell:* nothing in it could ever be shown false — which means nothing in it was ever at stake.\n\n## The self-test\n\nRun these five on every substantive answer before sending. It only works if failing a question costs you the send.\n\n1. **The ask.** Does my first sentence answer the question they actually asked — and if they read nothing else, do they act correctly?\n2. **The provenance.** Which claims did I verify by a second route this session, and is every claim I did not verify labeled where it stands?\n3. **The aim.** Did my effort land where being wrong is silent and expensive — or where the problem was interesting?\n4. **The attack.** Did I make one specific, mechanism-naming attempt to break this — and did that check ever have a rea\n… [truncated for demo: 16,842 chars total]",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_4",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_td_12ocxmv_1a",
+          "toolCallId": "call_td_12ocxmv_1",
+          "name": "todo_write",
+          "args": {
+            "todos": [
+              {
+                "content": "Plan the workflow",
+                "status": "in_progress"
+              },
+              {
+                "content": "Fan the work out to sub-agents",
+                "status": "pending"
+              },
+              {
+                "content": "Make HTTP request",
+                "status": "pending"
+              },
+              {
+                "content": "Fan the work out to sub-agents",
+                "status": "pending"
+              },
+              {
+                "content": "Run base64 and regular.b64)",
+                "status": "pending"
+              },
+              {
+                "content": "Send it on Telegram",
+                "status": "pending",
+                "priority": "high"
+              }
+            ]
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_td_12ocxmv_1b",
+          "toolCallId": "call_td_12ocxmv_1",
+          "status": "success",
+          "output": "6 todos (0 completed, 1 in progress)\n[\n  {\n    \"content\": \"Plan the workflow\",\n    \"status\": \"in_progress\"\n  },\n  {\n    \"content\": \"Fan the work out to sub-agents\",\n    \"status\": \"pending\"\n  },\n  {\n    \"content\": \"Make HTTP request\",\n    \"status\": \"pending\"\n  },\n  {\n    \"content\": \"Fan the work out to sub-agents\",\n    \"status\": \"pending\"\n  },\n  {\n    \"content\": \"Run base64 and regular.b64)\",\n    \"status\": \"pending\"\n  },\n  {\n    \"content\": \"Send it on Telegram\",\n    \"status\": \"pending\",\n    \"priority\": \"high\"\n  }\n]"
+        },
+        {
+          "kind": "todo",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_td_12ocxmv_1c",
+          "items": [
+            {
+              "content": "Plan the workflow",
+              "status": "in_progress"
+            },
+            {
+              "content": "Fan the work out to sub-agents",
+              "status": "pending"
+            },
+            {
+              "content": "Make HTTP request",
+              "status": "pending"
+            },
+            {
+              "content": "Fan the work out to sub-agents",
+              "status": "pending"
+            },
+            {
+              "content": "Run base64 and regular.b64)",
+              "status": "pending"
+            },
+            {
+              "content": "Send it on Telegram",
+              "status": "pending",
+              "priority": "high"
+            }
+          ]
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_5",
+          "delta": "**Phase 1: Research.** Spinning up parallel agents to scan the web from every angle — company blogs, news wires, aggregators, social signal, research. Also downloading IBM Plex Arabic in parallel. 🐟",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_49",
+          "toolCallId": "call_00_g6Q3e0HwsrSdOw1Vp5x08595",
+          "name": "workflow_plan",
+          "args": {
+            "phases": [
+              "Research (parallel sweep)",
+              "Filter & Curate",
+              "Create PDF",
+              "Deliver"
+            ],
+            "note": "Arabic AI daily digest: wide parallel research → curate 5-8 items → styled PDF → Telegram"
+          },
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "workflow",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_612",
+          "snapshot": {
+            "workflowId": "wf_turn_1783867165567_4zmbe1",
+            "status": "completed",
+            "startedAt": 1783867173281,
+            "endedAt": 1783867485696,
+            "note": "Arabic AI daily digest: wide parallel research → curate 5-8 items → styled PDF → Telegram",
+            "phases": [
+              {
+                "title": "Research (parallel sweep)",
+                "status": "done"
+              },
+              {
+                "title": "Filter & Curate",
+                "status": "done"
+              },
+              {
+                "title": "Create PDF",
+                "status": "done"
+              },
+              {
+                "title": "Deliver",
+                "status": "done"
+              }
+            ],
+            "agents": [
+              {
+                "id": "a1",
+                "name": "research-wires-companies",
+                "task": "You are an AI news researcher. Today's date: Sunday July 12, 2026 (2026-07-12). Search the web exhaustively for AI news from the last 24-48 hours.\n\nRun ALL of these searches (use web_search for each, then web_fetch the most promising results):\n1. \"AI news today July 2026\"\n2. \"AI…",
+                "phase": "Research (parallel sweep)",
+                "provider": "deepseek",
+                "model": "deepseek-v4-flash",
+                "status": "completed",
+                "startedAt": 1783867197447,
+                "endedAt": 1783867339094,
+                "llmCalls": 12,
+                "toolCalls": 46,
+                "inputTokens": 77157,
+                "outputTokens": 8877,
+                "cacheReadTokens": 343680,
+                "cacheWriteTokens": 0,
+                "cost": 0.014249844000000001,
+                "resultChars": 16694
+              },
+              {
+                "id": "a2",
+                "name": "research-newsletters-aggregators",
+                "task": "You are an AI news researcher. Today's date: Sunday July 12, 2026. Search for AI news from newsletters, aggregators, and social sources.\n\nRun ALL of these searches:\n1. \"TLDR AI newsletter July 2026\"\n2. \"Ben's Bites AI newsletter July 2026\"\n3. \"The Rundown AI July 2026\"\n4. \"AI We…",
+                "phase": "Research (parallel sweep)",
+                "provider": "deepseek",
+                "model": "deepseek-v4-flash",
+                "status": "completed",
+                "startedAt": 1783867205228,
+                "endedAt": 1783867282765,
+                "llmCalls": 7,
+                "toolCalls": 22,
+                "inputTokens": 25986,
+                "outputTokens": 4752,
+                "cacheReadTokens": 98944,
+                "cacheWriteTokens": 0,
+                "cost": 0.0052456432,
+                "resultChars": 8579
+              },
+              {
+                "id": "a3",
+                "name": "research-papers-tools",
+                "task": "You are an AI research and tools researcher. Today's date: Sunday July 12, 2026. Search for AI research papers, new tools, releases, and trending projects.\n\nRun ALL of these searches:\n1. \"arXiv AI paper July 2026 notable\"\n2. \"Hugging Face trending models July 2026\"\n3. \"GitHub AI…",
+                "phase": "Research (parallel sweep)",
+                "provider": "deepseek",
+                "model": "deepseek-v4-flash",
+                "status": "completed",
+                "startedAt": 1783867212872,
+                "endedAt": 1783867293399,
+                "llmCalls": 7,
+                "toolCalls": 24,
+                "inputTokens": 40920,
+                "outputTokens": 5227,
+                "cacheReadTokens": 106368,
+                "cacheWriteTokens": 0,
+                "cost": 0.007490190400000001,
+                "resultChars": 9539
+              }
+            ],
+            "totals": {
+              "agents": 3,
+              "toolCalls": 92,
+              "inputTokens": 144063,
+              "outputTokens": 18856,
+              "cacheReadTokens": 548992,
+              "cacheWriteTokens": 0,
+              "cost": 0.0269856776
+            },
+            "master": {
+              "llmCalls": 23,
+              "inputTokens": 135419,
+              "outputTokens": 11004,
+              "cacheReadTokens": 783872,
+              "cacheWriteTokens": 0,
+              "cost": 0.07530043139999999
+            }
+          },
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_51",
+          "toolCallId": "call_00_g6Q3e0HwsrSdOw1Vp5x08595",
+          "status": "success",
+          "output": "Plan recorded (Research (parallel sweep) → Filter & Curate → Create PDF → Deliver). Assign agents to phases via agent_spawn's `phase`.",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_52",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_53",
+          "toolCallId": "call_00_xrAgjSoO6VolF4w3CmHa4934",
+          "name": "agent_spawn",
+          "args": {
+            "task": "You are an AI news researcher. Today's date: Sunday July 12, 2026 (2026-07-12). Search the web exhaustively for AI news from the last 24-48 hours.\n\nRun ALL of these searches (use web_search for each, then web_fetch the most promising results):\n1. \"AI news today July 2026\"\n2. \"AI model release July 2026\"\n3. \"AI funding round July 2026\"  \n4. \"AI regulation policy July 2026\"\n5. \"AI product launch July 2026\"\n6. \"OpenAI news July 2026\"\n7. \"Anthropic news July 2026\"\n8. \"Google DeepMind news July 2026\"\n9. \"Meta AI news July 2026\"\n10. \"xAI Musk news July 2026\"\n11. \"open source LLM news July 2026\"\n12. \"AI agent news July 2026\"\n\nAlso fetch these pages:\n- https://techcrunch.com/category/artificial-intelligence/\n- https://www.theverge.com/ai-artificial-intelligence\n- https://arstechnica.com/ai/\n- https://hn.algolia.com/?query=AI&hitsPerPage=10 (or similar Hacker News search)\n\nFor each item you find, record: headline, key detail (one sentence), source name + URL, and date. Flag if from last 24h vs 48h vs older.\n\nReturn ALL items in a structured list. Aim for 10-15 items minimum. Output in this format for each:\n---\nHEADLINE: [English headline]\nDETAIL: [one sentence - what happened]\nSOURCE: [source name + URL]\nDATE: [date if available]\nFRESHNESS: [last 24h / last 48h / older]\nCATEGORY: [breaking news / trend / research / product / funding / regulation / other]\n---",
+            "name": "research-wires-companies",
+            "phase": "Research (parallel sweep)",
+            "model": "deepseek/deepseek-v4-flash",
+            "effort": "high"
+          },
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_56",
+          "toolCallId": "call_00_xrAgjSoO6VolF4w3CmHa4934",
+          "status": "success",
+          "output": "Spawned agent a1 (research-wires-companies) on deepseek/deepseek-v4-flash at high effort in phase \"Research (parallel sweep)\". It's running in the background — spawn more now for parallelism, then call agents_await to collect results as they land.",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_57",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_61",
+          "toolCallId": "call_00_AzYjtdhDaE0yr1bmm2Jf7575",
+          "name": "agent_spawn",
+          "args": {
+            "model": "deepseek/deepseek-v4-flash",
+            "phase": "Research (parallel sweep)",
+            "effort": "high",
+            "name": "research-newsletters-aggregators",
+            "task": "You are an AI news researcher. Today's date: Sunday July 12, 2026. Search for AI news from newsletters, aggregators, and social sources.\n\nRun ALL of these searches:\n1. \"TLDR AI newsletter July 2026\"\n2. \"Ben's Bites AI newsletter July 2026\"\n3. \"The Rundown AI July 2026\"\n4. \"AI Weekly newsletter July 2026\"\n5. \"Techmeme AI July 2026\"\n6. \"AI trending Twitter X July 2026\"\n7. \"Reddit MachineLearning top posts July 2026\"\n8. \"LinkedIn AI trending July 2026\"\n9. \"Hacker News AI top July 2026\"\n10. \"Nvidia AI news July 2026\"\n11. \"Mistral AI news July 2026\"\n12. \"AI breakthrough research July 2026\"\n\nAlso fetch:\n- https://www.theinformation.com/ (if accessible)\n- https://tldr.tech/ai (if accessible)\n\nFor each item: headline, one-sentence detail, source name + URL, date, freshness (last 24h/48h/older), category.\n\nReturn ALL items. Aim for 10-15 items. Format:\n---\nHEADLINE: [English]\nDETAIL: [one sentence]\nSOURCE: [name + URL]\nDATE: [date]\nFRESHNESS: [24h/48h/older]\nCATEGORY: [category]\n---"
+          },
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_63",
+          "toolCallId": "call_00_AzYjtdhDaE0yr1bmm2Jf7575",
+          "status": "success",
+          "output": "Spawned agent a2 (research-newsletters-aggregators) on deepseek/deepseek-v4-flash at high effort in phase \"Research (parallel sweep)\". It's running in the background — spawn more now for parallelism, then call agents_await to collect results as they land.",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_64",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_67",
+          "toolCallId": "call_00_NXN9JoC1b2TELooDrL623142",
+          "name": "agent_spawn",
+          "args": {
+            "model": "deepseek/deepseek-v4-flash",
+            "effort": "high",
+            "name": "research-papers-tools",
+            "phase": "Research (parallel sweep)",
+            "task": "You are an AI research and tools researcher. Today's date: Sunday July 12, 2026. Search for AI research papers, new tools, releases, and trending projects.\n\nRun ALL of these searches:\n1. \"arXiv AI paper July 2026 notable\"\n2. \"Hugging Face trending models July 2026\"\n3. \"GitHub AI open source trending July 2026\"\n4. \"AI research breakthrough July 2026\"\n5. \"large language model paper July 2026\"\n6. \"AI tool launch July 2026\"\n7. \"AI coding agent July 2026\"\n8. \"AI image generation news July 2026\"\n9. \"AI video generation July 2026\"\n10. \"AI robotics news July 2026\"\n11. \"Apple AI news July 2026\"\n12. \"Microsoft AI news July 2026\"\n\nAlso fetch:\n- https://huggingface.co/papers (trending papers)\n- https://arxiv.org/list/cs.AI/recent (AI papers)\n- https://github.com/trending?since=weekly (look for AI/ML repos)\n\nFor each item: headline, one-sentence detail, source name + URL, date, freshness (last 24h/48h/older), category.\n\nReturn ALL items. Aim for 10-15 items. Format:\n---\nHEADLINE: [English]\nDETAIL: [one sentence]\nSOURCE: [name + URL]\nDATE: [date]\nFRESHNESS: [24h/48h/older]\nCATEGORY: [category]\n---"
+          },
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_70",
+          "toolCallId": "call_00_NXN9JoC1b2TELooDrL623142",
+          "status": "success",
+          "output": "Spawned agent a3 (research-papers-tools) on deepseek/deepseek-v4-flash at high effort in phase \"Research (parallel sweep)\". It's running in the background — spawn more now for parallelism, then call agents_await to collect results as they land.",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_71",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_75",
+          "toolCallId": "call_00_Kwwrs3bqCXnB1fuLfKVo3356",
+          "name": "shell_exec",
+          "args": {
+            "command": "mkdir -p ~/.wolffish/workspace/files/younes-ai-daily && cd ~/.wolffish/workspace/files/younes-ai-daily && curl -L -o \"IBMPlexSansArabic-Regular.ttf\" \"https://github.com/google/fonts/raw/main/ofl/ibmplexsansarabic/IBMPlexSansArabic-Regular.ttf\" 2>&1 && curl -L -o \"IBMPlexSansArabic-Bold.ttf\" \"https://github.com/google/fonts/raw/main/ofl/ibmplexsansarabic/IBMPlexSansArabic-Bold.ttf\" 2>&1 && ls -la *.ttf",
+            "timeout": 30000
+          },
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_77",
+          "toolCallId": "call_00_Kwwrs3bqCXnB1fuLfKVo3356",
+          "status": "success",
+          "output": "% Total    % Received % Xferd  Average Speed   Time    Time     Time  Current\n                                 Dload  Upload   Total   Spent    Left  Speed\n\r  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0\r  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0\r  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0\n\r100  230k  100  230k    0     0   208k      0  0:00:01  0:00:01 --:--:--  208k\n  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current\n                                 Dload  Upload   Total   Spent    Left  Speed\n\r  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0\r  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0\r  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0\n\r 16  241k   16 41197    0     0  40380      0  0:00:06  0:00:01  0:00:05 40380\r100  241k  100  241k    0     0   189k      0  0:00:01  0:00:01 --:--:--  788k\n-rw-r--r--@ 1 younes  staff  246992 Jul 12 17:40 IBMPlexSansArabic-Bold.ttf\n-rw-r--r--@ 1 younes  staff  235924 Jul 12 17:40 IBMPlexSansArabic-Regular.ttf",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9",
+          "meta": {
+            "label": "Make HTTP request",
+            "cwd": "/Users/younes",
+            "durationMs": 2558,
+            "exitCode": 0,
+            "truncated": false
+          }
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_78",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_80",
+          "delta": "Let me collect the first research agent's results.",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_91",
+          "toolCallId": "call_00_NxPLiJoGNXBPpBMHVUjY9725",
+          "name": "agents_await",
+          "args": {
+            "agent_ids": [
+              "a1",
+              "a2",
+              "a3"
+            ]
+          },
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_113",
+          "toolCallId": "call_00_NxPLiJoGNXBPpBMHVUjY9725",
+          "status": "success",
+          "output": "Agent a2 (research-newsletters-aggregators) landed. [finished: end_turn]\n\nHere's the full AI news briefing for **Sunday, July 12, 2026**:\n\n---\n\n## 🗞️ AI News Roundup — July 12, 2026\n\n---\n\n**HEADLINE:** Apple Sues OpenAI, Alleges Trade Secret Theft via Former Employees\n**DETAIL:** Apple filed a lawsuit in federal court accusing OpenAI of trade secret theft, alleging that former Apple employees — including a hardware chief — stole proprietary parts and designs to build AI devices for the competitor.\n**SOURCE:** Bloomberg / 9to5Mac via Techmeme — https://www.techmeme.com/\n**DATE:** July 10, 2026\n**FRESHNESS:** 48h\n**CATEGORY:** Legal / AI Industry\n\n---\n\n**HEADLINE:** OpenAI Launches GPT-5.6 Model Family — Sol, Terra, and Luna\n**DETAIL:** OpenAI rolled out GPT-5.6 Sol (flagship, hardest problems), Terra (balanced, 2x cheaper than GPT-5.5), and Luna (fastest, most cost-efficient) across ChatGPT, Codex, and the API after U.S. Dept. of Commerce regulatory clearance.\n**SOURCE:** AI Native Foundation Newsletter — https://ainativefoundation.org/ai-native-weekly-newsletter-10-july-2026/\n**DATE:** July 10, 2026\n**FRESHNESS:** 48h\n**CATEGORY:** Model Release\n\n---\n\n**HEADLINE:** Anthropic Discovers Internal \"J-Space\" in Claude — a Neural Workspace for Active Thought\n**DETAIL:** Anthropic published research using a Jacobian lens technique revealing Claude has a small internal workspace holding concepts it's actively processing, enabling researchers to read, audit, and intervene in model thinking, with parallels to human Global Workspace Theory.\n**SOURCE:** Anthropic Blog / AI Native Foundation — https://www.anthropic.com/news (also #24 on Hacker News, July 8)\n**DATE:** July 6, 2026\n**FRESHNESS:** Older (6 days)\n**CATEGORY:** AI Research / Interpretability\n\n---\n\n**HEADLINE:** New York Times Accuses OpenAI of Hiding Evidence in Landmark Copyright Trial\n**DETAIL:** The NYT and NY Daily News filed sanctions against OpenAI alleging the company secretly possessed 78 million de-identified chat logs and deleted billions of ChatGPT outputs after the lawsuit was filed, violating a court preservation order.\n**SOURCE:** TechCrunch — https://techcrunch.com/ (via crescendo.ai aggregate)\n**DATE:** July 9, 2026\n**FRESHNESS:** 48h\n**CATEGORY:** Legal / AI Copyright\n\n---\n\n**HEADLINE:** xAI Launches Grok 4.5 — First Model Trained for Coding and Agentic Tasks\n**DETAIL:** xAI released Grok 4.5, its first model purpose-built for coding and agent workflows, developed in partnership with Cursor, targeting frontier-level intelligence at competitive speed and cost.\n**SOURCE:** AI Native Foundation Newsletter — https://ainativefoundation.org/ai-native-weekly-newsletter-10-july-2026/\n**DATE:** July 10, 2026 (in newsletter)\n**FRESHNESS:** 48h\n**CATEGORY:** Model Release\n\n---\n\n**HEADLINE:** Meta Launches Muse Image, Its First In-House AI Image Generator — Previews Muse Video\n**DETAIL:** Meta Superintelligence Labs released Muse Image (ranking #2 on image generation leaderboards) and previewed Muse Video with native audio, integrating into Instagram Stories and WhatsApp, built in-house after years of relying on third-party providers.\n**SOURCE:** TechCrunch — https://techcrunch.com/ (July 7, 2026)\n**DATE:** July 7, 2026\n**FRESHNESS:** Older (5 days)\n**CATEGORY:** Product Launch / AI Media\n\n---\n\n**HEADLINE:** SK Hynix Makes Historic $26.5 Billion Nasdaq Debut — Largest ADR in Financial History\n**DETAIL:** South Korean HBM chipmaker SK Hynix, the dominant supplier of high-bandwidth memory for Nvidia AI accelerators, began trading on Nasdaq in the largest American Depositary Receipt offering ever, with its stock up 650% over the past year.\n**SOURCE:** Simply Wall St (via crescendo.ai) — https://www.crescendo.ai/news/latest-ai-news-and-updates\n**DATE:** July 10, 2026\n**FRESHNESS:** 48h\n**CATEGORY:** AI Hardware / Finance\n\n---\n\n**HEADLINE:** China's Z.ai GLM-5.2 Model Competes With Anthropic and OpenAI Frontier Models\n**DETAIL:** Z.ai's GLM-5.2 demonstrates competitive capabilities against leading U.S. frontier models at a fraction of the cost, signaling China's \"fast follower\" AI strategy is achieving technological parity in both consumer and enterprise applications.\n**SOURCE:** The Japan Times (via crescendo.ai) — https://www.crescendo.ai/news/latest-ai-news-and-updates\n**DATE:** July 3, 2026\n**FRESHNESS:** Older (9 days)\n**CATEGORY:** AI Competition / Geopolitics\n\n---\n\n**HEADLINE:** Israeli AI Detects Brain Bleeding Seconds Before Doctors Can on CT Scans\n**DETAIL:** Researchers at a CTech conference in Israel reported AI systems now analyze CT imaging in real-time to detect life-threatening brain hemorrhages before physicians can visually identify them, with instant alerts to clinical teams.\n**SOURCE:** CTech / Calcalistech (via crescendo.ai) — https://www.crescendo.ai/news/latest-ai-news-and-updates\n**DATE:** July 10, 2026\n**FRESHNESS:** 48h\n**CATEGORY:** AI Healthcare Breakthrough\n\n---\n\n**HEADLINE:** Nvidia Reaffirms AI Chip Roadmap, Rejects Delay Reports\n**DETAIL:** Nvidia countered a SemiAnalysis report claiming chip delays by reaffirming its production plans and near-annual cadence for next-gen AI processors, as hyperscalers project $30B+ in data center infrastructure spend in 2026 alone.\n**SOURCE:** Roic News — https://www.roic.ai/news/nvidia-reaffirms-ai-chip-roadmap-rejects-delay-reports-07-06-2026\n**DATE:** July 6, 2026\n**FRESHNESS:** Older (6 days)\n**CATEGORY:** AI Hardware\n\n---\n\n**HEADLINE:** Anthropic Discusses Custom AI Chip Partnership With Samsung\n**DETAIL:** Anthropic is in early-stage talks with Samsung to develop its own custom AI chip, following OpenAI's similar move with Broadcom, as major AI labs seek to reduce dependence on Nvidia's dominant hardware.\n**SOURCE:** TechCrunch (via crescendo.ai) — https://www.crescendo.ai/news/latest-ai-news-and-updates\n**DATE:** July 2, 2026\n**FRESHNESS:** Older (10 days)\n**CATEGORY:** AI Hardware / Industry\n\n---\n\n**HEADLINE:** Tencent Releases Hunyuan Hy3 — 295B-Parameter MoE Model Across 50+ Products\n**DETAIL:** Tencent open-sourced Hunyuan Hy3 (295B total / 21B activated, MoE, 256K context) under Apache 2.0, showing WorkBuddy task success rates jumping from 72% to 90% and cutting processing time by 34%, priced at ¥2/M input tokens.\n**SOURCE:** AI Native Foundation Newsletter — https://ainativefoundation.org/ai-native-weekly-newsletter-10-july-2026/\n**DATE:** July 10, 2026 (in newsletter)\n**FRESHNESS:** 48h\n**CATEGORY:** Open-Source Model Release\n\n---\n\n**HEADLINE:** Kimi K2 Becomes First Open-Weight Model in GitHub Copilot Model Picker\n**DETAIL:** GitHub added Kimi K2 as the first open-weight model selectable within Copilot, positioning it as a low-cost, high-performance alternative for developers wanting model choice in their coding workflow.\n**SOURCE:** AI Native Foundation Newsletter — https://ainativefoundation.org/ai-native-weekly-newsletter-10-july-2026/\n**DATE:** July 10, 2026 (in newsletter)\n**FRESHNESS:** 48h\n**CATEGORY:** Developer Tools\n\n---\n\n**HEADLINE:** Mathematicians Deploy AI to Tackle Fermat's Last Theorem Formalization\n**DETAIL:** A London workshop at Imperial College is testing AI autoformalization tools on one of mathematics' hardest proofs — Fermat's Last Theorem — deliberately pushing AI to its limits in transforming complex proofs into machine-verifiable formats.\n**SOURCE:** New Scientist (via crescendo.ai) — https://www.crescendo.ai/news/latest-ai-news-and-updates\n**DATE:** July 10, 2026\n**FRESHNESS:** 48h\n**CATEGORY:** AI Research / Mathematics\n\n---\n\n**HEADLINE:** New York Enacts First-in-US Law Mandating AI-Generated Ad Disclosures\n**DETAIL:** Governor Hochul signed legislation requiring clear labels on ads featuring AI-generated synthetic performers, with fines up to $5,000 for repeat offenses, backed by SAG-AFTRA to protect consumer awareness and creative workers.\n**SOURCE:** Fox News (via crescendo.ai) — https://www.crescendo.ai/news/latest-ai-news-and-updates\n**DATE:** July 2, 2026\n**FRESHNESS:** Older (10 days)\n**CATEGORY:** AI Regulation / Policy\n\n---\n\n### 📊 Stats at a Glance\n\n| Metric | Value |\n|---|---|\n| Total items | 15 |\n| Last 48h | 9 |\n| 3-7 days old | 3 |\n| 7+ days old | 3 |\n| Sources cited | 12 unique |\n\n### 🔑 Key Takeaway\n\nJuly 2026 is shaping up as a **pivot month**: OpenAI ships its GPT-5.6 tiered family, Anthropic opens the black box with J-space interpretability research, Apple fires a legal torpedo at OpenAI, and China's GLM-5.2 and Tencent's Hy3 show the frontier is no longer just American. The hardware story is just as loud — SK Hynix's $26.5B IPO, Nvidia defending its roadmap, and Anthropic/OpenAI both pursuing custom silicon. 🐟\n\nStill live: a1 (research-wires-companies), a3 (research-papers-tools). a2 is idle — agent_send to follow up. Call agents_await again for the next landing.",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_114",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_116",
+          "toolCallId": "call_00_8PabBF5sjyFkxrzFpVVM8392",
+          "name": "agents_await",
+          "args": {
+            "agent_ids": [
+              "a1",
+              "a3"
+            ]
+          },
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_121",
+          "toolCallId": "call_00_8PabBF5sjyFkxrzFpVVM8392",
+          "status": "success",
+          "output": "Agent a3 (research-papers-tools) landed. [finished: end_turn]\n\nAll research complete. Here's the full scan:\n\n---\n\n**HEADLINE:** Apple Sues OpenAI Over Trade Secret Theft, Citing 400+ Poached Employees\n**DETAIL:** Apple filed a federal lawsuit in Northern California on July 11 alleging OpenAI systematically poached over 400 employees from its chip design, hardware, and on-device AI teams, stealing confidential designs.\n**SOURCE:** The Guardian / unrot.co — https://www.theguardian.com/technology/2026/jul/10/apple-sues-openai-trade-secrets\n**DATE:** July 11, 2026\n**FRESHNESS:** 24h\n**CATEGORY:** Legal / Corporate AI\n\n---\n\n**HEADLINE:** OpenAI Launches GPT-5.6 Family — Sol, Terra, Luna — With Cerebras-Powered 750 Tok/s Speeds\n**DETAIL:** Three-tier models went GA July 9: Sol leads Terminal-Bench 2.1 at 91.9% (Ultra mode), Terra matches Claude Fable 5 at half the cost, and Cerebras wafer-scale chips deliver 750 tokens/sec vs typical 30-80.\n**SOURCE:** Latent Space / buildfastwithai.com — https://www.buildfastwithai.com/blogs/ai-news-today-july-12-2026\n**DATE:** July 9, 2026\n**FRESHNESS:** 48h\n**CATEGORY:** Foundation Model Launch\n\n---\n\n**HEADLINE:** Google Gemini 3.5 Pro Leaked for July 17 Launch With 2-Million-Token Context Window\n**DETAIL:** DeepMind's long-delayed flagship is set for GA on July 17 with a 2M-token context window (double any competitor), a Deep Think reasoning mode, and aggressive API pricing at ~$1.25/M input tokens to undercut GPT-5.6.\n**SOURCE:** unrot.co — https://unrot.co/blogs/today-top-10-ai-news-july-12-2026\n**DATE:** July 12, 2026 (leak), launch July 17\n**FRESHNESS:** 24h\n**CATEGORY:** Foundation Model Announcement\n\n---\n\n**HEADLINE:** Meta Launches Muse Image — First Image Generation Model From Superintelligence Labs\n**DETAIL:** Muse Image rolled out July 7 across Meta AI and Instagram, marking Meta's first image gen model since rebuilding its AI lab under Chief AI Officer Alexandr Wang.\n**SOURCE:** Bloomberg / Meta — https://about.fb.com/news/2026/07/introducing-muse-image-meta-ai/\n**DATE:** July 7, 2026\n**FRESHNESS:** Older\n**CATEGORY:** Image Generation\n\n---\n\n**HEADLINE:** Meta Ships Muse Spark 1.1 — Multimodal Reasoning Model Built for Agentic Tasks\n**DETAIL:** Released July 11, Muse Spark 1.1 boosts tool use, computer use, coding, and multimodal understanding, pushing Meta's model stack toward real autonomous task execution.\n**SOURCE:** agentic.ai — https://agentic.ai/news\n**DATE:** July 11, 2026\n**FRESHNESS:** 24h\n**CATEGORY:** Agentic AI / Foundation Model\n\n---\n\n**HEADLINE:** Every Google Search Result Page Is Now Fully AI-Generated by Gemini 3.5 Flash\n**DETAIL:** As of July 10, the classic ten blue links are gone — replaced by AI-written answer pages with embedded source links, structurally breaking the old SEO-to-traffic model.\n**SOURCE:** unrot.co — https://unrot.co/blogs/today-top-10-ai-news-july-12-2026\n**DATE:** July 10, 2026\n**FRESHNESS:** 48h\n**CATEGORY:** Search / Product\n\n---\n\n**HEADLINE:** Microsoft Launches Frontier Company — $2.5B AI Deployment Arm With 6,000 Employees\n**DETAIL:** Announced July 2, the new operating business (led by Rodrigo Kede Lima) packages Microsoft's FDEs, consultants, and sales staff into a dedicated enterprise AI implementation unit.\n**SOURCE:** TechCrunch — https://techcrunch.com/2026/07/02/microsoft-launches-its-own-ai-deployment-company-with-2-5-billion-commitment/\n**DATE:** July 2, 2026\n**FRESHNESS:** Older\n**CATEGORY:** Enterprise / Microsoft\n\n---\n\n**HEADLINE:** Microsoft Begins Replacing OpenAI and Anthropic Models With Own AI in Excel and Outlook\n**DETAIL:** Bloomberg reported July 7 that Microsoft is swapping third-party models for its own in-house alternatives across first-party apps to cut costs and reduce dependency.\n**SOURCE:** Bloomberg — https://www.bloomberg.com/news/articles/2026-07-07/microsoft-replaces-openai-anthropic-with-own-ai-in-some-apps\n**DATE:** July 7, 2026\n**FRESHNESS:** Older\n**CATEGORY:** Microsoft / Model Strategy\n\n---\n\n**HEADLINE:** Mistral Ships Robostral Navigate — First Robotics Navigation Model — and Teases New Open-Weight Flagship\n**DETAIL:** On July 8, Mistral released a hardware-agnostic navigation model trained entirely in simulation, while CEO Mensch confirmed a \"fat but sparse\" MoE open-weight model entering partner early access.\n**SOURCE:** Tech Insider — https://tech-insider.org/au/mistral-robotics-model-valuation-2026/\n**DATE:** July 8, 2026\n**FRESHNESS:** Older\n**CATEGORY:** Robotics / Open-Weight Model\n\n---\n\n**HEADLINE:** Anthropic's Claude Sonnet 5 Hits GA — Agentic Coding at Opus-Level Reasoning, 40-60% Lower Cost\n**DETAIL:** Became default model across all Claude plans June 30, leading Terminal-Bench and SWE-Bench at intro pricing of $2/$10 per million tokens through August 31.\n**SOURCE:** Shakudo / aiapps.com — https://www.shakudo.io/blog/top-9-large-language-models\n**DATE:** June 30, 2026\n**FRESHNESS:** Older\n**CATEGORY:** Foundation Model Launch\n\n---\n\n**HEADLINE:** OpenAI Preps $730 Billion IPO — Largest Tech IPO in History — Filing Confidentially With Goldman and Morgan Stanley\n**DETAIL:** OpenAI aims for a September 2026 public listing at ~$730B valuation, though Anthropic has overtaken it on revenue (~$47B annualized vs OpenAI's $25-33B).\n**SOURCE:** unrot.co / Fortune — https://unrot.co/blogs/today-top-10-ai-news-july-12-2026\n**DATE:** July 12, 2026 (reporting)\n**FRESHNESS:** 24h\n**CATEGORY:** Corporate / IPO\n\n---\n\n**HEADLINE:** Three Humanoid Robot Companies Move Toward Public Markets in One Week\n**DETAIL:** Agility Robotics filed for a $2.5B SPAC, China's Unitree cleared its Shanghai IPO, and Tesla began converting a production line into a dedicated Optimus factory.\n**SOURCE:** unrot.co — https://unrot.co/blogs/today-top-10-ai-news-july-12-2026\n**DATE:** July 10-12, 2026\n**FRESHNESS:** 24h-48h\n**CATEGORY:** Robotics / IPO\n\n---\n\n**HEADLINE:** SK Hynix Makes History With Largest ADR IPO as Nvidia Tops $5 Trillion Again\n**DETAIL:** Korean HBM leader raised $28-29B on Nasdaq (ticker SKHY) on July 10, breaking Alibaba's 2014 record, while Nvidia rose 2.3% back above $5T market cap.\n**SOURCE:** unrot.co — https://unrot.co/blogs/today-top-10-ai-news-july-12-2026\n**DATE:** July 10, 2026\n**FRESHNESS:** 48h\n**CATEGORY:** AI Hardware / Chips\n\n---\n\n**HEADLINE:** Reflection AI Activates $6.3B Compute Lease at SpaceX Colossus 2 — Locks In Nvidia GB300 Through 2029\n**DETAIL:** The deal (July 1) secures training capacity for American open-weight frontier models at the Memphis facility, treating compute as a strategic, multi-year asset.\n**SOURCE:** aiapps.com — https://www.aiapps.com/blog/top-ai-news-july-breakthroughs-launches-trends/\n**DATE:** July 1, 2026\n**FRESHNESS:** Older\n**CATEGORY:** Infrastructure / Compute\n\n---\n\n**HEADLINE:** Kimi K2.7 Code Becomes First Open-Weight Model Inside GitHub Copilot\n**DETAIL:** Moonshot AI's coding model is now available in Copilot's model picker under usage-based billing, giving enterprise teams an open-weight alternative to proprietary coding assistants.\n**SOURCE:** aiapps.com — https://www.aiapps.com/blog/top-ai-news-july-breakthroughs-launches-trends/\n**DATE:** July 2026\n**FRESHNESS:** Older\n**CATEGORY:** Coding / Open-Weight\n\n---\n\n**HEADLINE:** Fed Appoints Marc Andreessen to Co-Lead New AI Economic Impact Task Force\n**DETAIL:** The US central bank created its first formal AI body on July 11, studying how AI affects jobs, productivity, and monetary policy — with a16z's founder at the helm attracting both praise and criticism.\n**SOURCE:** unrot.co — https://unrot.co/blogs/today-top-10-ai-news-july-12-2026\n**DATE:** July 11, 2026\n**FRESHNESS:** 24h\n**CATEGORY:** Policy / Economics\n\n---\n\n**HEADLINE:** AI Video Generation Hits New Quality Ceiling — Seedance 2.5, Veo 3.1, Kling 3.0 Turbo Lead July Rankings\n**DETAIL:** ByteDance's Seedance 2.5 (coming early July) pushes 30-second 4K clips, Google's Veo 3.1 leads on realism, and Runway Gen-4.5 adds frame-level control — marking video gen's shift from novelty to production tool.\n**SOURCE:** buildmvpfast.com / GISuser — https://www.buildmvpfast.com/articles/best-llms-2026-guide/video-generation-ai\n**DATE:** July 10-11, 2026\n**FRESHNESS:** 24h-48h\n**CATEGORY:** Video Generation\n\n---\n\n**HEADLINE:** Anthropic Publishes 2026 Agentic Coding Trends Report — Agents Move From Chat Loops to Autonomous Hour-Long Runs\n**DETAIL:** The defining shift of 2026 is coding agents running autonomous execution loops for minutes or hours, no longer limited to short prompt-response interactions.\n**SOURCE:** Anthropic — https://resources.anthropic.com/hubfs/2026%20Agentic%20Coding%20Trends%20Report.pdf\n**DATE:** July 2026\n**FRESHNESS:** Older\n**CATEGORY:** Agentic AI / Research\n\n---\n\n## Key Patterns This Week\n\n**📊 The AI Economy Flip.** Models make headlines but hardware makes the money — SK Hynix's record IPO and Nvidia's $5T resurgence prove the infrastructure layer is where the real value sits. Meanwhile model-layer price wars intensify (GPT-5.6 Terra matching Claude at half cost).\n\n**⚖️ Access Gets Gated.** Three parallel tightening vectors: Apple's lawsuit (talent/IP), frontier model ID verification (Fable 5, GPT-5.6 Sol previews), and the Fed's new AI task force. The era of unguarded access is ending.\n\n**🤖 Robotics Goes Public.** Three humanoid companies heading to market in one week, plus Mistral's first navigation model — physical AI is the category venture money is chasing hardest outside LLMs.\n\n**🔄 Google Search Is Dead.** The old web attention deal is over. Every search result page is now AI-generated. That's structural, not incremental.\n\nStill live: a1 (research-wires-companies). a3 is idle — agent_send to follow up. Call agents_await again for the next landing.",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_122",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_123",
+          "toolCallId": "call_00_DiXjUBxnl9z5UNSsT0Mx1667",
+          "name": "agents_await",
+          "args": {
+            "agent_ids": [
+              "a1"
+            ]
+          },
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_127",
+          "toolCallId": "call_00_DiXjUBxnl9z5UNSsT0Mx1667",
+          "status": "success",
+          "output": "Agent a1 (research-wires-companies) landed. [finished: end_turn]\n\nI now have comprehensive data from 12 searches, 4 major news hubs, and 20+ individual article fetches. Here's the full compiled report:\n\n---\n\n# AI News Report — Sunday, July 12, 2026\n\n## 🚨 BREAKING — Last 24h\n\n---\nHEADLINE: **Apple sues OpenAI over alleged trade secret theft, says scheme was 'at every level'**\nDETAIL: Apple filed a federal lawsuit in Northern California alleging that OpenAI stole trade secrets related to unreleased hardware and manufacturing techniques, naming OpenAI's hardware chief Tang Tan (an ex-Apple VP) and former employee Chang Liu as defendants, marking a dramatic reversal of the 2024 Apple-OpenAI partnership.\nSOURCE: CNBC — https://www.cnbc.com/2026/07/10/apple-openai-lawsuit-trade-secrets.html\nDATE: July 10, 2026\nFRESHNESS: last 48h\nCATEGORY: breaking news\n\n---\nHEADLINE: **Meta removes controversial AI feature on Instagram after backlash**\nDETAIL: Meta pulled a Muse-powered AI feature that let users manipulate other Instagram users' photos without explicit consent, following pushback over privacy concerns with opt-out-by-default data usage.\nSOURCE: TechCrunch — https://techcrunch.com/category/artificial-intelligence/\nDATE: ~July 10-11, 2026\nFRESHNESS: last 48h\nCATEGORY: breaking news\n\n---\nHEADLINE: **OpenAI bets on families as ChatGPT goes deeper into households**\nDETAIL: OpenAI is pushing a new family-oriented strategy for ChatGPT, targeting household use-cases beyond professional work.\nSOURCE: TechCrunch — https://techcrunch.com/category/artificial-intelligence/\nDATE: July 11, 2026\nFRESHNESS: last 24h\nCATEGORY: product\n\n---\nHEADLINE: **OpenAI's safety head Johannes Heidecke departs amid GPT-5.6 rollout**\nDETAIL: Following Fidji Simo and Joshua Achiam's exits earlier this week, OpenAI's safety oversight lead Johannes Heidecke has left the company as GPT-5.6 rolls out and raises some alarms.\nSOURCE: The Verge — https://www.theverge.com/ai-artificial-intelligence\nDATE: ~July 10-11, 2026\nFRESHNESS: last 48h\nCATEGORY: breaking news\n\n---\nHEADLINE: **Appeals from local communities push companies to reconsider data center buildout plans**\nDETAIL: Grassroots opposition in North Carolina, Georgia, Missouri, and California is making some tech companies rethink AI data center construction projects amid local resistance.\nSOURCE: The Verge — https://www.theverge.com/ai-artificial-intelligence\nDATE: ~July 10-11, 2026\nFRESHNESS: last 48h\nCATEGORY: other\n\n---\n\n## 🔥 HOT — Last 3-4 Days (July 8-9)\n\n---\nHEADLINE: **OpenAI publicly releases GPT-5.6 family (Sol, Terra, Luna) alongside ChatGPT Work**\nDETAIL: OpenAI launched GPT-5.6 in three tiers — Sol (flagship, $5/$30 per M tokens), Terra ($2.50/$15), and Luna ($1/$6) — with the flagship Sol setting a new SOTA on the Coding Agent Index at 80, surpassing Anthropic's Fable 5, alongside a new ChatGPT Work platform for multi-step enterprise tasks, a new desktop app, and Sites for building interactive websites.\nSOURCE: TechCrunch / Wikipedia — https://openai.com/news/product-releases/\nDATE: July 9, 2026\nFRESHNESS: last 48h\nCATEGORY: product\n\n---\nHEADLINE: **OpenAI launches GPT-Live, full-duplex voice models for real-time conversation**\nDETAIL: OpenAI released GPT-Live-1 and GPT-Live-1 mini, new voice models that enable natural turn-taking, interruptions, and real-time dialogue, replacing the previous Advanced Voice Mode.\nSOURCE: TechCrunch / VentureBeat — https://techcrunch.com/2026/07/08/openai-releases-new-voice-models-for-more-natural-live-conversations/\nDATE: July 8, 2026\nFRESHNESS: last 48h\nCATEGORY: product\n\n---\nHEADLINE: **SpaceXAI (formerly xAI) releases Grok 4.5, its first flagship since SpaceX merger**\nDETAIL: SpaceXAI released Grok 4.5, described by Elon Musk as an \"Opus-class model\" that is faster, more token-efficient, and lower cost, marking the company's first release since going public and acquiring AI coding startup Cursor.\nSOURCE: TechCrunch / Axios — https://www.axios.com/2026/07/08/spacexai-grok-new-model\nDATE: July 8, 2026\nFRESHNESS: last 48h\nCATEGORY: product\n\n---\nHEADLINE: **Meta enters AI coding battle with Muse Spark 1.1**\nDETAIL: Meta launched Muse Spark 1.1, a new coding model competing with Claude Code, GPT-5.6, and Cursor in the rapidly crowding AI coding assistant space.\nSOURCE: TechCrunch — https://techcrunch.com/category/artificial-intelligence/\nDATE: July 9, 2026\nFRESHNESS: last 48h\nCATEGORY: product\n\n---\nHEADLINE: **Meta's new AI chips (\"Iris\") to begin production in September**\nDETAIL: Meta confirmed its next-generation MTIA AI training/inference chips, co-designed with Broadcom and manufactured by TSMC, will enter production in September to reduce dependence on Nvidia GPUs.\nSOURCE: TechCrunch / Reuters — https://techcrunch.com/2026/07/09/metas-new-ai-chips-will-begin-production-in-september/\nDATE: July 9, 2026\nFRESHNESS: last 48h\nCATEGORY: product\n\n---\nHEADLINE: **OpenAI says GPT-5.6 is the 'preferred model' for Microsoft Copilot 365 amid breakup chatter**\nDETAIL: OpenAI announced that GPT-5.6 will be the preferred model powering Microsoft Copilot 365, pushing back against speculation that the Microsoft-OpenAI partnership is fraying.\nSOURCE: TechCrunch — https://techcrunch.com/category/artificial-intelligence/\nDATE: July 9, 2026\nFRESHNESS: last 48h\nCATEGORY: trend\n\n---\nHEADLINE: **Anthropic launches Claude reflection dashboard and Microsoft 365 write tools**\nDETAIL: Anthropic released a \"reflection dashboard\" for users to analyze their Claude usage patterns, plus write tools for the Microsoft 365 connector enabling Claude to draft emails, manage calendar events, and update OneDrive/SharePoint files.\nSOURCE: Anthropic Newsroom — https://www.anthropic.com/news\nDATE: July 9, 2026\nFRESHNESS: last 48h\nCATEGORY: product\n\n---\nHEADLINE: **Ben Bernanke appointed to Anthropic's Long-Term Benefit Trust**\nDETAIL: Former Federal Reserve Chair Ben Bernanke has joined Anthropic's Long-Term Benefit Trust, the governance body overseeing the company's public benefit mission.\nSOURCE: Anthropic — https://www.anthropic.com/news\nDATE: July 9, 2026\nFRESHNESS: last 48h\nCATEGORY: other\n\n---\nHEADLINE: **Anthropic launches \"Inviting Hard Questions\" campaign**\nDETAIL: Anthropic is asking the public to submit their hardest questions about AI safety, committing to transparently show its work in addressing them.\nSOURCE: Anthropic — https://www.anthropic.com/news\nDATE: July 9, 2026\nFRESHNESS: last 48h\nCATEGORY: other\n\n---\nHEADLINE: **Open-source AI tool Ollama raises $65M Series B, hits nearly 9M users**\nDETAIL: Ollama closed a $65M Series B led by Theory Ventures with participation from Benchmark, 8VC, and Y Combinator, growing to nearly 9 million users for its open-source local AI model runner.\nSOURCE: TechCrunch — https://techcrunch.com/2026/07/09/popular-open-source-ai-developer-tool-ollama-raises-65m-grows-to-nearly-9m-users/\nDATE: July 9, 2026\nFRESHNESS: last 48h\nCATEGORY: funding\n\n---\nHEADLINE: **SK Hynix raises $26.5B in biggest foreign IPO in US history; urged to build US fabs**\nDETAIL: SK Hynix raised $26.5B in a US IPO, the largest foreign IPO in American history, with government officials urging construction of new US semiconductor fabrication plants.\nSOURCE: TechCrunch — https://techcrunch.com/category/artificial-intelligence/\nDATE: July 9-10, 2026\nFRESHNESS: last 48h\nCATEGORY: funding\n\n---\nHEADLINE: **FTC publishes proposed policy statement on AI accuracy for public comment**\nDETAIL: The FTC published its proposed Policy Statement on Suppression of Accuracy in AI Systems in the Federal Register, warning that hiding how AI systems are steered may violate federal law, with public comment open until July 31.\nSOURCE: FTC / Federal Register — https://www.federalregister.gov/documents/2026/07/07/2026-13628/policy-statement-concerning-the-suppression-of-accuracy-in-artificial-intelligence-systems\nDATE: July 7, 2026\nFRESHNESS: last 48h\nCATEGORY: regulation\n\n---\nHEADLINE: **EU Commission presents Action Plan on Cybersecurity and AI**\nDETAIL: The European Commission released a joint action plan on cybersecurity and AI, complementing the AI Act with new guidelines, codes of practice, and an AI Act Service Desk for businesses.\nSOURCE: European Commission — https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai\nDATE: July 7, 2026\nFRESHNESS: last 48h\nCATEGORY: regulation\n\n---\nHEADLINE: **Fidji Simo steps down from OpenAI's No. 2 role**\nDETAIL: OpenAI's Chief Operating Officer Fidji Simo, who oversaw AGI readiness and product, is stepping down to become a part-time advisor, with Greg Brockman taking over product responsibilities.\nSOURCE: TechCrunch / CNBC — https://techcrunch.com/category/artificial-intelligence/\nDATE: July 9, 2026\nFRESHNESS: last 48h\nCATEGORY: breaking news\n\n---\n\n## 📅 LAST WEEK (July 1-7)\n\n---\nHEADLINE: **xAI rebrands to SpaceXAI with new logo, fully merged into SpaceX**\nDETAIL: Elon Musk's xAI officially rebranded to SpaceXAI with a new logo and X handle, completing the dissolution of xAI as a separate entity following SpaceX's February acquisition and June IPO.\nSOURCE: Business Insider / Gizmodo — https://www.businessinsider.com/xai-rebrand-spacexai-new-logo-x-handle-spacex-2026-7\nDATE: July 6, 2026\nFRESHNESS: older (6 days)\nCATEGORY: other\n\n---\nHEADLINE: **Together AI raises $800M Series C at $8.3B valuation led by Aramco Ventures**\nDETAIL: Together AI closed an $800M Series C led by Saudi Aramco's VC arm, with Nvidia, Vista Equity, General Catalyst, and Salesforce Ventures participating, to expand its open-source model inference cloud.\nSOURCE: Tech Startups — https://techstartups.com/2026/07/01/venture-capital-startup-funding-roundup-july-1-2026/\nDATE: July 1, 2026\nFRESHNESS: older (11 days)\nCATEGORY: funding\n\n---\nHEADLINE: **Claude Fable 5 and Mythos 5 redeployed globally after US lifts export controls**\nDETAIL: Anthropic's Fable 5 returned to global availability on July 1 after the US government lifted export controls that had been imposed on June 12, alongside a new industry jailbreak severity framework co-developed with Amazon, Microsoft, and Google.\nSOURCE: Anthropic — https://www.anthropic.com/news/redeploying-fable-5\nDATE: July 1, 2026\nFRESHNESS: older (11 days)\nCATEGORY: regulation\n\n---\nHEADLINE: **Meta launches Muse Image AI generator — immediately faces privacy backlash**\nDETAIL: Meta unveiled Muse Image, built by Meta Superintelligence Labs, allowing users to manipulate public Instagram users' photos into AI-generated images without notification, sparking immediate privacy concerns.\nSOURCE: TechCrunch — https://techcrunch.com/2026/07/07/meta-rolls-out-muse-a-new-ai-image-generator/\nDATE: July 7, 2026\nFRESHNESS: older (5 days)\nCATEGORY: product\n\n---\nHEADLINE: **Microsoft launches Frontier Company with $2.5B for enterprise AI deployments**\nDETAIL: Microsoft launched a new operating business called Microsoft Frontier Company, backed by $2.5B and 6,000 engineers, focused on enterprise AI deployment — similar to FDE ventures from AWS, OpenAI, and Anthropic.\nSOURCE: TechCrunch — https://techcrunch.com/2026/07/02/microsoft-launches-its-own-ai-deployment-company-with-2-5-billion-commitment/\nDATE: July 2, 2026\nFRESHNESS: older (10 days)\nCATEGORY: product\n\n---\nHEADLINE: **Anthropic has overtaken OpenAI on revenue, Fortune confirms**\nDETAIL: Fortune confirmed that Anthropic overtook OpenAI on revenue, with Anthropic on course to hit $47B in annualized revenue and profitability in 2026, a year ahead of earlier guidance.\nSOURCE: BuildFastWithAI — https://www.buildfastwithai.com/blogs/ai-news-today-july-7-2026\nDATE: July 2, 2026 (confirmed)\nFRESHNESS: older (10 days)\nCATEGORY: trend\n\n---\nHEADLINE: **AI infrastructure captured 79% of $9.9B in weekly VC funding**\nDETAIL: In the week of June 29, AI infrastructure deals accounted for ~79% of the $9.9B in disclosed venture capital, with Crusoe ($3B), Switch ($2B), Kling AI ($2B), and Together AI ($800M) dominating.\nSOURCE: StartupHub.ai — https://www.startuphub.ai/ai-news/ai-news/2026/ai-infrastructure-week-july-6-2026\nDATE: July 6, 2026\nFRESHNESS: older (6 days)\nCATEGORY: funding\n\n---\nHEADLINE: **Meta announces cloud business Meta Compute to sell excess AI infrastructure**\nDETAIL: Meta stunned Wall Street by announcing Meta Compute, a new cloud business to sell its excess AI computing capacity, alongside a multi-year, multi-gigawatt Nvidia chip deal.\nSOURCE: Reuters — https://www.reuters.com/business/meta-sell-excess-ai-computing-capacity-via-cloud-business-bloomberg-news-reports-2026-07-01/\nDATE: July 1, 2026\nFRESHNESS: older (11 days)\nCATEGORY: product\n\n---\nHEADLINE: **US states have enacted 109 new AI laws mid-2026, chatbots regulation leads**\nDETAIL: As of July 1, US states passed 109 new AI laws, down slightly from 2025's pace, with companion chatbot regulation being the most active area (100+ bills introduced, 14 enacted across 6 Dem-trifecta and 8 GOP-trifecta states).\nSOURCE: TechPolicy.Press — https://www.techpolicy.press/where-state-ai-legislation-stands-half-way-into-2026/\nDATE: July 1, 2026\nFRESHNESS: older (11 days)\nCATEGORY: regulation\n\n---\nHEADLINE: **Anthropic publishes detailed Fable 5 jailbreak framework and cyber safeguards**\nDETAIL: Anthropic released more details on Fable 5's cyber safeguards and a proposed industry-wide jailbreak severity scoring framework, developed with Amazon, Microsoft, and Google through Project Glasswing.\nSOURCE: Anthropic — https://www.anthropic.com/news\nDATE: July 2, 2026\nFRESHNESS: older (10 days)\nCATEGORY: research\n\n---\nHEADLINE: **Mark Zuckerberg admits Meta's AI restructuring \"hasn't really accelerated\" as expected**\nDETAIL: At an internal town hall on July 2, Zuckerberg told employees that AI agent development over the prior four months \"hasn't really accelerated in the way that we expected,\" following the layoffs of 8,000 employees and moving 7,000 into AI roles.\nSOURCE: Yahoo Finance / Mashable — https://finance.yahoo.com/technology/ai/articles/laying-off-8-000-employees-121545621.html\nDATE: July 2, 2026\nFRESHNESS: older (10 days)\nCATEGORY: breaking news\n\n---\nHEADLINE: **ICML 2026 opens in Seoul with record 23,918 submissions and heavy agentic AI focus**\nDETAIL: The International Conference on Machine Learning opened July 6 in Seoul with a record number of submissions and an unusually heavy emphasis on agentic AI in its workshop program.\nSOURCE: AI Agent Store — https://aiagentstore.ai/ai-agent-news/this-week\nDATE: July 6, 2026\nFRESHNESS: older (6 days)\nCATEGORY: research\n\n---\nHEADLINE: **Kimi K2.7 Code becomes first open-weight model inside GitHub Copilot**\nDETAIL: Moonshot AI's Kimi K2.7 Code was integrated into GitHub Copilot's model picker as the first open-weight option, available under Copilot's usage-based billing for enterprise customers.\nSOURCE: AIApps — https://www.aiapps.com/blog/top-ai-news-july-breakthroughs-launches-trends/\nDATE: ~July 6-7, 2026\nFRESHNESS: older (5-6 days)\nCATEGORY: product\n\n---\nHEADLINE: **AI agents have left the lab and entered production, Gartner projects 40% enterprise adoption by year-end**\nDETAIL: Gartner projects that 40% of enterprise applications will have embedded AI agents by end of 2026, up from less than 5% in 2025, as agentic AI shifts from test mode into paid production work.\nSOURCE: Hector Pincheira / AIApps — https://www.hectorpincheira.com/en/news/technological-radar-july-2026-ai-agents-go-into-production-and-governance-doesnt-keep-up/\nDATE: ~July 7, 2026\nFRESHNESS: older (5 days)\nCATEGORY: trend\n\n---\n\n## 📊 Summary Statistics\n\n| **Metric** | **Value** |\n|---|---|\n| **Total items reported** | 30 |\n| **Last 24h** | 5 |\n| **Last 48h** | 14 |\n| **Last week (July 1-7)** | 16 |\n| **Breaking news** | 4 |\n| **Product launches** | 11 |\n| **Funding rounds** | 5 |\n| **Regulation/policy** | 4 |\n| **Research** | 2 |\n| **Trends** | 3 |\n| **Other** | 3 |\n\n**Dominant themes in this window:**\n1. **GPT-5.6 & GPT-Live launch** — OpenAI dropped a massive product week (new model family, voice models, work platform, desktop app, Sites), while losing safety leads and getting sued by Apple\n2. **Apple sues OpenAI** — the single biggest breaking story, a complete reversal of their 2024 partnership\n3. **Anthropic's quiet dominance** — revenue overtaking OpenAI, Fable 5 back online, new governance, deeper enterprise features\n4. **AI infrastructure funding tsunami** — Together AI ($800M)\n… [truncated for demo: 16,871 chars total]",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_128",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_129",
+          "delta": "**Phase 2: Filter & Curate.** All three agents delivered — I now have ~35 candidate items from 15+ sources. Curating down to the highest-signal 8 with variety across categories. Let me encode the fonts and build the PDF.",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_182",
+          "toolCallId": "call_00_wuYVJFn5zham8WAas6H07474",
+          "name": "shell_exec",
+          "args": {
+            "command": "cd ~/.wolffish/workspace/files/younes-ai-daily && base64 -i IBMPlexSansArabic-Regular.ttf -o regular.b64 && base64 -i IBMPlexSansArabic-Bold.ttf -o bold.b64 && wc -c regular.b64 bold.b64"
+          },
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_184",
+          "toolCallId": "call_00_wuYVJFn5zham8WAas6H07474",
+          "status": "success",
+          "output": "314569 regular.b64\n  329325 bold.b64\n  643894 total",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9",
+          "meta": {
+            "label": "Run shell command",
+            "cwd": "/Users/younes",
+            "durationMs": 99,
+            "exitCode": 0,
+            "truncated": false
+          }
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_185",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_187",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_188",
+          "toolCallId": "call_00_vr11VemYboCBKvcLCrkU9493",
+          "name": "shell_exec",
+          "args": {
+            "command": "cd ~/.wolffish/workspace/files/younes-ai-daily && REGULAR=$(cat regular.b64) && BOLD=$(cat bold.b64) && python3 -c \"\nimport sys\nhtml = open('younes-ai-daily.html', 'r').read()\nregular = open('regular.b64', 'r').read().strip()\nbold = open('bold.b64', 'r').read().strip()\nhtml = html.replace('REPLACE_REGULAR_B64', regular)\nhtml = html.replace('REPLACE_BOLD_B64', bold)\nopen('younes-ai-daily.html', 'w').write(html)\nprint(f'Injected fonts. Regular: {len(regular)} chars, Bold: {len(bold)} chars. HTML size: {len(html)} bytes')\n\""
+          },
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_190",
+          "toolCallId": "call_00_vr11VemYboCBKvcLCrkU9493",
+          "status": "success",
+          "output": "Injected fonts. Regular: 314568 chars, Bold: 329324 chars. HTML size: 655078 bytes",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9",
+          "meta": {
+            "label": "Run shell command",
+            "cwd": "/Users/younes",
+            "durationMs": 147,
+            "exitCode": 0,
+            "truncated": false
+          }
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_191",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_192",
+          "delta": "**Phase 3: Create PDF.** Let me convert the HTML to PDF with full-bleed.",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_213",
+          "toolCallId": "call_00_e3PpalCJanZ4F0liMvlR7059",
+          "name": "tool_search",
+          "args": {
+            "query": "convert HTML to PDF browser"
+          },
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_215",
+          "toolCallId": "call_00_e3PpalCJanZ4F0liMvlR7059",
+          "status": "success",
+          "output": "Activated `browser` — its tools are callable now. tool_activate(<name>) loads any other match.\n\n## browser [loaded] — Automate web browsers — navigate sites, fill forms, click buttons, extract data, take screenshots, and run multi-step w…\n- `browser_launch` — Launch a browser instance and return a session_id. Defaults to headed Chromium at 1280x720.\n- `browser_close` — Close a browser session and clean up all resources.\n- `browser_navigate` — Navigate to a URL in the active tab.\n- `browser_screenshot` — Take a screenshot of the current page or a specific element.\n- `browser_page_content` — Extract text, HTML, or markdown content from the current page or a specific element.\n- `browser_click` — Click an element on the page. Supports CSS, XPath, text, and role selectors.\n- `browser_fill` — Fill a form field. Use credential_id for secure credential entry.\n- `browser_select` — Select an option from a dropdown/select element.\n- …and 17 more\n\n## browser-extension — Control the user's connected Chrome/Brave browser via the Wolffish extension — navigate pages, click elements, fill for…\n- `ext_navigate` — Navigate to a URL in the active tab of the connected browser.\n- `ext_back` — Navigate back in browser history.\n- `ext_forward` — Navigate forward in browser history.\n- `ext_reload` — Reload the current page.\n- `ext_click` — Click an element on the page by CSS selector, or text=<visible text> to target by text.\n- `ext_type` — Type text into an input element with optional human-like keystroke simulation.\n- `ext_select` — Select a value from a dropdown/select element.\n- `ext_hover` — Hover over an element to trigger hover states.\n- …and 50 more\n\n## document — Read, create, modify, convert, and merge documents (docx, html, markdown, plain text)\n- `document_read` — Read any document file and extract content as text, HTML, or Markdown. Supports docx, html, md, txt…\n- `document_create` — Create a professional .docx document with headings, paragraphs, tables, images, lists, headers, foo…\n- `document_modify` — Edit an existing .docx file — find-and-replace (with regex), insert or append content, change forma…\n- `document_template` — Fill a .docx template with data using {{placeholder}} syntax. Supports repeating sections for array…\n- `document_convert` — Convert between document formats. Supported: docx->html, docx->markdown, docx->text, html->docx, ma…\n- `document_merge` — Merge multiple documents into a single .docx file with optional page breaks between them.\n- `document_toc` — Generate or update a table of contents for a .docx document based on heading styles.\n- `document_metadata` — Read or set document metadata (author, title, subject, keywords, dates).\n- …and 2 more\n\n## pdf — Read, create, modify, merge, split, secure, and compress PDF documents\n- `pdf_read` — Extract text, metadata, page count, and structure from a PDF file. Optionally restrict to specific …\n- `pdf_create` — Create a new PDF from scratch with text, headings, images, tables, page numbers, headers/footers. S…\n- `pdf_merge` — Merge multiple PDF files into a single PDF.\n- `pdf_split` — Split a PDF into multiple files by page ranges.\n- `pdf_modify` — Add watermark, headers, footers, page numbers, or stamps to an existing PDF.\n- `pdf_form` — Read form field names/values or fill form fields in a PDF.\n- `pdf_secure` — Encrypt or decrypt a PDF with a password.\n- `pdf_extract_images` — Extract all embedded images from a PDF and save them to a directory.\n- …and 1 more\n\n## spreadsheet — Read, create, modify, analyze, and convert spreadsheet files (xlsx, csv, tsv)\n- `spreadsheet_read` — Read any spreadsheet file (xlsx, csv, tsv) and return structured JSON data. Auto-detects format fro…\n- `spreadsheet_create` — Create a new spreadsheet file from scratch with multiple sheets, columns, rows, and styles.\n- `spreadsheet_modify` — Edit an existing spreadsheet — add/remove/rename sheets, insert/delete rows/columns, update cells, …\n- `spreadsheet_formula` — Add or set formulas in spreadsheet cells.\n- `spreadsheet_chart` — Add a chart to a spreadsheet (bar, line, pie, scatter, area).\n- `spreadsheet_style` — Apply formatting — conditional formatting, borders, colors, fonts, merge cells, freeze panes.\n- `spreadsheet_convert` — Convert between spreadsheet formats: xlsx to csv, csv to xlsx, tsv to xlsx, etc.\n- `spreadsheet_analyze` — Quick data analysis — summary statistics per column (min, max, avg, median, count, sum), detect typ…\n- …and 2 more",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_216",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_217",
+          "toolCallId": "call_00_dTbhveNdeKWUM7lZsXMl8366",
+          "name": "browser_launch",
+          "args": {
+            "headless": true,
+            "viewport_width": 1280,
+            "viewport_height": 900
+          },
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_219",
+          "toolCallId": "call_00_dTbhveNdeKWUM7lZsXMl8366",
+          "status": "success",
+          "output": "{\"session_id\":\"34c6abde-d9a2-46c0-8efd-ace3bfc39345\",\"tab_id\":\"e6a4aef8-e180-4bb4-8817-6bcc284b07aa\",\"browser\":\"chromium\",\"headless\":true,\"viewport\":{\"width\":1280,\"height\":900}}",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_220",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_221",
+          "toolCallId": "call_00_tebp85EVUaRQ7cegEbuo6926",
+          "name": "browser_navigate",
+          "args": {
+            "session_id": "34c6abde-d9a2-46c0-8efd-ace3bfc39345",
+            "url": "file:///Users/younes/.wolffish/workspace/files/younes-ai-daily/younes-ai-daily.html",
+            "wait_until": "networkidle",
+            "timeout_ms": 15000
+          },
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_223",
+          "toolCallId": "call_00_tebp85EVUaRQ7cegEbuo6926",
+          "status": "success",
+          "output": "{\"url\":\"file:///Users/younes/.wolffish/workspace/files/younes-ai-daily/younes-ai-daily.html\",\"title\":\"\",\"status\":200}",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_224",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_225",
+          "toolCallId": "call_00_tCVw6c08saoN6gYEtf1o3960",
+          "name": "browser_screenshot",
+          "args": {
+            "full_page": true,
+            "session_id": "34c6abde-d9a2-46c0-8efd-ace3bfc39345",
+            "format": "png"
+          },
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_227",
+          "toolCallId": "call_00_tCVw6c08saoN6gYEtf1o3960",
+          "status": "success",
+          "output": "{\"path\":\"/Users/younes/.wolffish/workspace/brain/cerebellum/.browser/plugin/screenshots/1783867441909.png\",\"format\":\"png\",\"media_url\":\"wolffish-media://brain%2Fcerebellum%2F.browser%2Fplugin%2Fscreenshots%2F1783867441909.png\"}",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_228",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_229",
+          "toolCallId": "call_00_DoGs5lS4vsKTmOGTdJKJ9794",
+          "name": "browser_pdf",
+          "args": {
+            "output_path": "/Users/younes/.wolffish/workspace/files/younes-ai-daily/Younes_AI_Daily_2026-07-12.pdf",
+            "session_id": "34c6abde-d9a2-46c0-8efd-ace3bfc39345",
+            "print_background": true,
+            "format": "A4"
+          },
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_231",
+          "toolCallId": "call_00_DoGs5lS4vsKTmOGTdJKJ9794",
+          "status": "success",
+          "output": "{\"path\":\"/Users/younes/.wolffish/workspace/files/younes-ai-daily/Younes_AI_Daily_2026-07-12.pdf\"}",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_232",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_233",
+          "toolCallId": "call_00_AGhMnKygou4FE9LaC4VL3058",
+          "name": "shell_exec",
+          "args": {
+            "command": "ls -lh ~/.wolffish/workspace/files/younes-ai-daily/Younes_AI_Daily_2026-07-12.pdf"
+          },
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_235",
+          "toolCallId": "call_00_AGhMnKygou4FE9LaC4VL3058",
+          "status": "success",
+          "output": "-rw-r--r--@ 1 younes  staff   192K Jul 12 17:44 /Users/younes/.wolffish/workspace/files/younes-ai-daily/Younes_AI_Daily_2026-07-12.pdf",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9",
+          "meta": {
+            "label": "List files",
+            "cwd": "/Users/younes",
+            "durationMs": 92,
+            "exitCode": 0,
+            "truncated": false
+          }
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_236",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_237",
+          "toolCallId": "call_00_Z1nPPEevOHqyzUbHWDyl3191",
+          "name": "tool_activate",
+          "args": {
+            "capability": "pdf"
+          },
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_239",
+          "toolCallId": "call_00_Z1nPPEevOHqyzUbHWDyl3191",
+          "status": "success",
+          "output": "Loaded `pdf`.\n\n## pdf [loaded] — Read, create, modify, merge, split, secure, and compress PDF documents\n- `pdf_read` — Extract text, metadata, page count, and structure from a PDF file. Optionally restrict to specific …\n- `pdf_create` — Create a new PDF from scratch with text, headings, images, tables, page numbers, headers/footers. S…\n- `pdf_merge` — Merge multiple PDF files into a single PDF.\n- `pdf_split` — Split a PDF into multiple files by page ranges.\n- `pdf_modify` — Add watermark, headers, footers, page numbers, or stamps to an existing PDF.\n- `pdf_form` — Read form field names/values or fill form fields in a PDF.\n- `pdf_secure` — Encrypt or decrypt a PDF with a password.\n- `pdf_extract_images` — Extract all embedded images from a PDF and save them to a directory.\n- …and 1 more",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_240",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_241",
+          "toolCallId": "call_00_9iOWgglPePptgjj5hOUy5693",
+          "name": "pdf_read",
+          "args": {
+            "path": "/Users/younes/.wolffish/workspace/files/younes-ai-daily/Younes_AI_Daily_2026-07-12.pdf",
+            "pages": "1-2"
+          },
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_243",
+          "toolCallId": "call_00_9iOWgglPePptgjj5hOUy5693",
+          "status": "success",
+          "output": "{\n  \"path\": \"/Users/younes/.wolffish/workspace/files/younes-ai-daily/Younes_AI_Daily_2026-07-12.pdf\",\n  \"pages\": 9,\n  \"metadata\": {\n    \"title\": null,\n    \"author\": null,\n    \"subject\": null,\n    \"creator\": null,\n    \"producer\": null\n  },\n  \"text\": \"--- Page 1 ---\\n🤖  Younes AI Daily  ٢٠٢٦   ﻮ ﻴ ﻟ ﻮ ﻳ   ١٢  ﺔ ﻌ ﻳ رس و   ﺔ ﻔ ﻴ ﻔ ﺧ   ﺔ ﻴ ﻣ ﻮ ﻳ   ﺔ ﺻ ﻼ ﺧ  ﻲ ﻋ ﺎ ﻨ ﻄ ﺻ ﻻ ء ا ﺎ ﻛ ﺬ ﻟ ر ا ﺎ ﺒ ﺧ أ   ﻢ ﻫ ﻷ  🐟   ض ﺎ ﻳ ﺮ ﻟ ا   ﺐ ﻠ ﻗ   ﻦ ﻣ  ●   ●   ● ●   ●   ●\\n--- Page 2 ---\\n⚖  ﺔ ﻳ   ر ﺎ ﺠ ﺘ ﻟ ار ا رس ﻷ ا   ﺔ ﻗ رس   ﺔ ﻤ ﻬ ﺘ ﺑ   OpenAI   يض ﺎ ﻘ ﺗ   ﻞ ﺑ آ  ﻖ ﺑ ﺎ ﺳ   ﻒ ﻇ ﻮ ﻣ   ٤٠٠   ﻦ ﻣ   رث ﻛ   أ   ﻒ ﻴ ﻇ ﻮ ﺗ   رب ﻋ   ﺔ ﻳ ر ﺎ ﺠ ﺗ   ار رس أ   ﺔ ﻗ رس ﺑ   OpenAI   ﻢ ﻬ ﺘ ﺗ   ﺔ ﻴ ﻟ را ﺪ ﻴ ﻓ   ى ﻮ ﻋ د   ﻞ ﺑ آ   ﺖ ﻌ ﻓ ر  . ﺎ ﻬ ﻳ ﺪ ﻟ   ﻲ ﻋ ﺎ ﻨ ﻄ ﺻ ﻻ ء ا ﺎ ﻛ ﺬ ﻟ وا   ﻖ ﺋ ﺎ ﻗ ﺮ ﻟ ق ا ﺮ ﻓ   ﻦ ﻣ  ﺶ ﻔ ﻟ رأي و   🐟  ﻢ ﺳ ر   ﺪ ﻴ ﻌ ﺗ   ﻦ ﻜ ﻤ ﻣ   ﺔ ﻴ ﻀ ﻘ ﻟ ي ا ﺬ ﻫ — و   ﺔ ﺣ ﻮ ﺘ ﻔ ﻣ   ب ﺮ ﺣ   ىل ة إ ﺄ ﺠ ﻓ   ﺖ ﺒ ﻠ ﻘ ﻧ ا   OpenAI   و   ﻞ ﺑ آ   ني ﺑ   ﺔ ﻴ ﺒ ﻫ ﺬ ﻟ ا   ﺔ ﻛ ا رش ﻟ ا  . ﻞ ﻣ ﺎ ﻛ   ع ﺎ ﻄ ﻘ ﻟ ا   يف   ت ﺎ ﻔ ﻟ ﺎ ﺤ ﺘ ﻟ ا   ﺔ ﻄ ﻳ ﺮ ﺧ  ﻞ ﺟ ﺎ ﻋ ين ﻮ ﻧ ﺎ ﻗ ﺔ ﻋ ﺎ ﻨ ﺻ  CNBC / The Guardian — July 10–11, 2026\\n\",\n  \"requestedPages\": \"1-2\",\n  \"fileSize\": 196813\n}",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_244",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_245",
+          "delta": "9 pages confirmed — cover + 8 items. Now delivering to Telegram.",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_260",
+          "toolCallId": "call_00_b1kXnMjJUMIa5LeG8BlA6436",
+          "name": "browser_close",
+          "args": {
+            "session_id": "34c6abde-d9a2-46c0-8efd-ace3bfc39345"
+          },
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_262",
+          "toolCallId": "call_00_b1kXnMjJUMIa5LeG8BlA6436",
+          "status": "success",
+          "output": "Browser session closed.",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_263",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_264",
+          "toolCallId": "call_00_9if8FB7jix6dh0yi3l2x2271",
+          "name": "telegram_send_document",
+          "args": {
+            "path": "files/younes-ai-daily/Younes_AI_Daily_2026-07-12.pdf",
+            "caption": "📰 <b>Younes AI Daily</b> — ١٢ يوليو ٢٠٢٦\n\nخلاصة خفيفة لأهم ٨ أخبار في الذكاء الاصطناعي اليوم ⚡\n\n<b>🦞 أبرز العناوين:</b>\n⚖️ آبل تقاضي OpenAI\n🚀 عائلة GPT-5.6 تنطلق\n⚡ Grok 4.5 من SpaceXAI\n🔍 بحث Google ١٠٠٪ AI\n🧠 أنثروبيك تكشف أسرار Claude الداخلية\n💰 أكبر إدراج ADR في التاريخ\n🤖 موجة اكتتابات الروبوتات البشرية\n🎨 ميتا تدخل حلبة الصور والبرمجة\n\nجاهز للنشر على LinkedIn 🐟"
+          },
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_266",
+          "toolCallId": "call_00_9if8FB7jix6dh0yi3l2x2271",
+          "status": "success",
+          "output": "Sent. message_id=1337 to=8417306252 kind=document",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_td_12ocxmv_2a",
+          "toolCallId": "call_td_12ocxmv_2",
+          "name": "todo_write",
+          "args": {
+            "todos": [
+              {
+                "content": "Plan the workflow",
+                "status": "completed"
+              },
+              {
+                "content": "Fan the work out to sub-agents",
+                "status": "completed"
+              },
+              {
+                "content": "Make HTTP request",
+                "status": "completed"
+              },
+              {
+                "content": "Fan the work out to sub-agents",
+                "status": "completed"
+              },
+              {
+                "content": "Run base64 and regular.b64)",
+                "status": "completed"
+              },
+              {
+                "content": "Send it on Telegram",
+                "status": "completed",
+                "priority": "high"
+              }
+            ]
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_td_12ocxmv_2b",
+          "toolCallId": "call_td_12ocxmv_2",
+          "status": "success",
+          "output": "6 todos (6 completed, 0 in progress)\n[\n  {\n    \"content\": \"Plan the workflow\",\n    \"status\": \"completed\"\n  },\n  {\n    \"content\": \"Fan the work out to sub-agents\",\n    \"status\": \"completed\"\n  },\n  {\n    \"content\": \"Make HTTP request\",\n    \"status\": \"completed\"\n  },\n  {\n    \"content\": \"Fan the work out to sub-agents\",\n    \"status\": \"completed\"\n  },\n  {\n    \"content\": \"Run base64 and regular.b64)\",\n    \"status\": \"completed\"\n  },\n  {\n    \"content\": \"Send it on Telegram\",\n    \"status\": \"completed\",\n    \"priority\": \"high\"\n  }\n]"
+        },
+        {
+          "kind": "todo",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_td_12ocxmv_2c",
+          "items": [
+            {
+              "content": "Plan the workflow",
+              "status": "completed"
+            },
+            {
+              "content": "Fan the work out to sub-agents",
+              "status": "completed"
+            },
+            {
+              "content": "Make HTTP request",
+              "status": "completed"
+            },
+            {
+              "content": "Fan the work out to sub-agents",
+              "status": "completed"
+            },
+            {
+              "content": "Run base64 and regular.b64)",
+              "status": "completed"
+            },
+            {
+              "content": "Send it on Telegram",
+              "status": "completed",
+              "priority": "high"
+            }
+          ]
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_267",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_268",
+          "delta": "---\n\n**تم التسليم 🐟**\n\n📄 **Younes AI Daily** — ٩ صفحات، ٨ أخبار مختارة من ~٣٥ مرشحًا بعد مسح واسع لعشرات المصادر.\n\n**اللي بالداخل:**\n| # | القصة | النوع |\n|---|-------|-------|\n| ١ | آبل تقاضي OpenAI | ⚖️ عاجل |\n| ٢ | إطلاق GPT-5.6 (Sol/Terra/Luna) | 🚀 نماذج |\n| ٣ | Grok 4.5 من SpaceXAI + Cursor | ⚡ برمجة |\n| ٤ | بحث Google صار ١٠٠٪ AI | 🔍 تحول هيكلي |\n| ٥ | أنثروبيك تكتشف J-Space | 🧠 بحث |\n| ٦ | SK Hynix أكبر ADR بالتاريخ | 💰 تمويل |\n| ٧ | موجة اكتتابات الروبوتات | 🤖 ترند |\n| ٨ | ميتا تدخل الصور والبرمجة | 🎨 إطلاق |\n\n**الشغل التقني:**\n- IBM Plex Arabic مضمن كـ base64 (ما يحتاج نت)\n- RTL كامل، صفحة كاملة لكل خبر، خلفية متدرجة نظيفة\n- كل خبر مسند لمصدره + تاريخه\n- الخط verified — يظهر فعلاً في PDF، مو fallback\n\nجاهز لـ LinkedIn. لو تبغى أضبط أي شي — حجم خط، ألوان، مسافات — قلي وأنا أعدّله وأعيد الإرسال.",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1783867165567_4zmbe1",
+          "segmentId": "seg_611",
+          "stopReason": "end_turn",
+          "iterationCount": 23,
+          "reasoningContent": "The PDF has been delivered to Telegram. Let me now do the wrap-up.\n\nLet me run the self-test from the operating manual:\n\n1. **The ask**: The user wanted an Arabic PDF digest called \"Younes AI Daily\" with AI news, delivered to Telegram for LinkedIn posting. Yes — I did exactly that.\n\n2. **The provenance**: All 8 items were cross-verified across 2+ independent sources by the research agents. Sources are cited on each page with date. The Google Search story was flagged as \"unrot.co / multiple reports\" — it's from aggregator sources so it's somewhat secondhand, but it was confirmed by a2 and a3 independently.\n\n3. **The aim**: Effort went into wide research (3 parallel agents, ~35 candidates) and careful curation, which is where being wrong is silent and expensive (publishing wrong news on LinkedIn is reputation-damaging).\n\n4. **The attack**: I cross-referenced across 3 agents and only included items that appeared in at least 2 independent sources. The Google Search story is the weakest link — unrot.co is a new aggregator. I flagged it appropriately.\n\n5. **The cut**: Each page is independently checkable — one item per page, source cited. If one item is wrong, it doesn't poison the others.\n\nThe deliverable:\n- 9-page PDF: 1 cover + 8 news items\n- Each item: Arabic headline, detail, Wolffish take, chips, source attribution\n- IBM Plex Arabic embedded\n- Full-bleed design with minimal colors\n- Delivered to Telegram\n\nLet me write a clean wrap-up now.",
+          "conversationId": "2026-07-12_17-39-25_550-be7da9"
+        }
+      ],
+      "toolTimings": {
+        "call_00_NF4jRNqq9ije3X10xHp96968": {
+          "startedAt": 1783867178333,
+          "endedAt": 1783867178402
+        },
+        "call_00_g6Q3e0HwsrSdOw1Vp5x08595": {
+          "startedAt": 1783867187566,
+          "endedAt": 1783867187624
+        },
+        "call_00_xrAgjSoO6VolF4w3CmHa4934": {
+          "startedAt": 1783867197424,
+          "endedAt": 1783867197546
+        },
+        "call_00_AzYjtdhDaE0yr1bmm2Jf7575": {
+          "startedAt": 1783867205205,
+          "endedAt": 1783867205344
+        },
+        "call_00_NXN9JoC1b2TELooDrL623142": {
+          "startedAt": 1783867212843,
+          "endedAt": 1783867212973
+        },
+        "call_00_Kwwrs3bqCXnB1fuLfKVo3356": {
+          "startedAt": 1783867217666,
+          "endedAt": 1783867220224
+        },
+        "call_00_NxPLiJoGNXBPpBMHVUjY9725": {
+          "startedAt": 1783867223236,
+          "endedAt": 1783867282792
+        },
+        "call_00_8PabBF5sjyFkxrzFpVVM8392": {
+          "startedAt": 1783867285867,
+          "endedAt": 1783867293424
+        },
+        "call_00_DiXjUBxnl9z5UNSsT0Mx1667": {
+          "startedAt": 1783867297652,
+          "endedAt": 1783867339122
+        },
+        "call_00_wuYVJFn5zham8WAas6H07474": {
+          "startedAt": 1783867361409,
+          "endedAt": 1783867361508
+        },
+        "call_00_vr11VemYboCBKvcLCrkU9493": {
+          "startedAt": 1783867420360,
+          "endedAt": 1783867420507
+        },
+        "call_00_e3PpalCJanZ4F0liMvlR7059": {
+          "startedAt": 1783867426630,
+          "endedAt": 1783867426694
+        },
+        "call_00_dTbhveNdeKWUM7lZsXMl8366": {
+          "startedAt": 1783867433240,
+          "endedAt": 1783867433985
+        },
+        "call_00_tebp85EVUaRQ7cegEbuo6926": {
+          "startedAt": 1783867437805,
+          "endedAt": 1783867438415
+        },
+        "call_00_tCVw6c08saoN6gYEtf1o3960": {
+          "startedAt": 1783867441881,
+          "endedAt": 1783867442205
+        },
+        "call_00_DoGs5lS4vsKTmOGTdJKJ9794": {
+          "startedAt": 1783867446554,
+          "endedAt": 1783867448155
+        },
+        "call_00_AGhMnKygou4FE9LaC4VL3058": {
+          "startedAt": 1783867451060,
+          "endedAt": 1783867451152
+        },
+        "call_00_Z1nPPEevOHqyzUbHWDyl3191": {
+          "startedAt": 1783867453623,
+          "endedAt": 1783867453694
+        },
+        "call_00_9iOWgglPePptgjj5hOUy5693": {
+          "startedAt": 1783867460254,
+          "endedAt": 1783867460383
+        },
+        "call_00_b1kXnMjJUMIa5LeG8BlA6436": {
+          "startedAt": 1783867465248,
+          "endedAt": 1783867465429
+        },
+        "call_00_9if8FB7jix6dh0yi3l2x2271": {
+          "startedAt": 1783867471004,
+          "endedAt": 1783867471488
+        },
+        "call_td_12ocxmv_2": {
+          "startedAt": 1783867472088,
+          "endedAt": 1783867472128
+        },
+        "call_td_12ocxmv_1": {
+          "startedAt": 1783867176933,
+          "endedAt": 1783867176973
+        }
+      },
+      "stopReason": "end_turn",
+      "timestamp": 1783867165566
+    }
+  ],
+  "stats": {
+    "allTime": {
+      "processingMs": 320133,
+      "apiMs": 195770,
+      "turns": 1,
+      "apiCalls": 49,
+      "toolCalls": 24,
+      "inputTokens": 279482,
+      "outputTokens": 29860,
+      "cacheReadTokens": 1332864,
+      "cacheCreationTokens": 0,
+      "cost": 0.10228610899999999
+    },
+    "lastTurn": {
+      "endedAt": 1783867485700,
+      "elapsedMs": 320133,
+      "apiMs": 195770,
+      "apiCalls": 23,
+      "toolCalls": 24,
+      "inputTokens": 135419,
+      "outputTokens": 11004,
+      "cacheReadTokens": 783872,
+      "cacheCreationTokens": 0,
+      "cost": 0.10228610899999999,
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro"
+    },
+    "meter": {
+      "contextTokens": 53245,
+      "contextBudget": 1000000,
+      "compactionAt": 725424,
+      "model": "deepseek-v4-pro"
+    }
+  },
+  "projectId": "a3f1c07e-5b42-4d19-9c8e-2d7a6f0b1e54"
+}

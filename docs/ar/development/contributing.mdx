@@ -1,0 +1,195 @@
+---
+title: "المساهمة"
+description: "كيفية المساهمة في وولفيش - الكود والقدرات والتوثيق"
+---
+
+# ثلاث طرق للمساهمة
+
+<Warning>
+  **لم يعد وولفيش قيد التطوير.** طلبات الدمج والمشاكل على [المستودع الأصلي](https://github.com/younes-alturkey/wolffish) لا تُراجَع. انسخه، واعتبر بقية هذه الصفحة دليلًا للعمل في نسختك الخاصة.
+</Warning>
+
+هناك ثلاث طرق للمساهمة في نسخةٍ من وولفيش:
+
+<CardGroup cols={1}>
+  <Card title="الكود" icon="code">
+    TypeScript - إصلاح الأخطاء، إضافة الميزات، تحسين بيئة التشغيل.
+  </Card>
+  <Card title="القدرات" icon="puzzle-piece">
+    SKILL.md + إضافة اختيارية - علّم وولفيش أشياء جديدة.
+  </Card>
+  <Card title="التوثيق" icon="book">
+    صفحات MDX - حسّن أو ترجم الوثائق.
+  </Card>
+</CardGroup>
+
+---
+
+## المساهمات البرمجية
+
+### سير العمل
+
+1. انسخ المستودع واستنسخ نسختك
+2. أنشئ فرع ميزة:
+   ```bash
+   git checkout -b feature/my-thing
+   # or
+   git checkout -b fix/the-bug
+   ```
+3. أجرِ تغييراتك
+4. تحقق:
+   ```bash
+   npm run typecheck && npm run lint
+   ```
+5. اختبر تغييرات الواجهة في المتصفح (`npm run dev`)
+6. أنشئ التزامًا بالتنسيق التقليدي
+7. ادفع وافتح طلب سحب ضد `main`
+
+### رسائل الالتزام
+
+استخدم [الالتزامات التقليدية](https://www.conventionalcommits.org/):
+
+```
+type(scope): subject
+
+feat(runtime): add token counting to prefrontal
+fix(renderer): prevent flash on theme switch
+refactor(motor): simplify retry logic
+docs(capabilities): add plugin lifecycle diagram
+```
+
+الأنواع الشائعة: `feat`، `fix`، `refactor`، `docs`، `chore`، `test`
+
+### اتفاقيات الكود
+
+<AccordionGroup>
+  <Accordion title="لا تعليقات إلا إذا كان السبب غير واضح">
+    يجب أن يكون الكود موثقًا ذاتيًا. إذا احتجت لتعليق، اشرح لماذا وليس ماذا.
+    ```typescript
+    // Bad
+    // Get the user
+    const user = getUser()
+
+    // Good — the WHY is non-obvious
+    // Fallback to default user when workspace has no user.md yet
+    const user = getUser() ?? DEFAULT_USER
+    ```
+  </Accordion>
+
+  <Accordion title="لا إفراط في التجريد">
+    لا تُنشئ تجريدات حتى يكون لديك ثلاث حالات استخدام ملموسة. إصلاح الخطأ هو إصلاح خطأ - لا تُعد هيكلة العالم حوله.
+  </Accordion>
+
+  <Accordion title="لا تبعيات غير ضرورية">
+    قبل إضافة حزمة، تحقق مما إذا كانت المكتبة القياسية أو التبعيات الحالية تغطيها بالفعل. يستخدم وولفيش `fetch()` مباشرة بدلاً من Axios، و `mitt` بدلاً من EventEmitter3، وهكذا.
+  </Accordion>
+
+  <Accordion title="IPC هي القناة الوحيدة بين main و renderer">
+    لا تستورد أبدًا من `@main/*` في كود العارض. جميع الاتصالات تمر عبر قنوات IPC المعرّفة في طبقة preload.
+    ```typescript
+    // In renderer — use the exposed API
+    const result = await window.api.someChannel(args)
+
+    // NEVER do this in renderer
+    import { something } from '@main/some-module' // Breaks process isolation
+    ```
+  </Accordion>
+
+  <Accordion title="لا تكتب أبدًا خارج ~/.wolffish/">
+    البصمة الكاملة للتطبيق موجودة في `~/.wolffish/`. لا تكتب أبدًا على سطح المكتب أو المستندات أو المجلدات المؤقتة أو أي مكان آخر. إذا احتاجت ميزة لتخزين، ضعها داخل مساحة العمل.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## المساهمة بالقدرات
+
+القدرات هي أسهل طريقة لتوسيع وولفيش دون المساس بالكود الأساسي.
+
+### إنشاء قدرة
+
+1. أنشئ مجلدًا في `src/defaults/workspace/brain/cerebellum/`:
+   ```
+   brain/cerebellum/my-capability/
+   ├── SKILL.md          # Required — defines triggers, tools, behavior
+   └── plugin/           # Optional — custom tool logic
+       └── index.mjs
+   ```
+
+2. اكتب `SKILL.md` مع البيانات الوصفية المناسبة:
+   ```yaml
+   ---
+   name: my-capability
+   description: What this capability does
+   triggers:
+     - keyword that activates this
+     - another trigger phrase
+   tools:
+     - name: my_tool
+       description: What this tool does
+       parameters:
+         type: object
+         properties:
+           input:
+             type: string
+             description: The input to process
+         required: [input]
+   danger:
+     - pattern: "rm -rf"
+       reason: "Destructive file operation"
+   ---
+
+   # Instructions for the LLM
+
+   When the user asks about [topic], use the `my_tool` tool to...
+   ```
+
+3. اختبر مع النماذج السحابية (DeepSeek، Claude، GPT) والنماذج المحلية (Ollama) - يجب أن يكون السلوك متسقًا.
+
+### مشاركة القدرات
+
+يمكن أن تكون القدرات أيضًا في مستودعات مستقلة. يستنسخها المستخدمون مباشرة في مجلد `~/.wolffish/workspace/brain/cerebellum/`:
+
+```bash
+cd ~/.wolffish/workspace/brain/cerebellum/
+git clone https://github.com/you/wolffish-capability-name.git
+```
+
+يكتشفها وولفيش عند التشغيل التالي.
+
+---
+
+## المساهمة في التوثيق
+
+### الإعداد
+
+الوثائق موجودة في مجلد `docs/` داخل مستودع التطبيق:
+
+```bash
+git clone https://github.com/younes-alturkey/wolffish.git
+cd wolffish/docs
+npx mintlify dev
+```
+
+### التنسيق
+
+- ملفات MDX مع مكونات Mintlify (`Card`، `CardGroup`، `Note`، `Tip`، `Warning`، `Tabs`، `Accordion`، إلخ.)
+- حافظ على المحتوى عمليًا وموجزًا
+- استخدم كتل الكود بكثرة
+
+### الترجمات
+
+<Warning>
+  الترجمات العربية مطلوبة لجميع الصفحات الجديدة. يعكس مجلد `ar/` بنية الإنجليزية بالضبط.
+</Warning>
+
+لكل صفحة جديدة في `section/page.mdx`، أنشئ صفحة مقابلة في `ar/section/page.mdx` بنفس البنية والمحتوى المترجم. حدّث تنقل `mint.json` لكلا الإصدارين.
+
+<CardGroup cols={2}>
+  <Card title="إعداد بيئة التطوير" icon="terminal" href="/ar/development/setup">
+    شغّل بيئة التطوير أولاً.
+  </Card>
+  <Card title="إضافة وحدات الدماغ" icon="brain" href="/ar/development/adding-brain-modules">
+    تساهم بوحدة بيئة تشغيل جديدة؟ اقرأ هذا.
+  </Card>
+</CardGroup>

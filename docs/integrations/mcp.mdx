@@ -1,0 +1,214 @@
+---
+title: "MCP Servers"
+description: "Connect any Model Context Protocol server — local or remote — and its tools become Wolffish's tools"
+---
+
+# Any Tool Server, One Paste
+
+[MCP (Model Context Protocol)](https://modelcontextprotocol.io) is the open standard for tool servers — a fast-growing ecosystem of servers that expose databases, SaaS products, design apps, and domain knowledge as tools an agent can call. Wolffish supports MCP as a first-class citizen: paste a command or a URL in **Settings → MCP**, and every tool that server exposes becomes available to Wolffish on your very next message — in normal chat and to [workflow](/configuration/workflow-mode) agents alike. No separate "connect" step, no restart, no configuration files.
+
+Connections look after themselves. A crashed local server or a dropped remote endpoint never produces an error modal — its tools quietly step aside while Wolffish reconnects in the background, and return on their own when the server is back.
+
+## Connecting a Server
+
+<Steps>
+  <Step title="Open Settings → MCP">
+    The MCP page shows your connections, an add form, and a short explainer.
+  </Step>
+  <Step title="Paste a command or a URL">
+    Wolffish auto-detects the transport from what you paste:
+
+    - **A command** (e.g. `uvx tafsir-mcp` or `npx -y @scope/some-server`) runs a **local server**: Wolffish spawns it as a child process and speaks MCP over stdin/stdout.
+    - **An `http(s)://` URL** (e.g. `https://mcp.notion.com/mcp`) connects to a **remote server** over streamable HTTP (with automatic fallback for legacy SSE-only servers).
+
+    The name is optional — Wolffish derives one from the command's binary or the URL's host.
+  </Step>
+  <Step title="That's it">
+    The connection starts immediately. A local server's tools typically appear within a second or two; if a remote server requires sign-in, the card shows a **Sign in** button (see below). Either way, the tools are callable on your next message.
+  </Step>
+</Steps>
+
+<Tip>
+  Local commands run without a shell — quotes are handled (`--db "/path/with spaces/db.sqlite"`), but shell expansion (`~`, `$VAR`, pipes) is not. Use absolute paths.
+</Tip>
+
+### Environment variables for local servers
+
+Local servers that need credentials take them as environment variables. When the add form detects a command, an optional **Environment variables** field appears — one `KEY=value` per line. These are injected into the spawned process only; they are never sent to the LLM.
+
+```
+API_KEY=sk-…
+DATABASE_URL=postgres://…
+```
+
+## What You Get
+
+Each connected server registers as its own capability, namespaced so two servers can never collide:
+
+- The capability is named `mcp-<slug>` (e.g. `mcp-tafsir-mcp`).
+- Each tool is prefixed with the server's slug: `tafsir_mcp_fetch_ayah`, `notion_mcp_search`, ….
+- The server's own **instructions** (usage guidance many servers publish) ride along in the capability's description, so the model uses the tools the way the server intends.
+
+MCP servers are **discoverable**, like every non-core capability: a connected server costs one line in the system prompt's capability index (name, short description, tool count) until the model actually needs it. `tool_search` — or calling one of the server's tools directly — activates the capability, and its tools are callable the same turn. That's what makes "add a connection, use it next message" true without every connected server bloating every request. Workflow agents get the same tools through the same path; nothing is special-cased.
+
+Wolffish also defends its prompt against whatever a server ships: each tool's description is sanitized (markdown headings and XML-ish tags stripped, structure flattened to one line) and capped at 400 characters, so no server can forge prompt structure or reintroduce catalog bloat. Tool *schemas*, by contrast, pass through verbatim.
+
+Connection state is checked with `mcp_list`, never inferred from tool presence — a discoverable server's tools aren't in the request until activated, and a server can drop and reconnect between turns.
+
+If a server adds or removes tools at runtime, Wolffish picks the change up automatically (via MCP's `list_changed` notification, with a periodic check as backstop).
+
+## The Connection Card
+
+Each connection is one card: status dot + name, actions, a status line, and the address in a copyable code block.
+
+| Status | Dot | Meaning |
+|---|---|---|
+| Connected | green | Live — shows the tool count |
+| Connecting | amber (pulsing) | Handshake in progress — the code block shows the live step (`[2/3] MCP handshake (initialize)`) |
+| Sign-in required | amber | Remote server needs OAuth — an alert card with a **Sign in** button appears |
+| Offline | neutral | Server unreachable — Wolffish is silently reconnecting; the error shows verbatim in a code block |
+| Disabled | neutral | Paused by you — configuration and sign-in are kept |
+
+**Actions per card:**
+
+- **Test** (refresh icon) — pings a connected server and reports tool count + latency as a toast; kicks an offline one into reconnecting immediately.
+- **On/Off toggle** — pause a server without deleting it. Its tools drop out; its config and sign-in are kept.
+- **Delete** (trash icon) — removes the connection and everything it owned: the config entry, stored sign-in tokens, and (for OAuth servers) a best-effort token revocation at the provider so no stale "connected app" lingers on their side.
+
+<Note>
+  Slow first launches are normal for some local servers — e.g. `uvx tafsir-mcp` downloads a ~214 MB database on its first run. The connecting card shows exactly which step it's on, and Wolffish waits up to 5 minutes for a local server's first handshake.
+</Note>
+
+## Signing In (Remote OAuth)
+
+Some remote servers (Notion, Linear, Sentry, …) require sign-in. Wolffish implements the standard MCP OAuth handshake — you never type a password or token into Wolffish:
+
+<Steps>
+  <Step title="Wolffish detects it">
+    Adding the URL lands the card in **Sign-in required**. Behind the scenes Wolffish already discovered the server's authorization endpoints and registered itself as an OAuth client (Dynamic Client Registration, as `Wolffish`).
+  </Step>
+  <Step title="One click">
+    **Sign in** opens your default browser at the provider's consent page. You authenticate with the provider directly.
+  </Step>
+  <Step title="The browser comes back">
+    After you approve, the provider redirects your browser to a one-shot listener on `127.0.0.1` — the standard native-app OAuth pattern (RFC 8252, same as the `gh` and `gcloud` CLIs). Wolffish exchanges the one-time code for tokens (PKCE-verified) and connects. The tab shows "You're connected — return to Wolffish."
+  </Step>
+</Steps>
+
+From then on it's silent forever: tokens are stored with your other credentials in `config.json`, requests carry them automatically, expiries refresh in the background, and app restarts reconnect without a browser. Deleting the connection wipes the tokens locally **and** revokes them at the provider (fire-and-forget — deletion never waits on it).
+
+<Warning>
+  Silent connects never open a browser — a server that needs sign-in simply waits in the **Sign-in required** state until you click. Only that click (or Wolffish's `mcp_authorize` tool, on your instruction) triggers the browser handoff.
+</Warning>
+
+## Managing by Chat
+
+Wolffish manages its own MCP connections through the built-in [`mcp` capability](/capabilities/built-in-capabilities) (discoverable like any other — the model finds it the moment you ask about MCP). It performs the same operations as the settings page, so whatever it does shows up there live, and whatever you do there is visible to it.
+
+| Tool | What it does |
+|---|---|
+| `mcp_list` | Every server with live status and tool count |
+| `mcp_add` | Add + connect a server (command or URL, optional name/env) |
+| `mcp_test` | Verify a server now; kick a stuck one into reconnecting |
+| `mcp_enable` / `mcp_disable` | Pause or resume without deleting |
+| `mcp_remove` | Remove a server and everything it owned (asks you to confirm) |
+| `mcp_authorize` | Start the browser sign-in for a remote server |
+
+In practice you just talk: *"connect the tafsir MCP server with `uvx tafsir-mcp`"*, *"which MCP servers are connected?"*, *"disable that one for now"*, *"remove it completely."*
+
+## Resilience
+
+The failure model is: **one server misbehaving must never affect another server, the app, or your turn.**
+
+- **Silent reconnection.** A dropped connection re-tries with exponential backoff (1s doubling to a 2-minute cap, forever for remote servers). No toasts, no red banners — the dot goes neutral, the error shows in the card, and the tools return when the server does.
+- **Mid-turn blips are survivable.** If a server drops in the middle of a task, its tools stay registered and calls return a retryable network error — the execution engine retries briefly, so a quick recovery rescues the call instead of failing the turn.
+- **Passive health checks.** Local servers are watched by process liveness (a crash is detected the moment the pipe closes). Remote servers get a cheap periodic `tools/list` ping, which doubles as a tool-list refresh.
+- **Broken commands park.** A local command that fails deterministically (typo, missing runtime) stops respawning after 5 attempts — no infinite `npx`/`uvx` re-download loop. The card shows the process's own error output; a Test click or restart re-arms it.
+- **Isolation.** Every connection is its own state machine. A flapping server churns alone; a crashed child process is reaped and respawned without touching anything else.
+
+## Configuration Reference
+
+Connections persist in `config.json` under `mcp.servers`. The settings page and chat tools manage this for you — documented here for completeness:
+
+```json
+{
+  "mcp": {
+    "servers": [
+      {
+        "id": "5f2c…",
+        "name": "tafsir-mcp",
+        "slug": "tafsir-mcp",
+        "transport": "stdio",
+        "command": "uvx tafsir-mcp",
+        "env": { "API_KEY": "…" },
+        "enabled": true
+      },
+      {
+        "id": "9a1b…",
+        "name": "Notion",
+        "slug": "notion",
+        "transport": "http",
+        "url": "https://mcp.notion.com/mcp",
+        "enabled": true,
+        "oauth": {
+          "clientInformation": { "client_id": "…" },
+          "tokens": { "access_token": "…", "refresh_token": "…" },
+          "redirectPort": 58340
+        }
+      }
+    ]
+  }
+}
+```
+
+| Field | Description |
+|---|---|
+| `name` | Display name shown in settings |
+| `slug` | Stable identifier chosen at add time — drives the capability name (`mcp-<slug>`) and tool prefix; never changes |
+| `transport` | `stdio` (local command) or `http` (remote URL) |
+| `command` / `env` | stdio only: the command line (tokenized, no shell) and extra environment variables |
+| `url` | http only: the remote endpoint |
+| `enabled` | The On/Off toggle |
+| `oauth` | Remote servers that signed in: the registered client, tokens, and the loopback callback port (kept stable so the registered redirect URI never drifts) |
+
+## Under the Hood
+
+For contributors — the implementation lives in `src/main/runtime/mcp/` in the app repo:
+
+| Module | Role |
+|---|---|
+| `manager.ts` | `McpManager` — one connection per configured server; the surface the IPC handlers, boot path, and the `mcp` capability's host bridge all call |
+| `connection.ts` | `McpConnection` — one server's full lifecycle state machine: connect, discover, register, reconnect with backoff, health checks, park, OAuth orchestration |
+| `auth.ts` | The SDK `OAuthClientProvider` implementation, the loopback callback server, and best-effort token revocation |
+| `capability.ts` | Converts an MCP tool list into a cerebellum capability: namespacing, JSON-Schema passthrough, per-tool description sanitization (heading/tag stripping, 400-char cap), result normalization (text/image/audio/resource/structured content) |
+| `naming.ts` | Pure helpers: slugs, tool-name namespacing (64-char provider cap with dedupe), quote-aware command tokenizing |
+| `types.ts` | Config + snapshot types (source of truth; the preload mirrors them) |
+
+The integration seam is deliberately boring: each connected server registers an **in-process cerebellum capability** via `registerInProcessCapability` — the exact mechanism [channel tools](/channels/overview) use. That single registration feeds the capability index in the system prompt, tool discovery and activation, agent tool selection, and execution routing, which is why MCP tools reach every mode of Wolffish with zero special-casing. Registration bumps the cerebellum's generation counter (so a mid-turn change re-pins the tool list), survives capability reloads, and passes each tool's JSON Schema through **verbatim** — unions, defaults, and nested shapes arrive at the model untouched. Descriptions are the one thing that doesn't pass through raw: they're sanitized and length-capped before they can reach a request.
+
+Two hard-won lifecycle rules, for anyone touching this code: transient disconnects keep the capability registered (that's what makes mid-turn blips retryable and keeps the provider prompt cache stable), and the transport's close handler is attached only **after** a successful connect (a failed connect closes its own transport, and an early handler would misclassify auth failures as generic drops).
+
+Everything above is covered by standalone test suites in `src/main/runtime/__tests__/` — `mcp.test.ts` (lifecycle, naming, schemas, resilience against a real in-memory MCP server) and `mcp-oauth.test.ts` (the full OAuth journey against a local spec-shaped authorization server, including refresh and revocation).
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="A uvx / npx command won't connect">
+    The runner has to exist on your machine: `uvx` needs [uv](https://docs.astral.sh/uv/) (`brew install uv`), `npx` needs Node. A missing binary parks the card as Offline with a spawn error (`ENOENT`) in the code block. Install the runner, then hit Test.
+  </Accordion>
+  <Accordion title="A local server keeps failing and stops retrying">
+    After 5 consecutive failed launches Wolffish parks the command instead of respawning it forever. The card shows the server's own stderr output — usually a missing credential or dependency. Fix the cause (e.g. add the env var), then Test to re-arm.
+  </Accordion>
+  <Accordion title='A remote server flaps with "Session not found"'>
+    That's the server's hosting, not your connection: its load balancer is splitting requests across machines that don't share MCP sessions. Wolffish treats it as transient and keeps retrying — it connects whenever routing cooperates — but only the server's operator can fix it (session affinity). If the server also ships a local command, prefer that.
+  </Accordion>
+  <Accordion title="Sign-in fails before the browser opens">
+    Wolffish registers itself with the provider automatically (Dynamic Client Registration). A few providers don't support DCR and require a pre-registered client ID — those can't complete the flow with any generic MCP client. Notion, Linear, and Sentry all support DCR.
+  </Accordion>
+  <Accordion title="A remote server wants a plain API key, not OAuth">
+    Custom auth headers for remote servers aren't supported yet. If the server offers a local (stdio) variant, run that and pass the key as an environment variable.
+  </Accordion>
+  <Accordion title="A server connects but shows 0 tools">
+    Wolffish's MCP integration is tools-first. A server that only publishes MCP *resources* or *prompts* connects fine but contributes nothing callable yet.
+  </Accordion>
+</AccordionGroup>

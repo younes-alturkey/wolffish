@@ -1,0 +1,117 @@
+---
+title: "Waiting"
+description: "The wait tool, the card it draws, and the OS attention signal — how Wolffish is idle honestly, and how it reaches you when you have looked away"
+---
+
+# Waiting, and Being Reached
+
+Since **v1.0.303** two halves of the same problem have answers. A turn often has to be idle — a build it just started, a rate limit to ride out, a render that needs ten minutes — and until then there was no honest way to be. And Wolffish had no way of reaching you once you looked away: a turn would finish, or an approval card would go up and wait, and unless the window happened to be in front of you nothing said so.
+
+The first is the **`wait` tool**. The second is the **OS attention signal**. They are separate mechanisms — the one keeps a turn alive, the other taps you on the shoulder — and this page covers both.
+
+## The `wait` Tool
+
+Three bad options used to fill this space: a shell `sleep` you could neither see nor interrupt, calling the same tool over and over in a poll loop, or giving up and saying it would come back later, which meant starting over from nothing.
+
+`wait` blocks the turn for **exactly as long as it asks for**:
+
+```
+wait(reason: "Letting the deploy finish", seconds: 300)
+```
+
+- **No ceiling.** Ten seconds or four hours, whatever the job actually needs. The runtime deliberately does not clamp it — a cap just returns you to the poll loop it exists to replace. Pass the duration in **one unit**; the model is told to ask for the real duration rather than split one wait into several.
+- **The reason is required**, one line **in your words**, and it becomes the card's title. A pause with no explanation is indistinguishable from a hang, so the tool refuses without one.
+- **One wait per conversation.** A second concurrent `wait` is a model bug, not a queued request, so it is refused rather than stacked.
+
+### The card
+
+While the wait runs the conversation shows a card that says **why the agent is idle and when it will wake**, counting down — with **a box you can type into to end the wait at once**. Anything you send does the same: that box, the composer, your phone, Telegram, WhatsApp, or the terminal. Your message is not consumed by the wait — it stays in the mid-turn inbox and arrives as the very next thing the agent reads, in the order you sent it. See [Saying something while it works](#saying-something-while-it-works).
+
+Three ways a wait ends, and the tool result names which:
+
+| Exit | What happened |
+| --- | --- |
+| `elapsed` | The timer ran out. The normal path. |
+| `interrupted` | A message arrived — from any surface. Your text is delivered as the next user message. |
+| `canceled` | The run was stopped (Stop, `wolffish cancel`, or the turn's own abort). |
+
+<Info>
+  The card is **written to disk within a second of the wait starting** — the runtime classes the waiting snapshot as *structural*, so the first turn checkpoint persists it before the block has barely begun. An hour-long wait outlives a crash, a restart, or a quit, and it renders in the [terminal](/getting-started/cli), on [your phone](/integrations/mobile-app), and in a PDF export like every other card.
+</Info>
+
+### The whole turn survives
+
+That is the actual difference between `wait` and every workaround. The turn is not ended and re-started — it is **held**. The files it had open, what it had already worked out, the rest of its plan: all of it is still there when the wait returns, and the next tool call continues from exactly that state.
+
+Which is why the doctrine insists on one tool per situation, and the three used to blur:
+
+| You want | Use | Why |
+| --- | --- | --- |
+| To keep **this** turn, idly | `wait` | Blocking holds the whole working state |
+| An action to land **after** your reply is sent | [`countdown_start`](#a-countdown-is-not-a-wait) | Fires once the transcript is saved |
+| Something to happen **hours or days** from now | [`automation_create`](/configuration/heartbeat) with a one-time schedule | Starts a fresh run from only what you wrote into it |
+
+### A countdown is not a wait
+
+The two look similar from the outside and are opposites underneath. `wait` **keeps the turn** and everything in it, and you intend to finish the job yourself. `countdown_start` **ends the turn first** and then runs exactly one tool call with nothing after it — which is why it exists: a restart, a shutdown, a logout, or any irreversible step that would otherwise cut off the very message announcing it. It shows as a card with a live countdown and an **Abort** button, and it is armed as the last action of a turn.
+
+<Warning>
+  Never use a shell `sleep` for either job. It is invisible to you, it cannot be interrupted, and Stop is the only way out of one.
+</Warning>
+
+## Saying Something While It Works
+
+Since **v1.0.296** a message typed into a running turn is **handed to the work in flight** rather than queued behind it. The agent reads it at its **next step** — the moment the batch of tool calls it is running finishes, before it chooses the next one.
+
+- It lands as a **real message of yours**, at the exact point it was read. *"skip the tests folder"*, *"use the other file"*, *"that's enough, just summarise what you have"* now do what they say while the run is still going.
+- Before it is read it sits as **its own bubble marked "read at the next step"**, with an **X** that takes it back into the composer as a draft. Once the agent has read it the X is gone, because a delivered message is part of the conversation.
+- It works **everywhere**: the app, the [terminal](/getting-started/cli#messaging-mid-turn) (`esc` takes the last one back), [your phone](/integrations/mobile-app), [Telegram](/channels/telegram) and [WhatsApp](/channels/whatsapp) — and **voice notes count**, transcribed before they are handed over.
+- Since **v1.0.300** every mid-turn message is **written to disk before you are told it was accepted**, and released only once it provably lives somewhere else — in the conversation, or in the transcript at the point it was read. A desktop that quits, a phone that sleeps at the wrong moment, or a run you stop with the message unread, can no longer take your words with it. Anything else is put back: re-sent as a normal turn, or **handed back into the composer as a draft** when re-sending would restart work you deliberately stopped.
+
+<Note>
+  **A message that arrives while the agent is writing its final answer keeps the turn alive**, so it answers you in the same run instead of ending and starting over. And since **v1.0.306** the same inbox serves **scheduled work** — an automation, a procedure or a heartbeat job — which is exactly where steering matters most, because those runs work unattended for minutes at a time. See [Steering a run mid-flight](/configuration/heartbeat#steering-a-run-mid-flight).
+</Note>
+
+## The OS Attention Signal
+
+Wolffish uses the signal your operating system already has for exactly this, and it earns it in two moments only:
+
+| Platform | The signal |
+| --- | --- |
+| macOS | The **Dock icon bounces** |
+| Windows | The **taskbar button flashes** |
+| Linux | The launcher entry is marked **urgent**, wherever your desktop honours it |
+
+Two meanings, deliberately kept distinct:
+
+- **A turn ending is news**, so it gets a glance — one bounce, then quiet. On macOS this is the *informational* level.
+- **A card that cannot go on without you** — an approval or a question — is a demand rather than news, so it keeps bouncing until you actually come back. That is the *critical* level, and it is why the two exist separately.
+
+The rest is restraint:
+
+- **Nothing happens while you are looking at the window.** A focused window means no signal at all.
+- **The signal is withdrawn** the moment you return to the app or answer the card.
+- **A blocker outranks news.** A card left waiting keeps its bounce even if another conversation finishes while it waits — a sibling's news can never downgrade a standing approval to a one-second glance.
+- **Turns from elsewhere never do it.** A turn that arrived from your phone, from Telegram or WhatsApp, or from a scheduled automation does not bounce a window nobody is waiting at — each of those already has its own way of reaching you. Only the in-app channel calls it.
+- **Headless boots are a no-op**: with no window resolved (a `--headless` VPS boot) every call returns before it touches the platform API.
+
+<Tip>
+  The attention signal is about **this machine's window**, and [phone notifications](/integrations/notifications) are about your pocket. If the app is closed or you are away from the desk, the phone is the surface that reaches you — and the agent sends one there by default.
+</Tip>
+
+## See Also
+
+<CardGroup cols={2}>
+  <Card title="Pipeline" icon="route" href="/architecture/pipeline">
+    Where a turn's steps run, and how it ends
+  </Card>
+  <Card title="Automations" icon="clock" href="/configuration/heartbeat">
+    Scheduled runs, and steering one mid-flight
+  </Card>
+  <Card title="Terminal CLI" icon="terminal" href="/getting-started/cli">
+    The wait card in a terminal, and messaging mid-turn over SSH
+  </Card>
+  <Card title="Phone Notifications" icon="bell" href="/integrations/notifications">
+    Reaching you when the window is not the surface
+  </Card>
+</CardGroup>

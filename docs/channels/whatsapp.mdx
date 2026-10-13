@@ -1,0 +1,194 @@
+---
+title: "WhatsApp Channel"
+description: "Connect Wolffish to WhatsApp for messaging"
+---
+
+# No API, Just a QR Code
+
+The WhatsApp channel connects Wolffish to your WhatsApp account via the Web protocol. No official API needed, no business account required — just scan a QR code and your personal AI is available in WhatsApp.
+
+## Setup
+
+<Tabs>
+  <Tab title="Step 1: Enable">
+    In Wolffish, open **Settings → Channels → WhatsApp** and toggle the channel on. A QR code will appear.
+  </Tab>
+  <Tab title="Step 2: Scan QR">
+    Open WhatsApp on your phone:
+    - **iOS**: Settings > Linked Devices > Link a Device
+    - **Android**: Menu (three dots) > Linked Devices > Link a Device
+
+    Scan the QR code displayed in Wolffish.
+  </Tab>
+  <Tab title="Step 3: Connected">
+    Once authenticated, the status changes to **Connected**. The session persists across Wolffish restarts — you won't need to scan again unless you unlink the device.
+  </Tab>
+</Tabs>
+
+<Info>
+  Wolffish connects as a linked device using WhatsApp's multi-device protocol. Your phone doesn't need to stay online after the initial pairing.
+</Info>
+
+## Connection Flow
+
+```
+QR displayed → Phone scans → Multi-device auth → Session keys stored → Persistent connection
+```
+
+The session keys are stored locally in your workspace. As long as you don't unlink the device from WhatsApp's settings, the connection persists indefinitely.
+
+## Commands
+
+The same slash commands available in Telegram work in WhatsApp:
+
+| Command | Action |
+|---|---|
+| `/stop` | Stop the task running in this chat. Anything queued still runs after it. |
+| `/cancel` | Drop every message waiting in the queue. The running task is left alone. |
+| `/new` | Start a fresh conversation |
+| `/resume` | Pick any conversation to continue — a numbered list of every conversation, from every channel, newest first (reply `next` for the following page) |
+| `/delete` | Pick a conversation to delete, from the same numbered list |
+| `/current` | Show which conversation is active |
+| `/status` | System report (model, memory usage, uptime) |
+| `/mode` | Switch chat mode: `/mode single` or `/mode workflow` |
+| `/model` | List connected cloud models — reply with a number, or type part of a name to filter |
+| `/project` | Show your [projects](/configuration/projects) as a numbered picker — reply with a number to start a conversation inside one; `/project close` leaves the current project |
+| `/local` | Switch to local model (Ollama) |
+| `/cloud` | Switch to cloud model (Claude/OpenAI) |
+
+Send any command as a regular WhatsApp message — no special formatting needed.
+
+## Approval Flow
+
+When the amygdala flags a tool call, WhatsApp uses text-based prompts since inline buttons aren't available:
+
+```
+[Approval Required]
+
+Wolffish wants to execute:
+  shell_exec: npm install express
+
+Reply "approve" to proceed or "deny" to abort.
+```
+
+The turn pauses until you reply. Responses are case-insensitive — `approve`, `Approve`, `APPROVE`, `yes`, and `y` all work.
+
+<Note>
+  Unlike Telegram's inline buttons, WhatsApp approvals are regular text messages. The channel recognizes approval/denial keywords only when an approval request is pending.
+</Note>
+
+## Reconnection
+
+If the WebSocket connection drops (network change, sleep/wake, server restart), Wolffish reconnects automatically with exponential backoff:
+
+| Attempt | Delay |
+|---|---|
+| 1 | 2 seconds |
+| 2 | 4 seconds |
+| 3 | 8 seconds |
+| 4 | 16 seconds |
+| 5-12 | 30 seconds (capped) |
+
+After 12 failed attempts, Wolffish stops retrying and marks the channel as disconnected. You can manually reconnect from Settings or wait for the next app restart.
+
+<Tip>
+  In practice, reconnection succeeds on the first or second attempt for transient network issues. The full 12-attempt sequence only exhausts if the session has been revoked from your phone.
+</Tip>
+
+## Stale Message Handling
+
+Messages older than 3 hours are ignored by default. This prevents Wolffish from processing a backlog of messages that accumulated while it was offline — those messages likely no longer need a response.
+
+The threshold is configurable in `config.json`:
+
+```json
+{
+  "channels": {
+    "whatsapp": {
+      "staleMessageThresholdMs": 10800000
+    }
+  }
+}
+```
+
+Set to `0` to disable stale message filtering and process everything regardless of age.
+
+## Voice Notes
+
+Voice notes sent in WhatsApp are transcribed via Wolffish's STT (speech-to-text) capability and processed as regular text input. The transcription happens locally before the message enters the brain pipeline.
+
+## Sending Files to Wolffish
+
+Any file you send over WhatsApp — PDFs, documents (docx, xlsx, pptx), images, video, audio, even stickers — is downloaded and processed exactly like an attachment dropped into the desktop app: it enters the turn as a [reference note](/architecture/context-compaction#model-led-attachments) alongside your caption, and Wolffish reads the content through its tools when it matters — so even a huge file lands safely. Files that arrive without a name or extension are typed from the media itself, so nothing is silently dropped. Uploads are capped at 1 GB, matching the in-app limit.
+
+## Receiving Files from Wolffish
+
+When Wolffish produces a file for you, delivery is a deliberate act by the agent — its `send_file` tool — which arrives as a real WhatsApp upload: images, audio, and video as media messages, everything else as a document. Nothing auto-attaches: a tool merely writing a file to disk never sends it, so you'll never get unrequested intermediate files. The agent's operating contract requires it to `send_file` the result the moment a file-producing task is done.
+
+## Message History & Recall
+
+Inbound WhatsApp messages are kept in a rolling buffer (`whatsapp/read-history.json`) that survives restarts and is indexed by the cortex per chat. That makes them searchable like everything else: ask Wolffish about something someone messaged you and it can find it via `memory_search`, alongside its own conversations and files.
+
+## Message Formatting
+
+Wolffish writes WhatsApp replies in WhatsApp's own text style — `*bold*`, `_italic_`, `~strikethrough~`, backtick code, plain `-` lists, and `>` quotes — never raw Markdown. A **format gate** refuses an offending send outright: any HTML tags or entities (WhatsApp parses none), raw Markdown (`**bold**`, `__bold__`, `# headings`, `[text](url)` links, `| tables |`, `---` rules), and drawn divider lines (`━━━━━` and friends — a phone's narrow chat bubble wraps them into several broken lines) all bounce back to the model to rewrite in WhatsApp's own style before anything goes out. The guards keep honest text flowing: anything inside backticks or code fences is exempt (a CLI table inside a code block is content, not decoration), `x**2` and `f(**kwargs)` read as math and code, and mid-word underscores stay legal. The one soft check is the language tag on a code fence — delivered with a note, never blocked.
+
+The gate can never lose a message: when markup genuinely *is* the content the agent sends it verbatim, and after repeated bounces for the same chat the gate stands aside and the message is delivered as composed — worst case you see raw markup, never silence. Live narration between tool steps is delivered instantly, too fast to gate, so it's **watched instead of blocked**: a delivered line carrying raw markup earns the agent a **format notice** describing exactly what you received, steering the rest of the turn clean.
+
+## Queued Messages
+
+Message Wolffish while a turn is already running and the message is **queued**, not declined. A short acknowledgment confirms it landed and tells you where it sits in line:
+
+```
+📥 Queued. It's next in line. I'll get to it as soon as the
+current task finishes. Send /cancel to drop everything queued.
+```
+
+Each queued message runs on its own turn the moment the current one finishes, **in the order you sent it**. Files and voice notes queue with it — they're downloaded and transcribed the instant they arrive, so nothing goes stale while it waits, and the queued turn is byte-identical to one sent when the chat was idle.
+
+- **`/cancel`** drops everything waiting and leaves the running task alone. **`/stop`** stops the run and lets the queue carry on.
+- **Switching conversations clears the queue.** `/new`, `/resume`, `/delete`, and a `/project` switch or close each drop the pending messages along with the conversation they were typed into, and say so in their reply.
+
+## Verbose Task Results
+
+By default, WhatsApp receives a **clean feed** — the agent's replies, any files or voice notes it sends, and errors. Routine tool steps stay in the desktop UI.
+
+Toggle this in **Settings → Channels → WhatsApp → Show all tool activity** (called *Verbose task results* until v1.0.288):
+
+- **Off (default)** — agent messages, files the agent sends, and errors only.
+- **On** — every tool call, result, and activity is relayed to the chat.
+
+A [workflow-mode](/configuration/workflow-mode) run additionally reports deterministic progress regardless of verbose — its phase plan at start, each phase's completion, and a closing summary — with the switch on adding a landing line per agent (name, model, duration, tool calls).
+
+<Note>
+  Verbose changes only what is **sent** to WhatsApp. The full turn is still saved to history and memory regardless of the setting.
+</Note>
+
+## Conversation Mapping
+
+Each WhatsApp JID (phone number identifier) points at one active Wolffish conversation at a time. In practice:
+
+- Messages you send to yourself (via "Message Yourself" in WhatsApp) create one conversation
+- If you configure Wolffish to respond to a specific contact, that contact's JID gets its own conversation
+
+`/resume` swaps which conversation the chat continues — its picker reaches **every conversation from every channel**, not just WhatsApp's own (see [Commands](#commands)). Scheduled automation runs are hidden from it by default; the **Hide automations from /resume** toggle in **Settings → Channels → WhatsApp** brings them back. They always remain in `/delete` and in the app.
+
+When Wolffish messages you out of band — an automation reporting a finished job, an in-app conversation dropping you a note — the chat re-points itself at the sending conversation, so your reply continues **that** conversation rather than whatever the chat was last on.
+
+Conversations are fully two-way with the app: start in WhatsApp and keep typing in the desktop UI, where messages landing on your phone appear in place and voice notes survive the round-trip untouched.
+
+`/project` works here exactly as on Telegram: pick a [project](/configuration/projects) by number to start a fresh conversation inside it — briefed with the project's instructions and files — with `/new` staying in the current project and `/project close` the way out. The binding lives on the conversation itself, so it survives restarts.
+
+## Under the Hood
+
+The WhatsApp channel uses [Baileys](https://github.com/WhiskeySockets/Baileys), an open-source TypeScript implementation of the WhatsApp Web protocol. Baileys handles:
+
+- QR code generation and multi-device authentication
+- WebSocket connection management
+- Message encryption/decryption (Signal protocol)
+- Media download and upload
+- Presence and typing indicators
+
+<Warning>
+  Baileys is a third-party library that reverse-engineers the WhatsApp Web protocol. While widely used and stable, it is not officially supported by Meta. WhatsApp protocol changes may occasionally require library updates.
+</Warning>

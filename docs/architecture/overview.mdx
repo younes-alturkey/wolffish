@@ -1,0 +1,53 @@
+---
+title: "Architecture Overview"
+description: "How Wolffish's brain-inspired architecture works"
+---
+
+# The Core Idea
+
+Wolffish maps the human brain's architecture onto a deterministic software pipeline. Each of the 15 runtime modules handles exactly one function, and they communicate via a typed event bus (corpus).
+
+## The Brain Metaphor
+
+The module names aren't random — each maps to a real brain region that performs an analogous function:
+
+| Module | Brain Region | Function |
+|---|---|---|
+| `thalamus` | Sensory gateway | Routes input to LLM providers |
+| `prefrontal` | Executive function | Assembles the lean system prompt |
+| `ras` | Reticular Activating System | Guards the context token budget |
+| `cortex` | Cerebral cortex | Records index over all memory sources (SQLite FTS5) |
+| `hippocampus` | Memory center | Writes episodes, weekly summaries, and knowledge |
+| `cerebellum` | Motor coordination | Loads core capabilities, discovers the rest on demand |
+| `wernicke` | Language comprehension | Parses LLM output and extracts tool calls |
+| `broca` | Language production | Streams responses to the UI |
+| `amygdala` | Threat detection | Safety gate for dangerous operations |
+| `motor` | Motor cortex | Executes tasks with retry and logging |
+| `basalganglia` | Reward/learning | Records outcomes for feedback |
+| `hypothalamus` | Homeostasis | Monitors system health |
+| `brainstem` | Autonomic functions | File watching, cron jobs, compaction |
+| `corpus` | Corpus callosum | Event bus connecting all modules |
+| `insula` | Self-awareness | Status and performance introspection |
+
+## The Key Insight
+
+The pipeline is deterministic — the same input follows the same path through the same gates every time. The LLM adds creativity and intelligence at exactly one point (the `thalamus.stream()` call). Everything else is predictable TypeScript code that reads and writes markdown files.
+
+## Module Communication
+
+Modules broadcast "this happened" notifications via `corpus` (the event bus), never by importing each other directly; the few request/response paths (prefrontal asking cerebellum for the capability index) use references injected at startup. This keeps dependencies clean and makes the system inspectable — every event is logged to daily markdown files.
+
+```
+corpus.emit('message.received', { content: '...', timestamp: '...' })
+corpus.emit('context.built', { tokenCount: 5012, tokenBudget: 200000, sectionsIncluded: [...] })
+corpus.emit('tool.called', { taskId: 'TASK-42', tool: 'shell_exec', args: {...} })
+corpus.emit('safety.blocked', { tool: '...', args: {...}, reason: '...' })
+```
+
+## Tech Stack
+
+Wolffish is built on Electron 39, React 19, TypeScript 5.9, and Vite 7. The event bus uses `mitt` for typed events. Memory indexing uses `better-sqlite3` with FTS5. All LLM communication is pure `fetch()` — no SDKs.
+
+<Card title="See the Full Pipeline" icon="diagram-project" href="/architecture/pipeline">
+  Follow a message from input to response, step by step.
+</Card>

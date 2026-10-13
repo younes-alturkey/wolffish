@@ -1,0 +1,63 @@
+---
+title: "First Launch"
+description: "What happens when you launch Wolffish for the first time"
+---
+
+# What Gets Created
+
+When Wolffish launches for the first time, it creates your workspace at `~/.wolffish/workspace/` and copies the default configuration files from the bundled defaults. Here's what gets created:
+
+## The Workspace
+
+```
+~/.wolffish/workspace/
+└── brain/
+    ├── identity/
+    │   ├── soul.md          # Agent personality
+    │   └── user.md          # Your profile
+    ├── prefrontal/
+    │   └── agents.md        # Agent procedures and tool rules
+    ├── cerebellum/          # Capabilities (shell, filesystem, git, etc.)
+    ├── hippocampus/         # Memory (episodes, consolidated, knowledge)
+    ├── motor/tasks/         # Task execution logs
+    ├── basalganglia/        # Feedback logs
+    ├── brainstem/           # Background process config
+    ├── corpus/              # Event logs
+    ├── conversations/       # Chat history
+    └── config.json          # App configuration
+```
+
+## Onboarding Flow
+
+Since **v1.0.289** onboarding is **a theme, a language, and then the chat** — nothing else.
+
+1. **Appearance** — pick a theme and a language.
+2. **Chat.** You land in the conversation.
+3. **Provider Configuration** — configure at least one provider before your first message: [DeepSeek](/configuration/deepseek) (recommended), Anthropic, OpenAI, or any of the others — or [Ollama](/configuration/ollama) for local inference.
+
+<Note>
+  **Ollama is no longer a step.** A first run used to walk you from the welcome screen into *install Ollama*, and from there into *pick your Ollama model* — two full-screen pages carrying none of the app's navigation, so anyone who simply did not want a local model had nowhere to go. Wolffish now treats Ollama as what it is: **one optional provider among several**. The model picker no longer exists as a screen at all; it is the **Ollama panel of Settings → Models**, where you go when you actually want it. Launch itself now **asks Ollama nothing** — no probe, no tag list, no quietly rewriting your configuration before the window is up.
+</Note>
+
+## Customizing Your Agent
+
+After the initial setup, you'll want to edit two files:
+
+<CardGroup cols={2}>
+  <Card title="user.md" icon="user" href="/configuration/user-md">
+    Tell Wolffish about yourself — your name, preferences, projects, tech stack. The more context you provide, the more relevant the agent's responses.
+  </Card>
+  <Card title="soul.md" icon="brain" href="/configuration/soul-md">
+    Define the agent's personality, tone, and behavioral guidelines. This is the character your agent takes on.
+  </Card>
+</CardGroup>
+
+## What Happens on Every Launch
+
+After the first launch, each subsequent startup:
+
+1. Reads `config.json` for model and provider settings
+2. Initializes the 15 brain modules via the event bus (corpus)
+3. Indexes workspace markdown files into `cortex.db` (SQLite FTS5)
+4. Starts background processes (file watcher, cron scheduler)
+5. Checks provider health for the cloud APIs you configured (Ollama is watched in the background only once you have opted into it)

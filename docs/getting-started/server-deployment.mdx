@@ -1,0 +1,137 @@
+---
+title: 'Server Deployment'
+description: 'Run Wolffish on your own VPS — a package from GitHub Releases, a background service that survives reboots, and your phone as the daily interface'
+---
+
+# A Machine That Never Sleeps
+
+Wolffish is a desktop app first — private, local, on your machine — and that remains the primary way to run it. But an agent that answers Telegram at 3 AM, runs the nightly [reflection](/memory/reflection), and fires [automations](/configuration/heartbeat) on schedule wants a machine that is never asleep, never on battery, never in a bag. Since **v1.0.239** the same app runs **headless** on a server: the whole agent — channels, automations, memory, MCP, the works — with no window and no tray, driven by the [terminal CLI](/getting-started/cli) and, day to day, by [your phone](#your-phone-is-the-interface).
+
+The whole route — install, headless boot, the systemd service, the CLI attaching — is verified **end to end on a pristine Ubuntu 24.04 VPS**. No display server required, no Docker, no Node.
+
+## Install
+
+One line does it — the script is attached to every GitHub release, picks `.deb`, `.rpm` or the AppImage for the box, verifies the download against the release manifest, installs it, and ends with the three commands that come next:
+
+```bash
+curl -fsSL https://github.com/younes-alturkey/wolffish/releases/latest/download/install.sh | sh
+```
+
+Or download the Linux package from the [latest GitHub release](https://github.com/younes-alturkey/wolffish/releases/latest) and install it like any other package — `.deb` on apt systems, `.rpm` on dnf/zypper/yum, or the portable AppImage anywhere else, entirely under `$HOME`, no root needed:
+
+```bash
+sudo apt install ./wolffish-*.deb       # Debian / Ubuntu
+sudo dnf install ./wolffish-*.rpm       # Fedora / RHEL
+chmod +x wolffish-*.AppImage            # anywhere else
+```
+
+On a `.deb`/`.rpm` install, the `wolffish` command is **shipped by the package** at `/usr/bin/wolffish` — it exists the moment the install finishes: no first launch, no PATH line, no new shell, the same command for every account on the machine. On the AppImage route the app installs the command into `~/.wolffish/bin/` and adds that directory to your PATH on first launch; open a new shell afterwards.
+
+<Note>
+  Two names, on purpose: `wolffish` is the terminal client, `wolffish-app` is the app binary. Two
+  different programs answering to one name, resolved by PATH order, is a coin flip nobody can debug.
+</Note>
+
+## First Contact
+
+```bash
+wolffish
+```
+
+That's the whole boot procedure. The first command **starts the agent itself** — in the background, headless, with everything a root server needs already applied — and attaches. From there, set it up exactly as you would in the app, because it _is_ the app:
+
+```bash
+wolffish keys set deepseek        # typed hidden, tested before saving
+wolffish brain deepseek deepseek-v4-flash
+wolffish settings                 # browse everything: page → card → setting
+wolffish status                   # daemon · brain · autostart · channels
+```
+
+Everything the desktop can configure, the terminal can configure — [providers](/configuration/providers), [channels](/channels/overview), [capabilities](/capabilities/overview), [MCP servers](/integrations/mcp), [automations](/configuration/heartbeat), [memory schedules](/memory/consolidation). See the [Terminal CLI](/getting-started/cli) page for the full surface.
+
+<Warning>
+  A server login is usually **root**, and Chromium refuses to run as root without `--no-sandbox` —
+  so Wolffish applies it on every launch path. The app also runs unsandboxed by design on every
+  platform: the sandbox sets `no_new_privs`, which would break every `sudo` the agent shells out to.
+  On a personal VPS this is the intended shape; it is one more reason a Wolffish box should be
+  *yours*, not shared.
+</Warning>
+
+## Make It Survive a Reboot
+
+The daemon the CLI starts lives until the machine restarts. To make Wolffish come back on its own:
+
+```bash
+wolffish service install --headless
+```
+
+On Linux this registers a **systemd user unit** and enables **lingering** — without lingering, a user service dies the moment your SSH session ends, which is precisely the opposite of the always-on promise. A unit without lingering is reported as a warning, not a healthy state, with the exact command to fix it. The unit starts Wolffish at boot, restarts it if it dies, and holds no session and no window at all.
+
+```bash
+wolffish service status    # registered? which mechanism? which mode?
+wolffish service logs -f   # tail the daemon log
+wolffish service stop      # stop the running daemon (it returns at next boot)
+wolffish service uninstall # deregister; ~/.wolffish is untouched
+```
+
+The same verb works on every platform, choosing the native mechanism: a **launchd agent** on macOS, a **Task Scheduler** task on Windows, **systemd + linger** on Linux. Without `--headless` it registers a login item instead — starts when you log in, opens the window — which is the right mode for a laptop and the wrong one for a server. Because a background service is registered to stay running (quit, and the system restarts it within seconds), choosing it asks first.
+
+<Note>
+  There is no `start` to remember: the daemon starts **on demand** — any `wolffish` command brings
+  it up — and the service brings it up at boot. `wolffish service stop` is the deliberate way down.
+</Note>
+
+## Your Phone Is the Interface
+
+**This is the recommended shape for a server install.** The CLI is how you administer the box; the [mobile app](/integrations/mobile-app) is how you _live_ with it. Pair once and your phone carries the day-to-day surface of the server: the chat feed with its tool cards and files, every conversation streaming live, [projects, procedures and automations](/integrations/mobile-app#the-workspace-editable) — editable from the phone, against the server's own files — the three customization documents, capabilities, variables, the usage ledger, [diagnostics](/debugging/diagnostic-export), and [push notifications](/integrations/notifications) when a run finishes, fails, or needs you. A headless server with a paired phone is not a degraded Wolffish; it is the desktop experience with the desk removed.
+
+Pairing from a terminal is built for a box with no screen:
+
+```bash
+wolffish pair phone          # a QR drawn in the terminal, if the window fits it
+wolffish pair phone --code   # an 8-character code: type it on the phone
+```
+
+The QR is measured before it is drawn — it needs 27 terminal rows, a default SSH window has 24 — and when it can't fit, the command switches to the **typed code** by itself. The code (`K7M9-2QXR`, case and dashes forgiven) expires in about three minutes; generate another whenever. The tunnel that results is the same one the desktop uses: **end-to-end encrypted, outbound only**, through the [blind relay](/integrations/mobile-app#the-blind-relay).
+
+<Note>
+  Self-hosting the relay too? The typed code carries only the secret — **type your relay's address
+  into the Relay card on the phone's pairing screen** as well. The QR carries the address for you.
+</Note>
+
+The other channels pair from the same place — and their terminal routes exist precisely because a server needs them: `wolffish pair telegram` takes the bot token typed hidden, and `wolffish pair whatsapp --number +…` links by **phone number** with an eight-character code, because a WhatsApp QR can never fit an SSH window.
+
+## What a Server Can and Can't Do
+
+Everything that is the _agent_ works headless: chat on every channel, automations and procedures on schedule, the full [memory system](/memory/overview), MCP servers, video generation, file work, the phone tunnel, notifications. The agent's own channel roster is kept honest too — on a headless box, in-app chat is reported **unavailable**, so the model never believes a window is open with someone there to answer in.
+
+What needs a desktop stays on the desktop: the [browser extension](/integrations/browser-extension) (there is no browser to load it into), computer use (nothing to screenshot), and opening files with the OS — `/open` prints the path instead. Every such refusal names the terminal's own way to do the same thing.
+
+## The Shape of the Attack Surface
+
+A Wolffish server **exposes nothing to the network**. There is no web UI, no API port, no inbound anything:
+
+- The CLI talks to the daemon over a **Unix domain socket** at `~/.wolffish/cli.sock`, created with owner-only permissions — deliberately not an HTTP server, so a VPS install can't grow a listening port by accident.
+- The phone tunnel is **outbound WebSocket** to the relay. No firewall rule, no port forward, nothing reachable from outside.
+- Telegram and WhatsApp are outbound connections to their own services.
+
+So the box needs no firewall configuration for Wolffish at all — and an outside port scan that finds something listening found something else. Approvals from a non-interactive shell **fail closed**, `wolffish status --json` and `wolffish view` redact credential-shaped values unless you pass `--raw`, and provider keys are typed hidden, never in shell history.
+
+## Data, Updates, Uninstall
+
+Everything lives in **`~/.wolffish/`** — workspace, conversations, config, logs, the daemon socket. Back up that folder and you've backed up the agent; `wolffish service logs` reads `~/.wolffish/workspace/logs/`.
+
+Updating depends on the route in: an **AppImage updates itself**; a `.deb`/`.rpm` can't (a package manager isn't something an app should drive), so updating is re-running the install command — settings and workspace untouched. `wolffish settings updates` shows the version, checks, and prints what's new, rendered.
+
+Uninstall is three honest steps:
+
+```bash
+wolffish service uninstall     # deregister autostart (unit / login entry)
+sudo apt remove wolffish-app   # or: dnf remove / delete the AppImage
+rm -rf ~/.wolffish             # every trace of data, gone
+```
+
+<Card title="The Terminal CLI" icon="terminal" href="/getting-started/cli">
+  Everything the command can do — sessions, one-shots, the settings browser, approvals, editors, and
+  the reference tables.
+</Card>

@@ -1,0 +1,99 @@
+---
+title: "Xiaomi MiMo"
+description: "Set up Xiaomi MiMo — affordable frontier models with strong multilingual support"
+---
+
+# Xiaomi MiMo (Budget-Friendly)
+
+```
+POST https://api.xiaomimimo.com/v1/chat/completions
+```
+
+Uses SSE streaming with OpenAI-compatible tool-calling format. Supports vision (base64 images) and PDF document input.
+
+**MiMo is a budget-friendly cloud provider** offering competitive models at a fraction of the cost of Anthropic and OpenAI. Following [Xiaomi's permanent price cut of up to 99%](https://www.studioglobal.ai/ms/discover/answers/what-prompted-xiaomi-to-cut-its-mimo-v2-5-6a179fe3f9dbfce068be8b7e) — matching DeepSeek V4 Pro rates — MiMo V2.5 Pro delivers strong reasoning and multilingual support at dramatically lower cost than frontier models.
+
+Best for: Cost-sensitive agentic workflows, multilingual tasks, multi-step tool chains, and high-volume automations where budget matters.
+
+<Note>
+  MiMo handles complex agentic tasks well — including long multi-step tool chains, research workflows, code generation, and autonomous automations. We recommend starting with MiMo and upgrading to **Anthropic** or **OpenAI** only if execution isn't reliable enough for a specific workflow, or if you need **computer-use** (screen interaction), which only Anthropic supports. See [Choosing a Provider](/configuration/providers#choosing-a-provider) for details.
+</Note>
+
+## Getting an API Key
+
+1. Go to [platform.xiaomimimo.com](https://platform.xiaomimimo.com)
+2. Sign up or log in
+3. Navigate to **API Keys** and create a new key
+4. Paste it into Wolffish → Settings → Models → Xiaomi Mimo
+
+## Models
+
+| Model | Context | Modes | Input / Output (per MTok) | Cached | Notes |
+|-------|---------|-------|--------------------------|--------|-------|
+| **mimo-v2.5-pro** | 1M | Off, On | $0.20 / $2.00 | Free | Best MiMo model. Strong reasoning and multilingual. |
+| mimo-v2.5 | 1M | Off, On | $0.08 / $0.80 | Free | Good balance of quality and cost. |
+| mimo-v2-pro | 256K | Off, On | $0.20 / $2.00 | Free | Previous generation pro model. |
+| mimo-v2-omni | 256K | Off, On | $0.08 / $0.80 | Free | Multimodal. Vision and document input. |
+| mimo-v2-flash | 256K | Off, On | $0.01 / $0.30 | — | Ultra-cheap. Best for high-volume, low-complexity tasks. |
+
+## Reasoning modes
+
+How this model reasons is set in the **model card beside the chat input** — hover the model switch to preview the card, click to pin it open. The top chip row, labelled **Thinking**, is the control: pick a chip and it applies from your next message. Two separate ideas combine here:
+
+### Thinking — *whether* the model reasons
+
+- **Off** — the model answers immediately. Fastest and cheapest; ideal for simple, direct tasks.
+- **On** (the chip reads **Normal**) — the model first works through the problem in a dedicated reasoning pass before replying. Slower and uses more tokens, but markedly more accurate on multi-step, logical, or ambiguous tasks.
+
+### Effort — *how hard* it thinks
+
+Only effort-capable models expose this; it applies once thinking is on.
+
+- **High** — standard reasoning depth. The right default for most agentic work.
+- **Max** — the model reasons longer and deeper for the hardest problems. More tokens and latency in exchange for higher quality on complex work.
+
+### The chip row
+
+| Chip | Icon | Meaning |
+|------|------|---------|
+| Off | lightning | Thinking off — direct answer |
+| Normal | brain | Thinking on — no effort control |
+| High | AI brain | Thinking on, standard effort |
+| Max | flame | Thinking on, maximum effort |
+
+The active chip is tinted; the rest sit quiet. Each model shows only the chips it genuinely supports — a model that always reasons has no **Off**, a model with a single mode shows that one chip inert, and a model that can't reason at all replaces the row with *"Reasoning is not supported by this model."* Wolffish remembers your choice per model. (Before **v1.0.236** this was a colour-coded brain button on the composer; it moved into the model card, beside the Single/Workflow row, so every model knob sits in one panel.)
+
+**On MiMo:** All MiMo chat models are a simple On / Off toggle — no effort tiers.
+
+## Cost Comparison
+
+MiMo's pricing positions it alongside DeepSeek as a **budget tier** provider, dramatically cheaper than Anthropic and OpenAI:
+
+| Provider | Flagship Model | Input / Output (per MTok) | Relative Cost |
+|----------|---------------|--------------------------|---------------|
+| **MiMo** | mimo-v2.5-pro | $0.20 / $2.00 | 1× (baseline) |
+| **DeepSeek** | deepseek-v4-pro | $0.435 / $0.87 | ~1–2× |
+| **Kimi** | kimi-k2.6 | $0.95 / $4.00 | ~2–5× |
+| **Anthropic** | claude-opus-4.7 | $5.00 / $25.00 | 12–25× |
+| **OpenAI** | gpt-5.5 | $5.00 / $30.00 | 15–25× |
+
+MiMo and DeepSeek are **10–25× cheaper** than Anthropic and OpenAI and handle complex agentic workloads well. Start here — upgrade only if a specific workflow isn't executing reliably, or if you need computer-use (Anthropic only).
+
+## When to Use MiMo
+
+**Good fit — most workflows:**
+- Multi-step tool chains (file search → read → edit → commit)
+- Research → summarize → write workflows
+- Scheduled automations and daily task processing
+- Multilingual tasks — MiMo has strong Chinese, English, and multilingual support
+- Email drafting, report generation, data extraction
+- Conversational agents and Q&A
+- High-volume workloads where cost per token matters
+
+**Consider premium tier if:**
+- Computer-use / screen interaction is needed (requires Anthropic)
+- You've tried a workflow on MiMo and execution isn't reliable enough — upgrade to Anthropic or OpenAI for that specific task
+
+<Tip>
+  Start with MiMo or DeepSeek as your Brain model and experiment with your actual workflows. Most users find they rarely need the premium tier. If a specific task isn't executing reliably, switch your Brain to Anthropic or OpenAI — there's no automatic fallback, so the swap is yours to make.
+</Tip>

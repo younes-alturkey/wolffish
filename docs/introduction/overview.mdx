@@ -1,0 +1,60 @@
+---
+title: "What is Wolffish?"
+description: "A local-first, markdown-powered personal AI desktop agent"
+---
+
+# Overview
+
+Wolffish is a local-first, markdown-powered personal AI desktop app built with Electron. It runs on macOS, Windows, and Linux, and maps the human brain's architecture onto a deterministic software pipeline where 15 runtime modules each handle one specific function — routing input, building context, managing memory, executing tools, enforcing safety, and learning from outcomes.
+
+<Warning>
+  **Wolffish is no longer maintained.** There is no website, no app-store listing, no hosted relay and no support channel any more. The code and these docs stay available under the MIT license for anyone who wants a battle-tested, working agent harness to build on top of or run as is. Fork it and make it yours.
+</Warning>
+
+## Install
+
+Download the installer for your platform from the [latest GitHub release](https://github.com/younes-alturkey/wolffish/releases/latest) — `.dmg` for macOS, `-setup.exe` for Windows, `.AppImage`, `.deb` or `.rpm` for Linux — or [build from source](/getting-started/installation). Builds are unsigned.
+
+## The Core Idea
+
+**Markdown is the source of truth for all agent behavior.** The TypeScript code is pure plumbing — it reads markdown, calls LLMs, executes tools, and writes markdown back. To change what the agent does, you edit a markdown file, not code. The LLM reads these instructions at runtime, so behavior evolves without rebuilds.
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Local-First" icon="house">
+    Can work 100% offline with local Ollama models. Cloud providers and Ollama are both optional — use whichever fits your setup.
+  </Card>
+
+  <Card title="Markdown-Powered" icon="file-lines">
+    Your agent's entire brain is readable, editable, and version-controllable markdown files.
+  </Card>
+
+  <Card title="Deterministic Pipeline" icon="diagram-project">
+    The same input follows the same path through the same gates every time. The LLM adds creativity at one specific point.
+  </Card>
+
+  <Card title="Extensible Capabilities" icon="puzzle-piece">
+    Add new abilities by dropping a folder with a SKILL.md file. No code changes required.
+  </Card>
+</CardGroup>
+
+## How It Works
+
+Wolffish talks to LLMs via ten native cloud providers — DeepSeek, Z.ai (GLM), Xiaomi MiMo, Qwen (Alibaba Cloud), Kimi (Moonshot AI), MiniMax, xAI (Grok), Stepfun, Anthropic (Claude), OpenAI (GPT) — plus the OpenRouter aggregator and Ollama for local models. All are optional. You explicitly select your **Brain** model from the model switch beside the chat input — the one you choose is the one that runs. There's no automatic cascade or fallback. Optionally, switch the chat into **[workflow mode](/configuration/workflow-mode)**, where the agent plans phases and spawns parallel agents on models it picks from your connected providers. We recommend starting with DeepSeek or MiMo — they handle complex agentic tasks well at a fraction of the cost. Switch to Anthropic or OpenAI only if needed.
+
+Everything lives in one folder: `~/.wolffish/`. Delete it and you're back to factory defaults. No system-level daemons, no crontabs, no registry entries, no scattered config files — unless you deliberately register [autostart](/getting-started/server-deployment#make-it-survive-a-reboot), whose one launch entry `wolffish service uninstall` removes again.
+
+```text
+User message → Context Assembly → LLM Call → Tool Execution → Memory → Response
+```
+
+Each step is handled by a dedicated brain module, and every step is inspectable via markdown files.
+
+## Who Is It For?
+
+Wolffish is for anyone who wants a personal AI agent they fully understand, can use effectively, and can extend reliably. You don't need to be a developer — you just need to understand how it works. Everything is plain markdown files you can read, edit, and debug. If you want to own your AI tools rather than rent them, Wolffish is for you.
+
+<Card title="Get Started" icon="rocket" href="/getting-started/installation">
+  Install Wolffish and run your first conversation in under 5 minutes.
+</Card>

@@ -1,0 +1,11 @@
+{
+  "type": "column",
+  "title": "Wolffish observations by region",
+  "subtitle": "Reported sightings · survey years",
+  "footnote": "Wolffish sample chart — the spec behind every demo .chart.json.",
+  "categories": ["North Atlantic", "Barents Sea", "Bering Sea", "Pacific NW"],
+  "series": [
+    { "name": "2025", "data": [412, 318, 205, 168] },
+    { "name": "2026", "data": [498, 344, 262, 231] }
+  ]
+}

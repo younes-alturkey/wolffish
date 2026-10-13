@@ -1,0 +1,153 @@
+---
+title: "هيكل المشروع"
+description: "كيف يُنظّم الكود - شيء واحد لكل مجلد"
+---
+
+# شيء واحد لكل مجلد
+
+يتبع الكود قاعدة واحدة: **شيء واحد لكل مجلد، اسم الملف يطابق اسم المجلد**.
+
+## التخطيط العام
+
+```
+src/
+├── main/                  Electron main process
+│   ├── index.ts           IPC handlers — the entry point
+│   ├── channels/          Telegram, WhatsApp, Electron
+│   ├── runtime/           The 15-module brain
+│   ├── workspace/         ~/.wolffish management
+│   ├── conversations/     SQLite conversation store
+│   ├── uploads/           File processing
+│   └── {service}/         github/, google/, notion/, ollama/, etc.
+├── preload/               contextBridge (IPC types)
+├── renderer/src/          React frontend
+│   ├── pages/             One folder per screen
+│   ├── components/        core/ (primitives) + common/ (composed)
+│   ├── providers/         React context (Theme, Locale, Flow)
+│   ├── hooks/             Custom hooks
+│   └── lib/               i18n, utils
+└── defaults/workspace/    Bundled brain (copied on first launch)
+```
+
+## اتفاقية المجلدات
+
+كل مجلد يحتوي على شيء واحد بالضبط. الملف الرئيسي يطابق اسم المجلد:
+
+```
+components/core/copy-button/CopyButton.tsx
+hooks/use-online/useOnline.ts
+main/runtime/hippocampus/hippocampus.ts
+main/runtime/corpus/corpus.ts
+pages/chat/Chat.tsx
+providers/theme/ThemeProvider.tsx
+```
+
+لا توجد ملفات `index.ts` تجميعية. الاستيرادات تستخدم دائمًا مسار الملف الصريح عبر الأسماء المستعارة:
+
+```typescript
+// Explicit path — always know exactly what you're importing
+import { CopyButton } from '@components/core/copy-button/CopyButton'
+import { useOnline } from '@hooks/use-online/useOnline'
+```
+
+## نمط فصل المزود/الخطاف
+
+عندما يحتوي ملف على مكون React وخطاف معًا، افصلهما في ملفات منفصلة. هذا مطلوب لكي يعمل React Fast Refresh بشكل صحيح.
+
+```
+providers/flow/
+├── FlowProvider.tsx    # Component only (renders context provider)
+└── useFlow.ts          # Context creation + hook + types
+```
+
+```typescript
+// useFlow.ts — context, hook, and types
+import { createContext, useContext } from 'react'
+
+export interface FlowContextValue { /* ... */ }
+export const FlowContext = createContext<FlowContextValue | null>(null)
+
+export function useFlow(): FlowContextValue {
+  const ctx = useContext(FlowContext)
+  if (!ctx) throw new Error('useFlow must be used within FlowProvider')
+  return ctx
+}
+```
+
+```typescript
+// FlowProvider.tsx — component only
+import { FlowContext, FlowContextValue } from './useFlow'
+
+export function FlowProvider({ children }) {
+  const value: FlowContextValue = { /* ... */ }
+  return <FlowContext.Provider value={value}>{children}</FlowContext.Provider>
+}
+```
+
+<Tip>
+  يعمل Fast Refresh فقط عندما يُصدّر الملف مكونات أو خطافات، وليس كليهما. خلطهما يسبب إعادة تحميل كاملة للصفحة أثناء التطوير.
+</Tip>
+
+## مجلد بيئة التشغيل
+
+```
+src/main/runtime/
+├── agent.ts              The pipeline orchestrator
+├── corpus/               Event bus (mitt-based)
+├── thalamus/             LLM provider routing
+├── prefrontal/           Context assembly
+├── ras/                  Attention filtering
+├── cortex/               Fast retrieval (FTS5)
+├── hippocampus/          Conversation memory
+├── cerebellum/           Capability discovery
+├── wernicke/             Output parsing
+├── broca/                Response streaming
+├── amygdala/             Safety gate
+├── motor/                Task execution
+├── basalganglia/         Outcome recording
+├── hypothalamus/         System health
+├── brainstem/            Background tasks
+├── insula/               Status introspection
+└── mcp/                  MCP server connections (manager, per-server lifecycle, OAuth)
+```
+
+كل وحدة هي صنف بمُنشئ يقبل `{ workspaceRoot, corpus, ... }`. الوحدات لا تستورد بعضها أبدًا - تتواصل عبر أحداث corpus.
+
+## موقع البيانات
+
+```
+~/.wolffish/
+├── workspace/
+│   ├── brain/            Runtime state (skills, memory, logs)
+│   ├── soul.md           System personality
+│   ├── user.md           User context
+│   ├── agents.md         Agent definitions
+│   └── config.json       Runtime configuration
+├── conversations.db      SQLite conversation store
+└── uploads/              Processed files
+```
+
+<Info>
+  `~/.wolffish/` هي البصمة الكاملة. لا يخزن التطبيق شيئًا في مكان آخر. إلغاء التثبيت هو `rm -rf ~/.wolffish/` بالإضافة إلى حذف التطبيق نفسه.
+</Info>
+
+## تهيئة مساحة العمل
+
+مجلد `defaults/workspace/` في شجرة المصدر هو القالب. عند أول تشغيل:
+
+1. يتحقق وولفيش من وجود `~/.wolffish/workspace/`
+2. إذا لم يكن موجودًا، ينسخ `defaults/workspace/` إلى `~/.wolffish/workspace/`
+3. إذا كان موجودًا، **لا يحدث شيء** - لا تُستبدل بيانات المستخدم أبدًا
+
+<Warning>
+  تعمل تهيئة مساحة العمل فقط عندما لا يكون `~/.wolffish/workspace/` موجودًا. إذا أضفت ملفات افتراضية جديدة إلى `defaults/workspace/`، لن يحصل عليها المستخدمون الحاليون تلقائيًا. تعامل مع الترحيلات في الكود إذا لزم الأمر.
+</Warning>
+
+<CardGroup cols={2}>
+  <Card title="إعداد بيئة التطوير" icon="terminal" href="/ar/development/setup">
+    تشغيل بيئة التطوير.
+  </Card>
+  <Card title="إضافة وحدات الدماغ" icon="brain" href="/ar/development/adding-brain-modules">
+    إضافة وحدة جديدة لخط أنابيب بيئة التشغيل.
+  </Card>
+</CardGroup>

@@ -1,0 +1,144 @@
+---
+title: "Development Setup"
+description: "Set up your development environment to contribute to Wolffish"
+---
+
+# Zero to Running in Five Minutes
+
+Get from zero to a running dev instance in under five minutes.
+
+## Prerequisites
+
+| Tool    | Version | Why                                            |
+| ------- | ------- | ---------------------------------------------- |
+| Node.js | 20+     | Runtime for main process and build tooling     |
+| npm     | 10+     | Package management                             |
+| Git     | Any     | Source control                                 |
+| Ollama  | Latest  | Local model testing (optional but recommended) |
+
+<Note>
+  Native modules like `better-sqlite3` compile during install via
+  `electron-rebuild`. On macOS you need Xcode Command Line Tools (`xcode-select
+  --install`). On Linux you need `build-essential` and `python3`.
+</Note>
+
+## Clone and Install
+
+```bash
+git clone https://github.com/younes-alturkey/wolffish.git
+cd wolffish
+npm install
+```
+
+The `postinstall` script runs `electron-rebuild` automatically to compile native modules against the correct Electron ABI.
+
+## Run in Dev Mode
+
+```bash
+npm run dev
+```
+
+This launches `electron-vite` which starts three processes:
+
+| Process      | Role                                      | Reload         |
+| ------------ | ----------------------------------------- | -------------- |
+| **main**     | Node.js — IPC handlers, runtime, services | Manual restart |
+| **preload**  | contextBridge — type-safe IPC             | Manual restart |
+| **renderer** | React — the UI                            | HMR (instant)  |
+
+Renderer changes (components, styles, hooks) reflect instantly via HMR. Main process changes require you to stop and re-run `npm run dev`.
+
+## Available Commands
+
+```bash
+npm run dev          # Start dev mode with HMR
+npm run typecheck    # Full TypeScript check (all configs)
+npm run lint         # ESLint
+npm run build        # Production build (current platform)
+npm run build:mac    # macOS .dmg
+npm run build:win    # Windows .exe
+npm run build:linux  # Linux .AppImage / .deb
+```
+
+<Warning>
+  Always run `npm run typecheck` after structural changes (new files, moved
+  imports, changed interfaces). Vite HMR can mask type errors — your app runs
+  fine until you try to build.
+</Warning>
+
+## Path Aliases
+
+The codebase uses path aliases everywhere. Never use relative paths across process boundaries.
+
+```typescript
+// Good
+import { Corpus } from "@main/runtime/corpus/corpus";
+import { useFlow } from "@providers/flow/useFlow";
+import { Button } from "@components/core/button/Button";
+
+// Bad — never cross folders with relative paths
+import { Corpus } from "../../../main/runtime/corpus/corpus";
+```
+
+Available aliases:
+
+| Alias           | Resolves to                     |
+| --------------- | ------------------------------- |
+| `@main/*`       | `src/main/*`                    |
+| `@preload/*`    | `src/preload/*`                 |
+| `@renderer/*`   | `src/renderer/src/*`            |
+| `@components/*` | `src/renderer/src/components/*` |
+| `@hooks/*`      | `src/renderer/src/hooks/*`      |
+| `@lib/*`        | `src/renderer/src/lib/*`        |
+| `@pages/*`      | `src/renderer/src/pages/*`      |
+| `@providers/*`  | `src/renderer/src/providers/*`  |
+| `@resources/*`  | `resources/*`                   |
+
+<Tip>
+  Use `./` relative imports only within the same folder. For anything else, use
+  the alias.
+</Tip>
+
+Aliases are configured in three places:
+
+- `electron.vite.config.ts` — Vite resolution
+- `tsconfig.web.json` — TypeScript for renderer
+- `tsconfig.node.json` — TypeScript for main + preload
+
+## Three-Process Architecture
+
+```
+┌──────────────────────────────────────────┐
+│  main (Node.js)                          │
+│  - IPC handlers                          │
+│  - Runtime pipeline (15 brain modules)   │
+│  - Services (GitHub, Google, Ollama...)  │
+├──────────────────────────────────────────┤
+│  preload (contextBridge)                 │
+│  - Exposes typed IPC to renderer         │
+│  - No direct Node.js access in renderer  │
+├──────────────────────────────────────────┤
+│  renderer (React)                        │
+│  - Pages, components, hooks              │
+│  - Communicates with main ONLY via IPC   │
+└──────────────────────────────────────────┘
+```
+
+The renderer never imports from `@main/*` directly. All communication flows through IPC channels defined in the preload layer.
+
+<CardGroup cols={2}>
+  <Card
+    title="Project Structure"
+    icon="folder-tree"
+    href="/development/project-structure"
+  >
+    Understand how the codebase is organized.
+  </Card>
+  <Card
+    title="Contributing"
+    icon="code-pull-request"
+    href="/development/contributing"
+  >
+    Ready to submit code? Read the contribution guide.
+  </Card>
+</CardGroup>

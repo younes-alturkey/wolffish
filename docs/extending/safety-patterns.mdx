@@ -1,0 +1,70 @@
+---
+title: "Safety Patterns"
+description: "How the amygdala safety system works"
+---
+
+# The Safety Gate
+
+The amygdala is Wolffish's safety gate. Every tool call passes through it before execution. It has zero hardcoded patterns — all danger and confirm patterns are loaded from SKILL.md files via the cerebellum.
+
+## How It Works
+
+When the LLM produces a tool call, the amygdala constructs a match string:
+
+```
+toolName + " " + JSON.stringify(args)
+```
+
+This string is tested against all registered patterns. The classification result determines what happens:
+
+| Classification | Behavior |
+|---|---|
+| **safe** | Tool executes immediately |
+| **confirm** | Approval dialog shown in UI; execution waits for user response |
+| **block** | Tool call is denied; LLM receives a denial message |
+
+## Pattern Matching
+
+Patterns are regex strings defined in SKILL.md frontmatter:
+
+```yaml
+danger_patterns:
+  - "rm -rf /"
+  - "sudo rm"
+  - "chmod 777"
+  - "mkfs"
+  - "dd if="
+
+confirm_patterns:
+  - "npm install"
+  - "git push"
+  - "docker rm"
+  - "pip install"
+```
+
+## Pattern Priority
+
+If a tool call matches both a danger pattern and a confirm pattern, **danger wins**. The priority order is: block > confirm > safe.
+
+## The Approval Flow
+
+When amygdala classifies a call as `confirm`:
+
+1. An `safety.confirm` event is emitted on the corpus event bus
+2. An IPC message is sent to the renderer process
+3. The UI shows an approval card with the tool name, arguments, and approve/deny buttons
+4. The amygdala waits via a Promise-based bridge
+5. The user's decision (approve or deny) is returned
+6. If approved, execution proceeds. If denied, the LLM receives a denial message
+
+## Writing Good Patterns
+
+Keep patterns specific enough to catch real dangers but broad enough to not miss variations. Test your patterns against the full match string format (`toolName + " " + JSON.stringify(args)`).
+
+<Tip>
+  When in doubt, use confirm patterns over danger patterns. It's better to ask the user than to silently block something they intended to do.
+</Tip>
+
+## Feedback Loop
+
+When users approve or deny tool calls, the decision is recorded by basalganglia. Over time, this builds a preference history that the LLM can reference to understand what the user typically approves or denies.

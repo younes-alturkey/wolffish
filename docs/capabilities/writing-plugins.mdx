@@ -1,0 +1,121 @@
+---
+title: "Writing Plugins"
+description: "How to write plugin code for Wolffish capabilities"
+---
+
+# What a Plugin Adds
+
+A plugin gives a capability executable code. While pure skills (SKILL.md only) rely on the LLM using existing tools like `shell_exec`, plugins define their own tools with custom logic.
+
+## Plugin Structure
+
+```
+brain/cerebellum/my-capability/
+├── SKILL.md
+└── plugin/
+    └── index.mjs        # Plugin entry point
+```
+
+## The WolffishPlugin Interface
+
+Your plugin must export an object implementing this interface:
+
+```typescript
+interface WolffishPlugin {
+  name: string
+  tools: string[]              // Tool names this plugin handles
+  init?(context: PluginContext): Promise<void>
+  execute(toolName: string, args: Record<string, unknown>): Promise<ToolResult>
+  destroy?(): Promise<void>
+}
+
+interface PluginContext {
+  pluginDir: string            // Absolute path to this plugin's folder
+  workspaceRoot: string        // Absolute path to ~/.wolffish/workspace/
+}
+
+interface ToolResult {
+  success: boolean
+  output: string
+  error?: string
+}
+```
+
+## Example Plugin
+
+Here's a minimal plugin that provides a `hello_world` tool:
+
+```javascript
+// brain/cerebellum/hello/plugin/index.mjs
+
+export default {
+  name: 'hello',
+  tools: ['hello_world'],
+
+  async init(context) {
+    // Called once when the plugin is loaded
+    // context.pluginDir = path to this plugin's folder
+    // context.workspaceRoot = path to ~/.wolffish/workspace/
+  },
+
+  async execute(toolName, args) {
+    if (toolName === 'hello_world') {
+      return {
+        success: true,
+        output: `Hello, ${args.name || 'world'}!`
+      }
+    }
+    return { success: false, output: '', error: `Unknown tool: ${toolName}` }
+  },
+
+  async destroy() {
+    // Called when the plugin is unloaded (app shutdown)
+  }
+}
+```
+
+And the corresponding SKILL.md:
+
+```yaml
+---
+name: hello
+description: A simple greeting capability
+triggers:
+  - hello
+  - greet
+tools:
+  - name: hello_world
+    description: Say hello to someone
+    parameters:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name to greet
+      required: []
+---
+
+# Hello World
+
+When the user asks you to say hello or greet someone, use the `hello_world` tool.
+```
+
+## Plugin Lifecycle
+
+1. **Discovery** — `cerebellum.ts` scans `brain/cerebellum/` on startup
+2. **Import** — If a `plugin/index.mjs` exists, it's dynamically imported
+3. **Init** — `init(context)` is called with the plugin's directory and workspace root
+4. **Execution** — `execute(toolName, args)` is called each time the LLM invokes a tool
+5. **Destroy** — `destroy()` is called on app shutdown for cleanup
+
+## Important Notes
+
+<Warning>
+  Plugins are `.mjs` files (ES modules), not `.ts`. They run in the Electron main process with full Node.js access. This means they can do anything — file I/O, network requests, child processes. The amygdala's safety gate is the only thing between a plugin and execution.
+</Warning>
+
+<Tip>
+  Use `context.pluginDir` to resolve paths relative to your plugin (for config files, templates, etc.) and `context.workspaceRoot` for accessing workspace-level data.
+</Tip>
+
+Plugins should handle their own errors gracefully and always return a `ToolResult`. If your plugin throws, motor.ts will catch it and retry up to 3 times with exponential backoff.

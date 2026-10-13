@@ -1,0 +1,266 @@
+---
+title: "Troubleshooting"
+description: "Common issues and how to fix them"
+---
+
+# Find Your Symptom
+
+Common problems and their solutions. Start with the issue that matches your symptoms.
+
+<AccordionGroup>
+  <Accordion title="A turn hangs with no reply and no error">
+    **Symptoms**: the turn is running, the spinner is up, and nothing arrives — for minutes.
+
+    A model provider can accept a request and then say **nothing at all**. One call measured during development sat silent for ten minutes and returned a single token; another for four minutes and returned nothing. The turn simply hung, because **an open connection that never speaks looks exactly like one that is thinking**.
+
+    Since **v1.0.299** Wolffish watches for it: **five minutes with no response whatsoever** and the request is dropped, the turn ends, and you get a card that says so.
+
+    It is **never retried automatically**, because five minutes of silence is your call to make — so the card offers **Continue**, which carries on from exactly where things stopped. Nothing is lost: the files written, the tool results and the plan so far all still stand, and the note that resumes the conversation appears as a **quiet line in the feed**, never as something you said.
+
+    <Note>
+      **Local models are exempt.** Ollama says nothing while it evaluates a long prompt, and on a slow machine that alone can pass five minutes — so a local model is never cut off by this watchdog. If a local turn hangs, the checks in the next section apply.
+    </Note>
+  </Accordion>
+
+  <Accordion title="Wolffish doesn't respond at all">
+    **Symptoms**: You type a message and nothing happens. No response, no error.
+
+    **Check these in order:**
+
+    1. **Provider status** — Open Settings and verify your LLM provider is configured and reachable. If using a cloud provider (OpenAI, Anthropic), check their status page.
+
+    2. **Ollama running** — If using a local model, confirm Ollama is running:
+       ```bash
+       curl http://localhost:11434/api/tags
+       ```
+       If this times out, start Ollama: `ollama serve`
+
+    3. **Application logs** — Check the Electron-level logs for crashes:
+       ```bash
+       ls -lt ~/.wolffish/logs/
+       cat ~/.wolffish/logs/main.log
+       ```
+       Look for unhandled exceptions or connection errors.
+
+    4. **Event log** — If the app appears responsive but the LLM isn't replying, check if events are firing:
+       ```bash
+       tail -20 ~/.wolffish/workspace/brain/corpus/$(date +%Y-%m-%d).log.md
+       ```
+       If you see `message.received` but no `llm.response`, the provider call is hanging or failing.
+
+  </Accordion>
+
+  <Accordion title="The agent doesn't use my capability">
+    **Symptoms**: You've created a capability but Wolffish never uses it.
+
+    **How discovery works now**: a core set of capabilities is always loaded; everything else appears as one line in the prompt's `<capabilities>` index and loads on demand when the model calls `tool_search` (which matches capability names, descriptions, triggers, and tool names) or calls one of its tools directly.
+
+    **Check these:**
+
+    1. **It's in the index** — Send any message, then open the latest debug snapshot:
+       ```bash
+       ls -t brain/prefrontal/.debug/ | head -1
+       ```
+       Look in the `<capabilities>` section. If your capability isn't listed at all, its SKILL.md failed to parse — check the frontmatter (bad YAML, missing required fields).
+
+    2. **Make it findable** — `tool_search` is a term search. Give the SKILL.md a descriptive `name` and `description`, and add `triggers` covering the words you'd naturally use:
+       ```yaml
+       triggers:
+         - "deploy"
+         - "push to production"
+         - "release"
+       ```
+
+    3. **Ask for it explicitly** — Tell Wolffish "use tool_search to find a deployment capability". If that loads and runs it, the plugin is fine and only the descriptions need sharpening.
+
+    4. **Pin it** — If the capability should *always* be loaded (schemas shipped on every request), add it to `pinnedCapabilities` in `config.json`:
+       ```json
+       {
+         "pinnedCapabilities": ["my-capability"]
+       }
+       ```
+
+  </Accordion>
+
+  <Accordion title="Tool calls always get blocked">
+    **Symptoms**: Every tool call triggers a safety confirmation or gets denied.
+
+    **Check these:**
+
+    1. **danger_patterns in SKILL.md** — The `amygdala` checks tool arguments against `danger_patterns` regexes defined in the capability's SKILL.md. If your patterns are too broad, they'll match everything:
+       ```yaml
+       danger_patterns:
+         - "rm\\s+-rf"        # Good: specific
+         - "rm"               # Bad: matches "format", "inform", etc.
+       ```
+
+    2. **confirm_patterns** — These require user confirmation but don't block. If you want the tool to run without asking, remove the matching pattern from `confirm_patterns`.
+
+    3. **Bypass setting** — For development, you can disable safety confirmations in Settings. This skips the amygdala gate entirely.
+
+    <Warning>
+    Only disable safety in development. In normal use, the safety gate prevents destructive operations.
+    </Warning>
+
+  </Accordion>
+
+  <Accordion title="Memory seems wrong or outdated">
+    **Symptoms**: Wolffish references information that's wrong, outdated, or from the wrong context.
+
+    **Fix it directly:**
+
+    1. **Read the episode file** — Episodes are plain markdown. Find the offending memory:
+       ```bash
+       grep -r "wrong information" brain/hippocampus/episodes/
+       ```
+
+    2. **Edit or delete it** — Open the episode file and fix the content, or delete the file entirely. Episodes are just markdown — edit them like any other file. The same goes for the knowledge files under `brain/hippocampus/knowledge/` — durable facts often live there.
+
+    3. **The index follows you** — No manual rebuild needed: the file watcher re-indexes edited files while Wolffish runs, and every launch does an incremental diff. If the index still looks wrong, force a full rebuild:
+       ```bash
+       rm ~/.wolffish/workspace/brain/cortex.db*
+       ```
+       On the next startup, cortex re-indexes the whole workspace (about a second, even for gigabytes).
+
+  </Accordion>
+
+  <Accordion title="Context is too large / responses are slow">
+    **Symptoms**: Wolffish takes a long time to respond, or you see token budget warnings.
+
+    A fresh conversation's system prompt is ~5k tokens by design, and long conversations automatically fold into a rolling summary plus the recent verbatim tail — so a bloated context is the exception, not the norm. When it happens:
+
+    1. **Hypothalamus warnings** — Look for health events:
+       ```bash
+       grep "health" brain/corpus/$(date +%Y-%m-%d).log.md
+       ```
+       Warnings about token usage mean the context window is nearly full.
+
+    2. **Check the debug snapshot header** — `estimated tokens` at the top of the latest snapshot shows the prompt's size. If it's far above ~5k, an oversized always-included file is the usual culprit: a huge `soul.md`, `user.md`, or `agents.md` lands in every prompt.
+
+    3. **Watch the context meter** — In the context meter beside the chat input, the numerator is the provider-billed tokens of the last request and the denominator is the model's full context window. Big single tool results (a giant file read, a huge page fetch) inflate a turn temporarily; stale large tool results are replaced with recovery-pointer stubs on later turns.
+
+    4. **Pinned capabilities** — Every capability in `pinnedCapabilities` ships its full tool schemas on every request. Pin sparingly; `tool_search` loads the rest on demand (capped at 10 active non-core capabilities per conversation).
+
+  </Accordion>
+
+  <Accordion title="Telegram / WhatsApp not connecting">
+    **Symptoms**: Channel shows as disconnected, messages aren't received.
+
+    **For Telegram:**
+    1. Verify your bot token in Settings is correct
+    2. Check internet connectivity
+    3. Look for connection errors:
+       ```bash
+       grep "telegram\|channel" ~/.wolffish/logs/main.log
+       ```
+    4. Telegram bots require polling — if Wolffish was offline, it reconnects automatically on restart
+
+    **For WhatsApp:**
+    1. The QR code in Settings must be scanned with your phone
+    2. The session expires if your phone is offline for 14+ days — re-scan the QR
+    3. Check for session errors in the logs:
+       ```bash
+       grep "whatsapp\|wa-web" ~/.wolffish/logs/main.log
+       ```
+
+  </Accordion>
+
+  <Accordion title="Plugin throws errors">
+    **Symptoms**: A capability's plugin fails to load or tools error at runtime.
+
+    **Check these:**
+
+    1. **Export structure** — `plugin/index.mjs` must export a default object:
+       ```javascript
+       export default {
+         init(context) { ... },
+         tools: { ... }
+       }
+       ```
+
+    2. **Tool names match** — Tool names in the plugin must exactly match the names declared in SKILL.md frontmatter `tools:` section.
+
+    3. **Args match schema** — The JSON schema in SKILL.md must match what the plugin function expects. Type mismatches cause silent failures.
+
+    4. **Check the application log** — Capability load failures land in the app log:
+       ```bash
+       grep -i "skill\|capability\|plugin" ~/.wolffish/workspace/logs/$(date +%Y-%m-%d).log
+       ```
+       The error message usually points to the exact issue (missing export, syntax error, bad import).
+
+  </Accordion>
+
+  <Accordion title="cortex.db is corrupted">
+    **Symptoms**: Search doesn't work, memory retrieval fails, errors mentioning SQLite or FTS5.
+
+    **Fix**: Delete the database (and its `-shm`/`-wal` companions). Wolffish rebuilds it from the source files on next startup:
+    ```bash
+    rm ~/.wolffish/workspace/brain/cortex.db*
+    ```
+
+    Then restart Wolffish. The cortex re-indexes everything — episodes, knowledge, conversations, tasks, logs, usage, artifacts — in about a second, even for a multi-gigabyte workspace. A normal launch (no deletion) only runs an incremental diff, which takes milliseconds.
+
+    <Info>
+    The `cortex.db` is a derived artifact — it's always rebuildable from the files on disk. You never lose data by deleting it.
+    </Info>
+
+  </Accordion>
+
+  <Accordion title="Wolffish uses too much disk space">
+    **Symptoms**: Disk usage grows over time, especially in `~/.wolffish/`.
+
+    **Check these locations:**
+
+    1. **Chromium runtime cache** — The embedded browser caches aggressively:
+       ```bash
+       du -sh ~/.wolffish/runtime/
+       ```
+       Safe to delete: `rm -rf ~/.wolffish/runtime/Cache/`
+
+    2. **Old event logs** — Should auto-clean after 7 days, but verify:
+       ```bash
+       ls -la ~/.wolffish/workspace/brain/corpus/*.log.md
+       ```
+
+    3. **Episode accumulation** — Long-running instances accumulate episodes. Review and prune old ones:
+       ```bash
+       du -sh ~/.wolffish/workspace/brain/hippocampus/episodes/
+       ls ~/.wolffish/workspace/brain/hippocampus/episodes/ | wc -l
+       ```
+
+    4. **Debug snapshots** — Capped at the 50 most recent (older ones are rotated out automatically), but verify:
+       ```bash
+       ls ~/.wolffish/workspace/brain/prefrontal/.debug/ | wc -l
+       ```
+
+  </Accordion>
+
+  <Accordion title="How to reset everything (nuclear option)">
+    If nothing else works and you want to start completely fresh:
+
+    ```bash
+    rm -rf ~/.wolffish/
+    ```
+
+    <Warning>
+    This deletes all configuration, memories, episodes, capabilities, and logs. Wolffish will run first-launch setup again. Only do this if you're prepared to lose everything.
+    </Warning>
+
+    For a less destructive reset, delete only specific pieces:
+    - `rm ~/.wolffish/workspace/brain/cortex.db*` — rebuild search index only
+    - `rm -rf ~/.wolffish/workspace/brain/hippocampus/episodes/` — clear all memories
+    - `rm -rf ~/.wolffish/workspace/brain/corpus/` — clear event logs
+    - `rm -rf ~/.wolffish/workspace/brain/prefrontal/.debug/` — clear debug snapshots
+
+  </Accordion>
+</AccordionGroup>
+
+## Getting Help
+
+Wolffish is no longer maintained, so there is no support channel and the [issue tracker](https://github.com/younes-alturkey/wolffish/issues) is not actively monitored. The debugging pages above are the support path: every turn leaves a debug snapshot, an event log and a task file on disk, and the code is yours to read and fix.
+
+<Tip>
+  When filing a bug report, include: 1. The debug snapshot from the failing turn
+  2. The relevant section of the event log 3. The task file (if a tool was
+  involved) 4. Your `config.json` (redact API keys)
+</Tip>

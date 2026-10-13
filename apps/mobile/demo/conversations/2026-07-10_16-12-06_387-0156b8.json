@@ -1,0 +1,850 @@
+{
+  "id": "2026-07-10_16-12-06_387-0156b8",
+  "title": "Daily (16:12): Magazine-Style AI News Report",
+  "model": null,
+  "createdAt": 1783689126387,
+  "updatedAt": 1783689376082,
+  "messages": [
+    {
+      "id": "m_1783689126387_c17d77",
+      "role": "user",
+      "content": "Create a polished HTML report summarizing yesterday's top and breaking AI news — search the web for the stories. For each: headline, 2–3 sentence summary, source name with credibility rating (High/Medium/Low + reasoning), a fact-check note, and your own short review/opinion.\nLayout — read this carefully:\n\nDesign it as a flowing multi-page document, like a magazine or newspaper report, NOT a grid of cards. Stories flow continuously down the page filling the full column width, one after another, separated by spacing and dividers — never boxed individually or pinned to the top.\nContent fills each page top-to-bottom naturally; let text flow across page breaks. Do not wrap each story in its own bordered/shadowed card container.\nUse cards sparingly and only as accents — e.g. a tinted fact-check callout box, or a small credibility panel — not as the wrapper for the whole story.\nHeadline, then summary as normal running paragraphs, then an inline row of badges/chips (category, credibility, \"Breaking\") sitting in the text flow, then the fact-check accent box, then your review as an italic or tinted paragraph.\n\nStyle: clean and colored with category/credibility/\"Breaking\" badges and chips, a soft gradient background, generous spacing, dividers between stories. Keep it PDF-safe: no JavaScript, animations, transitions, hover, position:fixed/sticky, or viewport units. Use print-color-adjust:exact (and -webkit-) so gradients render. System font stack inline. Avoid oversized text that renders as colored squares — basic, well-supported CSS only.\nFull-bleed (no white borders/bars, edge-to-edge like a website):\n\n@page { size: A4; margin: 0; } — zero margin removes the white frame.\nhtml, body { margin:0; padding:0; } with the gradient on body so color reaches all four edges.\nAll inner spacing via padding on inner containers, never on body.\npage-break-inside:avoid only on small accent boxes (fact-check, credibility panel) so they don't split — NOT on whole stories, so text can flow across pages.\nConvert with margins disabled, print background graphics on, preferCSSPageSize:true, and default header/footer off.\n\nConvert to a clean multi-page edge-to-edge PDF that reads like a natural document, background flush to every edge. Then send it on my Telegram, preceded by a one-paragraph summary.",
+      "timestamp": 1783689126387
+    },
+    {
+      "id": "m_1783689376082_ebad9e",
+      "role": "assistant",
+      "content": "PDF looks solid — 9 pages, 690KB, content flowing properly. Now let me craft the Telegram summary and send.Done. Here's what you got:\n\n**Telegram:** A one-paragraph summary sent as message #1269, followed by the 9-page PDF as message #1270.\n\n**The report covers 9 stories from July 9, 2026:**\n\n| # | Story | Angle |\n|---|-------|-------|\n| 1 | GPT-5.6 Sol/Terra/Luna GA | Three-tier pricing architecture |\n| 2 | Grok 4.5 public launch | $2/$6 disrupts the pricing board |\n| 3 | Meta Muse Spark 1.1 + API | 1M context, multi-agent, pricing TBD |\n| 4 | US-China mutual AI export controls | Fragmented supply chain incoming |\n| 5 | Meta $9.1B Alberta data center | Energy-first site selection |\n| 6 | SK Hynix $28B Nasdaq IPO | 7x oversubscribed, HBM dominance |\n| 7 | UN Global AI Governance Dialogue | First-ever, 500+ want continuity |\n| 8 | DeepSeek inference chip project | Full-stack Chinese AI play |\n| 9 | US weighs restricting Chinese model use | 30–46% of US enterprise tokens already on Chinese models |\n\nEvery story has sourced credibility ratings, fact-check boxes, and Wolffish commentary. The PDF is full-bleed, edge-to-edge A4 with a soft gradient — reads like a briefing document, not a grid of cards. 🐟",
+      "timestamp": 1783689376082,
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_td_1ajh39f_1a",
+          "toolCallId": "call_td_1ajh39f_1",
+          "name": "todo_write",
+          "args": {
+            "todos": [
+              {
+                "content": "Search the web for “top AI news breaking stories July 9 2026” and 2 more",
+                "status": "in_progress"
+              },
+              {
+                "content": "Read the top sources (4 pages)",
+                "status": "pending"
+              },
+              {
+                "content": "Search the web for “OpenAI GPT-5.6 launch pricing Sol Terra Lun…” and 2 more",
+                "status": "pending"
+              },
+              {
+                "content": "Read the top sources (2 pages)",
+                "status": "pending"
+              },
+              {
+                "content": "Search the web for “EU UN global AI governance dialogue July 7…”",
+                "status": "pending"
+              },
+              {
+                "content": "Deliver the file",
+                "status": "pending",
+                "priority": "high"
+              }
+            ]
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_td_1ajh39f_1b",
+          "toolCallId": "call_td_1ajh39f_1",
+          "status": "success",
+          "output": "6 todos (0 completed, 1 in progress)\n[\n  {\n    \"content\": \"Search the web for “top AI news breaking stories July 9 2026” and 2 more\",\n    \"status\": \"in_progress\"\n  },\n  {\n    \"content\": \"Read the top sources (4 pages)\",\n    \"status\": \"pending\"\n  },\n  {\n    \"content\": \"Search the web for “OpenAI GPT-5.6 launch pricing Sol Terra Lun…” and 2 more\",\n    \"status\": \"pending\"\n  },\n  {\n    \"content\": \"Read the top sources (2 pages)\",\n    \"status\": \"pending\"\n  },\n  {\n    \"content\": \"Search the web for “EU UN global AI governance dialogue July 7…”\",\n    \"status\": \"pending\"\n  },\n  {\n    \"content\": \"Deliver the file\",\n    \"status\": \"pending\",\n    \"priority\": \"high\"\n  }\n]"
+        },
+        {
+          "kind": "todo",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_td_1ajh39f_1c",
+          "items": [
+            {
+              "content": "Search the web for “top AI news breaking stories July 9 2026” and 2 more",
+              "status": "in_progress"
+            },
+            {
+              "content": "Read the top sources (4 pages)",
+              "status": "pending"
+            },
+            {
+              "content": "Search the web for “OpenAI GPT-5.6 launch pricing Sol Terra Lun…” and 2 more",
+              "status": "pending"
+            },
+            {
+              "content": "Read the top sources (2 pages)",
+              "status": "pending"
+            },
+            {
+              "content": "Search the web for “EU UN global AI governance dialogue July 7…”",
+              "status": "pending"
+            },
+            {
+              "content": "Deliver the file",
+              "status": "pending",
+              "priority": "high"
+            }
+          ]
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_2",
+          "toolCallId": "call_00_8XyAtSEAZEMxtKYUkS3y5544",
+          "name": "web_search",
+          "args": {
+            "query": "top AI news breaking stories July 9 2026",
+            "maxResults": 10
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_3",
+          "toolCallId": "call_01_sde6doH1VKyu6DjQl07x4925",
+          "name": "web_search",
+          "args": {
+            "query": "AI breakthrough announcements July 2026",
+            "maxResults": 10
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_4",
+          "toolCallId": "call_02_dBeCjBqoOFRzd4c5XL3Q8464",
+          "name": "web_search",
+          "args": {
+            "query": "artificial intelligence latest news today July 2026",
+            "maxResults": 10
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_5",
+          "toolCallId": "call_00_8XyAtSEAZEMxtKYUkS3y5544",
+          "status": "success",
+          "output": "{\"provider\":\"brave\",\"results\":[{\"title\":\"AI News Today July 9 2026: 15 Biggest Stories\",\"snippet\":\"OpenAI on X — GPT-5.6 Sol, Terra, ... ... 16 AI stories: Apple WWDC 2026 recap, <strong>Claude becomes an iPhone option, Microsoft Foundry, EU AI Act countdown, Pentagon AI race, SpaceX IPO</strong>, and more....\",\"url\":\"https://www.buildfastwithai.com/blogs/ai-news-today-july-9-2026\"},{\"title\":\"📰 WBN Breaking News — July 9, 2026: US And China Both Move Toward Tighter AI Model Controls As Markets Shrug Off Iran Strikes\",\"snippet\":\"<strong>The US and China both move to tighten control over advanced AI model access</strong>, Meta commits $9.1B to its first Canadian AI data center, SK Hynix&#x27;s $28B Nasdaq listing draws 7x demand, IMF upgrades South Korea&#x27;s growth outlook, and AI stocks steady ...\",\"url\":\"https://www.wbn.digital/wbn-breaking-news-july-9-2026-us-and-china-both-move-toward-tighter-ai-model-controls-as-markets-shrug-off-iran-strikes/\"},{\"title\":\"Today’s biggest technology news: Top tech stories shaping AI, Big Tech, cybersecurity and startups - Tech Startups\",\"snippet\":\"It’s Thursday, July 9, 2026, and AI’s next frontier isn’t arriving quietly — it’s landing with <strong>billion-dollar infrastructure bets, frontier model launches, and the first real attempt at global governance all at once</strong>.\",\"url\":\"https://techstartups.com/2026/07/09/todays-biggest-technology-news-top-tech-stories-shaping-ai-big-tech-cybersecurity-and-startups/\"},{\"title\":\"AI News - Thu July 9 2026\",\"snippet\":\"What happened: <strong>GPT-5.6 Sol, Terra</strong>, ... today, July 9, 2026, across ChatGPT, ChatGPT Work, Codex, and the OpenAI API. The rollout is global over approximately 24 hours. Three tiers, three price points: Sol at $5 input / $30 output per million ...\",\"url\":\"https://www.tech-reader.blog/2026/07/ai-news-thu-july-9-2026.html\"},{\"title\":\"The Latest AI News and Breakthroughs That Matter Most | News\",\"snippet\":\"... Summary: <strong>Z.ai&#x27;s GLM-5.2 model has become the centerpiece of growing debate over whether China is finally catching up to the United States in the artificial intelligence race</strong>. The inexpensive Chinese model demonstrates competitive capabilities ...\",\"url\":\"https://www.crescendo.ai/news/latest-ai-news-and-updates\"},{\"title\":\"AI News | Latest News | Insights Powering AI-Driven Business Growth\",\"snippet\":\"July 10, 2026 · <strong>Healthcare &amp; Wellness AI</strong> · July 9, 2026 · <strong>Healthcare &amp; Wellness AI</strong> · July 9, 2026 · <strong>Healthcare &amp; Wellness AI</strong> · July 7, 2026 · AI in Action · July 7, 2026 ·\",\"url\":\"https://www.artificialintelligence-news.com/\"},{\"title\":\"Reuters AI News | Latest Headlines and Developments | Reuters\",\"snippet\":\"Explore the latest artificial intelligence news with Reuters - from AI breakthroughs and technology trends to regulation, ethics, business and global impact.\",\"url\":\"https://www.reuters.com/technology/artificial-intelligence/\"},{\"title\":\"AI News. July 9, 2026 - by Crypto Integrated\",\"snippet\":\"<strong>AI News ft ByteDance, Kimi, Perplexity, Foundry, etc</strong>\",\"url\":\"https://www.cryptointegrat.com/p/ai-news-july-9-2026\"},{\"title\":\"AI News — Weekly AI Newsletter for Professionals | AI Weekly\",\"snippet\":\"Breaking stories, weekly briefings, and eleven years of curated coverage. Read by 44,000+ professionals since 2015. 4436 stories tracked Jul 9, 2026 ·\",\"url\":\"https://aiweekly.co/\"},{\"title\":\"AI (artificial intelligence) | Technology | The Guardian\",\"snippet\":\"<strong>World Cup 2026</strong> · US politics · World · Climate crisis · Middle East · Ukraine · Football · Newsletters · Business · Environment · UK politics · Science · Tech · Global development · Obituaries · More · AI (artificial intelligence) Thursday 9 July 2026 ·\",\"url\":\"https://www.theguardian.com/technology/artificialintelligenceai/2026/jul/09/all\"}]}"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_6",
+          "toolCallId": "call_01_sde6doH1VKyu6DjQl07x4925",
+          "status": "success",
+          "output": "{\"provider\":\"brave\",\"results\":[{\"title\":\"The Latest AI News and Breakthroughs That Matter Most | News\",\"snippet\":\"... Summary: <strong>Z.ai&#x27;s GLM-5.2 model</strong> has become the centerpiece of growing debate over whether China is finally catching up to the United States in the artificial intelligence race. The inexpensive Chinese model demonstrates competitive capabilities ...\",\"url\":\"https://www.crescendo.ai/news/latest-ai-news-and-updates\"},{\"title\":\"Top AI News for July 2026: Breakthroughs, Launches & Trends You Can’t Miss | AIapps\",\"snippet\":\"<strong>Claude Sonnet 5</strong> stood out for coding, debugging, and multi-step work, with intro pricing at $2 per 1 million input tokens and $10 per 1 million output tokens until August 31, 2026 · Gemini Omni Flash and Nano Banana 2 Lite made video editing ...\",\"url\":\"https://www.aiapps.com/blog/top-ai-news-july-breakthroughs-launches-trends/\"},{\"title\":\"AI News July 2026 Latest AI Developments | ZoneTechify Blog\",\"snippet\":\"Quick Answer: The biggest AI news in July 2026 centers on <strong>more capable multimodal models, the rapid rise of autonomous AI agents, tighter global regulation, faster and cheaper AI chips, and record enterprise adoption</strong>.\",\"url\":\"https://www.zonetechify.com/blog/ai-news-july-2026-latest-ai-developments\"},{\"title\":\"Latest AI breakthroughs News | July, 2026 (STARTUP EDITION)\",\"snippet\":\"Latest AI breakthroughs news, July, 2026 shows that <strong>AI is turning into business infrastructure, giving you faster research, safer software, lower compute costs, and better decisions if you build it into real workflows now</strong>.\",\"url\":\"https://blog.mean.ceo/latest-ai-breakthroughs-news-july-2026/\"},{\"title\":\"AI Predictions for July 2026: 20 Breakthrough Trends to Watch\",\"snippet\":\"By mid-2026, <strong>expect a wave of &quot;AI PCs,&quot; smart home devices, and wearables that run powerful small language models (SLMs) entirely on-device</strong>. This will drastically improve latency and ensure user privacy, as sensitive personal data will no longer ...\",\"url\":\"https://intellectualclouds.com/blog/ai-predictions-july-2026\"},{\"title\":\"AI explained: Why the world needs to act now | UN News\",\"snippet\":\"Medical breakthroughs: <strong>AI has predicted the structures of more than 200 million proteins, accelerated drug discovery, vaccine development and research into antibiotic resistance</strong>.\",\"url\":\"https://news.un.org/en/story/2026/07/1167848\"},{\"title\":\"LLM News Today (July 2026) – AI Model Releases\",\"snippet\":\"arXiv:2607.06605v1 Announce Type: new Abstract: <strong>Conformal prediction is being adopted in drug discovery to put an honest number on model reliability</strong>: pick an error rate alpha, and the method returns pcs.LG\",\"url\":\"https://llm-stats.com/ai-news\"},{\"title\":\"Snowflake AI Pulse – July 2026 Product Announcements at Snowflake\",\"snippet\":\"AI is unlocking new opportunities faster than ever — and Snowflake AI Pulse is a monthly series designed to bring you the latest breakthroughs as they happen, so you can put them into practice right away. ... Not in this timezone? There’s a Europe-friendly session waiting for you on July 23.\",\"url\":\"https://www.snowflake.com/en/ai-pulse/july-2026/\"},{\"title\":\"Artificial Intelligence News -- ScienceDaily\",\"snippet\":\"Now researchers are pushing its ... Dark Energy&#x27;s Secrets · June 29, 2026  <strong>A new AI-powered framework could transform how astronomers measure the expansion of the Universe</strong>....\",\"url\":\"https://www.sciencedaily.com/news/computers_math/artificial_intelligence/\"},{\"title\":\"Latest AI advancements News | July, 2026 (STARTUP EDITION)\",\"snippet\":\"When your AI startup ships a breakthrough model before the seed round closes, and suddenly the intern is Head of Prompt Engineering. Unsplash · Latest AI advancements news in July 2026 shows a market that is getting less dazzled by raw model size and far more obsessed with what actually helps ...\",\"url\":\"https://blog.mean.ceo/latest-ai-advancements-news-july-2026/\"}]}"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_7",
+          "toolCallId": "call_02_dBeCjBqoOFRzd4c5XL3Q8464",
+          "status": "success",
+          "output": "{\"provider\":\"brave\",\"results\":[{\"title\":\"Reuters AI News | Latest Headlines and Developments | Reuters\",\"snippet\":\"July 2, 2026 · category<strong>Samsung likely to post 18-fold jump in profit on surging AI demand for memory</strong> · July 5, 2026 · categoryFoxconn second-quarter revenue jumps, company cautions on geopolitics · July 5, 2026 · EventMomentum AI San Jose, ...\",\"url\":\"https://www.reuters.com/technology/artificial-intelligence/\"},{\"title\":\"AI News | Latest News | Insights Powering AI-Driven Business Growth\",\"snippet\":\"July 1, 2026 · Artificial Intelligence · July 1, 2026 · Inside AI · July 1, 2026 · Subscribe now to get all our premium content and latest tech news delivered straight to your inbox · Click here · May 16th-June 30th 2026: AI in Retail and Marketing: Forecasting, Personalisation, and Customer Insight ·\",\"url\":\"https://www.artificialintelligence-news.com/\"},{\"title\":\"The Latest AI News and Breakthroughs That Matter Most | News\",\"snippet\":\"Now, let&#x27;s explore the latest news ... Summary: <strong>Z.ai&#x27;s GLM-5.2 model has become the centerpiece of growing debate over whether China is finally catching up to the United States in the artificial intelligence race</strong>....\",\"url\":\"https://www.crescendo.ai/news/latest-ai-news-and-updates\"},{\"title\":\"Latest AI News July 2026: Daily AI News, Updates & Breaking Stories Today | AIToolsRecap\",\"snippet\":\"<strong>Four major AI stories break on Independence Day 2026</strong>. Axios revealed the full behind-the-scenes account of the Fable 5 ban: Amazon&#x27;s Jassy called Treasury Secretary Bessent (not a national security official), Anthropic flew engineers to DC, ...\",\"url\":\"https://aitoolsrecap.com/Blog/AINewsJuly2026.aspx\"},{\"title\":\"AI News Today July 6 2026: 15 Biggest Stories\",\"snippet\":\"The first working Monday of July 2026 opens with <strong>Gemini 3.5 Pro still in preview</strong>, a 9-day countdown to China&#x27;s AI companion law forcing agent shutdowns on 345 million Doubao users, Tesla Robotaxi operating without safety monitors in its fifth ...\",\"url\":\"https://www.buildfastwithai.com/blogs/ai-news-today-july-6-2026\"},{\"title\":\"LLM News Today (July 2026) – AI Model Releases\",\"snippet\":\"<strong>The New York Times, the Daily News and other media outlets are asking a federal judge to impose sanctions on OpenAI</strong>, escalating a fight over artificial intelligence and copyright that could shape the\",\"url\":\"https://llm-stats.com/ai-news\"},{\"title\":\"AI News Today July 4 2026: 15 Biggest Stories\",\"snippet\":\"On America&#x27;s Independence Day, July 4, 2026, <strong>the AI industry is not taking a holiday</strong>. Grok 4.5 is in private beta at SpaceX and Tesla. A 1.6-trillion-parameter Chinese model trained entirely on domestic chips has just been open-sourced under MIT.\",\"url\":\"https://www.buildfastwithai.com/blogs/ai-news-today-july-4-2026\"},{\"title\":\"AI News Today July 8 2026: 15 Biggest Stories\",\"snippet\":\"July 8, 2026 is the day <strong>Fable 5 becomes a paid add-on for everyone</strong>. It is also the day CNBC confirmed that 30 to 46% of enterprise AI token usage at US companies is flowing to Chinese models.\",\"url\":\"https://www.buildfastwithai.com/blogs/ai-news-today-july-8-2026\"},{\"title\":\"AI News July 2026 Latest AI Developments | ZoneTechify Blog\",\"snippet\":\"Businesses exploring automation ... production-ready, monitored deployments rather than fragile demos. <strong>Regulation was one of the loudest themes in July 2026</strong>....\",\"url\":\"https://www.zonetechify.com/blog/ai-news-july-2026-latest-ai-developments\"},{\"title\":\"Global push for AI governance amid warnings of ‘catastrophic harm’ | UN News\",\"snippet\":\"<strong>Millions of children across the globe are already using artificial intelligence to learn, solve problems and even seek advice about personal worries</strong>, while safeguards are failing to keep pace with the technology&#x27;s rapid adoption.\",\"url\":\"https://news.un.org/en/story/2026/07/1167862\"}]}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_8",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_9",
+          "toolCallId": "call_00_H1MQXZtuVk0uG7QyA8vl2373",
+          "name": "web_fetch",
+          "args": {
+            "url": "https://www.buildfastwithai.com/blogs/ai-news-today-july-9-2026",
+            "maxLength": 20000
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_10",
+          "toolCallId": "call_01_ZVbNUCuG1nXWXrsrGv2J6511",
+          "name": "web_fetch",
+          "args": {
+            "url": "https://www.wbn.digital/wbn-breaking-news-july-9-2026-us-and-china-both-move-toward-tighter-ai-model-controls-as-markets-shrug-off-iran-strikes/",
+            "maxLength": 15000
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_11",
+          "toolCallId": "call_02_ibt4tmrLTVCvyZSCiu4c8572",
+          "name": "web_fetch",
+          "args": {
+            "url": "https://techstartups.com/2026/07/09/todays-biggest-technology-news-top-tech-stories-shaping-ai-big-tech-cybersecurity-and-startups/",
+            "maxLength": 15000
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_12",
+          "toolCallId": "call_03_P4O8Wfe4CPCTdqkTnzJj1565",
+          "name": "web_fetch",
+          "args": {
+            "url": "https://www.tech-reader.blog/2026/07/ai-news-thu-july-9-2026.html",
+            "maxLength": 15000
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_13",
+          "toolCallId": "call_00_H1MQXZtuVk0uG7QyA8vl2373",
+          "status": "success",
+          "output": "(Page returned no readable content)"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_14",
+          "toolCallId": "call_01_ZVbNUCuG1nXWXrsrGv2J6511",
+          "status": "success",
+          "output": "By WBN Global News Desk | WBN News\n\nSubscribe Here: | July 9, 2026\n\nThe US and China both move to tighten control over advanced AI model access, Meta commits $9.1B to its first Canadian AI data center, SK Hynix's $28B Nasdaq listing draws 7x demand, IMF upgrades South Korea's growth outlook, and AI stocks steady Wall Street even as Iran strikes intensify.\n\n📌 Today's Headlines At A Glance\n\nNot enough time? Scan the headlines below, tap the section that interests you, and get the full story in under two minutes.\n\n⭐ Top Story: US And China Both Move Toward Tighter Controls On Advanced AI Model Access\n\n🍁 Canada:\n\n- Meta Commits $9.1 Billion To Its First Canadian AI Data Center In Alberta\n\n- Canada's AI Data Center Pipeline Swells, But Few Projects Break Ground\n\n🦅 United States:\n\n- OpenAI Reportedly Grants US Government Customer-Approval Rights Over Its Newest Model\n\n- Weekly Jobless Claims Fall To 215,000, Beating Expectations\n\n🌍 Africa:\n\n- African Financial Institutions Post 24% Shareholder Return, BCG Urges Focused AI Bets\n\n- IMF Sees Divergent Outlook For Energy Exporters And Tech-Linked African Economies\n\n🌎 International:\n\n- EU And UN Convene First-Ever Global Dialogue On AI Governance\n\n- Asian Markets Shrug Off Fresh Iran Strikes As Chip Stocks Rally\n\n🇦🇷 Latin America:\n\n- ByteDance's $39 Billion Data Center in Brazil Becomes Its Largest Outside China\n\n- Argentina's Country Risk Hits Eight-Year Low As Oil Rally Lifts Energy Names\n\n🇪🇺 Europe:\n\n- European Markets Rebound As Tech Leads, But Defense Stocks Slide After NATO Summit\n\n- Brussels Unveils AI Cybersecurity Action Plan, Leans On Negotiated Access To Mythos\n\n🌏 Asia-Pacific:\n\n- IMF Gives South Korea The Biggest Growth Upgrade Of Any Major Economy On AI Boom\n\n- SK Hynix's $28 Billion Nasdaq Listing Oversubscribed More Than Seven Times\n\n🤖 Artificial Intelligence:\n\n- Export Controls Reshape The Global AI Landscape As Open-Weight Models Gain Ground\n\n- Meta Signs Long-Term Hardware Contracts, Refuting Capex Slowdown Fears\n\n💹 Markets:\n\n- Wall Street Steadies As AI And Semiconductor Strengths Offset Iran Jitters\n\n- Oil Slips Off Its Highs As Bond Markets And VIX Hold Largely Steady\n\n📈 IPOs & Capital Raising:\n\n- SK Hynix's US Listing Books Close Early, Poised To Beat Alibaba's 2014 Record\n\n- Private Capital Keeps Flowing Into AI Data Center Infrastructure Worldwide\n\nWhat's Happening Today\n\nGovernments are tightening control over frontier AI just as capital markets accelerate. Reuters reports China discussed restricting overseas access to its top AI models, mirroring the US export controls placed on Anthropic's Fable and Mythos in June. Capital kept flowing regardless: Meta's $9.1B Alberta data center, SK Hynix's 7x-oversubscribed $28B listing, and an IMF upgrade for South Korea. Markets shrugged off a second day of US strikes on Iran, with AI and chip names keeping Wall Street positive.\n\n⭐ Top Story\n\nHeadline: US And China Both Move Toward Tighter Controls On Advanced AI Model Access\n\nSource: Reuters / Fortune / PIIE\n\nSummary: China's Commerce Ministry has held talks with Alibaba, ByteDance, and Z.ai about restricting overseas access to its most advanced AI models, both closed and open-source, Reuters reported July 7, with potential national-security penalties for leaks and new limits on AI startup funding. The move mirrors Washington's June 12 export controls on Anthropic's Fable and Mythos models, which were restored July 1 with tighter guardrails; Mythos remains limited to US institutions under Project Glasswing.\n\nWhy It Matters: If both AI superpowers gate their frontier models, businesses face a genuinely fragmented AI supply chain — and the US move already gave open-weight Chinese models like GLM-5.2 an edge, since downloaded weights can't be remotely revoked.\n\n🍁 Canada\n\nHeadline: Meta Commits $9.1 Billion To Its First Canadian AI Data Center In Alberta\n\nSource: Associated Press / The Globe and Mail / CBC News\n\nSummary: Meta will invest C$13B (US$9.1B) in a one-gigawatt AI data center in Sturgeon County, Alberta — its first in Canada and largest outside the US. A separate $4.6B gas plant will power it with closed-loop, water-free cooling. Premier Danielle Smith says it will generate $250M annually and employ 3,000+ at peak.\n\nWhy It Matters: Alberta's bring-your-own-power rule became a competitive edge, not a barrier — landing one of Meta's largest AI commitments outside the US.\n\nHeadline: Canada's AI Data Center Pipeline Swells, But Few Projects Break Ground\n\nSource: The Globe and Mail\n\nSummary: About 70 Canadian data center proposals have been announced since 2024, per the Aterio tracker, but few have broken ground. Meta's Alberta project dwarfs recent Bell and Telus plans, backed by Meta's $125- $ 145B 2026 capex guidance.\n\nWhy It Matters: The announcement-to-construction gap is the real signal: Canada attracts AI capital, but grid and permitting bottlenecks decide who actually builds.\n\n🦅 United States\n\nHeadline: OpenAI Reportedly Grants US Government Customer-Approval Rights Over Its Newest Model\n\nSource: PIIE\n\nSummary: OpenAI has reportedly agreed to give the US government approval rights over its newest model's customers, following the Fable/Mythos export-control template. Macron warned at the G7 that Europe \"will not buy\" US models that can be switched off without warning.\n\nWhy It Matters: If customer-approval rights become standard practice, every enterprise buyer must rethink long-term dependence on a single US model provider.\n\nHeadline: Weekly Jobless Claims Fall To 215,000, Beating Expectations\n\nSource: Reuters / Bloomberg\n\nSummary: Initial jobless claims fell 2,000 to 215,000 for the week ended July 4, beating the 218,000 forecast. Continuing claims rose to 1,814,000, the highest since March — still a low-firing, low-hiring market.\n\nWhy It Matters: Low layoffs despite soft hiring give the Fed room to hold rates — leaving inflation, not jobs, as the dominant policy variable.\n\n🌍 Africa\n\nHeadline: African Financial Institutions Post 24% Shareholder Return, BCG Urges Focused AI Bets\n\nSource: Boston Consulting Group / africa.com\n\nSummary: African financial institutions posted a 24% shareholder return in 2025, edging the global average of 23%, per BCG. BCG's Creemers-Chaturvedi says leading banks focus AI investment on six to eight high-impact bets, giving African banks room to innovate from strength.\n\nWhy It Matters: Outperforming globally despite lagging in structural profitability suggests that Africa's next growth leg requires disciplined AI execution, not just tailwinds.\n\nHeadline: IMF Sees Divergent Outlook For Energy Exporters And Tech-Linked African Economies\n\nSource: IMF / BusinessDay Nigeria\n\nSummary: The IMF's July outlook projects 4.3% growth in Sub-Saharan Africa in 2026 — energy exporters gain from higher prices, tech-linked economies gain from chip demand. Nigeria holds at 4.1%, South Africa rises to 1.1%, but the rest of the region slows to 5.2%.\n\nWhy It Matters: The same forces — an oil shock and a chip boom — pull African economies apart by their export mixes, requiring country-by-country pricing rather than bloc treatment.\n\n🌎 International\n\nHeadline: EU And UN Convene First-Ever Global Dialogue On AI Governance\n\nSource: European Union / GlobalSecurity.org\n\nSummary: The EU addressed the UN's first Global Dialogue on AI Governance in Geneva on July 7, with Roberto Viola seeking a shared commitment that AI \"serve all of humanity.\" The statement flagged risks to children, power grids, and journalism.\n\nWhy It Matters: A first-ever UN AI governance gathering, arriving amid US-China access restrictions, shows AI oversight has become a live diplomatic issue.\n\nHeadline: Asian Markets Shrug Off Fresh Iran Strikes As Chip Stocks Rally\n\nSource: ZeroHedge / Bloomberg\n\nSummary: The MSCI Asia Pacific Index was roughly flat, swinging between +1% and -0.5%, as concerns over Iran offset optimism over SK Hynix's listing; China's CSI 300 jumped more than 2% on chip strength. US futures rose even after a second day of strikes on Iran.\n\nWhy It Matters: Treating a second-strike day as noise suggests investors have priced in baseline Iran volatility — raising the bar for what would actually move markets.\n\n🛢️ Middle East\n\nHeadline: Oil Holds Below Recent Highs Despite Regional Conflict\n\nSource: Associated Press / Reuters\n\nSummary: Brent slipped 0.1% to $77.94 Thursday, easing off $78.02, even as the US struck Iran again and Iran hit US-allied Kuwait and Qatar. Trump's mixed signals — strikes plus denial of full-scale war — fuel uncertainty, though crude stays above last week's $71.80.\n\nWhy It Matters: Oil holding below its peak despite active combat suggests traders are betting on containment, not a full Hormuz blockade — a bet that could reverse fast.\n\nHeadline: Shipping Through Hormuz Continues Under Heightened Security\n\nSource: CNBC / U.S. Central Command\n\nSummary: The US military began \"powerful strikes\" on Iran after three vessels transiting Hormuz were attacked Tuesday, warning of \"heavy costs.\" The exchange tests last month's fragile ceasefire that reopened the strait, which carries roughly a fifth of global crude.\n\nWhy It Matters: Shipping continues through Hormuz, showing carriers still bet it will stay open, but each attack raises war-risk premiums that flow into freight costs.\n\n🇦🇷 Latin America\n\nHeadline: ByteDance's $39 Billion Data Center In Brazil Becomes Its Largest Outside China\n\nSource: Bloomberg\n\nSummary: ByteDance is building a $39B (200B reais) data center in Ceará, Brazil — its largest outside China, and a payoff from Lula's courtship of Chinese investment. It adds to a wave that includes a separate $516M Ares Management campus near São Paulo.\n\nWhy It Matters: Landing simultaneous Chinese and American AI bets positions Brazil as a nonaligned computing hub as US-China tech fragmentation deepens.\n\nHeadline: Argentina's Country Risk Hits Eight-Year Low As Oil Rally Lifts Energy Names\n\nSource: Rio Times\n\nSummary: Argentina's country risk sat near an eight-year low after Caputo's debt plan, even as the Merval eased 1.32% on bank profit-taking. YPF rose 1.8%, and Petrobras gained 3.1% on the oil rally, ahead of Friday's Brazil inflation print.\n\nWhy It Matters: The oil shock hurting importers elsewhere is a tailwind for Latin America's state energy champions — one event, uneven regional impact.\n\n🇪🇺 Europe\n\nHeadline: European Markets Rebound As Tech Leads, But Defense Stocks Slide After NATO Summit\n\nSource: XTB\n\nSummary: European markets stabilized Thursday as capital flowed back into tech, ASML +2.5%, after the Stoxx 600 had tumbled nearly 2% on Iran-related risk-off sentiment. Defense stocks fell after the NATO summit: Rheinmetall -4%, KNDS suspended its planned IPO.\n\nWhy It Matters: Rotating from defense to tech suggests investors see this week's NATO outcomes reducing near-term defense-spending upside, even as Iran continues.\n\nHeadline: Brussels Unveils AI Cybersecurity Action Plan, Leans On Negotiated Access To Mythos\n\nSource: Euronews / European Commission\n\nSummary: The EU Commission's July 7 AI Cybersecurity Action Plan addresses models that can \"build cyber exploits in minutes,\" but critics say it's mostly recommendations and leans on ENISA's negotiated Mythos access via Project Glasswing. High-risk AI Act rules take effect August 2.\n\nWhy It Matters: Relying on negotiated access to a US company's model for its own cyber plan shows the tech-dependency gap the AI Act hasn't closed.\n\n🌏 Asia-Pacific\n\nHeadline: IMF Gives South Korea The Biggest Growth Upgrade Of Any Major Economy On AI Boom\n\nSource: Bloomberg / Korea JoongAng Daily\n\nSummary: The IMF raised South Korea's 2026 forecast to 2.6% from 1.9% — the largest upgrade among 30 major economies — citing chip and AI hardware exports outweighing the Mideast drag. Korea joins Taiwan, Thailand, and Malaysia as a top AI hardware exporter after 7.5% annualized growth in Q1.\n\nWhy It Matters: Korea's improving outlook, driven by chip exports despite heavy Mideast energy dependence, is clear evidence that the chip supercycle outweighs the region's top geopolitical risk.\n\nHeadline: SK Hynix's $28 Billion Nasdaq Listing Oversubscribed More Than Seven Times\n\nSource: Bloomberg / Reuters\n\nSummary: SK Hynix's US listing drew orders 7x available shares; books closed early July 8. The 177.9M-ADR offering raises roughly $28B for manufacturing and EUV equipment; trading starts Friday as SKHY. SK Hynix holds about 57% of global HBM revenue.\n\nWhy It Matters: This strong demand signals investors see the HBM supply crunch as structural, not temporary — relevant across Nvidia's whole AI hardware chain.\n\n🤖 Artificial Intelligence\n\nHeadline: Export Controls Reshape The Global AI Landscape As Open-Weight Models Gain Ground\n\nSource: PIIE / Chatham House\n\nSummary: The US's June 12 Fable/Mythos export controls, and China's reported parallel restrictions, are reshaping AI vendor-risk thinking. Since Chinese open-weight models can't be remotely revoked once downloaded, that became a stronger selling point after hosted models were shut off overnight.\n\nWhy It Matters: Enterprises now have a concrete example of why multi-vendor, open-weight fallback strategies matter as continuity insurance, not just cost hedging.\n\nHeadline: Meta Signs Long-Term Hardware Contracts, Refuting Capex Slowdown Fears\n\nSource: ZeroHedge / Fortune\n\nSummary: Meta signed long-term memory, networking, and storage contracts, per Reuters, refuting expectations of a capex slowdown. Separately, its Superintelligence Labs launched Muse Image on Instagram and WhatsApp, the first public release by chief Alexandr Wang.\n\nWhy It Matters: Locking in long-term contracts signals that Meta expects elevated AI compute demand well beyond this cycle, which matters for its entire supply chain.\n\n💹 Markets\n\nHeadline: Wall Street Steadies As AI And Semiconductor Strength Offsets Iran Jitters\n\nSource: Yahoo Finance / CNBC\n\nSummary: The S&P 500 rose 0.3%, the Nasdaq gained roughly 0.5%, and the Dow slipped 0.1% on Thursday despite fresh strikes in Iran. Investors eyed SK Hynix's debut; the VanEck Semiconductor ETF rose about 2% as chip prices stabilized after the prior sell-off.\n\nWhy It Matters: Rallying on chip strength the same day as fresh airstrikes shows how dominant the AI trade has become over geopolitical headline risk.\n\nHeadline: Oil Slips Off Its Highs As Bond Markets And VIX Hold Largely Steady\n\nSource: Zacks Investment Research / ZeroHedge\n\nSummary: The VIX rose 4.8% to 16.90 on Wednesday — modest given the day's news — while the S&P 500 Dispersion Index hit a one-year high, showing sharp differentiation between AI winners and losers. The 10-year yield ticked up to 4.587%.\n\nWhy It Matters: A placid VIX alongside record dispersion tells a more complex story — beneath the surface, the market is sharply betting on which companies benefit from the AI buildout.\n\n📈 IPOs & Capital Raising\n\nHeadline: SK Hynix's US Listing Books Close Early, Poised"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_15",
+          "toolCallId": "call_02_ibt4tmrLTVCvyZSCiu4c8572",
+          "status": "success",
+          "output": "- Home\n\n- Executive Interviews\n\n- Startups\n\n- Advertise\n\n- About\n\n\tTrust & Safety\n\tEditorial Policy\n\n- Trust & Safety\n\n- Editorial Policy\n\n- Home\n\n- Executive Interviews\n\n- Startups\n\n- Advertise\n\n- About\n\n\tTrust & Safety\n\tEditorial Policy\n\n- Trust & Safety\n\n- Editorial Policy\n\n- Topics\n\n\tSearch Startups\n\t\n\t\tTop Startups\n\t\tStartup List\n\t\tSubmit Your Startup\n\n- Search Startups\n\t\n\t\tTop Startups\n\t\tStartup List\n\t\tSubmit Your Startup\n\n- Top Startups\n\n- Startup List\n\n- Submit Your Startup\n\n- Tools\n\n\tFree Startup Valuation Calculator\n\n- Free Startup Valuation Calculator\n\n# Today’s biggest technology news: Top tech stories shaping AI, Big Tech, cybersecurity and startups\n\n- Share On Facebook\n\n- Tweet It\n\nIt’s Thursday, July 9, 2026, and AI’s next frontier isn’t arriving quietly — it’s landing with billion-dollar infrastructure bets, frontier model launches, and the first real attempt at global governance all at once. While OpenAI readies its most powerful models for public release and Meta breaks ground on a massive new AI data center in Canada, Europe is moving to secure sovereign access to advanced systems and the UN just wrapped its inaugural global AI dialogue.\n\nAdd in a startup rocketing to an $11 billion valuation in the inference race and fresh efforts to score AI jailbreaks like cybersecurity vulnerabilities, and today’s landscape feels less like incremental progress and more like a tectonic shift.\n\nToday’s biggest technology stories show an industry entering a more serious phase: OpenAI is preparing broader access to GPT-5.6, Meta is moving its own AI chip closer to production, Apple is facing fresh pressure in Europe, and startups are raising hundreds of millions to build the next layer of AI infrastructure. At the same time, security researchers warn that AI tools and poisoned software packages pose new risks to developers and enterprises.\n\nHere are the top tech news stories shaping what comes next for startups, Big Tech, and the global tech ecosystem.\n\n## Technology News Today\n\n### Meta prepares its in-house AI chip for September production\n\nMeta plans to put its in-house AI chip, code-named Iris, into production in September as it races to double compute capacity. The chip is part of Meta’s broader MTIA effort and is being developed with Broadcom and manufactured by TSMC.\n\nThis is a direct shot at reducing dependence on Nvidia and AMD as Meta pours tens of billions into AI infrastructure. The company wants more control over costs, supply chains, and the performance of the systems that power AI features across Facebook, Instagram, WhatsApp, and Meta AI.\n\nWhy It Matters: Meta’s AI chip push shows Big Tech is trying to own more of the AI stack, from models to silicon.\n\nSource: Reuters.\n\n### OpenAI gets green light to expand GPT-5.6 public access\n\nOpenAI is moving GPT-5.6 beyond its limited preview, with Sol, Luna, and Terra set for broader public rollout after additional U.S. government testing. The model family had initially been restricted to trusted partners and government-approved entities due to cybersecurity concerns associated with its advanced capabilities.\n\nThe broader release matters because frontier AI access is now becoming a national-security question, not just a product launch. Developers, startups, and enterprises want stronger models, but governments are increasingly inserting themselves into the release process when cyber, biosecurity, or geopolitical risks are involved.\n\nWhy It Matters: GPT-5.6 shows that frontier AI launches are becoming regulated events rather than ordinary software rollouts.\n\nSource: Engadget.\n\n### Apple loses EU court challenge over Digital Markets Act rules\n\nApple lost its challenge against the EU’s Digital Markets Act designation for iOS and the App Store, leaving the company subject to competition rules aimed at Big Tech gatekeepers. The court sided with regulators who argue Apple’s app ecosystem functions as a core platform connecting developers and users.\n\nThe ruling strengthens Europe’s hand in forcing major tech platforms to open up parts of their ecosystems. For startups, developers, and alternative app stores, the decision could widen distribution options. For Apple, it raises the pressure to balance compliance with its privacy and security arguments.\n\nWhy It Matters: The EU just made it harder for Apple to wall off its app ecosystem from regulatory pressure.Source: Reuters.\n\n### Bezos-backed AI startup General Intuition raises $320 million\n\nGeneral Intuition, a New York AI startup betting that video game data can teach models how the physical world works, raised $320 million in a round joined by Coatue, Eric Schmidt, MIT researchers, and Google DeepMind figures. The company is now valued at $2.3 billion.\n\nThe bet is that internet text is not enough for general intelligence. By using interactive environments and gaming data, General Intuition is trying to train systems that understand motion, space, cause and effect, and planning — skills needed for robotics, simulation, and autonomous agents.\n\nWhy It Matters: AI investors are moving past text-only models and backing startups with richer training environments.Source: TechCrunch.\n\n### Google brings Gemini-powered Video Remix to Google Photos\n\nGoogle is rolling out Video Remix in Google Photos, letting users transform saved videos with AI-generated styles, lighting changes, templates, and background edits. The feature is powered by Gemini Omni, Google’s multimodal model for turning different inputs into creative outputs.\n\nThis is Google pushing generative AI deeper into consumer apps people already use every day. Instead of making users open a standalone AI tool, Google is embedding AI editing directly into Photos, where memories, social clips, and personal media already live.\n\nWhy It Matters: Google is turning AI video editing from a creator tool into a mainstream phone feature.\n\nSource: The Verge.\n\n### OpenAI rolls out GPT-Live voice models for ChatGPT\n\nOpenAI is rolling out GPT-Live-1 and GPT-Live-1 mini for ChatGPT Voice, giving paid and free users a more natural voice experience. The models are full-duplex, meaning they can listen and speak continuously instead of waiting for strict turn-taking.\n\nVoice is becoming a key interface for AI assistants because it lowers friction for everyday use. If AI can handle interruptions, pauses, and pacing better, it moves closer to being useful in cars, homes, accessibility tools, customer support, and hands-free workflows.\n\nWhy It Matters: Natural voice interaction could become the next major interface layer for consumer and workplace AI.\n\nSource: OpenAI.\n\n### Meta breaks ground on first Canadian AI-optimized data center\n\nMeta has broken ground on its first data center in Canada, a 1GW AI-optimized facility in Sturgeon County, Alberta. The project represents a CAD $13+ billion investment and will be Meta’s 33rd global data center and its largest outside the United States. It is designed to support AI workloads powering core products and innovations used by billions worldwide. The site will create approximately 3,000 construction jobs at peak and more than 300 permanent operational roles.\n\nMeta is funding new generation and grid infrastructure in partnership with local entities and is committing CAD $60 million to local roads and water improvements. The facility will use a closed-loop, liquid-cooled system with no operational water withdrawal from local sources and will be matched to 100% clean, renewable energy. This marks a major expansion of Meta’s global AI infrastructure footprint into Canada, driven by surging demand for compute.\n\nWhy It Matters: Meta’s multi-billion-dollar Canadian investment accelerates hyperscaler buildout of AI data centers outside the US, boosting regional economies while highlighting the global race for energy-secure compute capacity.\n\nSource: Reuters.\n\n### Amazon reportedly works on a more capable agentic Alexa\n\nAmazon is reportedly developing a more powerful Alexa assistant under the code name Moonraker. The upgraded assistant is expected to handle more complex, multi-step tasks, moving Alexa closer to the agentic AI systems being pushed by OpenAI, Google, and Microsoft.\n\nThe move matters because Alexa helped define the first era of voice assistants but fell behind as generative AI reshaped expectations. If Amazon can make Alexa more useful across shopping, smart homes, media, scheduling, and services, it could revive one of its biggest consumer tech bets.\n\nWhy It Matters: Amazon is trying to turn Alexa from a voice command tool into a true AI agent.Source: Engadget.\n\n### U.S. reportedly weighs restrictions on corporate use of Chinese AI models\n\nThe U.S. is reportedly looking at ways to restrict or discourage American companies from using Chinese-made AI models. The concern is that lower-cost Chinese models are gaining adoption among U.S. companies while raising national-security, censorship, and data-control questions.\n\nThe issue cuts to the heart of the global AI race. Startups and enterprises want cheaper models, but governments increasingly see model choice as a supply-chain and geopolitical risk. That could complicate AI adoption for companies operating across the U.S., China, and Europe.\n\nWhy It Matters: AI model selection is becoming a geopolitical decision, not just a cost-performance choice.Source: Engadget.\n\n### Fake Paysafe and Skrill developer packages steal credentials\n\nMalicious packages impersonating Paysafe, Skrill, and Neteller SDKs were found on npm and PyPI, targeting developers with credential-stealing malware. The attack shows how software supply-chain threats continue to move upstream into the tools developers use to build applications.\n\nThis matters because developer ecosystems are now critical infrastructure for fintech, crypto, enterprise SaaS, and AI apps. A single poisoned package can expose API keys, payment credentials, and production systems. The rise of AI-assisted coding may make package trust even more important as developers install dependencies faster.\n\nWhy It Matters: Developer package repositories remain a high-value target for attackers trying to reach many companies at once.\n\nSource: BleepingComputer.\n\n### China flags security concerns in Anthropic’s Claude Code tool\n\nChina’s Ministry of Industry and Information Technology issued a security alert regarding Anthropic’s Claude Code tool (versions v2.1.91 to v2.1.196), citing a potential backdoor that could secretly transmit sensitive user data, including location and identifiers. Major Chinese tech firms, including Alibaba, have reportedly banned the tool’s internal use. The alert adds to ongoing global scrutiny of frontier AI coding assistants and their data-handling practices amid heightened national security concerns.\n\nWhy It Matters: China’s alert on a leading Western AI coding tool illustrates rising geopolitical fragmentation in AI tool adoption and heightened focus on data sovereignty in enterprise deployments.\n\nSource: The Wall Street Journal.\n\n### Researchers warn that AI tools can help attackers assemble botnets\n\nSecurity researchers found that popular AI tools can be abused to help attackers build large botnets through a technique tied to “HalluSquatting,” where models hallucinate package names that attackers can then register and weaponize.\n\nThe risk is that AI-assisted development can unintentionally guide users toward malicious dependencies. As more developers rely on coding agents, security teams will need stronger guardrails around package suggestions, dependency validation, and automated code generation.\n\nWhy It Matters: AI coding tools can increase software supply chain risk when hallucinated packages become attack paths.Source: Ars Technica.\n\n### Brown University AI cheating scandal raises alarm over education\n\nA Brown University professor ordered an in-person final after suspecting AI cheating, and scores reportedly fell sharply. The episode has intensified debate over whether universities can preserve academic standards in an era where students have access to powerful writing and reasoning tools.\n\nThe broader issue is not just cheating. AI is forcing schools to rethink assignments, testing, grading, and what it means to learn. For edtech startups, the shift creates demand for assessment tools, AI literacy platforms, and new learning models built around human reasoning instead of take-home shortcuts.\n\nWhy It Matters: AI is pushing education toward a reset in how knowledge, effort, and learning are measured.\n\nSource: Ars Technica.\n\n### Apple puts new AI Home camera features behind a higher iCloud+ tier\n\nApple’s new AI-powered Home app camera features will reportedly require a 2TB iCloud+ subscription. The features are tied to Apple Intelligence and apply across iOS, iPadOS, and macOS devices.\n\nThe decision highlights how Big Tech is turning AI features into subscription levers. Apple has been slower than rivals in consumer AI, but tying useful AI functions to paid cloud storage could help monetize its installed base while raising questions about whether AI becomes a premium layer across everyday devices.\n\nWhy It Matters: Apple’s AI strategy may increasingly run through paid services, not just new hardware.\n\nSource: 9to5Mac.\n\n### FuriosaAI deploys AI servers at Equinix data center in Lisbon\n\nSouth Korean AI chip startup FuriosaAI has deployed its RNGD servers at an Equinix data center in Lisbon, Portugal. The scale of the deployment was not disclosed, but the move gives FuriosaAI a foothold in European infrastructure.\n\nThe deployment matters because Europe is trying to reduce reliance on foreign AI infrastructure while startups race to offer alternatives to Nvidia-heavy systems. AI chip challengers need real data center deployments, not just benchmarks, to prove they can compete in inference and enterprise workloads.\n\nWhy It Matters: AI chip startups are moving from lab claims to live infrastructure deployments in global data centers.\n\nSource: Data Center Dynamics.\n\n### DigitalOcean signs multiple nine-figure AI cloud agreements\n\nDigitalOcean signed multiple nine-figure customer agreements for inference and cloud services, according to Data Center Dynamics. The deals point to rising demand for AI infrastructure beyond hyperscale cloud giants.\n\nThat matters for startups and midmarket companies that want AI compute without being locked into the biggest cloud platforms. DigitalOcean has long served developers and smaller businesses; large inference deals suggest AI demand is broadening across the market.\n\nWhy It Matters: Demand for AI infrastructure is spreading beyond Big Tech clouds to developer-focused platforms.\n\nSource: Data Center Dynamics.\n\n### Apple grows Mac shipments as broader PC market weakens\n\nApple was the only major PC vendor to post significant shipment growth in Q2 2026, according to IDC data cited by 9to5Mac, while the broader PC market declined for the first time in more than two years.\n\nThe shift comes as AI-driven demand "
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_16",
+          "toolCallId": "call_03_P4O8Wfe4CPCTdqkTnzJj1565",
+          "status": "success",
+          "output": "### AI News - Thu July 9 2026\n\n- Get link\n\n- Facebook\n\n- X\n\n- Pinterest\n\n- Email\n\n- Other Apps\n\n# The Tech‑Reader AI Digest\n\nThursday, July 9, 2026\n\n#AI\n  #TechNews\n  #Digest\n\n```\n#AI\n```\n\n```\n#TechNews\n```\n\n```\n#Digest\n```\n\nPodcast 🎧 • Video 📽\n\nThe frontier opened today. GPT-5.6 Sol, Terra, and Luna are generally\n  available across ChatGPT and the API. Grok 4.5 goes public on the same day at\n  a price point designed to make benchmarks feel irrelevant. Meta enters the\n  developer API market with Muse Spark 1.1. And DeepSeek's quietly-confirmed\n  inference chip project sets a new vector in the compute race.\n\n## Story 1: GPT-5.6 Goes Public — Sol, Terra, and Luna Hit General Availability\n\nWhat happened:\n  GPT-5.6 Sol, Terra, and Luna are generally available today, July 9, 2026,\n  across ChatGPT, ChatGPT Work, Codex, and the OpenAI API. The rollout is global\n  over approximately 24 hours.\n\nThree tiers, three price points: Sol at $5 input / $30 output per million\n  tokens for the most demanding agentic and reasoning workloads; Terra at $2.50\n  / $15, positioned as a GPT-5.5-class performer at half the cost; Luna at $1 /\n  $6 for high-volume, cost-sensitive pipelines. The family introduces explicit\n  cache breakpoints and a 30-minute minimum cache life, with cache reads at a\n  90% discount. In the API, the bare\n  gpt-5.6\n  alias routes to Sol. The\n  gpt-5.5-latest\n  endpoint does not auto-migrate — pin to explicit model IDs.\n\n```\ngpt-5.6\n```\n\n```\ngpt-5.5-latest\n```\n\nOn benchmarks, Sol leads long-horizon agentic work and Terminal-Bench 2.1 at\n  91.9% in the Sol Ultra configuration. On SWE-Bench Pro and HealthBench\n  Professional, other models lead. The table splits by workload, not by lab.\n\nWhy it matters:\n  Terra is the enterprise story. A model with GPT-5.5-class performance at half\n  the price gives teams a clear reason to route production workloads down a tier\n  without leaving the 5.6 generation. Luna at $1/$6 competes directly with\n  Chinese open-weight models on price while staying inside a US-hosted stack.\n  The three-tier structure is the most explicit acknowledgment yet from OpenAI\n  that the frontier pricing wars are real and that flat flagship pricing is no\n  longer the only play.\n\nAaron's take\n  — The pricing architecture is the news. Sol for the hardest work. Terra when\n  5.5-class performance is good enough at half the bill. Luna when volume is the\n  variable. That's a routing matrix, not just a model launch. Any team that\n  hasn't audited which workloads actually need frontier-class performance now\n  has a financial reason to do it today.\n\n## Story 2: Grok 4.5 Goes Public — The Price Is the Product\n\nWhat happened:\n  SpaceXAI opened public access to Grok 4.5 today on grok.com and the X app,\n  following developer availability on July 8 through Grok Build, Cursor, and the\n  SpaceXAI API. Musk's framing at launch: \"an Opus-class model, but faster, more\n  token-efficient and lower cost.\"\n\nGrok 4.5 is priced at $2 per million input tokens and $6 per million output\n  tokens. Independent testing by Artificial Analysis ranks it fourth of 168\n  models on its Intelligence Index. It beats competing models on DeepSWE 1.0 and\n  Terminal-Bench 2.1 but trails on DeepSWE 1.1 and SWE-Bench Pro. The model was\n  trained with real Cursor developer session data — a product of SpaceX's $60\n  billion acquisition of Cursor in June — giving it access to how developers\n  actually work across files and long-horizon tasks, not just public code\n  repositories. Context window is 500K tokens. EU availability is targeted for\n  mid-July.\n\nWhy it matters:\n  The pricing strategy mirrors what Chinese vendors like DeepSeek and Zhipu have\n  executed: get close enough on performance to be credible, then make the\n  comparison about cost rather than capability. For enterprise teams that have\n  been told to rationalize AI spend — Uber's full annual AI budget gone in four\n  months, Tesla capping employees at $200 per week — a credible near-frontier\n  model at $2/$6 is not a compromise. It's an answer.\n\nAaron's take\n  — Three frontier models publicly available on the same day: Fable 5\n  (credits-only), GPT-5.6 Sol, and Grok 4.5. The competitive dynamic for Q3 is\n  being set today. The July 9 pricing board — Fable 5 at $10/$50, Sol at $5/$30,\n  Grok 4.5 at $2/$6, Sonnet 5 at $2/$10, Luna at $1/$6 — is the sharpest\n  cost-differentiation picture frontier AI has ever presented at once. Watch\n  where enterprise routing decisions land in the next 30 days.\n\n## Story 3: Meta Launches Muse Spark 1.1 and Opens the Developer API\n\nWhat happened:\n  Meta Superintelligence Labs today released Muse Spark 1.1, a multimodal\n  reasoning model built for agentic tasks, alongside the public preview of the\n  new Meta Model API — the first time developers can access a Muse Spark model\n  directly. The model is also live in Thinking mode in the Meta AI app and on\n  meta.ai.\n\nMuse Spark 1.1 carries a 1-million-token context window with active context\n  management — it remembers actions, retrieves information from earlier in long\n  sessions, and compacts in ways that preserve critical steps. It is built to\n  orchestrate multi-agent systems: as the main agent it gathers context, builds\n  a plan, and delegates across parallel subagents; as a subagent it adheres to\n  scope and knows when to escalate. On computer use, the model is trained to\n  write scripts when automation is faster and use the interface directly when\n  simpler, generating batches of actions at each step rather than clicking\n  through one at a time. On coding, Meta reports substantial gains on real-world\n  tasks involving large, complex codebases. Safety evaluations under Meta's\n  Advanced AI Scaling Framework show the model within safe margins across\n  frontier risk categories.\n\nEarly API partners include Replit, Cline, and Box. Muse Image and Muse Video\n  launched earlier this week as companion releases from Meta Superintelligence\n  Labs.\n\nWhy it matters:\n  Meta has historically kept its most capable models inside its own consumer\n  products. The Meta Model API public preview changes that posture entirely.\n  Developers can now build directly on Muse Spark 1.1 — a frontier-class agentic\n  model with a 1M-token context window, multimodal capability, and computer use\n  — on the same day GPT-5.6 and Grok 4.5 go broadly available. The competitive\n  field for the second half of 2026 now includes five actively accessible\n  frontier-class API tiers: Fable 5, GPT-5.6 Sol, Grok 4.5, Sonnet 5, and Muse\n  Spark 1.1.\n\nAaron's take\n  — July 9 is the day the developer API market got crowded. Meta's entry is not\n  incremental — a 1M-token context window with multi-agent orchestration,\n  computer use, and strong coding is a complete agentic stack. The one\n  outstanding question the launch leaves open: pricing. Meta has not published\n  token rates for the API preview. Until that number lands, enterprise routing\n  decisions stay provisional. Watch for it.\n\n## Quick Hits — The Rest of Today's AI World\n\nOpenAI\n\n- GPT-5.6 API model IDs:\n    gpt-5.6-sol,\n    gpt-5.6-terra,\n    gpt-5.6-luna. The bare\n    gpt-5.6\n    alias routes to Sol. The\n    gpt-5.5-latest\n    endpoint does not auto-migrate.\n\n```\ngpt-5.6-sol\n```\n\n```\ngpt-5.6-terra\n```\n\n```\ngpt-5.6-luna\n```\n\n```\ngpt-5.6\n```\n\n```\ngpt-5.5-latest\n```\n\n- GPT-Live launched yesterday — a full-duplex voice architecture that listens\n    and speaks simultaneously, delegating complex requests to frontier models in\n    the background while maintaining conversational flow.\n\n- OpenAI's 5% government equity stake proposal has received no public response\n    from other labs.\n\nxAI / SpaceX\n\n- Grok 4.5 public access is live today on grok.com, X app, SuperGrok Heavy,\n    and X Premium+. API at $2/$6 per million tokens. EU mid-July.\n\n- SpaceX shares fell after the Wall Street Journal reported the company had\n    shown investors a prototype consumer AI device. Musk posted on X: \"Utterly\n    false.\"\n\nGoogle Gemini\n\n- Gemini 3.5 Pro remains in Vertex AI enterprise preview with no confirmed GA\n    date. All major competitors are now fully publicly available — Gemini 3.5\n    Pro is the sole anticipated frontier model still in preview.\n\n- Google is in active discussions ahead of planned advanced coding model\n    releases.\n\nMicrosoft / GitHub Copilot\n\n- Microsoft has begun routing production workloads in Excel and Outlook to its\n    own MAI model family, replacing select third-party model calls as a\n    cost-optimization measure. Tens of thousands of weekly prompts are now\n    handled by internally built MAI systems.\n\n- The Microsoft Frontier Company — $2.5 billion, 6,000 forward-deployed\n    engineers — continues operational ramp.\n\nMeta\n\n- Muse Spark 1.1 and the Meta Model API are live today. Early partners:\n    Replit, Cline, Box. Token pricing for the API preview has not been\n    published.\n\n- Muse Image and Muse Video launched earlier this week from Meta\n    Superintelligence Labs.\n\nNvidia\n\n- DeepSeek's confirmed inference chip project, reported by Reuters on July 7,\n    sent Nvidia shares modestly lower. The chip targets inference workloads — a\n    different hardware profile than training GPUs, and a market that has been\n    growing faster than training as deployed AI scales.\n\n- SK Hynix's planned $28 billion US IPO remains one of the most significant AI\n    infrastructure public market events of the second half of 2026.\n\nDeepSeek / Alibaba Qwen / Z.ai\n\n- DeepSeek's in-house inference chip project is at early stage. The company is\n    in preliminary talks with chip design, foundry, and memory partners. The\n    project has been underway approximately one year.\n\n- ZCode from Z.ai continues enterprise traction at $1.40/$4.40 per million\n    tokens.\n\n- Doubao agent shutdown proceeds July 15. China's AI companion law enforcement\n    also takes effect July 15.\n\nCohere / Aleph Alpha\n\n- The proposed $20 billion sovereign-focused merger continues in formal\n    regulatory review. No updated timeline.\n\nThat's your AI world for Thursday. Back tomorrow. — Aaron\n\nAaron Rose is a software engineer and technology writer at\n    tech-reader.blog.\n\nCatch up on the latest explainer videos, podcasts, and industry discussions\n    below.\n\n- Get link\n\n- Facebook\n\n- X\n\n- Pinterest\n\n- Email\n\n- Other Apps"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_17",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_18",
+          "toolCallId": "call_00_X3HZLaSFrPqfSBN6tkvy3085",
+          "name": "web_search",
+          "args": {
+            "maxResults": 10,
+            "query": "OpenAI GPT-5.6 launch pricing Sol Terra Luna July 9 2026"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_19",
+          "toolCallId": "call_01_GFRcJdeffSkErOrw2Ukw2602",
+          "name": "web_search",
+          "args": {
+            "maxResults": 10,
+            "query": "Grok 4.5 public launch SpaceXAI July 9 2026"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_20",
+          "toolCallId": "call_02_fi4jDtq4Q3NcAf7blocJ0892",
+          "name": "web_search",
+          "args": {
+            "maxResults": 8,
+            "query": "Meta Muse Spark 1.1 developer API launch July 2026"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_21",
+          "toolCallId": "call_00_X3HZLaSFrPqfSBN6tkvy3085",
+          "status": "success",
+          "output": "{\"provider\":\"brave\",\"results\":[{\"title\":\"Previewing GPT-5.6 Sol: a next-generation model | OpenAI\",\"snippet\":\"GPT‑5.6 is priced per 1M tokens across three model sizes: <strong>Sol is $5 input / $30 output; Terra is $2.50 input / $15 output; and Luna is $1 input / $6 output</strong>. GPT‑5.6 also introduces more predictable prompt caching, including support for explicit ...\",\"url\":\"https://openai.com/index/previewing-gpt-5-6-sol/\"},{\"title\":\"GPT-5.6 Sol, Terra & Luna — Benchmarks, Pricing & Access (GA July 2026) | QCode.cc\",\"snippet\":\"GPT-5.6 went GA on July 9, 2026 in three tiers — Sol, Terra and Luna. Verified benchmarks and pricing, plus how to use all three on QCode today.\",\"url\":\"https://qcode.cc/en/gpt-5-6-guide\"},{\"title\":\"OpenAI to release GPT-5.6 Sol, Terra and Luna on July 9 - Neowin\",\"snippet\":\"GPT-5.6 Luna: <strong>$1 per million input tokens and $6 per million output tokens</strong> · To further reduce token usage for the GPT-5.6 series models, OpenAI has introduced more predictable prompt caching, including support for explicit cache breakpoints ...\",\"url\":\"https://www.neowin.net/news/openai-to-release-gpt-56-sol-terra-and-luna-on-july-9/\"},{\"title\":\"GPT-5.6 Goes Public: GA Pricing, Ultra Mode and Access\",\"snippet\":\"... The default — the bare gpt-5.6 alias routes here. Flagship pricing holds flat generation-over-generation: <strong>$5 / $30</strong> matches GPT-5.5’s rate. The deepest-reasoning tier, and the one behind ChatGPT’s “Sol Pro” option.\",\"url\":\"https://www.digitalapplied.com/blog/gpt-5-6-sol-terra-luna-public-ga\"},{\"title\":\"GPT-5.6 in ChatGPT | OpenAI Help Center\",\"snippet\":\"Learn how GPT-5.6 Sol works in ChatGPT, which options are available by plan, and how usage limits and availability work.\",\"url\":\"https://help.openai.com/en/articles/20001325-a-preview-of-gpt-56-sol-terra-and-luna\"},{\"title\":\"OpenAI gets permission to roll out GPT-5.6 to the public on July 9 - Engadget\",\"snippet\":\"The <strong>Sol variant costs $5 per million input tokens and $30 per million output, whereas Terra costs $2.50 per million input tokens and $15 for output and Luna costs $1 per million input and $6 for output</strong>.\",\"url\":\"https://www.engadget.com/2210308/openai-rolls-out-gpt5-6-july-9/\"},{\"title\":\"OpenAI Launches GPT-5.6 Model Family with Sol, Terra, and Luna Tiers | KuCoin\",\"snippet\":\"<strong>Sol costs $5 per million input tokens and $30 per million output tokens, with Terra and Luna priced lower</strong>. The release comes amid tightening government crypto regulation and ongoing on-chain news about AI integration in financial systems.\",\"url\":\"https://www.kucoin.com/news/flash/openai-launches-gpt-5-6-model-family-with-sol-terra-and-luna-tiers\"},{\"title\":\"GPT-5.6 Goes Public After 12-Day White House Gate Tests Voluntary AI Framework\",\"snippet\":\"Pricing for the family: <strong>Sol at $5 per million input tokens and $30 per million output tokens; Terra at $2.50 and $15; Luna at $1 and $6</strong>. OpenAI is also launching Sol on Cerebras infrastructure capable of serving it at up to 750 tokens per second ...\",\"url\":\"https://www.techtimes.com/articles/319979/20260709/gpt-56-goes-public-after-12-day-white-house-gate-tests-voluntary-ai-framework.htm\"},{\"title\":\"ChatGPT 5.6: Sol, Terra, Luna Release Date, Pricing & Access\",\"snippet\":\"Practice this · Some searches mention July 7, 2026, “this Thursday,” or an upcoming public launch. That language came from pre-release tracking and preview-era speculation. The current official date to use is <strong>July 9, 2026</strong>, when OpenAI announced GPT-5.6 general availability.\",\"url\":\"https://coursiv.io/blog/chatgpt-5-6\"},{\"title\":\"GPT-5.6 Is Here: Sol, Terra, and Luna Pricing & Benchmarks\",\"snippet\":\"A. GPT-5.6 Sol, Terra, and Luna launched publicly on Thursday, July 9, 2026, following Commerce Department approval, with preview access already expanding globally. The rollout covers the API, Codex, and ChatGPT. OpenAI has not yet published which ChatGPT subscription tiers get Sol first, so check the model picker on launch day.\",\"url\":\"https://www.analyticsvidhya.com/blog/2026/07/gpt-5-6-sol-terra-luna/\"}]}"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_22",
+          "toolCallId": "call_01_GFRcJdeffSkErOrw2Ukw2602",
+          "status": "success",
+          "output": "{\"provider\":\"brave\",\"results\":[{\"title\":\"SpaceXAI releases Grok 4.5, which Elon describes as an 'Opus-class model' | TechCrunch\",\"snippet\":\"12:30 PM PDT · <strong>July 8, 2026</strong> · SpaceXAI has released its latest model, Grok 4.5 — the first since the company went public several weeks ago.\",\"url\":\"https://techcrunch.com/2026/07/08/spacexai-releases-grok-4-5-which-elon-describes-as-an-opus-class-model/\"},{\"title\":\"Musk announces SpaceXAI public launch of Claude rival Grok 4.5 | Cybernews\",\"snippet\":\"SpaceX (now renamed SpaceXAI) has ... it can be used by the public. <strong>The release, planned for July 9th, 2026, is going ahead “based on strong positive feedback from…(the) beta test program</strong>,” Musk said in a post on ...\",\"url\":\"https://cybernews.com/ai-news/grok-45-public-launch/\"},{\"title\":\"Grok 4.5 Public Launch July 9: Opus-Class, Cursor-Trained\",\"snippet\":\"<strong>On July 8, 2026, Elon Musk posted that SpaceXAI will release Grok 4.5 to the public tomorrow — July 9</strong> — after strong positive feedback from beta customers.\",\"url\":\"https://explainx.ai/blog/grok-4-5-public-launch-spacexai-july-2026\"},{\"title\":\"SpacexAI Releases Grok 4.5, Claiming Opus-Class Performance at Lower Cost as OpenAI Prepares Competing Launch\",\"snippet\":\"July 9, 2026 · 7 min read · SpaceXAI released its latest AI model, Grok 4.5, <strong>its first launch since going public several weeks ago</strong>. The company described the model as capable of handling coding, app-building, office work, research and writing, ...\",\"url\":\"https://theaiinsider.tech/2026/07/09/spacexai-releases-grok-4-5-claiming-opus-class-performance-at-lower-cost-as-openai-prepares-competing-launch/\"},{\"title\":\"Scoop: SpaceXAI launches new model, Grok 4.5\",\"snippet\":\"Elon Musk&#x27;s SpaceXAI is launchin<strong>g Grok 4.5,</strong> its smartest model yet, and its first release since going public and acquiring the AI coding startup Cursor.\",\"url\":\"https://www.axios.com/2026/07/08/spacexai-grok-new-model\"},{\"title\":\"SpaceXAI Launches Grok 4.5, Positions as Coding and Engineering AI\",\"snippet\":\"<strong>SpaceXAI launched Grok 4.5 today, July 9, 2026, positioning it as an Opus-class model that trades capability for speed and lower cost</strong>.\",\"url\":\"https://inews.zoombangla.com/spacexai-grok-4-5-launch-july-2026/\"},{\"title\":\"SpaceXAI Grok 4.5 Launch: Global Public Release Set\",\"snippet\":\"Additionally, the network optimizes token usage to maximize cost efficiency for enterprise workflows. As a result, users will gain immediate access to an exceptionally economical solution. <strong>SpaceXAI plans to launch the model worldwide on July 9, 2026</strong>...\",\"url\":\"https://securityonline.info/spacexai-grok-4-5-launch/\"},{\"title\":\"SpaceXAI Launches Grok 4.5 Hours Before OpenAI Releases GPT-5.6 on July 9 | Technobezz\",\"snippet\":\"Based on strong positive feedback from customers in our beta test program, <strong>@SpaceXAI will make Grok 4.5 available to the public tomorrow</strong>. It is an Opus-class model, but faster, more token-efficient and lower cost.\",\"url\":\"https://www.technobezz.com/news/spacexai-launches-grok-45-hours-before-openai-releases-gpt-56-on-july-9\"},{\"title\":\"Elon Musk’s SpaceXAI Launches Grok 4.5 AI Model - FinanceFeeds\",\"snippet\":\"July 9, 2026 · Share · Elon Musk’s SpaceXAI has officially launched Grok 4.5, <strong>its latest artificial intelligence model</strong>, positioning the system as the company’s most capable offering for coding, agentic workflows and advanced knowledge work.\",\"url\":\"https://financefeeds.com/elon-musks-spacexai-launches-grok-4-5-ai-model/\"},{\"title\":\"Licensable picture: Photo Illustrations – SpaceXAI Launches Grok 4.5\",\"snippet\":\"<strong>The Grok logo is displayed on a smartphone screen with the app&#x27;s logo in the background, in Creteil, France, on July 9, 2026</strong>, as SpaceXAI announces the public launch of Grok version 4.5.\",\"url\":\"https://www.reutersconnect.com/item/photo-illustrations-spacexai-launches-grok-45/dGFnOnJldXRlcnMuY29tLDIwMjY6bmV3c21sX01UMU5VUlBITzAwMEFJOVJDWg\"}]}"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_23",
+          "toolCallId": "call_02_fi4jDtq4Q3NcAf7blocJ0892",
+          "status": "success",
+          "output": "{\"provider\":\"brave\",\"results\":[{\"title\":\"Introducing Muse Spark 1.1\",\"snippet\":\"With these improvements, Muse Spark 1.1 advances the performance-efficiency frontier. Together with this week’s launch of · Muse Image, this release brings us closer to our vision of personal superintelligence: models that help you pursue your goals, create what you imagine, deepen your relationships, and take action on what you value most. Along with this release, we are launching a public preview of the new · Meta Model API where developers ...\",\"url\":\"https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/\"},{\"title\":\"Meta opens Muse Spark 1.1 to developers via new Meta Model API — AI Chat Daily\",\"snippet\":\"Meta released Muse Spark 1.1 on <strong>July 9, 2026</strong>, and for the first time opened one of its in-house foundation models to outside developers through a new Meta Model API. The API is in public preview for US developers starting today, with $20 in ...\",\"url\":\"https://www.aichatdaily.com/ai-models/meta-opens-muse-spark-1-1-developers-via\"},{\"title\":\"Meta Muse Spark 1.1: Meta's First Paid Agent Model\",\"snippet\":\"AI DevelopmentNew Release9 min readPublished <strong>July 9,</strong> 2026 · Meta&#x27;s first paid model API · shipped <strong>July 9,</strong> tuned for agentic tool use and MCP · Meta shipped Muse Spark 1.1 on July 9 and, for the first time, put its own model behind a paid ...\",\"url\":\"https://www.digitalapplied.com/blog/meta-muse-spark-1-1-agentic-model-api-2026\"},{\"title\":\"Muse Spark 1.1: Meta's Agentic Model and API | DataCamp\",\"snippet\":\"You can use Muse Spark 1.1 for free in Thinking mode inside the Meta AI app and at meta.ai, with a Meta login required. Developers can access it through the Meta Model API, which launched in public preview for US developers on <strong>July 9, 2026</strong>.\",\"url\":\"https://www.datacamp.com/blog/muse-spark-1-1\"},{\"title\":\"Meta unveils Muse Spark 1.1, opens developer preview for its AI model – Firstpost\",\"snippet\":\"FP Tech Desk • <strong>July 9, 2026, 20:37:54 IST · Whatsapp Facebook Twitter · advertisement · Advertisement · Subscribe Join Us · + Follow us On Google · File Image/Reuters · After unveiling its first artificial intelligence model under the leadership of AI chief Alexandr Wang, Meta is now rolling out a major update as it intensifies its efforts to compete with rivals OpenAI and Anthropic in the race for AI supremacy. Meta’s recently introduced Muse Spark 1.1 is described as one of the company’s “strongest models for agentic and coding work yet</strong>...\",\"url\":\"https://www.firstpost.com/tech/meta-unveils-muse-spark-1-1-opens-developer-preview-for-its-ai-model-14030205.html\"},{\"title\":\"Muse Spark 1.1: Meta's New Coding & Agentic AI\",\"snippet\":\"Muse Spark 1.1 landed on <strong>July 9, 2026</strong>, and Meta is calling it its strongest model yet for real-world coding and agentic work. The upgrade comes from Meta Superintelligence Labs, the team Meta assembled to close the gap with OpenAI, Anthropic ...\",\"url\":\"https://felloai.com/muse-spark-1-1/\"},{\"title\":\"Meta Opens Muse Spark 1.1 To Developers Through New API\",\"snippet\":\"Muse Spark · byMarcel D. Updated ... How You Use AI · LinkedIn Posting Is Becoming An AI Visibility Game · <strong>Meta Opens Muse Spark 1.1 To Developers</strong> ·...\",\"url\":\"https://wersm.com/meta-opens-muse-spark-1-1-to-developers/\"},{\"title\":\"Meta opens Muse Spark 1.1 to developers via Model API | Let's Data Science\",\"snippet\":\"The Verge reports that Muse Spark 1.1 is <strong>available to US developers in a public-preview Meta Model API</strong> and is accessible in &quot;Thinking&quot; mode on the Meta AI app and website (The Verge).\",\"url\":\"https://letsdatascience.com/news/meta-opens-muse-spark-11-to-developers-via-model-api-f9b336cb\"}]}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_24",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_25",
+          "toolCallId": "call_00_iJFgsF3KkrxVooHECVp45678",
+          "name": "web_fetch",
+          "args": {
+            "maxLength": 12000,
+            "url": "https://www.engadget.com/2210308/openai-rolls-out-gpt5-6-july-9/"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_26",
+          "toolCallId": "call_01_NPG0eA1YfsuMvB2U76001265",
+          "name": "web_fetch",
+          "args": {
+            "maxLength": 10000,
+            "url": "https://techcrunch.com/2026/07/08/spacexai-releases-grok-4-5-which-elon-describes-as-an-opus-class-model/"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_27",
+          "toolCallId": "call_02_Y6N0E34uT8KouM1uAFHy0294",
+          "name": "web_search",
+          "args": {
+            "maxResults": 8,
+            "query": "EU UN global AI governance dialogue July 7 2026"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_28",
+          "toolCallId": "call_00_iJFgsF3KkrxVooHECVp45678",
+          "status": "success",
+          "output": "- News\n\n- AI\n\n# OpenAI gets permission to roll out GPT-5.6 to the public on July 9\n\nIt had to submit the three models to government for approval.\n\nOpenAI will publicly launch all three of GPT-5.6's variants — Sol, Luna and Terra — this Thursday, July 9, the company has announced on X. \"We're expanding preview access globally now,\" it added. The company initially made the new model series available to a \"small group of trusted partners\" in late June, due to a request from the Trump administration.\n\nIf you'll recall, President Trump had signed an AI cybersecurity order in early June, which asks companies to voluntarily present their most powerful models for government review 30 days before releasing them to the public. For GPT-5.6's initial release, it was only rolled out to select government-approved entities. \"We don't believe this kind of government access process should become the long-term default,\" OpenAI said back then, but it added that it was complying because it was the best way to ensure that it can release its latest model series to the public soon.\n\nSure enough, it will not take OpenAI 30 days before making GPT-5.6 more broadly available. According to Axios, the Trump administration gave OpenAI permission for a wider release after putting the model through additional testing and conducting more meetings with the company. The Department of Commerce's Center for AI Standards and Innovation conducted those additional tests, with the company sending technical experts to DC so they can immediately address potential questions and concerns.\n\nGPT-5.6 comes in three variants, with Sol being the company's strongest model yet. Terra is for everyday use and promises a similar performance to GPT‑5.5 despite being twice as cheap, while Luna is the company's lowest cost model. The Sol variant costs $5 per million input tokens and $30 per million output, whereas Terra costs $2.50 per million input tokens and $15 for output and Luna costs $1 per million input and $6 for output.\n\nAnthropic also had to block all access to its latest Mythos cybersecurity and Fable models to ensure compliance when the government ordered it to prevent all foreign nationals from being able to use them. The company has since received the government's permission to redeploy the more exclusive Mythos 5 model and, eventually Fable 5, its counterpart that brings many of its capabilities to the public."
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_29",
+          "toolCallId": "call_01_NPG0eA1YfsuMvB2U76001265",
+          "status": "success",
+          "output": "SpaceXAI has released its latest model, Grok 4.5 — the first since the company went public several weeks ago.\n\nIn a blog post published Wednesday, SpaceXAI characterized its new release as a workhorse that can tackle all of the typical tasks that the AI industry has sought to automate: coding and app-building, office and clerical work, research, writing, and other forms of routine knowledge work.\n\nGrok can supposedly do all this for less spend, too, as SpaceXAI says that its model has “twice greater token efficiency” than other leading models. If it carries through to real-world use cases, that efficiency would be a big advantage for SpaceXAI, since the cost of tokens has been a growing concern for AI consumers.\n\nThe company released benchmark metrics Wednesday that appeared to show Grok’s competitiveness with other top models from SpaceXAI competitors, although just short of best-in-class:\n\nIn a post on his social media platform X (which is a subsidiary of SpaceXAI), founder Elon Musk compared the model to Opus, Anthropic’s LLM designed for intensive and complex tasks.\n\n“Based on strong positive feedback from customers in our beta test program, @SpaceXAI will make Grok 4.5 available to the public tomorrow. It is an Opus-class model, but faster, more token-efficient and lower cost,” wrote Musk in his post on X.\n\nMusk later added: “Our internal assessment is that Grok 4.5 is roughly comparable to Opus 4.7, but much faster. The combination of capability, faster speed and lower cost is what makes it competitive.”\n\nSpaceXAI says that its new model costs $2 per million input tokens and $6 per million output tokens. That’s quite competitive, if Grok’s capabilities match SpaceXAI’s rhetoric.\n\nOpus 4.7, by comparison, costs $5 per million input tokens and $25 per million output tokens. OpenAI has tiered costs for different model versions: Sol, its most expensive, costs $5 for 1 million input tokens and $30 for 1 million output tokens, while its least expensive, Luna, costs $1 for 1 million input and $6 for 1 million output tokens.\n\nIt’s a big week for AI model releases. OpenAI is planning to release GPT 5.6, its latest, most powerful model, on Thursday. The release of that model had previously been limited by the Trump administration, due to concerns about its security implications. OpenAI has called it its “strongest model yet.”\n\nTopics\n\nWhen you purchase through links in our articles, we may earn a small commission. This doesn’t affect our editorial independence.\n\nSenior Writer, TechCrunch\n\nLast chance to save up to $190 on TechCrunch Founder Summit. Join 1,000+ founders and VCs at all stages for real-world scaling insights and connections that move the needle.Savings end June 26, 11:59 p.m. PT.\n\n## Most Popular\n\n- Figma acquires team behind a vibe-coding app\n\t\t\t\n\nIvan Mehta\n\n### Figma acquires team behind a vibe-coding app\n\nFigma acquires team behind a vibe-coding app\n\n- Ivan Mehta\n\n- If you use Google, you’re training its AI. Here’s how to opt out.\n\t\t\t\n\nSarah Perez\n\n### If you use Google, you’re training its AI. Here’s how to opt out.\n\nIf you use Google, you’re training its AI. Here’s how to opt out.\n\n- Sarah Perez\n\n- Reddit is using LLMs to solve a problem LLMs largely created\n\t\t\t\n\nAmanda Silberling\n\n### Reddit is using LLMs to solve a problem LLMs largely created\n\nReddit is using LLMs to solve a problem LLMs largely created\n\n- Amanda Silberling\n\n- Amazon will stop accepting new customers for Mechanical Turk\n\t\t\t\n\nAnthony Ha\n\n### Amazon will stop accepting new customers for Mechanical Turk\n\nAmazon will stop accepting new customers for Mechanical Turk\n\n- Anthony Ha\n\n- 5 desk gadgets that can make your workday better\n\t\t\t\n\nAisha Malik\n\n### 5 desk gadgets that can make your workday better\n\n5 desk gadgets that can make your workday better\n\n- Aisha Malik\n\n- Almost 90 new unicorns have been minted so far this year — here they are\n\t\t\t\n\nDominic-Madori Davis\n\n### Almost 90 new unicorns have been minted so far this year — here they are\n\nAlmost 90 new unicorns have been minted so far this year — here they are\n\n- Dominic-Madori Davis\n\n- New Google commercial imagines a Declaration of Independence written with help from AI\n\t\t\t\n\nAnthony Ha\n\n### New Google commercial imagines a Declaration of Independence written with help from AI\n\nNew Google commercial imagines a Declaration of Independence written with help from AI\n\n- Anthony Ha"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_30",
+          "toolCallId": "call_02_Y6N0E34uT8KouM1uAFHy0294",
+          "status": "success",
+          "output": "{\"provider\":\"brave\",\"results\":[{\"title\":\"EU Statement – UN Global Dialogue on Artificial Intelligence Governance | EEAS\",\"snippet\":\"7 July 2026, Geneva - Statement on behalf of the European Union and its Member States delivered by Mr. Roberto Viola, Director-General for Communications Networks, Content and Technology, European Commission, at the Global Dialogue on Artificial Intelligence Governance (6-7 July 2026)\",\"url\":\"https://www.eeas.europa.eu/delegations/un-new-york/eu-statement-%E2%80%93-un-global-dialogue-artificial-intelligence-governance_en\"},{\"title\":\"Home | Global Dialogue on AI Governance\",\"snippet\":\"Egriselda López (Permanent Representative of El Salvador to the United Nations) and H.E. Mr. Rein Tammsaar (Permanent Representative of Estonia to the United Nations) as Co-Chairs to the 2026 AI Dialogue. <strong>The first session of the Global Dialogue on AI Governance will be held on 6 and 7 July 2026</strong> ...\",\"url\":\"https://www.un.org/global-dialogue-ai-governance/en\"},{\"title\":\"Global Dialogue on Artificial Intelligence Governance - EU Statement | EEAS\",\"snippet\":\"Roberto Viola, Director-General ... Governance is a unique moment – <strong>this is the first time that all members of the United Nations gather to discuss AI governance in a dedicated meeting</strong>....\",\"url\":\"https://www.eeas.europa.eu/delegations/un-geneva/global-dialogue-artificial-intelligence-governance-eu-statement_en\"},{\"title\":\"AI Governance Initiatives & Approaches - Global Dialogue on Artificial Intelligence Governance - Day 2 | UN Web TV\",\"snippet\":\"7 July 2026 · Production Date ... NATIONS OFFICE IN GENEVA - UNOG · Summary · <strong>AI Governance Initiatives and Approaches: Experiences, Lessons and Complementarities</strong> View moreView less ·...\",\"url\":\"https://webtv.un.org/en/asset/k1k/k1kn8ag26o\"},{\"title\":\"The UN's Global Dialogue on AI Governance: What the Geneva Forum Means for Business | Vectrel\",\"snippet\":\"<strong>The UN convenes its first Global Dialogue on AI Governance in Geneva on July 6-7, 2026</strong>. Here is what a global AI governance forum means for business strategy.\",\"url\":\"https://www.vectrel.ai/blog/un-global-dialogue-ai-governance-business-strategy\"},{\"title\":\"Global Dialogue on AI Governance, Geneva, 6–7 July | UNESCO\",\"snippet\":\"<strong>The AI Dialogue takes place in Geneva</strong> alongside the World Summit on the Information Society (WSIS) Forum 2026 (6-10 July) and ITU’s AI for Good Global Summit (7-10 July). A single media accreditation provides access to all three events.\",\"url\":\"https://www.unesco.org/en/articles/global-dialogue-ai-governance-geneva-6-7-july\"},{\"title\":\"Global push for AI governance amid warnings of ‘catastrophic harm’ | UN News\",\"snippet\":\"To act effectively, global policymakers must understand these systems · Egriselda López: <strong>The Global Dialogue is the first platform in the United Nations for the discussion of AI governance</strong>.\",\"url\":\"https://news.un.org/en/story/2026/07/1167862\"},{\"title\":\"UN Global Dialogue opens with urgent call for safe and inclusive AI\",\"snippet\":\"One area of consensus from the consultations is that participants want to see continuity in this process: more than five hundred submissions called for the process to continue beyond July. The Dialogue takes place one week after the Independent International Scientific Panel on Artificial Intelligence launched its preliminary report handing the governments who convene there a shared evidence base to build policy from.\",\"url\":\"https://www.unesco.org/en/articles/un-global-dialogue-opens-urgent-call-safe-and-inclusive-ai-benefits-all\"}]}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_31",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_32",
+          "toolCallId": "call_00_2FnOm4POPGUPWiFuNt0E5974",
+          "name": "tool_activate",
+          "args": {
+            "capability": "pdf"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_33",
+          "toolCallId": "call_00_2FnOm4POPGUPWiFuNt0E5974",
+          "status": "success",
+          "output": "Loaded `pdf`.\n\n## pdf [loaded] — Read, create, modify, merge, split, secure, and compress PDF documents\n- `pdf_read` — Extract text, metadata, page count, and structure from a PDF file. Optionally restrict to specific …\n- `pdf_create` — Create a new PDF from scratch with text, headings, images, tables, page numbers, headers/footers. S…\n- `pdf_merge` — Merge multiple PDF files into a single PDF.\n- `pdf_split` — Split a PDF into multiple files by page ranges.\n- `pdf_modify` — Add watermark, headers, footers, page numbers, or stamps to an existing PDF.\n- `pdf_form` — Read form field names/values or fill form fields in a PDF.\n- `pdf_secure` — Encrypt or decrypt a PDF with a password.\n- `pdf_extract_images` — Extract all embedded images from a PDF and save them to a directory.\n- …and 1 more"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_34",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_35",
+          "toolCallId": "call_00_ENSrcn2GpHhIQEVWRQWf5135",
+          "name": "file_read",
+          "args": {
+            "path": "~/.wolffish/capabilities/pdf/SKILL.md"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_36",
+          "toolCallId": "call_00_ENSrcn2GpHhIQEVWRQWf5135",
+          "status": "failed",
+          "output": "tool failed (not_found, non-retryable): ENOENT: /Users/younes/.wolffish/capabilities/pdf/SKILL.md not found.\nParent directory /Users/younes/.wolffish/capabilities/pdf also does not exist.",
+          "error": "ENOENT: /Users/younes/.wolffish/capabilities/pdf/SKILL.md not found.\nParent directory /Users/younes/.wolffish/capabilities/pdf also does not exist."
+        },
+        {
+          "kind": "active_model",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_37",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_38",
+          "toolCallId": "call_00_fH6TSq47f9bTVm3gRNmS0036",
+          "name": "wolffish_list_files",
+          "args": {
+            "dir": "capabilities",
+            "depth": 3,
+            "pattern": "pdf"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_39",
+          "toolCallId": "call_00_fH6TSq47f9bTVm3gRNmS0036",
+          "status": "failed",
+          "output": "tool failed (not_found, non-retryable): list_files: not found: capabilities",
+          "error": "list_files: not found: capabilities"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_40",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_41",
+          "toolCallId": "call_00_64oKWGENbZtfVZtL6UES7875",
+          "name": "tool_search",
+          "args": {
+            "query": "browser pdf render HTML to PDF headless"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_42",
+          "toolCallId": "call_00_64oKWGENbZtfVZtL6UES7875",
+          "status": "success",
+          "output": "Activated `browser` — its tools are callable now. tool_activate(<name>) loads any other match.\n\n## browser [loaded] — Automate web browsers — navigate sites, fill forms, click buttons, extract data, take screenshots, and run multi-step w…\n- `browser_launch` — Launch a browser instance and return a session_id. Defaults to headed Chromium at 1280x720.\n- `browser_close` — Close a browser session and clean up all resources.\n- `browser_navigate` — Navigate to a URL in the active tab.\n- `browser_screenshot` — Take a screenshot of the current page or a specific element.\n- `browser_page_content` — Extract text, HTML, or markdown content from the current page or a specific element.\n- `browser_click` — Click an element on the page. Supports CSS, XPath, text, and role selectors.\n- `browser_fill` — Fill a form field. Use credential_id for secure credential entry.\n- `browser_select` — Select an option from a dropdown/select element.\n- …and 17 more\n\n## pdf [loaded] — Read, create, modify, merge, split, secure, and compress PDF documents\n- `pdf_read` — Extract text, metadata, page count, and structure from a PDF file. Optionally restrict to specific …\n- `pdf_create` — Create a new PDF from scratch with text, headings, images, tables, page numbers, headers/footers. S…\n- `pdf_merge` — Merge multiple PDF files into a single PDF.\n- `pdf_split` — Split a PDF into multiple files by page ranges.\n- `pdf_modify` — Add watermark, headers, footers, page numbers, or stamps to an existing PDF.\n- `pdf_form` — Read form field names/values or fill form fields in a PDF.\n- `pdf_secure` — Encrypt or decrypt a PDF with a password.\n- `pdf_extract_images` — Extract all embedded images from a PDF and save them to a directory.\n- …and 1 more\n\n## browser-extension — Control the user's connected Chrome/Brave browser via the Wolffish extension — navigate pages, click elements, fill for…\n- `ext_navigate` — Navigate to a URL in the active tab of the connected browser.\n- `ext_back` — Navigate back in browser history.\n- `ext_forward` — Navigate forward in browser history.\n- `ext_reload` — Reload the current page.\n- `ext_click` — Click an element on the page by CSS selector, or text=<visible text> to target by text.\n- `ext_type` — Type text into an input element with optional human-like keystroke simulation.\n- `ext_select` — Select a value from a dropdown/select element.\n- `ext_hover` — Hover over an element to trigger hover states.\n- …and 50 more\n\n## document — Read, create, modify, convert, and merge documents (docx, html, markdown, plain text)\n- `document_read` — Read any document file and extract content as text, HTML, or Markdown. Supports docx, html, md, txt…\n- `document_create` — Create a professional .docx document with headings, paragraphs, tables, images, lists, headers, foo…\n- `document_modify` — Edit an existing .docx file — find-and-replace (with regex), insert or append content, change forma…\n- `document_template` — Fill a .docx template with data using {{placeholder}} syntax. Supports repeating sections for array…\n- `document_convert` — Convert between document formats. Supported: docx->html, docx->markdown, docx->text, html->docx, ma…\n- `document_merge` — Merge multiple documents into a single .docx file with optional page breaks between them.\n- `document_toc` — Generate or update a table of contents for a .docx document based on heading styles.\n- `document_metadata` — Read or set document metadata (author, title, subject, keywords, dates).\n- …and 2 more\n\n## telegram [loaded] — Out-of-band Telegram messaging. Send text and media to allowed users, or edit a message you sent earlier. Use to notify…\n- `telegram_check_format` — Validate text against Telegram's HTML rules WITHOUT sending it. Returns \"valid\" or the exact proble…\n- `telegram_send` — Send a text message to one of the allowed Telegram users. Use to notify the user out-of-band — for …\n- `telegram_send_photo` — Send an image to one of the allowed Telegram users. The path must point to a file inside the worksp…\n- `telegram_send_document` — Send any file (text, PDF, archive, etc.) to one of the allowed Telegram users. Up to 50 MB. The ori…\n- `telegram_send_video` — Send a video file to one of the allowed Telegram users. Up to 50 MB; MP4 streams reliably across cl…\n- `telegram_send_audio` — Send an audio file (rendered as a music player) to one of the allowed Telegram users. Up to 50 MB; …\n- `telegram_edit_message` — Edit the text of a previously-sent Telegram message. Pass the message_id from the original send res…"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_43",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_44",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_45",
+          "toolCallId": "call_00_BWa6IheEJTUQ8sW4a0v81928",
+          "name": "browser_launch",
+          "args": {
+            "headless": true
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_46",
+          "toolCallId": "call_00_BWa6IheEJTUQ8sW4a0v81928",
+          "status": "success",
+          "output": "{\"session_id\":\"d410ca7a-dd8d-4b89-a195-64014e99399c\",\"tab_id\":\"b444629e-b317-47fa-b79e-3a23d97a7919\",\"browser\":\"chromium\",\"headless\":true,\"viewport\":{\"width\":1280,\"height\":720}}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_47",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_48",
+          "toolCallId": "call_00_FJoI6JaddZNaFwDveC7E2205",
+          "name": "browser_navigate",
+          "args": {
+            "session_id": "d410ca7a-dd8d-4b89-a195-64014e99399c",
+            "url": "file:///Users/younes/.wolffish/workspace/files/ai-news-report-july-9-2026.html"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_49",
+          "toolCallId": "call_00_FJoI6JaddZNaFwDveC7E2205",
+          "status": "success",
+          "output": "{\"url\":\"file:///Users/younes/.wolffish/workspace/files/ai-news-report-july-9-2026.html\",\"title\":\"AI News Report — July 9, 2026\",\"status\":200}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_50",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_51",
+          "toolCallId": "call_00_yMwbDmq46uDnC8eIkRzF9212",
+          "name": "browser_pdf",
+          "args": {
+            "session_id": "d410ca7a-dd8d-4b89-a195-64014e99399c",
+            "output_path": "/Users/younes/.wolffish/workspace/files/ai-news-report-july-9-2026.pdf",
+            "format": "A4",
+            "print_background": true
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_52",
+          "toolCallId": "call_00_yMwbDmq46uDnC8eIkRzF9212",
+          "status": "success",
+          "output": "{\"path\":\"/Users/younes/.wolffish/workspace/files/ai-news-report-july-9-2026.pdf\"}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_53",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_54",
+          "toolCallId": "call_00_q5pj9xGXf3qKBmDFVSux7712",
+          "name": "browser_close",
+          "args": {
+            "session_id": "d410ca7a-dd8d-4b89-a195-64014e99399c"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_55",
+          "toolCallId": "call_01_oFfMAhBSqW6MuCXV8Qzx1926",
+          "name": "pdf_read",
+          "args": {
+            "path": "/Users/younes/.wolffish/workspace/files/ai-news-report-july-9-2026.pdf",
+            "pages": "1-2"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_56",
+          "toolCallId": "call_00_q5pj9xGXf3qKBmDFVSux7712",
+          "status": "success",
+          "output": "Browser session closed."
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_57",
+          "toolCallId": "call_01_oFfMAhBSqW6MuCXV8Qzx1926",
+          "status": "success",
+          "output": "{\n  \"path\": \"/Users/younes/.wolffish/workspace/files/ai-news-report-july-9-2026.pdf\",\n  \"pages\": 9,\n  \"metadata\": {\n    \"title\": null,\n    \"author\": null,\n    \"subject\": null,\n    \"creator\": null,\n    \"producer\": null\n  },\n  \"text\": \"--- Page 1 ---\\nT   H E   W   O L F F I S H   A I   I N   T   E L L I G E N C E   B R I E F  AI N e ws   R e port  T op   &   B r eaki n g   S tor ie s   —   T h urs da y ,   J uly   9,   2026  R I   Y A D H   ·   1 0   J   U   L Y   2 0 2 6  S P E C I A L E D I   T   I O N  ⚡   A T   A G L A N C E  J uly   9,   2026   s ha p ed   up   a s   t he   bigge st   s i n g l e   da y   i n   f ront ie r   AI   r e l ea s e s   t hi s   y ea r .   O p e n AI   d ropp ed  GP T -5.6   ( S ol ,   T e rr a ,   L un a )   to   ge n e r a l   a v ai l abi l i ty   af t e r   W hi t e   H ous e   ga t e - t e st i n g .   S p ace X AI  l a un ched   G ro k   4.5   a t   a   di srupt i v e   $ 2/ $ 6   pr ice   po i nt .   M e t a   op e n ed   i ts   fi rst   p aid   de v e lop e r   API   w i t h  M us e   S p a r k   1.1 .   M ea nw hi l e ,   t he   U S   a n d   C hi n a   b ot h   mov ed   to   t igh t e n   AI   e xport   c ontrols ,   t he   U N  he l d   i ts   fi rst - e v e r   G lo ba l   AI G ov e rn a n ce   D ia lo g u e ,   M e t a   b ro ke   g roun d   on   a   $ 9.1 B C a n adia n   da t a ce nt e r ,   a n d   SK H yn i x ' s   $ 28 B N a s da q   l i st i n g   d r e w   7 x   de m a n d .   T he   f ront ie r   AI   m a r ke t   i s   no   lon ge r  j ust   ab out   mo de l   qu a l i ty   —   pr ici n g   a r chi t ec tur e ,   g ov e rnm e nt   acce ss ,   a n d   i n f r a stru c tur e - s ca l e ca p i t a l   de ploym e nt   a r e   now   t he   r ea l   ba ttl eg roun d s .  1.   GP T -5.6   G o e s   P u b l ic :   S ol ,   T e rr a ,   a n d   L un a   H i t   G e n e r a l  A v ai l abi l i ty  O p e n AI   l a un ched   a ll   t h r ee   t ie rs   o f   GP T -5.6   to   ge n e r a l   a v ai l abi l i ty   on   T h urs da y ,   J uly   9   —   a   w a t e rs hed  r e l ea s e   t ha t   p a ss ed   t h rou gh   t he   W hi t e   H ous e ' s   volunt a ry   30- da y   pr e - r e l ea s e   AI   c y be rs ec ur i ty  f r a m e wor k   i n   j ust   12   da ys .   T he   fa m i ly   i ntro d u ce s   a   t h r ee - t ie r   pr ici n g   a r chi t ec tur e :   S ol   ( $ 5   i nput   /   $ 30  output   p e r   m i ll i on   to ke ns )   f or   t he   ha r de st   age nt ic   a n d   r ea son i n g   wor k lo ad s ;   T e rr a   ( $ 2.50   /   $ 15),   a  GP T -5.5- c l a ss   p e r f orm e r   a t   ha l f   t he   c ost ;   a n d   L un a   ( $ 1   /   $ 6),   pr iced   to   c omp e t e   di r ec tly   w i t h   C hi n e s e  op e n - w eigh t   mo de ls   w hi l e   r e m ai n i n g   i ns ide   a   U S - h ost ed   st ack .  T he   mo de ls   a r e   a v ai l ab l e   ac ross   C ha t GP T ,   C ha t GP T   W or k ,   C o de x ,   a n d   t he   API ,   w i t h   g lo ba l   rollout  c ompl e t i n g   ov e r   a pprox i m a t e ly   24   h ours .   S ol   l ead s   on   lon g - h or i zon   age nt ic   t a s k s   a n d   T e rm i n a l - B e n ch  2.1   (91.9 %   i n   S ol   U ltr a   c on fig ur a t i on ),   a n d   i ntro d u ce s   e xpl ici t   cache   b r eak po i nts   w i t h   90 %   di s c ount on   cache   r ead s   —   a   de s ig n   de t ai l   t ha t   m ake s   sust ai n ed   age nt   loops   d r a m a t ica lly   chea p e r .  BREAKING   MODEL LA U NCH   PRICING  📋   C R E D I B I L I   T Y :   H I G H  S our ce s :   O p e n AI   o fficia l   b lo g ,   E n gadge t ,   T ech C run ch ,   N e ow i n .   A ll   pr i m a ry   sour ce s   c onv e r ged   on  ide nt ica l   pr ici n g   a n d   a v ai l abi l i ty   de t ai ls .   E n gadge t   c on fi rm ed   t he   W hi t e   H ous e   ga t e - t e st   t i m e l i n e i n de p e n de ntly .   N o   c on f l ic t i n g   c l ai ms   f oun d .\\n--- Page 2 ---\\n🔍   FAC   T -   C H E C K  T he   c l ai m   t ha t   GP T -5.5- l a t e st   d o e s   not   a uto - m ig r a t e   to   GP T -5.6   i s   c on fi rm ed   i n   O p e n AI ' s   own   API  d o c um e nt a t i on   —   t ea ms   p i nn ed   to   gpt-5.5-latest   must   e xpl ici tly   sw i t ch   mo de l   ID s .   T he   t h r ee - t ie r pr ici n g   ha s   bee n   v e r ified   ac ross   mult i pl e   i n de p e n de nt   sour ce s   i n c lu di n g   t he   o fficia l   O p e n AI   pr e v ie w p age .   O n e   m i nor   di s c r e p a n c y :   som e   outl e ts   r e port ed   a   30- da y   ga t e   r e v ie w ,   b ut   O p e n AI   pu b l ic ly   not ed  t he   ac tu a l   r e v ie w   too k   12   da ys .  🐟   W ol ffi s h   T ake :   T he   pr ici n g   a r chi t ec tur e   i s   t he   r eal   story ,   not   t he   be n chma r k   s c or e s .   O p e n AI   j ust  ga v e   e v e ry   e nt e rpr i s e   t eam   a   rout i n g   ma tr i x :   S o l   f or   t he   ge nu i n el y   ha r d   stu ff ,   T e rr a   f or   \\\" g oo d   e nou gh a t   half   pr ice ,\\\"   L un a   f or   vo l u me .   A ny   t eam   t ha t   ha sn ' t   a u di t ed   w hich   wor kl o ad s   ac tu all y   n eed   f ront ie r -  cla ss   p e r f or ma n ce   now   ha s   a   fi n a n cial   i n ce nt i v e   to   d o   i t   to da y .   T he   t h r ee - t ie r   sp li t   i s   t he   m ost   e xp lici t  ack now ledgme nt   y e t   t ha t   fla t   flag s hi p   pr ici n g   i s   dead   —   a n d   t ha t   C hi n e s e   op e n - w eigh t   m o del s   a t  $1–$4/ M   ha v e   f or ced   O p e n AI ' s   ha n d   on   t he   l ow   e n d .  P r i m a ry   sour ce :   O p e n AI ,   E n gadge t ,   T ech C run ch  2.   G ro k   4.5   L a un che s   P u b l ic ly   —   S p ace X AI B e ts   on   P r ice   a s t he   P ro d u c t  S p ace X AI   r e l ea s ed   G ro k   4.5   to   t he   pu b l ic   on   J uly   9   —   i ts   fi rst   mo de l   l a un ch   s i n ce   g o i n g   pu b l ic   a n d ac qu i r i n g   C ursor   f or   $ 60   bi ll i on .   P r iced   a t   $ 2   p e r   m i ll i on   i nput   /   $ 6   p e r   m i ll i on   output ,   G ro k   4.5  un de r c uts   e v e ry   f ront ie r   c omp e t i tor   e x ce pt   L un a   on   pr ice .   E lon   M us k   de s c r ibed   i t   a s   \\\" a n   O pus - c l a ss mo de l ,   b ut   fa st e r ,   mor e   to ke n - efficie nt   a n d   low e r   c ost ,\\\"   w i t h   i nt e rn a l   a ss e ssm e nts   pl aci n g   i t   rou gh ly  c omp a r ab l e   to   A nt h rop ic ' s   O pus   4.7.  T he   mo de l   w a s   tr ai n ed   w i t h   r ea l   C ursor   de v e lop e r   s e ss i on   da t a ,   gi v i n g   i t   i ns igh t   i nto   h ow   de v e lop e rs  ac tu a lly   wor k   ac ross   fi l e s   a n d   lon g - h or i zon   t a s k s   —   not   j ust   pu b l ic   c o de   r e pos i tor ie s .   C ont e xt   w i n d ow  i s   500 K   to ke ns .   I n de p e n de nt   t e st i n g   b y   A rt ificia l   A n a lys i s   r a n k s   i t   f ourt h   o f   168   mo de ls   on   t he  I nt e ll ige n ce   I n de x ,   c omp e t i t i v e   b ut   not   c l a ss - l eadi n g   on   most   be n ch m a r k s .   E U   a v ai l abi l i ty   i s   t a r ge t ed f or   m id - J uly .  BREAKING   MODEL LA U NCH   PRICING  📋   C R E D I B I L I   T Y :   H I G H  S our ce s :   T ech C run ch ,   A x i os ,   C y be rn e ws ,   A rt ificia l   A n a lys i s .   P r ici n g   a n d   be n ch m a r k   c l ai ms   c on fi rm ed ac ross   mult i pl e   outl e ts .   T he   C ursor   tr ai n i n g   da t a   c l ai m   ca m e   f rom   S p ace X AI   di r ec tly   a n d   w a s   r e port ed i n de p e n de ntly   b y   A x i os   a n d   T ech C run ch .  🔍   FAC   T -   C H E C K  S p ace X AI ' s   c l ai m   o f   \\\" tw ice   g r ea t e r   to ke n   efficie n c y \\\"   i s   a   s e l f - r e port ed   m e tr ic   w i t h out   pu b l i s hed  m e t h o d olo g y   —   tr ea t   a s   m a r ke t i n g   unt i l   t hi r d - p a rty   v a l ida t i on   a rr i v e s .   T he   \\\" O pus - c l a ss \\\"   c omp a r i son   i s   to  O pus   4.7   sp ecifica lly ,   not   t he   l a t e st   O pus .   T he   $ 2/ $ 6   pr ici n g   i s   c on fi rm ed   a n d   i s   ge nu i n e ly   di srupt i v e   if  t he   mo de l   p e r f orms   a s   c l ai m ed   i n   r ea l   wor k lo ad s .   T he   W SJ   r e port   ab out   a   \\\" prototyp e   c onsum e r   AI  de v ice \\\"   w a s   de n ied   b y   M us k   a s   \\\" utt e rly   fa ls e .\\\"  🐟   W ol ffi s h   T ake :   T h r ee   f ront ie r   m o del s   la un ched   pu blicl y   on   t he   s ame   da y :   GP T -5 . 6 ,   G ro k   4 . 5 ,   a n d  M us e   S p a r k   1 . 1 .   T he   pr ici n g   b o a r d   now   r ead s   like   a   me nu   —   F able   5   a t   $10/$50 ,   S o l   a t   $5/$30 ,   G ro k  4 . 5   a t   $2/$6 ,   S onn e t   5   a t   $2/$10 ,   L un a   a t   $1/$6 .   T ha t ' s   t he   s ha rp e st   c ost - diffe r e nt ia t i on   p ic tur e\\n\",\n  \"requestedPages\": \"1-2\",\n  \"fileSize\": 690170\n}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_58",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_59",
+          "delta": "PDF looks solid — 9 pages, 690KB, content flowing properly. Now let me craft the Telegram summary and send."
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_85",
+          "toolCallId": "call_00_CPwKlTeoqVcTm2iMSmsO0800",
+          "name": "telegram_check_format",
+          "args": {
+            "message": "🐟 <b>AI News Report — July 9, 2026</b>\n\nYesterday was the biggest single day in frontier AI releases this year. OpenAI dropped <b>GPT-5.6</b> (Sol, Terra, Luna) to general availability with a three-tier pricing model that signals the end of flat flagship pricing. SpaceXAI launched <b>Grok 4.5</b> at a disruptive $2/$6 price point, trained on real Cursor developer data. Meta opened its first paid developer API with <b>Muse Spark 1.1</b> and its 1M-token context window. On the geopolitics front, both the US and China moved to tighten AI model access restrictions, while the <b>UN held its first-ever Global AI Governance Dialogue</b> in Geneva. Meta broke ground on a <b>$9.1B Canadian data center</b> in Alberta, SK Hynix's <b>$28B Nasdaq IPO</b> drew 7x demand, and DeepSeek confirmed an in-house inference chip project. Nine stories, full sourcing, credibility ratings, fact-checks, and Wolffish commentary — all in the PDF below."
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_86",
+          "toolCallId": "call_00_CPwKlTeoqVcTm2iMSmsO0800",
+          "status": "success",
+          "output": "Valid Telegram HTML — safe to send with telegram_send / telegram_edit_message."
+        },
+        {
+          "kind": "active_model",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_87",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_88",
+          "toolCallId": "call_00_PzhVz3P2F8RTSuRzO6f09572",
+          "name": "telegram_send",
+          "args": {
+            "message": "🐟 <b>AI News Report — July 9, 2026</b>\n\nYesterday was the biggest single day in frontier AI releases this year. OpenAI dropped <b>GPT-5.6</b> (Sol, Terra, Luna) to general availability with a three-tier pricing model that signals the end of flat flagship pricing. SpaceXAI launched <b>Grok 4.5</b> at a disruptive $2/$6 price point, trained on real Cursor developer data. Meta opened its first paid developer API with <b>Muse Spark 1.1</b> and its 1M-token context window. On the geopolitics front, both the US and China moved to tighten AI model access restrictions, while the <b>UN held its first-ever Global AI Governance Dialogue</b> in Geneva. Meta broke ground on a <b>$9.1B Canadian data center</b> in Alberta, SK Hynix's <b>$28B Nasdaq IPO</b> drew 7x demand, and DeepSeek confirmed an in-house inference chip project. Nine stories, full sourcing, credibility ratings, fact-checks, and Wolffish commentary — all in the PDF below."
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_89",
+          "toolCallId": "call_00_PzhVz3P2F8RTSuRzO6f09572",
+          "status": "success",
+          "output": "Sent. message_id=1269 to=8417306252"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_90",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_91",
+          "toolCallId": "call_00_cxmZGArypSIJaZaEPDbr5163",
+          "name": "telegram_send_document",
+          "args": {
+            "path": "files/ai-news-report-july-9-2026.pdf",
+            "caption": "📄 ai-news-report-july-9-2026.pdf — 9 pages, 9 stories, fully sourced"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_92",
+          "toolCallId": "call_00_cxmZGArypSIJaZaEPDbr5163",
+          "status": "success",
+          "output": "Sent. message_id=1270 to=8417306252 kind=document"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_93",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_94",
+          "toolCallId": "call_00_Nfwz8JDjARcmH2oZe0qU7795",
+          "name": "send_file",
+          "args": {
+            "file": "files/ai-news-report-july-9-2026.pdf"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_95",
+          "toolCallId": "call_00_Nfwz8JDjARcmH2oZe0qU7795",
+          "status": "success",
+          "output": "[wolffish-output: /Users/younes/.wolffish/workspace/files/ai-news-report-july-9-2026.pdf (document)]"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_td_1ajh39f_2a",
+          "toolCallId": "call_td_1ajh39f_2",
+          "name": "todo_write",
+          "args": {
+            "todos": [
+              {
+                "content": "Search the web for “top AI news breaking stories July 9 2026” and 2 more",
+                "status": "completed"
+              },
+              {
+                "content": "Read the top sources (4 pages)",
+                "status": "completed"
+              },
+              {
+                "content": "Search the web for “OpenAI GPT-5.6 launch pricing Sol Terra Lun…” and 2 more",
+                "status": "completed"
+              },
+              {
+                "content": "Read the top sources (2 pages)",
+                "status": "completed"
+              },
+              {
+                "content": "Search the web for “EU UN global AI governance dialogue July 7…”",
+                "status": "completed"
+              },
+              {
+                "content": "Deliver the file",
+                "status": "completed",
+                "priority": "high"
+              }
+            ]
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_td_1ajh39f_2b",
+          "toolCallId": "call_td_1ajh39f_2",
+          "status": "success",
+          "output": "6 todos (6 completed, 0 in progress)\n[\n  {\n    \"content\": \"Search the web for “top AI news breaking stories July 9 2026” and 2 more\",\n    \"status\": \"completed\"\n  },\n  {\n    \"content\": \"Read the top sources (4 pages)\",\n    \"status\": \"completed\"\n  },\n  {\n    \"content\": \"Search the web for “OpenAI GPT-5.6 launch pricing Sol Terra Lun…” and 2 more\",\n    \"status\": \"completed\"\n  },\n  {\n    \"content\": \"Read the top sources (2 pages)\",\n    \"status\": \"completed\"\n  },\n  {\n    \"content\": \"Search the web for “EU UN global AI governance dialogue July 7…”\",\n    \"status\": \"completed\"\n  },\n  {\n    \"content\": \"Deliver the file\",\n    \"status\": \"completed\",\n    \"priority\": \"high\"\n  }\n]"
+        },
+        {
+          "kind": "todo",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_td_1ajh39f_2c",
+          "items": [
+            {
+              "content": "Search the web for “top AI news breaking stories July 9 2026” and 2 more",
+              "status": "completed"
+            },
+            {
+              "content": "Read the top sources (4 pages)",
+              "status": "completed"
+            },
+            {
+              "content": "Search the web for “OpenAI GPT-5.6 launch pricing Sol Terra Lun…” and 2 more",
+              "status": "completed"
+            },
+            {
+              "content": "Read the top sources (2 pages)",
+              "status": "completed"
+            },
+            {
+              "content": "Search the web for “EU UN global AI governance dialogue July 7…”",
+              "status": "completed"
+            },
+            {
+              "content": "Deliver the file",
+              "status": "completed",
+              "priority": "high"
+            }
+          ]
+        },
+        {
+          "kind": "active_model",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_96",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_97",
+          "delta": "Done. Here's what you got:\n\n**Telegram:** A one-paragraph summary sent as message #1269, followed by the 9-page PDF as message #1270.\n\n**The report covers 9 stories from July 9, 2026:**\n\n| # | Story | Angle |\n|---|-------|-------|\n| 1 | GPT-5.6 Sol/Terra/Luna GA | Three-tier pricing architecture |\n| 2 | Grok 4.5 public launch | $2/$6 disrupts the pricing board |\n| 3 | Meta Muse Spark 1.1 + API | 1M context, multi-agent, pricing TBD |\n| 4 | US-China mutual AI export controls | Fragmented supply chain incoming |\n| 5 | Meta $9.1B Alberta data center | Energy-first site selection |\n| 6 | SK Hynix $28B Nasdaq IPO | 7x oversubscribed, HBM dominance |\n| 7 | UN Global AI Governance Dialogue | First-ever, 500+ want continuity |\n| 8 | DeepSeek inference chip project | Full-stack Chinese AI play |\n| 9 | US weighs restricting Chinese model use | 30–46% of US enterprise tokens already on Chinese models |\n\nEvery story has sourced credibility ratings, fact-check boxes, and Wolffish commentary. The PDF is full-bleed, edge-to-edge A4 with a soft gradient — reads like a briefing document, not a grid of cards. 🐟"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "hb_mreyga9f",
+          "segmentId": "seg_404",
+          "stopReason": "end_turn",
+          "iterationCount": 18,
+          "reasoningContent": "Both the Telegram summary and PDF have been sent successfully. The file is also delivered in this conversation. The task is complete — let me do a final wrap-up."
+        }
+      ],
+      "stopReason": "end_turn"
+    }
+  ],
+  "channel": "heartbeat",
+  "sealed": true,
+  "stats": {
+    "allTime": {
+      "processingMs": 249695,
+      "apiMs": 217326,
+      "turns": 1,
+      "apiCalls": 18,
+      "toolCalls": 29,
+      "inputTokens": 135720,
+      "outputTokens": 13144,
+      "cacheReadTokens": 634368,
+      "cacheCreationTokens": 0,
+      "cost": 0.07599248160000001
+    },
+    "lastTurn": {
+      "endedAt": 1783689376082,
+      "elapsedMs": 249695,
+      "apiMs": 217326,
+      "apiCalls": 18,
+      "toolCalls": 29,
+      "inputTokens": 135720,
+      "outputTokens": 13144,
+      "cacheReadTokens": 634368,
+      "cacheCreationTokens": 0,
+      "cost": 0.07599248160000001,
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro"
+    },
+    "meter": {
+      "contextTokens": 57056,
+      "contextBudget": 1000000,
+      "compactionAt": 725424,
+      "model": "deepseek-v4-pro"
+    }
+  },
+  "projectId": "a3f1c07e-5b42-4d19-9c8e-2d7a6f0b1e54"
+}

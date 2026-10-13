@@ -1,0 +1,92 @@
+---
+title: "Office Documents in the Feed"
+description: "A .pptx, .docx or .xlsx renders as the document itself — slides with a pager, real Word pages, and a spreadsheet grid that kept the file's formatting"
+---
+
+# The Document, Not a Grey Card
+
+Since **v1.0.301** a `.pptx`, a `.docx` or an `.xlsx` no longer lands in the conversation as a grey file card with a name on it. All three **render as the document itself**, right where they land — so you can tell what Wolffish produced without opening anything, and what it produced is what you will see.
+
+The change is not only a viewer. The three capabilities behind those files grew up alongside it, and that is the other half of this page.
+
+## Three Viewers
+
+<CardGroup cols={1}>
+  <Card title="Decks — .pptx" icon="presentation">
+    A presentation comes through as **its actual slides**, with chevrons to page through them, and the whole thing again at full size when you expand it. **Proportions come from the deck itself** — from the first slide that actually rendered, not from a guess — so a 4:3 presentation is not letterboxed into a widescreen card.
+  </Card>
+  <Card title="Word documents — .docx" icon="file-word">
+    A Word file is laid out as **real pages**: its own margins, headings, tables, images, headers and footers, with a chip telling you which page you are on. **The page fills the width of the card** instead of floating on a grey desk, and the pager appears only when there is more than one page to move between.
+  </Card>
+  <Card title="Workbooks — .xlsx" icon="table">
+    A spreadsheet arrives as **a grid that kept the file's formatting**: its fills, fonts, borders, number formats, merged cells, frozen panes, column widths and sheet tabs. **Each sheet renders in its own direction**, so an Arabic interface never flips a Western workbook.
+  </Card>
+</CardGroup>
+
+A cell whose number format asks for a colour **by number** rather than by name — `[Color 3]` instead of `[Red]` — is read from the palette Excel actually means, and numbers past the eighth no longer come out with no colour at all.
+
+<Info>
+  The same grid now powers the **workspace viewer** too, which until **v1.0.301** flattened a workbook into plain HTML. And inside the chat, everything the file painted keeps exactly the colours it chose; only ink that would be **invisible on a dark background** falls back to something readable.
+</Info>
+
+## What Changed Behind Them
+
+The viewers are the visible half. A generated `.docx` written the old way — every heading hand-styled — cannot survive a style change, and an `.xlsx` full of formulas could arrive empty.
+
+### The presentation capability
+
+There is a new **`presentation`** capability: read a deck, build one, edit it, and check it before you send it.
+
+Building is **not a thin wrapper over a slide library**. You say what each slide *is* — a title, a section break, bullets, two columns, cards, stats, steps, a table, a chart, an image, a quote, a closing — and **the layout engine owns the geometry, the type scale and the palette**, so slides come out composed rather than assembled. The colour themes are **the same eight tested palettes the PDF documents use**, so a deck and its report look like they came from the same place. For the full manual, the guide is loaded through `deck_design` before anything is built.
+
+Reading works on **anyone's** deck — every slide's text and speaker notes, in order — and editing is exact-match text replacement that leaves PowerPoint's own structure untouched, because a generic rewrite is what makes PowerPoint refuse a file.
+
+### Documents that stay editable
+
+Documents are now built on **real named Word styles**, which is how Word itself expects a document to be put together: open one, change the Heading 1 style, and **the whole document follows**.
+
+The pipeline around it gained three steps, and each closes a failure that used to reach you:
+
+| Step | What it prevents |
+| --- | --- |
+| A **design pass** that sets the document's look up front | The look being re-decided paragraph by paragraph |
+| **`document_validate`** — a structural check | A broken file you only discover by opening it |
+| **Render-and-look**, via `document_render` → `pdf_render_pages` → `image_view` | Wolffish never seeing the page you will see |
+
+### Spreadsheets that recalculate
+
+A workbook full of formulas could come back as **a grid of empty cells**: the formulas were written but no value was ever stored beside them, and anything reading the file without opening Excel sees nothing.
+
+- Every formula write now **recalculates the whole workbook** and stores the computed value alongside the formula — so the file reads back as numbers, everywhere.
+- The result **names any cell that evaluated to an error** (`#DIV/0!`, `#REF!`, `#VALUE!`), so it gets fixed before the file reaches you.
+- Charts are now **native Excel charts** that Excel, Numbers and LibreOffice all draw and you can restyle — in seven kinds — instead of pictures pasted in.
+- Wolffish works to a stated standard for what makes a workbook good: **formulas instead of numbers it worked out itself**, every assumption in its own labelled cell, and the analyst's colour convention — blue for inputs, black for formulas — in financial models.
+
+## Reading a Document Instead of Unzipping It
+
+A deck you upload is now read properly instead of being unzipped by hand. The same is true on the [workspace](/architecture/workspace) side: opening a document from the file tree uses the same viewers described here, not a text-extraction fallback.
+
+<Note>
+  A **PDF** is a different pipeline with its own viewers, its own reading tools and its own design manual — see [Documents & Media](/capabilities/built-in-capabilities#documents-media). The distinction the app draws is **what the file is for**: a PDF is a document someone reads; a `.docx` someone opens in Word and edits, a `.pptx` someone presents, an `.xlsx` someone works in.
+</Note>
+
+## On the Phone
+
+[The mobile app](/integrations/mobile-app) draws the same three cards, and since mobile **v1.0.63** they **take the shape of the page they are showing**: a slide fills its card exactly, a document scrolls in the feed rather than paging, and the card an office file produces is the same width the agent's other cards stop at.
+
+## See Also
+
+<CardGroup cols={2}>
+  <Card title="Built-in Capabilities" icon="puzzle" href="/capabilities/built-in-capabilities#documents-media">
+    The document, pdf, spreadsheet and presentation capabilities in full
+  </Card>
+  <Card title="File Delivery" icon="paperclip" href="/capabilities/built-in-capabilities#file-delivery">
+    How a produced file reaches you on every surface
+  </Card>
+  <Card title="Mobile App" icon="mobile" href="/integrations/mobile-app#file-viewers">
+    The phone's own file viewers
+  </Card>
+  <Card title="Workspace" icon="folder" href="/architecture/workspace">
+    Where generated files live on disk
+  </Card>
+</CardGroup>

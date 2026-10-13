@@ -17,12 +17,14 @@ import { useTranslation } from 'react-i18next'
 export function ClosingOverlay(): React.JSX.Element | null {
   const { t } = useTranslation()
   const [closing, setClosing] = useState(false)
+  const [reason, setReason] = useState<'quit' | 'reboot'>('quit')
   const [progress, setProgress] = useState(0)
   const startedAtRef = useRef<number | null>(null)
 
   useEffect(() => {
-    return window.api.app.onClosingPending(() => {
+    return window.api.app.onClosingPending((event) => {
       if (startedAtRef.current === null) startedAtRef.current = Date.now()
+      if (event.reason === 'reboot') setReason('reboot')
       setClosing(true)
     })
   }, [])
@@ -42,12 +44,14 @@ export function ClosingOverlay(): React.JSX.Element | null {
 
   if (!closing) return null
 
+  const k = reason === 'reboot' ? 'closing.reboot' : 'closing'
+
   return (
     <div className="bg-bg/95 fixed inset-0 z-50 flex items-center justify-center px-6 py-12 backdrop-blur-sm">
       <div className="flex w-full max-w-md flex-col gap-6">
         <header className="flex flex-col items-center gap-2 text-center">
-          <h1 className="text-fg text-2xl font-semibold tracking-tight">{t('closing.title')}</h1>
-          <p className="text-muted text-sm leading-relaxed">{t('closing.subtitle')}</p>
+          <h1 className="text-fg text-2xl font-semibold tracking-tight">{t(`${k}.title`)}</h1>
+          <p className="text-muted text-sm leading-relaxed">{t(`${k}.subtitle`)}</p>
         </header>
 
         <section
@@ -58,8 +62,8 @@ export function ClosingOverlay(): React.JSX.Element | null {
         >
           <div className="flex flex-col items-center gap-3 py-2 text-center">
             <Radar01Icon size={36} className="text-muted animate-pulse" />
-            <p className="text-fg text-base font-medium">{t('closing.bodyTitle')}</p>
-            <p className="text-muted text-sm leading-relaxed">{t('closing.body')}</p>
+            <p className="text-fg text-base font-medium">{t(`${k}.bodyTitle`)}</p>
+            <p className="text-muted text-sm leading-relaxed">{t(`${k}.body`)}</p>
           </div>
           <div
             role="progressbar"

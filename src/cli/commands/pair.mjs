@@ -256,6 +256,23 @@ async function pairPhone(client, rest) {
   heading('Pair your phone')
 
   const before = await client.invoke('mobile:status').catch(() => null)
+  // The built-in relay address is the hosted relay that was retired: a QR
+  // carrying it pairs nothing. Say so, but still draw it — the user may be
+  // setting the relay on the phone side by hand.
+  if (before && before.relayUrl === before.defaultRelayUrl) {
+    out(
+      wrapText(c.yellow('  The relay is still the built-in address, which is no longer online.'), 0)
+    )
+    out(
+      wrapText(
+        c.gray(
+          'Deploy your own first and set it: wolffish settings → Mobile → Relay URL ("How to set it up" on that card lists every step).'
+        ),
+        2
+      )
+    )
+    out()
+  }
   if (before?.paired) {
     const name = before.pairing?.deviceName ?? 'a phone'
     out(wrapText(c.yellow(`  ${name} is already paired.`), 0))

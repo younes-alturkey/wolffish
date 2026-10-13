@@ -1,0 +1,126 @@
+{
+  "id": "2026-06-25_23-50-17",
+  "title": "All fish how are you today",
+  "model": null,
+  "createdAt": 1782420617378,
+  "updatedAt": 1782420788896,
+  "messages": [
+    {
+      "id": "m_1782420708084_74ff37",
+      "role": "user",
+      "content": "Hello all fish how are you today?",
+      "timestamp": 1782420708084,
+      "attachments": [
+        {
+          "type": "audio",
+          "filePath": "uploads/conv-2026-06-25_23-50-17/voice_832.ogg",
+          "originalName": "voice_832.ogg",
+          "mimeType": "audio/ogg",
+          "sizeBytes": 0
+        }
+      ],
+      "voicePrompt": true,
+      "voiceLang": "en"
+    },
+    {
+      "id": "m_1782420788894_7c1a7b",
+      "role": "assistant",
+      "content": "Voice memo",
+      "timestamp": 1782420788894,
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782420708086_hb3jmv",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782420708086_hb3jmv",
+          "segmentId": "seg_2",
+          "toolCallId": "call_00_dCnVFmY9Ye29fyorEVDC1794",
+          "name": "voice_respond",
+          "args": {
+            "text": "Doing great, Younes! Running smooth, no errors in sight, and ready to bite through whatever you throw at me today. What are we building? 🐟"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782420708086_hb3jmv",
+          "segmentId": "seg_3",
+          "toolCallId": "call_00_dCnVFmY9Ye29fyorEVDC1794",
+          "status": "success",
+          "output": "{\"filePath\":\"/Users/younes/.wolffish/workspace/speech/conv-2026-06-25_23-50-17/1782420778780-2c8a5823.mp3\",\"fileName\":\"1782420778780-2c8a5823.mp3\",\"sizeBytes\":81380,\"voice\":\"af_bella\",\"speed\":1,\"isResponse\":true,\"textLength\":139,\"modelIntegrity\":{\"kokoro-v1.0.onnx\":\"verified\",\"voices-v1.0.bin\":\"verified\"}}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782420708086_hb3jmv",
+          "segmentId": "seg_4",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782420708086_hb3jmv",
+          "segmentId": "seg_5",
+          "delta": "Voice memo"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1782420708086_hb3jmv",
+          "segmentId": "seg_7",
+          "stopReason": "end_turn",
+          "iterationCount": 2,
+          "reasoningContent": "The voice response was sent successfully. The runtime message is just telemetry — don't reply to it. The task is done — the user sent a voice note, I replied with voice, that's a complete turn. No more tool calls needed."
+        }
+      ],
+      "toolTimings": {
+        "call_00_dCnVFmY9Ye29fyorEVDC1794": {
+          "startedAt": 1782420716462,
+          "endedAt": 1782420786352
+        }
+      },
+      "stopReason": "end_turn"
+    }
+  ],
+  "channel": "telegram",
+  "stats": {
+    "allTime": {
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 1,
+      "inputTokens": 828,
+      "outputTokens": 119,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "cost": 0.0050293000000000004,
+      "processingMs": 80810,
+      "elapsedMs": 80810,
+      "apiMs": 66264,
+      "endedAt": 1782420788894,
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro"
+    },
+    "lastTurn": {
+      "endedAt": 1782420788894,
+      "elapsedMs": 80810,
+      "apiMs": 66264,
+      "apiCalls": 1,
+      "toolCalls": 1,
+      "inputTokens": 828,
+      "outputTokens": 119,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro",
+      "cost": 0.0050293000000000004
+    },
+    "meter": {
+      "contextTokens": 13347,
+      "contextBudget": 1000000,
+      "compactionAt": 725424,
+      "model": "deepseek-v4-pro"
+    }
+  }
+}

@@ -1,0 +1,338 @@
+---
+title: "Creating Capabilities"
+description: "Step-by-step guide to building a new Wolffish capability"
+---
+
+# What You'll Build
+
+This guide walks through creating a new capability from scratch. By the end, you'll have a working capability that Wolffish discovers, loads, and makes available to the LLM.
+
+<Note>
+  **Wolffish can do all of this itself.** The built-in [`skills`](/capabilities/built-in-capabilities) capability lets Wolffish list, search, toggle, delete, and **author** its own capabilities at runtime — so "do this every time" can become a reusable skill without you touching the filesystem. This guide is for when you'd rather build one by hand.
+</Note>
+
+<Card title="Prefer to let Wolffish build it? → Self-Authoring Skills" icon="wand-magic-sparkles" href="/capabilities/self-authoring-skills">
+  Ask in plain language and Wolffish authors, **tests**, and loads the capability itself — create → test → edit → verify, all in one turn. Includes a complete copy-paste example. Everything below is the **manual** path, for when you want to build one by hand.
+</Card>
+
+## Installing a Capability
+
+You don't have to touch the filesystem. The quickest way to add a capability is to **drop it onto Settings → Capabilities** — or click the import field to browse. Three shapes are accepted:
+
+<CardGroup cols={1}>
+  <Card title="A single SKILL.md" icon="file-lines">
+    A markdown procedure with YAML frontmatter (name, description, optional triggers). Imported as a **pure skill** — no tools to install.
+  </Card>
+  <Card title="A capability folder" icon="folder">
+    A folder with a `SKILL.md` plus an optional `plugin/` (`index.mjs`) and `package.json`. The **full capability** — tools and all.
+  </Card>
+  <Card title="A .zip archive" icon="file-zipper">
+    The same folder, zipped (e.g. macOS *Compress*). It's unpacked to a temp dir, validated, then added.
+  </Card>
+</CardGroup>
+
+Every drop is **validated before anything is written to disk**, so a bad import can't half-install or clobber an existing capability. On success the list refreshes and your capability appears immediately — tagged **Unknown** rather than **Official**, since it's yours and not bundled. If validation fails, the panel surfaces exactly what went wrong (missing `name`, invalid YAML, a `plugin/` with no entry file, a duplicate name…) in a code block, so you can fix it and re-drop.
+
+To remove an imported capability, click the **trash icon** next to it and confirm — that cleanly deletes its folder from `brain/cerebellum/`. Official and built-in capabilities have no delete button and can't be removed this way.
+
+<Tip>
+  Prefer the terminal? Create the folder by hand instead — the steps below show exactly that. After editing files manually, click **Resync** in the Capabilities panel (or restart Wolffish) to pick up the changes. The rules in [Packaging for Import and Sharing](#packaging-for-import-and-sharing) are worth following either way — they're what keep a capability clean and portable.
+</Tip>
+
+## Step 1: Create the Folder
+
+```bash
+mkdir -p ~/.wolffish/workspace/brain/cerebellum/my-capability
+```
+
+## Step 2: Write the SKILL.md
+
+Create `SKILL.md` with YAML frontmatter and markdown instructions:
+
+```yaml
+---
+name: my-capability
+description: What this capability does in one sentence
+triggers:
+  - keyword1
+  - keyword2
+tools:
+  - name: my_tool
+    description: What this tool does
+    parameters:
+      type: object
+      properties:
+        input:
+          type: string
+          description: The input to process
+      required:
+        - input
+---
+
+# My Capability
+
+Instructions for the LLM on how to use this capability.
+
+When the user asks about [topic], use the `my_tool` tool with the relevant input.
+Always [specific behavior guideline].
+Never [specific constraint].
+```
+
+## Step 3: Write the Plugin (Optional)
+
+If your capability needs custom code, create `plugin/index.mjs`:
+
+```javascript
+export default {
+  name: 'my-capability',
+  tools: ['my_tool'],
+
+  async init(context) {
+    // context.pluginDir — path to this plugin folder
+    // context.workspaceRoot — path to ~/.wolffish/workspace/
+  },
+
+  async execute(toolName, args) {
+    if (toolName === 'my_tool') {
+      // Your logic here
+      const result = doSomething(args.input)
+      return { success: true, output: result }
+    }
+    return { success: false, output: '', error: `Unknown tool: ${toolName}` }
+  },
+
+  async destroy() {
+    // Cleanup on shutdown
+  }
+}
+```
+
+## Step 4: Add Safety Patterns (If Needed)
+
+If your tool can perform dangerous operations, add patterns to the SKILL.md frontmatter:
+
+```yaml
+danger_patterns:
+  - "dangerous_regex_here"
+confirm_patterns:
+  - "risky_but_allowed_regex"
+```
+
+## Step 5: Test It
+
+Send a message that matches your triggers. Check:
+
+1. **Context debug file** (`brain/prefrontal/.debug/`) — Is your SKILL.md included in the context?
+2. **Event log** (`brain/corpus/`) — Is `tool.called` fired with your tool name?
+3. **Task log** (`brain/motor/tasks/`) — Does the task file show successful execution?
+
+## A Real, Working Example: a Weather Capability
+
+The walkthrough above used placeholders. Here is a **complete capability you can copy-paste today** that works immediately — it calls the free [Open-Meteo](https://open-meteo.com) API, which needs **no API key and no signup**. It demonstrates the whole pattern end to end: a real tool schema, two chained network calls (geocode a place name → fetch its current weather), input validation, graceful error handling, and a clean natural-language result.
+
+### Folder layout
+
+```
+~/.wolffish/workspace/brain/cerebellum/weather/
+├── SKILL.md
+└── plugin/
+    └── index.mjs
+```
+
+<Note>
+  Built-in capabilities are **dot-prefixed** (`.shell`, `.web-search`) so they stay hidden from a casual `ls`. Your own capabilities don't need the dot — `weather` is fine and easier to find. Both are discovered the same way.
+</Note>
+
+### SKILL.md
+
+```yaml
+---
+name: weather
+description: Get the current weather for any city or place
+triggers:
+  - weather
+  - temperature
+  - forecast
+  - how hot
+  - how cold
+  - is it raining
+tools:
+  - name: weather_get
+    description: Get current weather conditions for a city, town, or place name.
+    parameters:
+      type: object
+      properties:
+        location:
+          type: string
+          description: City or place name, e.g. "Tokyo" or "Riyadh, Saudi Arabia"
+        units:
+          type: string
+          enum: [celsius, fahrenheit]
+          description: Temperature units. Defaults to celsius.
+      required:
+        - location
+---
+
+# Weather
+
+When the user asks about the weather, temperature, or forecast for a place,
+call `weather_get` with the location they named.
+
+- If they don't specify units, use celsius (the API default).
+- If they don't name a location, ask which city before calling the tool — never guess.
+- Data comes from Open-Meteo (no API key). Report sky, temperature, humidity, and
+  wind in one natural sentence.
+```
+
+### plugin/index.mjs
+
+```javascript
+// Real, working plugin — no API key required.
+// Open-Meteo docs: https://open-meteo.com/en/docs
+
+const GEOCODE = 'https://geocoding-api.open-meteo.com/v1/search'
+const FORECAST = 'https://api.open-meteo.com/v1/forecast'
+
+// WMO weather-interpretation codes → human text
+const SKY = {
+  0: 'clear sky', 1: 'mainly clear', 2: 'partly cloudy', 3: 'overcast',
+  45: 'fog', 48: 'rime fog',
+  51: 'light drizzle', 53: 'drizzle', 55: 'dense drizzle',
+  61: 'light rain', 63: 'rain', 65: 'heavy rain',
+  71: 'light snow', 73: 'snow', 75: 'heavy snow',
+  80: 'rain showers', 81: 'rain showers', 82: 'violent rain showers',
+  95: 'thunderstorm', 96: 'thunderstorm with hail', 99: 'severe thunderstorm'
+}
+
+export default {
+  name: 'weather',
+  tools: ['weather_get'],
+
+  async execute(toolName, args) {
+    if (toolName !== 'weather_get') {
+      return { success: false, output: '', error: `Unknown tool: ${toolName}` }
+    }
+
+    const location = String(args.location ?? '').trim()
+    if (!location) {
+      return { success: false, output: '', error: 'Missing required "location" argument' }
+    }
+    const units = args.units === 'fahrenheit' ? 'fahrenheit' : 'celsius'
+
+    try {
+      // 1) Resolve the place name to coordinates
+      const geoRes = await fetch(
+        `${GEOCODE}?name=${encodeURIComponent(location)}&count=1&language=en&format=json`
+      )
+      if (!geoRes.ok) {
+        return { success: false, output: '', error: `Geocoding failed (HTTP ${geoRes.status})` }
+      }
+      const place = (await geoRes.json()).results?.[0]
+      if (!place) {
+        return { success: false, output: '', error: `No location found for "${location}"` }
+      }
+
+      // 2) Fetch current conditions for those coordinates
+      const res = await fetch(
+        `${FORECAST}?latitude=${place.latitude}&longitude=${place.longitude}` +
+        `&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code` +
+        `&temperature_unit=${units}`
+      )
+      if (!res.ok) {
+        return { success: false, output: '', error: `Forecast failed (HTTP ${res.status})` }
+      }
+
+      const data = await res.json()
+      const c = data.current
+      const u = data.current_units
+      const sky = SKY[c.weather_code] ?? `code ${c.weather_code}`
+      const where = [place.name, place.admin1, place.country].filter(Boolean).join(', ')
+
+      return {
+        success: true,
+        output:
+          `Weather in ${where}: ${sky}, ${c.temperature_2m}${u.temperature_2m}, ` +
+          `humidity ${c.relative_humidity_2m}${u.relative_humidity_2m}, ` +
+          `wind ${c.wind_speed_10m} ${u.wind_speed_10m}.`
+      }
+    } catch (err) {
+      return { success: false, output: '', error: `Weather lookup failed: ${err.message}` }
+    }
+  }
+}
+```
+
+### Why there are no `danger_patterns`
+
+`weather_get` only reads public data over HTTPS — it can't delete, spend, or overwrite anything. Read-only tools like this need **no** safety patterns. Reserve `danger_patterns` / `confirm_patterns` for tools that can actually cause harm (see [Safety Patterns](/extending/safety-patterns)).
+
+### Try it
+
+Restart Wolffish so the cerebellum loads the new folder, then ask:
+
+> *"What's the weather in Tokyo?"*
+
+You should see the agent call `weather_get` and reply with something like *"Weather in Tokyo, Tokyo, Japan: partly cloudy, 22.4°C, humidity 61%, wind 9.3 km/h."* Trace the call in `brain/corpus/<today>.log.md` to confirm the arguments and output.
+
+<Tip>
+  This is the template for almost any read-only integration. Swap the two `fetch` calls for a different API — Hacker News, currency rates, your own server — keep the validate → call → format → return shape, and you have a new capability in minutes.
+</Tip>
+
+## Pure Skill vs Plugin: When to Use Which
+
+Use a **pure skill** when your capability can be accomplished with existing tools (like `shell_exec` or `file_read`), or when you want to shape agent behaviour without adding new tools. The SKILL.md instructions are injected into a `<skills>` section in the prompt when triggered.
+
+Use a **plugin** when you need custom logic that can't be expressed as shell commands or file operations — API calls, data processing, custom protocols, etc.
+
+<Tip>
+  Start with a pure skill. If you find the LLM struggles with complex tool chains, upgrade to a plugin. Pure skills are simpler to write, debug, and share.
+</Tip>
+
+### Always-On Pure Skills
+
+Some pure skills should apply to every message — planning discipline, output formatting, safety constraints. Use the wildcard trigger `"*"`:
+
+```yaml
+---
+name: planning
+description: Think before acting.
+triggers:
+  - "*"
+tools: []
+---
+
+# Planning
+
+Before executing any multi-step task, state your plan first...
+```
+
+Always-on skills are injected before keyword-matched skills and **don't count against the top-3 limit**. A message can activate up to 3 keyword-matched skills on top of any number of always-on skills.
+
+## Capability Checklist
+
+Before shipping your capability:
+
+- [ ] SKILL.md has accurate triggers (test with different phrasings)
+- [ ] Tool parameter descriptions are clear (the LLM reads them)
+- [ ] Danger patterns cover all destructive operations
+- [ ] Confirm patterns cover risky-but-legitimate operations
+- [ ] Plugin handles errors gracefully (returns `ToolResult` with `success: false`)
+- [ ] The markdown body has clear, specific instructions
+- [ ] Tested with both cloud and local models
+
+## Packaging for Import and Sharing
+
+Whether someone adds your capability as a folder or a `.zip`, the importer runs the same checks. Meeting them keeps your capability clean, portable, and safe to share:
+
+- **Exactly one `SKILL.md`.** The importer finds it at the root or up to three folders deep, so a zip of a folder (`my-skill/SKILL.md`) just works. Zero or more than one `SKILL.md` is rejected.
+- **Valid frontmatter.** It must begin with a `---` block that parses as YAML and has a non-empty `name`. Optional fields are shape-checked when present: `triggers` and `requires` must be lists of strings, and every entry in `tools` needs a `name`. See the [SKILL.md Reference](/capabilities/skill-md-reference).
+- **Something to load.** A SKILL.md with an empty body *and* no tools does nothing, and is rejected — give it a body, tools, or both.
+- **A plugin needs an entry file.** If you ship a `plugin/` folder, it must contain `index.mjs`, `index.js`, or `index.cjs`. Declaring `tools` in a folder/zip with no `plugin/` is rejected — the tools would have nothing to run.
+- **A unique name.** The `name` can't collide with a capability you already have (bundled or imported). The on-disk folder name is derived from `name` by slugifying it (`My Cool Skill` → `my-cool-skill`).
+- **Junk is stripped automatically.** `node_modules/`, `.git/`, `.DS_Store`, and `__MACOSX/` are skipped on import — don't bother removing them first, and leave `node_modules/` out of your zip to keep it small.
+- **Size limits.** `SKILL.md` ≤ 1 MB, total payload ≤ 50 MB, ≤ 5000 files. Zips are extracted with path-traversal protection.
+- **Dependencies install lazily.** Anything in `requires` (system tools) or your `package.json` (npm packages) installs the **first time the capability runs**, not at import — so importing stays fast and offline-safe.
+
+<Tip>
+  The simplest way to hand someone a capability is to zip the folder and send it — they drop the `.zip` onto their Capabilities panel and it's live. For ongoing distribution, push it to git instead (see [Community Capabilities](/capabilities/community-capabilities)).
+</Tip>

@@ -1,0 +1,144 @@
+---
+title: "Event Logs"
+description: "The corpus event bus logs every event to daily markdown files"
+---
+
+# A Complete Chronological Record
+
+Every event that fires in Wolffish is logged to a daily markdown file. This gives you a complete chronological record of everything that happened — inputs, classifications, LLM calls, tool executions, safety decisions, memory operations, and more.
+
+## Location
+
+```
+brain/corpus/YYYY-MM-DD.log.md
+```
+
+One file per day. Today's log is always at:
+```bash
+brain/corpus/$(date +%Y-%m-%d).log.md
+```
+
+## How It Works
+
+The `corpus` event bus wraps every `emit()` call with logging. Events are buffered for 2 seconds before flushing to disk — not quite real-time, but close enough for debugging.
+
+The daily logs are also **indexed by cortex** (as the `corpus` source), so within the retention window you don't have to grep by hand — Wolffish itself can find events via `memory_search`, and so can you by just asking it.
+
+<Info>
+Raw event logs are purged after 7 days **by design** — they are the forensic layer, not the memory layer. What matters longer than a week persists elsewhere: episodes and weekly summaries are kept forever, and automation runs are recorded durably in `brain/brainstem/run-history.md` (also indexed), which outlives the purge. If you need raw logs longer, copy them out of the `corpus/` directory.
+</Info>
+
+## Event Types
+
+The system emits dozens of event types. Here are the most useful for debugging:
+
+| Event | When It Fires |
+|---|---|
+| `message.received` | User sends a message |
+| `message.classified` | Message intent is determined |
+| `context.built` | Prefrontal finishes assembling context |
+| `llm.request` | Request sent to LLM provider |
+| `llm.response` | LLM returns a response |
+| `llm.retry` | Provider call is retried after a transient error |
+| `turn.usage` | Whole-turn token/cost roll-up (with the cache split) |
+| `tool.called` | LLM requests a tool call |
+| `tool.completed` | Tool execution succeeds |
+| `tool.failed` | Tool execution fails |
+| `safety.allowed` | Amygdala allows an operation |
+| `safety.blocked` | Amygdala blocks an operation |
+| `safety.confirmNeeded` | Amygdala pauses a call for user approval |
+| `safety.approved` | User approves a flagged operation |
+| `safety.denied` | User denies a flagged operation |
+| `task.created` | Motor begins a new task |
+| `task.stepCompleted` | A task step completes |
+| `task.completed` | Task finishes successfully |
+| `task.failed` | Task fails after retries |
+| `memory.episodeSaved` | Hippocampus saves an episode |
+| `memory.consolidated` | Weekly consolidation runs |
+| `memory.knowledgeUpdated` | A durable fact lands in a knowledge file |
+| `index.reindexed` | Cortex finishes bringing the index current |
+| `brainstem.jobStarted` / `jobCompleted` / `jobFailed` | A scheduled heartbeat job runs |
+| `health.warning` | Hypothalamus detects an issue |
+| `health.critical` | System health is degraded |
+
+## Log Format
+
+Each entry is a timestamp heading followed by the event name and its full payload as one JSON line:
+
+```markdown
+## 14:30:22.847
+- message.received → {"content":"Can you check if the server is running?","timestamp":"2026-07-03T14:30:22.847Z"}
+
+## 14:30:23.156
+- context.built → {"tokenCount":5121,"tokenBudget":1000000,"sectionsIncluded":["identity","device","prefrontal","capabilities","memory_map","runtime"]}
+
+## 14:30:24.302
+- llm.response → {"provider":"anthropic","inputTokens":9412,"outputTokens":89,"cacheCreationTokens":0,"cacheReadTokens":9180,"durationMs":1146}
+
+## 14:30:24.310
+- tool.called → {"taskId":"TASK-1747","tool":"shell_exec","args":{"command":"systemctl status myapp"}}
+
+## 14:30:24.315
+- safety.allowed → {"tool":"shell_exec","args":{"command":"systemctl status myapp"}}
+
+## 14:30:25.102
+- tool.completed → {"taskId":"TASK-1747","tool":"shell_exec","durationMs":792}
+
+## 14:30:25.108
+- task.completed → {"taskId":"TASK-1747","durationMs":792}
+```
+
+## Tracing a Task
+
+Tool and task events share a `taskId`. To follow one task through the log, grep for its ID:
+
+```bash
+grep -B 1 "TASK-1747" brain/corpus/2026-07-03.log.md
+```
+
+Entries are written in chronological order, so a plain read of the file around a timestamp reconstructs the whole turn: message in → context built → LLM response → tool calls → task result. For a richer per-step transcript of the same task, open `brain/motor/tasks/TASK-1747.md`.
+
+## Common Debugging Scenarios
+
+<Tabs>
+  <Tab title="Why wasn't the tool called?">
+    Read the events around the message's timestamp:
+    1. `message.received` — did the message arrive at all?
+    2. `context.built` — did context assembly succeed (`sectionsIncluded` should list `capabilities`)?
+    3. `tool.called` — did the model request the tool?
+
+    If the model didn't produce a tool call, the issue is in the context (check the debug snapshot — was the capability in the `<capabilities>` index?). If it did but nothing happened next, check for a `safety.blocked` event.
+  </Tab>
+
+  <Tab title="Why was it blocked?">
+    Search for `safety.blocked` events:
+    ```bash
+    grep -B 1 "safety.blocked" brain/corpus/2026-07-03.log.md
+    ```
+    The `reason` field tells you which `danger_patterns` regex matched. Either adjust the pattern in the SKILL.md or confirm the operation when prompted.
+  </Tab>
+
+  <Tab title="Did memory save?">
+    Search for `memory.episodeSaved` events:
+    ```bash
+    grep -B 1 "memory.episodeSaved" brain/corpus/2026-07-03.log.md
+    ```
+    Every completed turn appends to the daily episode file, so a missing `memory.episodeSaved` around a turn's timestamp means the turn didn't finish cleanly — look for a `task.failed` or `llm.error` nearby.
+  </Tab>
+</Tabs>
+
+## Live Monitoring
+
+Watch the log in real time during development:
+
+```bash
+tail -f ~/.wolffish/workspace/brain/corpus/$(date +%Y-%m-%d).log.md
+```
+
+<Tip>
+Combine with `grep --line-buffered` to filter for specific event types in real time:
+
+```bash
+tail -f brain/corpus/$(date +%Y-%m-%d).log.md | grep --line-buffered "safety\|tool\."
+```
+</Tip>

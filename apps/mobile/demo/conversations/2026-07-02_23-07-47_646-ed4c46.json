@@ -1,0 +1,116 @@
+{
+  "id": "2026-07-02_23-07-47_646-ed4c46",
+  "title": "Https://allmoviehub.org/movie/pressure-z-Ul_X-dd353920aa/",
+  "model": null,
+  "createdAt": 1783019267646,
+  "updatedAt": 1783019281702,
+  "messages": [
+    {
+      "id": "m_1783019268134_204d69",
+      "role": "user",
+      "content": "https://allmoviehub.org/movie/pressure-z-Ul_X-dd353920aa/",
+      "timestamp": 1783019268134
+    },
+    {
+      "id": "m_1783019281701_278fee",
+      "role": "assistant",
+      "content": "Got it — **Pressure** (2026), the D-Day thriller. Here's what's on that page:\n\n| Detail | |\n|---|---|\n| **Starring** | Andrew Scott, Brendan Fraser, Kerry Condon, Chris Messina, Damian Lewis |\n| **Director** | Anthony Maras |\n| **Genre** | History / Thriller / War |\n| **Plot** | The tense 72 hours before D-Day — Eisenhower and his weather officer Captain Stagg face the call to launch history's biggest seaborne invasion or risk losing the war |\n| **Duration** | 1h 40m |\n| **Country** | UK / France |\n| **Rating** | 8.0 |\n\nSolid cast. Scott as the weather officer, Fraser as Eisenhower presumably. What did you want to do with this — just checking it out, or did you need something specific?",
+      "timestamp": 1783019281701,
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783019268148_f8koas",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783019268148_f8koas",
+          "segmentId": "seg_2",
+          "toolCallId": "call_00_x324TK1ASJVp3EBONsOy2259",
+          "name": "web_fetch",
+          "args": {
+            "url": "https://allmoviehub.org/movie/pressure-z-Ul_X-dd353920aa/",
+            "maxLength": 10000
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783019268148_f8koas",
+          "segmentId": "seg_3",
+          "toolCallId": "call_00_x324TK1ASJVp3EBONsOy2259",
+          "status": "success",
+          "output": "- HOME\n\n- MOVIES\n\n- Pressure\n\n# Pressure\n\nIn the tense 72 hours before D-Day, and the fate of the free world hanging in the balance, General Dwight D. Eisenhower and Captain James Stagg face an impossible choice—launch the largest and most dangerous seaborne invasion in history or risk losing the war altogether.\n\nGenre: History, Thriller, War\n\nActor: Andrew Scott, Brendan Fraser, Kerry Condon, Chris Messina, Damian Lewis, Con O'Neill, Tamsin Topolski, Henry Ashton, Michael Benz\n\nDirector: Anthony Maras\n\nCountry: United Kingdom, France\n\nType: movie\n\nDuration: 1h 40m\n\nQuality: HD\n\nRelease: 2026\n\nRating: 8.0\n\n## Tolkien\n\n## The Professor and the Madman\n\n## The Spy Gone North\n\n## Never Look Away\n\n## The Photographer of Mauthausen\n\n## 100 Years Of The RAF\n\n## Valley of the Wolves: Homeland\n\n## Smash and Grab: The Story of the Pink Panthers\n\n## 1911\n\n## The First King\n\n## The Best of Enemies\n\n## Apollo 11"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783019268148_f8koas",
+          "segmentId": "seg_4",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1783019268148_f8koas",
+          "segmentId": "seg_5",
+          "delta": "Got it — **Pressure** (2026), the D-Day thriller. Here's what's on that page:\n\n| Detail | |\n|---|---|\n| **Starring** | Andrew Scott, Brendan Fraser, Kerry Condon, Chris Messina, Damian Lewis |\n| **Director** | Anthony Maras |\n| **Genre** | History / Thriller / War |\n| **Plot** | The tense 72 hours before D-Day — Eisenhower and his weather officer Captain Stagg face the call to launch history's biggest seaborne invasion or risk losing the war |\n| **Duration** | 1h 40m |\n| **Country** | UK / France |\n| **Rating** | 8.0 |\n\nSolid cast. Scott as the weather officer, Fraser as Eisenhower presumably. What did you want to do with this — just checking it out, or did you need something specific?"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1783019268148_f8koas",
+          "segmentId": "seg_184",
+          "stopReason": "end_turn",
+          "iterationCount": 2,
+          "reasoningContent": "The user shared a link to a movie page about \"Pressure\" — a 2026 WWII thriller starring Andrew Scott, Brendan Fraser, and Kerry Condon about the 72 hours before D-Day. But they haven't asked me anything specific. They just dropped the link.\n\nLet me see what they might want. The page shows the movie details. I should just present what I found and ask what they want me to do with it. Keep it casual."
+        }
+      ],
+      "toolTimings": {
+        "call_00_x324TK1ASJVp3EBONsOy2259": {
+          "startedAt": 1783019273808,
+          "endedAt": 1783019275498
+        }
+      },
+      "stopReason": "end_turn"
+    }
+  ],
+  "channel": "telegram",
+  "stats": {
+    "allTime": {
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 1,
+      "inputTokens": 14,
+      "outputTokens": 596,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "cost": 0.0053098,
+      "processingMs": 13567,
+      "elapsedMs": 13567,
+      "apiMs": 11125,
+      "endedAt": 1783019281701,
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro"
+    },
+    "lastTurn": {
+      "endedAt": 1783019281701,
+      "elapsedMs": 13567,
+      "apiMs": 11125,
+      "apiCalls": 1,
+      "toolCalls": 1,
+      "inputTokens": 14,
+      "outputTokens": 596,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro",
+      "cost": 0.0053098
+    },
+    "meter": {
+      "contextTokens": 13010,
+      "contextBudget": 1000000,
+      "compactionAt": 725424,
+      "model": "deepseek-v4-pro"
+    }
+  }
+}

@@ -1,7 +1,11 @@
 #!/bin/sh
 set -eu
 
-RELEASES_BASE="https://releases.wolffi.sh"
+# Every GitHub release carries the installers and the electron-updater
+# manifests (latest-mac.yml, latest.yml, latest-linux.yml); this URL answers
+# with a redirect to the newest release's copy of whatever file is named.
+# WOLFFISH_RELEASES_BASE overrides it: a mirror, or a local copy under test.
+RELEASES_BASE="${WOLFFISH_RELEASES_BASE:-https://github.com/younes-alturkey/wolffish/releases/latest/download}"
 TEMP_DIR=""
 
 # The name dpkg and rpm know Wolffish by. electron-builder derives it from
@@ -75,6 +79,7 @@ usage() {
   printf "  --version          Print the latest available version and exit\n"
   printf "  --no-modify-path   Never touch a shell profile (AppImage installs only)\n"
   printf "\nInstalls Wolffish on macOS (.dmg), Linux (.deb/.rpm/.AppImage), or Windows (.exe).\n"
+  printf "One line, any of the three:\n\n  curl -fsSL %s/install.sh | sh\n\n" "$RELEASES_BASE"
   exit 0
 }
 
@@ -612,7 +617,25 @@ main() {
   # people to run a command that cannot resolve yet.
   cli_path_notice
   [ "$os" = "linux" ] && headless_start_notice
+  web_ui_notice "$os"
   return 0
+}
+
+# The Web UI is on from the first launch behind a master password the app
+# generates — on a box with no screen, the terminal is the only place that
+# password can be read, and the browser on a phone is the interface. Say so,
+# with the three commands in the order they are needed, and on a server put
+# the service first: it is what keeps the agent up and its certificate renewed.
+web_ui_notice() {
+  printf "  The Web UI is on from the first launch, behind a master password Wolffish generates.\n"
+  if [ "$1" = "linux" ] && is_headless_host; then
+    printf "  On a server, register the service first — it survives reboots and keeps HTTPS renewed:\n\n"
+    printf "    ${BOLD}wolffish service install${RESET}\n\n"
+  fi
+  printf "  Then, once the agent is running:\n\n"
+  printf "    ${BOLD}wolffish web password${RESET}        the password to type on your phone, once\n"
+  printf "    ${BOLD}wolffish web${RESET}                 the address to open — http://<this-ip>:8787\n"
+  printf "    ${BOLD}wolffish web https enable${RESET}    a trusted certificate for this box, HTTPS on 443\n\n"
 }
 
 # The `wolffish` command is written by the app itself on first launch (it is

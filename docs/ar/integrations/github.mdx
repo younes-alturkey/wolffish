@@ -1,0 +1,238 @@
+---
+title: "GitHub"
+description: "تكامل المستودعات والمشكلات وطلبات السحب و CI/CD"
+---
+
+# المستودعات والمشكلات وطلبات السحب
+
+يربط تكامل GitHub تطبيق وولفيش بواجهة GitHub API لإدارة المستودعات والمشكلات وطلبات السحب وسير العمل والإصدارات والمزيد. يستخدم رمز وصول شخصي (PAT) للمصادقة.
+
+## الإعداد
+
+<Steps>
+  <Step title="إنشاء رمز">
+    انتقل إلى [github.com/settings/tokens](https://github.com/settings/tokens) وأنشئ رمز وصول شخصي جديد (كلاسيكي أو دقيق).
+  </Step>
+  <Step title="اختيار النطاقات">
+    للحصول على الوظائف الكاملة، اختر كحد أدنى: `repo` و`read:org`. راجع جدول النطاقات أدناه للتفاصيل.
+  </Step>
+  <Step title="التهيئة في وولفيش">
+    افتح **الإعدادات ← الخدمات ← GitHub**، واضغط **إضافة**، وأعطِ الاتصال تسمية (مثل «شخصي»)، والصق رمزك. زرّ **اختبار** يتحقق منه ويعرض الحساب الذي يقود إليه.
+  </Step>
+</Steps>
+
+## عدّة حسابات
+
+يمكنك ربط أي عدد من حسابات GitHub، كلٌّ منها اتصالٌ بتسميته الخاصة («شخصي»، «عمل»). وكلّ أدوات `github_*` تقبل معامل `connection` اختيارياً يسمّي التسمية:
+
+- **اتصال واحد مُهيّأ** — يُستخدم تلقائياً؛ لا تحتاج لتمرير شيء.
+- **عدّة اتصالات** — تطلب الأدوات التسمية عند الالتباس، وأداة `github_connections` الجديدة تسرد المتاح. في المحادثة يكفي أن تقول أيّ حسابٍ تقصد: «أنشئ المشكلة على حساب العمل».
+
+الإعدادات القديمة برمزٍ واحد تنتقل تلقائياً إلى اتصالٍ بتسمية.
+
+### نطاقات الرمز المطلوبة
+
+| النطاق | يمنح الوصول إلى |
+|---|---|
+| `repo` | التحكم الكامل بالمستودعات الخاصة (المشكلات، طلبات السحب، الشفرة، الإصدارات، سير العمل) |
+| `read:org` | وصول للقراءة فقط لعضويات المنظمة والفرق |
+
+### النطاقات الاختيارية
+
+| النطاق | يمنح الوصول إلى |
+|---|---|
+| `gist` | إنشاء وإدارة المقتطفات |
+| `notifications` | قراءة الإشعارات |
+| `workflow` | تشغيل أحداث إرسال سير عمل GitHub Actions |
+
+<Tip>
+  توفر الرموز الدقيقة صلاحيات أكثر تحديدًا لكنها تتطلب تهيئة لكل مستودع. الرموز الكلاسيكية مع `repo` + `read:org` هي أبسط طريقة للحصول على الوظائف الكاملة.
+</Tip>
+
+## قدرتان، منصة واحدة
+
+يفصل وولفيش بين عمليات git المحلية وعمليات GitHub API عن بُعد:
+
+<CardGroup cols={2}>
+  <Card title="git (مهارة صرفة)" icon="code-branch">
+    عمليات git المحلية — commit و branch و merge و rebase و diff و log. تستخدم `shell_exec` لتنفيذ أوامر git. لا حاجة لرمز.
+  </Card>
+  <Card title="github (إضافة)" icon="github">
+    عمليات GitHub API عن بُعد — المشكلات وطلبات السحب وسير العمل والإصدارات. تستخدم Octokit لاستدعاء GitHub REST API. تتطلب رمز PAT.
+  </Card>
+</CardGroup>
+
+قدرة `git` متاحة دائمًا (هي مهارة صرفة تستخدم أوامر الطرفية). قدرة `github` تتطلب رمزًا مهيّأً لإجراء استدعاءات API.
+
+## الأدوات المتاحة
+
+كلّ أداة `github_*` تأخذ تسمية `connection` اختياريّة (انظر [الحسابات المتعدّدة](#الحسابات-المتعددة)).
+
+### الحساب والاتصالات
+
+| الأداة | الوصف |
+|---|---|
+| `github_connections` | سرد الاتصالات المهيّأة — تسمياتها والحساب الذي يحلّ إليه كلٌّ منها |
+| `github_get_authenticated_user` | ملفّ المستخدم المُصادَق: اسم المستخدم والاسم والبريد والنبذة وأعداد المستودعات والمتابعين |
+| `github_list_user_orgs` | المنظّمات التي ينتمي إليها المستخدم المُصادَق |
+
+### المستودعات
+
+| الأداة | الوصف |
+|---|---|
+| `github_list_repos` | سرد مستودعات المستخدم المُصادَق |
+| `github_list_org_repos` | سرد مستودعات منظّمة |
+| `github_get_repo` | تفاصيل المستودع — المشكلات المفتوحة والنجوم والتفرّعات والفرع الافتراضيّ |
+| `github_create_repo` | إنشاء مستودع |
+| `github_delete_repo` | حذف مستودع نهائيًّا (لا رجعة فيه) |
+| `github_fork_repo` | تفريع مستودع |
+| `github_star_repo` / `github_unstar_repo` | تنجيم مستودع أو إلغاء تنجيمه |
+| `github_list_stargazers` | سرد من نجّموا المستودع |
+| `github_list_repo_topics` / `github_replace_repo_topics` | قراءة مواضيع المستودع أو استبدالها |
+| `github_get_file_content` | قراءة محتوى ملفّ من مستودع |
+| `github_search_code` | البحث في الشيفرة عبر GitHub |
+
+### الفروع والالتزامات
+
+| الأداة | الوصف |
+|---|---|
+| `github_list_branches` | سرد الفروع وبيان المحميّ منها |
+| `github_delete_branch` | حذف فرع |
+| `github_get_commit` | تفاصيل التزام — البصمة والمؤلّف والرسالة والملفّات المتغيّرة |
+| `github_compare_commits` | مقارنة التزامَين أو فرعَين أو وسمَين (تقدّم/تأخّر، والالتزامات، والملفّات) |
+
+### المشكلات
+
+| الأداة | الوصف |
+|---|---|
+| `github_list_issues` | سرد المشكلات برقمها وعنوانها وحالتها وتصنيفاتها والمكلَّف بها |
+| `github_get_issue` | مشكلة واحدة بمتنها الكامل وتعليقاتها |
+| `github_create_issue` | إنشاء مشكلة |
+| `github_close_issue` | إغلاق مشكلة |
+| `github_list_comments_on_issue` | سرد التعليقات على مشكلة أو طلب سحب |
+| `github_add_comment` | التعليق على مشكلة أو طلب سحب |
+
+### التصنيفات والمعالم
+
+| الأداة | الوصف |
+|---|---|
+| `github_list_labels` | سرد التصنيفات بلونها ووصفها |
+| `github_create_label` | إنشاء تصنيف |
+| `github_add_labels_to_issue` | إضافة تصنيفات إلى مشكلة أو طلب سحب |
+| `github_list_milestones` | سرد المعالم بتواريخ استحقاقها وأعداد مشكلاتها |
+| `github_create_milestone` | إنشاء معلَم |
+
+### طلبات السحب
+
+| الأداة | الوصف |
+|---|---|
+| `github_list_prs` | سرد طلبات السحب بحالتها وفرعَي المصدر والأساس ومؤلّفها |
+| `github_get_pr` | طلب سحب واحد بمتنه وإحصاءات فروقه وحالة مراجعته |
+| `github_create_pr` | فتح طلب سحب |
+| `github_update_pr` | تحديث عنوان طلب السحب أو متنه أو حالته أو فرع أساسه |
+| `github_merge_pr` | دمج طلب سحب |
+| `github_list_pr_files` | الملفّات المتغيّرة في طلب سحب — الإضافات والحذوفات والرقعة |
+| `github_list_pr_reviews` | مراجعات طلب السحب — المراجِع وحالته ومتنه |
+| `github_request_reviewers` | طلب مراجِعين على طلب سحب |
+
+### التكامل المستمرّ وActions
+
+| الأداة | الوصف |
+|---|---|
+| `github_get_workflow_runs` | تشغيلات سير العمل الأخيرة لمستودع |
+| `github_get_workflow_run_logs` | سجلّات تشغيلٍ ما، مقصوصة لتناسب السياق |
+| `github_dispatch_workflow` | تشغيل سير عمل عبر حدث `workflow_dispatch` |
+| `github_rerun_workflow` | إعادة تشغيل تشغيلٍ فاشلٍ أو مكتمل |
+| `github_cancel_workflow_run` | إلغاء تشغيلٍ جارٍ |
+
+### الإصدارات والمقتطفات
+
+| الأداة | الوصف |
+|---|---|
+| `github_list_releases` | سرد الإصدارات بوسمها واسمها وتاريخ نشرها وحالتها (مسودّة/ما قبل الإصدار) |
+| `github_get_release` | إصدار واحد بمتنه وروابط تنزيل أصوله |
+| `github_create_release` | إنشاء إصدار على وسم |
+| `github_list_gists` | سرد مقتطفات المستخدم المُصادَق |
+| `github_create_gist` | إنشاء مقتطف |
+
+### المتعاونون والإشعارات
+
+| الأداة | الوصف |
+|---|---|
+| `github_list_collaborators` | سرد المتعاونين بأدوارهم وصلاحيّاتهم |
+| `github_add_collaborator` | دعوة متعاون |
+| `github_remove_collaborator` | إزالة متعاون |
+| `github_list_notifications` | سرد الإشعارات |
+| `github_mark_notifications_read` | تعليم كلّ الإشعارات مقروءةً |
+
+## المحفّزات
+
+تُفعّل قدرة GitHub عندما تتطابق رسالتك مع أي من هذه الأنماط:
+
+```
+github, pull request, PR, issue, repo, repository, branch, merge,
+CI, actions, workflow, commit history, code review, release, gist,
+organization, org, collaborator, invite, comment, label, milestone,
+review, reviewer, notification, star, fork, compare, dispatch, topic
+```
+
+<Note>
+  أوامر git المحلية (commit و push و diff و log) تُفعّل قدرة `git`، وليس `github`. إذا قلت "ادفع إلى origin"، تنفّذ مهارة `git` الأمر `git push` عبر `shell_exec`. إذا قلت "أنشئ طلب سحب"، تستدعي إضافة `github` واجهة GitHub API.
+</Note>
+
+## أمثلة على سير العمل
+
+<AccordionGroup>
+  <Accordion title="إنشاء طلب سحب">
+    ```
+    You: "Create a PR for my current branch"
+    Wolffish: Reads the current branch name, detects the remote, and calls
+    github_create_pr with the branch as head and main as base.
+    ```
+  </Accordion>
+  <Accordion title="عرض المشكلات المفتوحة">
+    ```
+    You: "What are the open issues on wolffish-app?"
+    Wolffish: Calls github_list_issues with state=open and returns a formatted list
+    with titles, labels, and assignees.
+    ```
+  </Accordion>
+  <Accordion title="فحص حالة CI">
+    ```
+    You: "What's the CI status on my latest PR?"
+    Wolffish: Lists recent PRs, finds yours, and checks the workflow run status.
+    ```
+  </Accordion>
+  <Accordion title="تشغيل عملية نشر">
+    ```
+    You: "Trigger the deploy workflow on main"
+    Wolffish: Calls github_dispatch_workflow with the workflow ID and ref=main.
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## مرجع التهيئة
+
+تُخزَّن الاتصالات في `config.json` كمصفوفةٍ بتسميات:
+
+```json
+{
+  "github": {
+    "connections": [
+      {
+        "id": "gh-a1b2c3",
+        "label": "شخصي",
+        "token": "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "login": "your-login",
+        "name": "Your Name"
+      }
+    ]
+  }
+}
+```
+
+حقلا `login` و`name` يُستنتَجان تلقائياً عند اختبار الرمز. والشكل القديم برمزٍ واحد (`{ "token": "…" }`) ينتقل تلقائياً إلى اتصالٍ بتسمية "Default" عند أول حفظ.
+
+<Warning>
+  لا تضف أبدًا رمز GitHub PAT إلى نظام التحكم بالإصدارات. إذا كنت تخزّن مساحة العمل في git، تأكد من إضافة `config.json` وأي ملف متغيرات إلى `.gitignore`.
+</Warning>

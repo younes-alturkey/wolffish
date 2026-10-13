@@ -1,0 +1,130 @@
+---
+title: "Memory Consolidation"
+description: "How episodes compress into weekly summaries during nightly compaction"
+---
+
+# The Nightly Compaction Pass
+
+Just like biological sleep consolidates memories, Wolffish runs a nightly compaction pass that distills each day's episode entries into a compact summary and promotes durable facts into knowledge files. This keeps long-term memory high-signal without ever touching the raw logs.
+
+## Location
+
+```
+~/.wolffish/workspace/brain/hippocampus/consolidated/
+├── 2026-W18.md
+├── 2026-W19.md
+└── 2026-W20.md
+```
+
+Files are named by ISO year and week number: `YYYY-WNN.md`.
+
+## How It Works
+
+Two scheduled jobs share the consolidated file:
+
+```
+Daily compaction (default 23:00)
+  → reads today's episode file + the current knowledge files
+    → LLM curates: knowledge/*.md rewritten whole
+      [sections merged, duplicates collapsed, newest evidence wins,
+       previous version kept as *.md.bak]
+      → daily summary appended to consolidated/YYYY-WNN.md
+
+Weekly consolidation (default Sunday 23:00)
+  → counts the week's logged turns and active days
+    → appends a one-line coverage digest to consolidated/YYYY-WNN.md
+```
+
+### Daily Compaction in Detail
+
+The daily pass used to be an *extractor*: it never saw what it had already written, so it re-derived the same facts night after night and appended every paraphrase as a fresh bullet — the same phone number recorded a dozen times, contradictions accumulating side by side. Since v1.0.233 it works as a **curator**:
+
+1. **Trigger** — The brainstem's cron scheduler fires at the configured hour
+2. **Gather** — Reads today's episode file (very long days are middle-truncated at ~160k characters) **and the current contents of the five [knowledge files](/memory/knowledge)**; skips the run if the day has fewer than 3 entries
+3. **Curate** — The LLM returns **complete replacement knowledge files**, not a list of new facts: one tidy `##` section per person, project, and topic; near-duplicates merged into a single line; contradictions resolved in favour of the newest evidence; junk deleted on sight
+4. **Rewrite** — Each changed file is replaced whole, with its previous version kept as **`<file>.md.bak`** right beside it. The `##` section structure the `<memory_map>` depends on is enforced by the app itself, not entrusted to model discipline — and your own hand-written edits survive curation
+5. **Record** — The pass's summary is appended to the week's consolidated file under a `## Compaction for YYYY-MM-DD` heading
+6. **Index** — The cortex re-indexes the changed files via the file watcher
+
+If the day genuinely produced nothing durable, the model answers with a no-change sentinel and only the summary record is written — the knowledge files aren't touched.
+
+### The Weekly Coverage Digest
+
+The weekly pass used to re-append the raw 7-day episode concatenation on top of the daily summaries. That only polluted the file — and the search index — with one giant low-quality record. It now writes a compact coverage line instead:
+
+```markdown
+Week in review: 47 logged turns across 6 active days (2026-05-11 → 2026-05-16). Daily summaries above; full logs in episodes/.
+```
+
+The daily summaries carry the substance; the weekly line records the shape of the week and points back at the raw episodes.
+
+## Example Consolidated File
+
+Here's what `2026-W20.md` might look like:
+
+```markdown
+# 2026-W20
+
+## Compaction for 2026-05-14
+
+Curated preferences.md and projects.md: recorded the pnpm-over-npm preference
+and conventional-commit style; opened a section for the billing service
+(Stripe, event-driven). Merged two near-duplicate lines about commit format.
+
+## Compaction for 2026-05-15
+
+Curated technical.md and decisions.md: webhook idempotency-key pattern;
+Zod chosen for validation at all API boundaries.
+
+## Compaction for 2026-05-16
+
+No changes.
+
+Week in review: 47 logged turns across 6 active days (2026-05-11 → 2026-05-16). Daily summaries above; full logs in episodes/.
+```
+
+## Why Consolidation Matters
+
+Episodes are verbose — a busy day might produce 20+ entries, and every tool call adds a line. Consolidation isn't about squeezing memory into the prompt (nothing is injected anymore); it's about signal quality on the read side:
+
+- **Durable facts graduate** into knowledge files — kept tidy by curation rather than piling up — where the `<memory_map>` surfaces their topics and `memory_get` fetches them in one call.
+- **Consolidated summaries are high-signal search records.** `memory_search` with `sources: "consolidated"` hits a week of distilled themes instead of hundreds of raw turn blocks.
+- **Nothing is lost.** The raw episodes stay on disk and stay indexed — consolidation adds a compressed layer, it never replaces the original.
+
+## Configuration
+
+Compaction settings live in `config.json`:
+
+```json
+{
+  "compaction": {
+    "dailyHour": 23,
+    "weeklyDay": 0,
+    "weeklyHour": 23
+  }
+}
+```
+
+| Key | Default | Description |
+|---|---|---|
+| `dailyHour` | `23` | Hour of day (0–23) for daily compaction |
+| `weeklyDay` | `0` | Day of week for weekly consolidation (0 = Sunday, 6 = Saturday) |
+| `weeklyHour` | `23` | Hour of day (0–23) for weekly consolidation |
+
+You can also configure these from the **Memory compaction** card in **Settings → Knowledge → Compaction**, which shows the next scheduled run for each job in your local timezone. Once a job has run, the card also shows its **last completed run** — when it ran, how long it took, the output it produced (the daily summary, or the weekly coverage digest), and, for the daily summary's model call, the tokens in and out. Skipped or failed passes never overwrite it, so what you see is always the last run that actually produced something, and its timestamp stays honest about how long ago that was.
+
+<Info>
+  Compaction jobs run through the brainstem's run pool — up to three jobs at once, and an overflow fire is queued rather than dropped. Summarization runs on your configured Brain **with reasoning off** — it's quick utility work, so it stays fast and cheap regardless of the reasoning level you've picked for chat. (The weekly pass makes no model call at all — it writes a computed coverage line.) The same scheduler drives the nightly [reflection](/memory/reflection) jobs, which share the Knowledge settings page.
+</Info>
+
+## Retrieval
+
+Consolidated files are indexed by the cortex like everything else. They are never injected into the prompt — the model reaches them through the retrieval tools:
+
+- `memory_search` with `sources: "consolidated"` for themed weekly context
+- `memory_get` on a `file:` ref to read a whole week
+- `wolffish_recall` with a date to land in the right week
+
+<Warning>
+  Consolidated summaries are LLM-generated and may occasionally miss nuance from the raw episodes. Nothing is lost when that happens — the episodes remain on disk and indexed. If something important deserves permanent status, save it explicitly with `memory_save` or add it to the appropriate knowledge file by hand.
+</Warning>

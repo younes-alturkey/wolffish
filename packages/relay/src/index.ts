@@ -1,0 +1,57 @@
+import { version } from '../package.json'
+import { landingPage } from './page'
+import { TUNNEL_PATH_REGEX, isRole } from './protocol'
+import type { Env } from './types'
+
+export { Tunnel } from './tunnel'
+
+/** Rendered once per isolate — the page is fully static. */
+const LANDING_HEADERS = {
+  'content-type': 'text/html; charset=utf-8',
+  'cache-control': 'public, max-age=300',
+  'x-content-type-options': 'nosniff',
+  'referrer-policy': 'no-referrer',
+  // The page needs exactly one thing: its inline <style>.
+  'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'"
+} as const
+
+/**
+ * Stateless front door. Validates the request shape and forwards the upgrade
+ * to the one Durable Object instance addressed by the rendezvous ID. Holds no
+ * state, writes no logs, answers nothing else.
+ */
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    // HEAD is allowed on the plain routes (uptime checks); the runtime strips the body.
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      return new Response('method not allowed', { status: 405 })
+    }
+
+    const url = new URL(request.url)
+
+    if (url.pathname === '/healthz') return new Response('ok')
+    if (url.pathname === '/') {
+      return new Response(landingPage(version, url.host), { headers: LANDING_HEADERS })
+    }
+
+    const match = TUNNEL_PATH_REGEX.exec(url.pathname)
+    if (!match) return new Response('not found', { status: 404 })
+
+    if (!isRole(url.searchParams.get('role'))) {
+      return new Response('role must be host or guest', { status: 400 })
+    }
+
+    if (request.headers.get('Upgrade')?.toLowerCase() !== 'websocket') {
+      return new Response('expected websocket upgrade', { status: 426 })
+    }
+
+    // DO identity: idFromName over the rendezvous ID, which is derived from
+    // the PAIRING SECRET (rid = HMAC(pairing_secret, "rid-v1")) — a stable
+    // per-pairing name, not a per-connection one. Every reconnect of either
+    // device re-derives the same rid, so state the DO keeps for the pairing
+    // (push registrations) survives reconnects. Only re-pairing rotates it,
+    // and the phone re-registers right after pairing. Never key this by
+    // newUniqueId() or any per-session value.
+    return env.TUNNEL.get(env.TUNNEL.idFromName(match[1])).fetch(request)
+  }
+} satisfies ExportedHandler<Env>

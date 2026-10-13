@@ -452,7 +452,9 @@ export function ContextMeter({
   return (
     <span
       ref={rootRef}
-      className="relative inline-flex shrink-0"
+      // `max-sm:static` is deliberate: below 640px this pill sits mid-row, so
+      // its card positions against the composer and spans it instead.
+      className="relative inline-flex shrink-0 max-sm:static"
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
     >
@@ -506,7 +508,12 @@ export function ContextMeter({
           role="dialog"
           /* Start-anchored: the pill sits near the composer's start edge, so
              the panel opens inward over the chat where the room is. */
-          className="border-border bg-surface absolute bottom-full inset-s-0 z-50 mb-2 w-80 max-w-[90vw] rounded-xl border p-3 shadow-xl"
+          className={cn(
+            'border-border bg-surface absolute bottom-full inset-s-0 z-50 mb-2 w-80 max-w-[90vw] rounded-xl border p-3 shadow-xl',
+            // Phones: span the composer (see the wrapper's `max-sm:static`)
+            // and scroll inside rather than running off the bottom.
+            'max-sm:inset-e-0 max-sm:w-auto max-sm:max-w-none max-sm:max-h-[65vh] max-sm:overflow-y-auto'
+          )}
         >
           {/* Header: provider logo + model name. Streaming shows as a pulse
               on the logo; usage-unavailable is called out in the body. */}

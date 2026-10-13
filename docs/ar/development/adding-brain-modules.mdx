@@ -1,0 +1,245 @@
+---
+title: "إضافة وحدات الدماغ"
+description: "كيفية إضافة وحدة بيئة تشغيل جديدة لدماغ وولفيش"
+---
+
+# متى تضيف وحدة
+
+تحتوي بيئة التشغيل على 15 وحدة. إضافة وحدة سادسة عشرة هو قرار مهم - افعل ذلك عندما لا تتناسب وظيفة جديدة مع أي منطقة موجودة وتكون مهمة بما يكفي لتكون جزءًا دائمًا من خط الأنابيب.
+
+<Note>
+  قبل إضافة وحدة، فكر فيما إذا كانت الوظيفة تنتمي لوحدة موجودة. إذا كانت أداة جديدة، فربما تنتمي إلى cerebellum كقدرة. إذا كانت فحص أمان جديد، فتنتمي إلى amygdala. الوحدات الجديدة هي للوظائف الإدراكية الجديدة فعلاً.
+</Note>
+
+## الخطوة 1: إنشاء المجلد
+
+اتبع اتفاقية شيء واحد لكل مجلد:
+
+```
+src/main/runtime/my-module/my-module.ts
+```
+
+## الخطوة 2: تعريف الصنف
+
+كل وحدة تتبع نفس نمط المُنشئ:
+
+```typescript
+import { Corpus } from '@main/runtime/corpus/corpus'
+
+export interface MyModuleOpts {
+  workspaceRoot: string
+  corpus: Corpus
+}
+
+export class MyModule {
+  private readonly workspaceRoot: string
+  private readonly corpus: Corpus
+
+  constructor(opts: MyModuleOpts) {
+    this.workspaceRoot = opts.workspaceRoot
+    this.corpus = opts.corpus
+
+    // Subscribe to events this module cares about
+    this.corpus.on('message.received', (payload) => this.handleMessage(payload))
+  }
+
+  async doSomething(input: string): Promise<MyResult> {
+    // Module logic here
+
+    // Emit events for other modules to react to
+    this.corpus.emit('my-module.completed', { input, result })
+    return result
+  }
+
+  private handleMessage(payload: MessagePayload): void {
+    // React to events from other modules
+  }
+}
+```
+
+## الخطوة 3: تعريف أحداث Corpus
+
+أضف أحداث وحدتك إلى تعداد `CorpusEvent` في `corpus.ts`:
+
+```typescript
+// src/main/runtime/corpus/corpus.ts
+
+export type CorpusEvents = {
+  // ... existing events ...
+
+  // My module events
+  'my-module.started': { input: string }
+  'my-module.completed': { input: string; result: MyResult }
+  'my-module.failed': { input: string; error: string }
+}
+```
+
+<Tip>
+  سمِّ الأحداث بصيغة `module-name.past-tense-verb`. هذا يجعل سجل الأحداث يُقرأ كقصة: "رسالة وُصلت، سياق بُني، أمان فُحص، استجابة بُثّت."
+</Tip>
+
+## الخطوة 4: الربط في Agent
+
+استورد وأنشئ نسخة من وحدتك في `agent.ts`:
+
+```typescript
+// src/main/runtime/agent.ts
+
+import { MyModule } from '@main/runtime/my-module/my-module'
+
+export class Agent {
+  private readonly myModule: MyModule
+
+  constructor(opts: AgentOpts) {
+    // ... existing modules ...
+
+    this.myModule = new MyModule({
+      workspaceRoot: opts.workspaceRoot,
+      corpus: this.corpus,
+    })
+  }
+
+  async processMessage(message: string): Promise<void> {
+    // The pipeline — call your module at the right stage
+    const context = await this.prefrontal.buildContext(message)
+    const filtered = await this.ras.filter(context)
+
+    // Example: call your module after context is built
+    await this.myModule.doSomething(filtered)
+
+    const response = await this.thalamus.stream(filtered)
+    // ... rest of pipeline
+  }
+}
+```
+
+مكان تشغيل وحدتك في خط الأنابيب يعتمد على ما تفعله:
+
+| المرحلة | متى تُدرج |
+|-------|----------------|
+| قبل `prefrontal` | معالجة المدخلات المسبقة، التوجيه |
+| بعد `prefrontal`، قبل `thalamus` | إثراء السياق، التصفية |
+| بعد `thalamus`، قبل `broca` | معالجة المخرجات، التحقق |
+| بعد `broca` | إجراءات ما بعد الاستجابة، التسجيل |
+
+## الخطوة 5: إضافة تخزين مساحة العمل (إذا لزم الأمر)
+
+إذا احتاجت وحدتك لحالة دائمة، أنشئ مجلدًا في الافتراضيات:
+
+```
+src/defaults/workspace/brain/my-module/
+```
+
+اقرأ واكتب ملفات Markdown للحالة:
+
+```typescript
+import { readFile, writeFile } from 'fs/promises'
+import { join } from 'path'
+
+async loadState(): Promise<MyState> {
+  const path = join(this.workspaceRoot, 'brain', 'my-module', 'state.md')
+  const content = await readFile(path, 'utf-8')
+  return this.parseState(content)
+}
+
+async saveState(state: MyState): Promise<void> {
+  const path = join(this.workspaceRoot, 'brain', 'my-module', 'state.md')
+  await writeFile(path, this.serializeState(state), 'utf-8')
+}
+```
+
+---
+
+## قواعد التصميم
+
+<AccordionGroup>
+  <Accordion title="الوحدات لا تستورد بعضها أبدًا">
+    جميع الاتصالات بين الوحدات تمر عبر أحداث corpus. هذا يحافظ على رسم التبعيات مسطحًا ويجعل الوحدات قابلة للاختبار بشكل مستقل.
+    ```typescript
+    // WRONG — direct import creates coupling
+    import { Hippocampus } from '@main/runtime/hippocampus/hippocampus'
+
+    // RIGHT — communicate via events
+    this.corpus.emit('memory.store-requested', { content })
+    this.corpus.on('memory.stored', (payload) => { /* ... */ })
+    ```
+  </Accordion>
+
+  <Accordion title="مسؤولية واحدة">
+    كل وحدة تفعل شيئًا واحدًا بالضبط. إذا كنت تضيف وظيفتين غير مرتبطتين، فهما وحدتان (أو إحداهما تنتمي لوحدة موجودة).
+  </Accordion>
+
+  <Accordion title="حالة مساحة العمل دائمًا Markdown">
+    قابلة للقراءة البشرية، قابلة لإصدار Git، قابلة لتحليل نموذج اللغة. لا تستخدم أبدًا الصيغ الثنائية أو JSON لحالة مساحة العمل. Markdown مع بيانات YAML الوصفية هو المعيار.
+  </Accordion>
+
+  <Accordion title="قابلة للاختبار بشكل مستقل">
+    يجب أن تكون وحدتك قابلة للاختبار بمحاكاة corpus فقط. إذا احتجت لمحاكاة خمسة أشياء أخرى، فوحدتك لديها تبعيات كثيرة جدًا.
+  </Accordion>
+
+  <Accordion title="التكوين عبر مساعد مساحة العمل">
+    إذا احتاجت وحدتك لتكوين، اقرأه من `config.json` عبر مساعد مساحة العمل. لا تخترع آلية تكوين جديدة.
+    ```typescript
+    import { readConfig } from '@main/workspace/config'
+
+    const config = await readConfig(this.workspaceRoot)
+    const myModuleConfig = config.myModule ?? defaults
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## الاختبار
+
+اختبر وحدتك بشكل معزول بمحاكاة corpus:
+
+```typescript
+import { describe, it, expect, vi } from 'vitest'
+import { MyModule } from './my-module'
+
+describe('MyModule', () => {
+  function createMockCorpus() {
+    const handlers = new Map<string, Function>()
+    return {
+      on: vi.fn((event, handler) => handlers.set(event, handler)),
+      emit: vi.fn(),
+      // Helper to simulate incoming events
+      simulate: (event: string, payload: unknown) => handlers.get(event)?.(payload),
+    }
+  }
+
+  it('emits completed event after processing', async () => {
+    const corpus = createMockCorpus()
+    const mod = new MyModule({
+      workspaceRoot: '/tmp/test-workspace',
+      corpus: corpus as any,
+    })
+
+    await mod.doSomething('test input')
+
+    expect(corpus.emit).toHaveBeenCalledWith(
+      'my-module.completed',
+      expect.objectContaining({ input: 'test input' })
+    )
+  })
+
+  it('reacts to incoming events', () => {
+    const corpus = createMockCorpus()
+    new MyModule({ workspaceRoot: '/tmp/test-workspace', corpus: corpus as any })
+
+    corpus.simulate('message.received', { content: 'hello' })
+
+    // Assert side effects
+  })
+})
+```
+
+<CardGroup cols={2}>
+  <Card title="نظرة عامة على البنية" icon="sitemap" href="/ar/architecture/overview">
+    فهم كيف تتكامل الوحدات الـ 15 معًا.
+  </Card>
+  <Card title="هيكل المشروع" icon="folder-tree" href="/ar/development/project-structure">
+    أين يوجد كل شيء في الكود.
+  </Card>
+</CardGroup>

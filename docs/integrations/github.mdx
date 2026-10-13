@@ -1,0 +1,238 @@
+---
+title: "GitHub"
+description: "Repositories, issues, pull requests, and CI/CD integration"
+---
+
+# Repos, Issues, and Pull Requests
+
+The GitHub integration connects Wolffish to the GitHub API for managing repositories, issues, pull requests, workflows, releases, and more. It uses a personal access token (PAT) for authentication.
+
+## Setup
+
+<Steps>
+  <Step title="Generate a Token">
+    Go to [github.com/settings/tokens](https://github.com/settings/tokens) and create a new personal access token (classic or fine-grained).
+  </Step>
+  <Step title="Select Scopes">
+    For full functionality, select at minimum: `repo` and `read:org`. See the scopes table below for details.
+  </Step>
+  <Step title="Configure in Wolffish">
+    Open **Settings → Services → GitHub**, click **Add**, give the connection a label (e.g., "Personal"), and paste your token. **Test** validates it and shows the account it resolves to.
+  </Step>
+</Steps>
+
+## Multiple Accounts
+
+You can link any number of GitHub accounts, each as a labeled connection ("Personal," "Work"). Every `github_*` tool takes an optional `connection` parameter naming the label:
+
+- **One connection configured** — it's used automatically; you never need to pass anything.
+- **Several configured** — tools ask for the label when it's ambiguous, and a `github_connections` tool lists what's available. In chat, just say which account you mean: "create the issue on my work account."
+
+Existing single-token setups migrate to a labeled connection automatically.
+
+### Required Token Scopes
+
+| Scope | Grants Access To |
+|---|---|
+| `repo` | Full control of private repositories (issues, PRs, code, releases, workflows) |
+| `read:org` | Read-only access to organization membership and teams |
+
+### Optional Scopes
+
+| Scope | Grants Access To |
+|---|---|
+| `gist` | Create and manage gists |
+| `notifications` | Read notifications |
+| `workflow` | Trigger GitHub Actions workflow dispatches |
+
+<Tip>
+  Fine-grained tokens offer more precise permissions but require per-repository configuration. Classic tokens with `repo` + `read:org` are the simplest path to full functionality.
+</Tip>
+
+## Two Capabilities, One Platform
+
+Wolffish separates local git operations from remote GitHub API operations:
+
+<CardGroup cols={2}>
+  <Card title="git (Pure Skill)" icon="code-branch">
+    Local git operations — commit, branch, merge, rebase, diff, log. Uses `shell_exec` to run git commands. No token needed.
+  </Card>
+  <Card title="github (Plugin)" icon="github">
+    Remote GitHub API operations — issues, PRs, workflows, releases. Uses Octokit to call the GitHub REST API. Requires a PAT.
+  </Card>
+</CardGroup>
+
+The `git` capability is always available (it's a pure skill that uses shell commands). The `github` capability requires a configured token to make API calls.
+
+## Available Tools
+
+Every `github_*` tool takes an optional `connection` label (see [Multiple Accounts](#multiple-accounts)).
+
+### Account and connections
+
+| Tool | Description |
+|---|---|
+| `github_connections` | List the configured connections — their labels and the account each resolves to |
+| `github_get_authenticated_user` | The authenticated user's profile: username, name, email, bio, repo and follower counts |
+| `github_list_user_orgs` | Organizations the authenticated user belongs to |
+
+### Repositories
+
+| Tool | Description |
+|---|---|
+| `github_list_repos` | List the authenticated user's repositories |
+| `github_list_org_repos` | List an organization's repositories |
+| `github_get_repo` | Repository details — open issues, stars, forks, default branch |
+| `github_create_repo` | Create a repository |
+| `github_delete_repo` | Permanently delete a repository (irreversible) |
+| `github_fork_repo` | Fork a repository |
+| `github_star_repo` / `github_unstar_repo` | Star or unstar a repository |
+| `github_list_stargazers` | List users who starred a repository |
+| `github_list_repo_topics` / `github_replace_repo_topics` | Read or replace a repository's topics |
+| `github_get_file_content` | Read a file's contents from a repository |
+| `github_search_code` | Search code across GitHub |
+
+### Branches and commits
+
+| Tool | Description |
+|---|---|
+| `github_list_branches` | List branches and whether they're protected |
+| `github_delete_branch` | Delete a branch |
+| `github_get_commit` | Commit details — SHA, author, message, files changed |
+| `github_compare_commits` | Compare two commits, branches, or tags (ahead/behind, commits, files) |
+
+### Issues
+
+| Tool | Description |
+|---|---|
+| `github_list_issues` | List issues with number, title, state, labels, assignee |
+| `github_get_issue` | A single issue with full body and comments |
+| `github_create_issue` | Create an issue |
+| `github_close_issue` | Close an issue |
+| `github_list_comments_on_issue` | List comments on an issue or PR |
+| `github_add_comment` | Comment on an issue or PR |
+
+### Labels and milestones
+
+| Tool | Description |
+|---|---|
+| `github_list_labels` | List labels with colour and description |
+| `github_create_label` | Create a label |
+| `github_add_labels_to_issue` | Add labels to an issue or PR |
+| `github_list_milestones` | List milestones with due dates and issue counts |
+| `github_create_milestone` | Create a milestone |
+
+### Pull requests
+
+| Tool | Description |
+|---|---|
+| `github_list_prs` | List PRs with state, head/base branches, author |
+| `github_get_pr` | A single PR with body, diff stats, and review status |
+| `github_create_pr` | Open a pull request |
+| `github_update_pr` | Update a PR's title, body, state, or base branch |
+| `github_merge_pr` | Merge a pull request |
+| `github_list_pr_files` | Files changed in a PR — additions, deletions, patch |
+| `github_list_pr_reviews` | Reviews on a PR — reviewer, state, body |
+| `github_request_reviewers` | Request reviewers on a PR |
+
+### CI and Actions
+
+| Tool | Description |
+|---|---|
+| `github_get_workflow_runs` | Recent workflow runs for a repository |
+| `github_get_workflow_run_logs` | Logs for a run, truncated for context |
+| `github_dispatch_workflow` | Trigger a workflow via `workflow_dispatch` |
+| `github_rerun_workflow` | Re-run a failed or completed run |
+| `github_cancel_workflow_run` | Cancel an in-progress run |
+
+### Releases and gists
+
+| Tool | Description |
+|---|---|
+| `github_list_releases` | List releases with tag, name, published date, draft/prerelease flags |
+| `github_get_release` | A single release with body and asset download URLs |
+| `github_create_release` | Create a release on a tag |
+| `github_list_gists` | List the authenticated user's gists |
+| `github_create_gist` | Create a gist |
+
+### Collaborators and notifications
+
+| Tool | Description |
+|---|---|
+| `github_list_collaborators` | List collaborators with role and permissions |
+| `github_add_collaborator` | Invite a collaborator |
+| `github_remove_collaborator` | Remove a collaborator |
+| `github_list_notifications` | List notifications |
+| `github_mark_notifications_read` | Mark all notifications read |
+
+## Triggers
+
+The GitHub capability activates when your message matches any of these patterns:
+
+```
+github, pull request, PR, issue, repo, repository, branch, merge,
+CI, actions, workflow, commit history, code review, release, gist,
+organization, org, collaborator, invite, comment, label, milestone,
+review, reviewer, notification, star, fork, compare, dispatch, topic
+```
+
+<Note>
+  Local git commands (commit, push, diff, log) trigger the `git` capability, not `github`. If you say "push to origin", the `git` skill runs `git push` via `shell_exec`. If you say "create a PR", the `github` plugin calls the GitHub API.
+</Note>
+
+## Example Workflows
+
+<AccordionGroup>
+  <Accordion title="Create a pull request">
+    ```
+    You: "Create a PR for my current branch"
+    Wolffish: Reads the current branch name, detects the remote, and calls
+    github_create_pr with the branch as head and main as base.
+    ```
+  </Accordion>
+  <Accordion title="List open issues">
+    ```
+    You: "What are the open issues on wolffish-app?"
+    Wolffish: Calls github_list_issues with state=open and returns a formatted list
+    with titles, labels, and assignees.
+    ```
+  </Accordion>
+  <Accordion title="Check CI status">
+    ```
+    You: "What's the CI status on my latest PR?"
+    Wolffish: Lists recent PRs, finds yours, and checks the workflow run status.
+    ```
+  </Accordion>
+  <Accordion title="Trigger a deployment">
+    ```
+    You: "Trigger the deploy workflow on main"
+    Wolffish: Calls github_dispatch_workflow with the workflow ID and ref=main.
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Configuration Reference
+
+Connections are stored in `config.json` as a labeled array:
+
+```json
+{
+  "github": {
+    "connections": [
+      {
+        "id": "gh-a1b2c3",
+        "label": "Personal",
+        "token": "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "login": "your-login",
+        "name": "Your Name"
+      }
+    ]
+  }
+}
+```
+
+The `login` and `name` fields are resolved automatically when a token is tested. A legacy single-token shape (`{ "token": "…" }`) is migrated to a connection labeled "Default" on first save.
+
+<Warning>
+  Never commit your GitHub PAT to version control. If you store your workspace in git, ensure `config.json` and any variables file are in `.gitignore`.
+</Warning>

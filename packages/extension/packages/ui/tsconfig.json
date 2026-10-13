@@ -1,0 +1,12 @@
+{
+  "extends": "@extension/tsconfig/base",
+  "compilerOptions": {
+    "outDir": "dist",
+    "paths": {
+      "@/*": ["./*"]
+    },
+    "noEmit": false,
+    "declaration": true
+  },
+  "include": ["index.ts", "lib", "tailwind.config.ts"]
+}

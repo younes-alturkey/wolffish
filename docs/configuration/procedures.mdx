@@ -1,0 +1,130 @@
+---
+title: "Procedures"
+description: "Save reusable prompts and run them on demand — the on-demand counterpart to scheduled heartbeat jobs"
+---
+
+# Saved Prompts, Run on Demand
+
+A **procedure** is a prompt you write once and run whenever you want — *"summarize my open PRs"*, *"draft my weekly update"*, *"triage my inbox"*. It's the on-demand twin of a [heartbeat job](/configuration/heartbeat): same execution machinery, but **no schedule**. A procedure never fires on its own — it sits on the **Procedures tab of the Library page** until you hit **Play** or ask Wolffish to run it. (Since **v1.0.286** Procedures, [Projects](/configuration/projects) and [Automations](/configuration/heartbeat) are three tabs of one Library destination rather than three sidebar rows; [the phone](/integrations/mobile-app) followed in its v1.0.56.)
+
+Saved procedures are plain data — a flat list of `{ title, prompt, mode, icon, projectId }` records in `brain/procedures.json`. You never hand-edit that file. Manage them on the Procedures tab, or just talk to Wolffish through its **`procedures`** capability (`procedure_list`, `procedure_view`, `procedure_create`, `procedure_edit`, `procedure_delete`, `procedure_run`).
+
+## Procedure or Automation?
+
+Procedures and [automations](/configuration/heartbeat) are siblings that **share one runner but differ on what starts them**. Choosing between them comes down to a single question: do you want to re-run this yourself, or have it run on a clock?
+
+| | **Procedure** | **Automation** (heartbeat) |
+|---|---|---|
+| What starts it | You — **Play** or *"run my…"* | A **schedule** fires it |
+| Runs on its own? | No | Yes |
+| Lives in | `brain/procedures.json` | `brain/brainstem/heartbeat.md` |
+| Managed via | `procedures` capability | `automations` capability |
+| Best for | *"save this so I can run it again"* | *"every morning at 8…"* |
+
+<Info>
+  No timing words? It's a procedure. *"Every day"*, *"in 15 minutes"*, *"from now on"* → that's an [automation](/configuration/heartbeat). And a one-off you just want done right now is neither — it's simply work Wolffish does in the moment; nothing gets saved.
+</Info>
+
+## The Procedures Page
+
+Open **Procedures** from the app menu. Each saved procedure is a card showing its **emoji icon**, its title, when it was last edited, and a preview of its prompt — most-recently-edited on top. A procedure bound to a [project](/configuration/projects) shows the project's name on its card. The page refreshes itself live when the store changes underneath it — ask Wolffish mid-chat to save or tweak a procedure and its card appears or updates in place.
+
+| Control | What it does |
+|---|---|
+| **New** | Creates a blank procedure and opens the editor. Abandon it without a title and it's discarded — no orphan card is left behind. |
+| **▶ Play** | Runs the procedure now (see [Running a procedure](#running-a-procedure)). Disabled until the prompt has content. |
+| **Single / Workflow** | Each card's own mode toggle, next to Play — whether its runs execute as a plain single-model turn or as a [workflow](/configuration/workflow-mode) that can plan phases and drive parallel agents. New procedures start with whatever the global chat mode was when you saved them. |
+| **Thinking** | Each card's own [thinking level](#a-procedure-picks-its-own-thinking-level) — off, on, high or max — since **v1.0.310**. |
+| **Edit** | Opens the title + prompt editor. |
+| **Delete** | Removes it for good, after a confirmation. |
+
+In the editor, the **title is required** — it's the card's name — and the **prompt** is a Markdown field. An **emoji picker** sets the card's icon (every procedure has one; new ones start as 📋), and a **project selector** optionally binds the procedure to a [project](/configuration/projects) — its runs then execute with the project's instructions and file list, and their conversations register under the project. Edits **save automatically** about half a second after you stop typing, so there's no Save button, just **Done**.
+
+<Note>
+  A procedure carries no state of its own — there's no "enabled" toggle and no last-run field. It's inert data: it exists until you delete it, and "running" is a property of the run, not of the saved procedure.
+</Note>
+
+## Running a Procedure
+
+Start a run two ways:
+
+- **Play** on the card, or
+- **Ask Wolffish** — *"run my morning brief"* — which fires it with `procedure_run`.
+
+Either way, the prompt runs as a **fresh, self-contained background conversation** — never inside the chat you're in — in the procedure's own mode (its Single/Workflow stamp, not whatever your chat happens to be set to). That's the one rule that shapes every procedure prompt: a run carries **no memory of your current chat**, so the prompt has to stand on its own.
+
+A run stays **out of your way** while it executes — deliberately so. There's no card, no overlay, and nothing to dismiss; the app remains fully usable, and only a run that *fails* raises a toast naming what broke. (The optional live card that v1.0.255 added for procedure and [automation](/configuration/heartbeat#watching-runs-live) runs was **removed in v1.0.288**, along with its switch: it shipped off, and each run already reports itself on its own page.) The run is stamped with the procedure's **emoji** and marked with a **Play** icon (origin tag `[procedure]`) in **History**, so you can spot whose run it was at a glance — and its conversation is created **before** the run starts, so you can open it and watch.
+
+Out of your way is not out of reach. Since **v1.0.236** a procedure run **creates its conversation before it starts** rather than surfacing only once it's over: the row appears in the conversations list immediately with a live processing pulse, you can **open it and watch the reply arrive**, and the **Stop button works on it** — the same button, the same gesture, for a run nobody typed. Progress is written to disk while the run works, so quitting or crashing halfway leaves a real transcript instead of a bare prompt, and reopening the app mid-run finds it still going.
+
+- **Sealed and isolated.** A run is its own conversation — it can't skew your live chat's context, hijack its Stop button, or overwrite it. It runs to completion on its own; Wolffish doesn't sit and wait on the result.
+- **Up to three at once, coalesced.** Procedure runs share the bounded run pool with [automations](/configuration/heartbeat) — three concurrent slots. If every slot is busy, the run queues and starts the moment one frees — and asking to run the *same* procedure again while it's in flight folds in rather than running twice.
+
+<Warning>
+  **A procedure run auto-approves every tool call** — exactly like a [heartbeat job](/configuration/heartbeat#job-execution), the Amygdala confirmation dialog is bypassed. A procedure that sends messages or deletes files does so with no one watching. Only save prompts that are safe to run unattended; the same [What to Schedule](/configuration/what-to-schedule) decision layer applies here.
+</Warning>
+
+## A Procedure Picks Its Own Thinking Level
+
+Since **v1.0.310** a procedure no longer inherits **whatever thinking level your chat happened to be set to** — a saved prompt that only needed a light pass could quietly run at maximum, and a deep one could run at minimum because you had switched the composer down earlier in the day. The effort a job deserves is a property of **the job**.
+
+A **thinking switch sits on the card**, beside the mode toggle, offering **off, on, high and max**. New procedures start from **the mode you are running right now**, so nothing changes until you say so; **anything saved before v1.0.310 carries no setting** and keeps following your chat exactly as it always did. The levels offered are **the ones your selected model actually honours**, so a card can never present one the model would silently ignore.
+
+The same switch is on the same card on [your phone](/integrations/mobile-app#the-workspace-editable), reading and writing **the very same value** — one setting seen from two places. From a terminal:
+
+```bash
+wolffish procedures thinking <id> high
+wolffish procedures thinking <id> default   # hand the decision back to your chat
+```
+
+The procedures list shows **a thinking column**, so you can see at a glance what each one runs at.
+
+## Through Wolffish
+
+You rarely need to touch the page — just ask:
+
+- *"Save this as a procedure"* / *"make a saved prompt for my weekly update"* → creates one
+- *"What procedures do I have?"* → lists them by number and title
+- *"Show me my inbox-triage procedure"* → prints its full prompt
+- *"Rename it to Weekly Update"* / *"tweak the prompt to also include GitHub"* → edits title and/or prompt
+- *"Run my morning brief"* → fires it now, in the background
+- *"Delete the PR summary procedure"* → removes it (Wolffish confirms first)
+
+Behind those phrasings is the **`procedures`** capability. You reference a procedure by its number (from the list), its exact title, or its id:
+
+- `procedure_list` — every procedure: number, title, one-line prompt preview
+- `procedure_view` — one procedure's full title and complete prompt
+- `procedure_create` — save a new one (title + self-contained prompt, optional `mode`)
+- `procedure_edit` — change a title, prompt, and/or mode (omit whichever you keep)
+- `procedure_delete` — permanently remove one (asks you to confirm)
+- `procedure_run` — run one now, in a fresh background conversation
+
+<Tip>
+  It's fire-and-forget: `procedure_run` returns the moment the run is queued, so Wolffish keeps talking to you while the run does its thing. Don't expect it to hand back the result mid-chat — check the run in History when it's done.
+</Tip>
+
+## Writing a Good Procedure Prompt
+
+A run executes with Wolffish's full toolset but **no chat context**, so write the prompt the way you'd brief yourself cold:
+
+- **Be concrete and self-contained.** *"Summarize my unread GitHub notifications and append the digest to today's daily log"* beats *"summarize them"* — there's no "them" in a fresh conversation.
+- **Say where the output goes** — a file, memory, or you on a channel (`telegram_send` / `whatsapp_send`, only if that channel is connected).
+- **Keep it safe to run unattended.** Favor read / summarize / notify over irreversible actions, since a run auto-approves its tool calls. Apply the [What to Schedule](/configuration/what-to-schedule) checklist to a procedure just as you would to a scheduled job.
+
+```markdown
+Summarize my open GitHub pull requests across all repos.
+For each: title, repo, review state, and CI status.
+Flag anything with failing checks or a requested change.
+Append the digest to my daily log — don't message anyone.
+```
+
+## Where They Live
+
+Procedures are stored as a single JSON file at `brain/procedures.json` in your [workspace](/architecture/workspace) — a flat list, written atomically so it's never torn by a crash or a concurrent edit. Each record is `{ id, title, prompt, mode, icon, projectId, createdAt, updatedAt }` (`projectId` only when bound); the list shows the most-recently-edited first. Treat the file as managed data: create, edit, and delete through the page or through Wolffish rather than hand-editing it.
+
+## See Also
+
+- [Heartbeat & Scheduling](/configuration/heartbeat) — the scheduled counterpart: run a prompt on a timer instead of on demand
+- [What to Schedule](/configuration/what-to-schedule) — the safety decision layer for anything that runs unattended, procedures included
+- [Built-in Capabilities](/capabilities/built-in-capabilities) — the `procedures` capability and its tools, listed alongside every other built-in
+- [Self-Authoring Skills](/capabilities/self-authoring-skills) — when a repeated workflow deserves a real new tool, not just a saved prompt

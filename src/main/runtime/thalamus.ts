@@ -6,7 +6,7 @@ import { KimiProvider } from '@main/runtime/providers/kimi'
 import { LocalProvider } from '@main/runtime/providers/local'
 import { MimoProvider } from '@main/runtime/providers/mimo'
 import { MiniMaxProvider } from '@main/runtime/providers/minimax'
-import { OpenAIProvider } from '@main/runtime/providers/openai'
+import { OpenAIProvider, openaiMaxOutputTokens } from '@main/runtime/providers/openai'
 import { OpenRouterProvider } from '@main/runtime/providers/openrouter'
 import { QwenProvider } from '@main/runtime/providers/qwen'
 import { StepfunProvider } from '@main/runtime/providers/stepfun'
@@ -1437,15 +1437,16 @@ export function contextWindowForModel(model: string): number {
   if (m.includes('grok-4')) return 256_000
   if (m.includes('grok-3')) return 131_072
   if (m.includes('grok-2')) return 131_072
-  // OpenAI
-  if (m.includes('gpt-5.4') || m.includes('gpt-5.5')) return 1_000_000
-  if (m.includes('gpt-5')) return 400_000
-  if (m.includes('gpt-4.1')) return 1_000_000
-  if (m.includes('gpt-4o')) return 128_000
-  if (m.includes('gpt-4')) return 128_000
-  if (m.includes('o1-mini')) return 128_000
-  if (m.includes('o1')) return 128_000
-  if (m.includes('o3') || m.includes('o4')) return 200_000
+  // OpenAI — verified live 2026-10-12 from the API's own over-limit error on
+  // every catalogue model. 1.05M = 922K input + 128K output; 400K = 272K +
+  // 128K. gpt-5.4-mini/-nano are 400K — only the bare gpt-5.4 is 1.05M.
+  if (m.includes('gpt-6') || /gpt-5\.[56]/.test(m)) return 1_050_000
+  if (/gpt-5\.4($|-\d{4})/.test(m)) return 1_050_000
+  if (m.includes('gpt-5') || m.includes('chat-latest')) return 400_000
+  if (m.includes('gpt-4.1')) return 1_047_576
+  if (m.includes('gpt-4o') || m.includes('gpt-4-turbo')) return 128_000
+  if (m.includes('gpt-4')) return 8_192
+  if (/^o[134]/.test(m)) return 200_000
   if (m.includes('gpt-3.5')) return 16_000
   return 8_000
 }
@@ -1500,12 +1501,9 @@ function maxOutputForModel(model: string): number {
     return 65_536
   if (m.includes('grok-4') || m.includes('grok-build')) return 32_768
   if (m.includes('grok')) return 32_768
-  // OpenAI
-  if (m.includes('gpt-5')) return 65_536
-  if (m.includes('gpt-4.1')) return 32_768
-  if (m.includes('gpt-4o') || m.includes('gpt-4')) return 16_384
-  if (m.includes('o1')) return 32_768
-  if (m.includes('o3') || m.includes('o4')) return 65_536
+  // OpenAI — the provider asks for the API's full per-model ceiling; one
+  // table (providers/openai.ts) so the reservation here can't drift from it.
+  if (/^(gpt-|chat-latest|o[134])/.test(m)) return openaiMaxOutputTokens(m)
   // OpenRouter prefixed models — match provider slug patterns
   if (m.includes('anthropic/')) return 0
   if (m.includes('openai/gpt-5')) return 65_536

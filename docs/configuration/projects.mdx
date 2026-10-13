@@ -1,0 +1,96 @@
+---
+title: "Projects"
+description: "Standing instructions plus files that brief every conversation started inside them"
+---
+
+# A Standing Brief for Your Work
+
+Some work isn't one conversation — it's a dozen conversations sharing one context: the same instructions repeated, the same files re-attached, the same background re-explained. A **project** gives that work a home. It's a named bundle of **standing instructions** and **files**; every conversation started inside it begins already briefed, without you pasting anything.
+
+A project is four things:
+
+| Part | What it is |
+|---|---|
+| **Title** | The project's name, shown everywhere its conversations appear |
+| **Emoji icon** | Its face — on the Projects tab, the chat hero, and the conversations list |
+| **Instructions** | Prompt text injected verbatim into every turn of every conversation in the project |
+| **Files** | A maintained set of reference files, listed to the model by name and read on demand |
+
+## How the Briefing Works
+
+Every turn of a project conversation carries a `<project>` block appended to the system prompt:
+
+- The **instructions** are injected **verbatim** — they're user-authored prompt text, so they *are* context.
+- The **files** are injected as a **list only**: each file's name, size, and absolute path — never its content. This is the same [model-led attachment policy](/architecture/context-compaction#model-led-attachments) as chat uploads: Wolffish consults a file with its tools (`pdf_info` / `pdf_search` / `pdf_read` for PDFs, `file_read` line ranges, `image_view` for images, spreadsheet and document tools) the moment its content matters, and is explicitly forbidden from claiming knowledge of a file it hasn't read or searched in the conversation.
+
+That split is what lets a project carry a 3,000-page reference PDF without costing anything until the moment a question actually depends on it. The overlay is computed once per turn, so it never disturbs prompt caching mid-turn — and across turns it changes only when you edit the project.
+
+<Note>
+  A file that's gone missing from disk is listed as **missing** rather than silently dropped — Wolffish tells you instead of guessing.
+</Note>
+
+## The Projects Page
+
+Open **Projects** from the app menu. Each project is a card showing its emoji, title, when it was last **edited** and last **used**, how many conversations it has, and how many files it carries — with actions to **view its conversations**, **edit**, or **delete** it. The page refreshes itself live when something changes underneath it — ask Wolffish mid-chat to build or restock a project and watch its card update in place.
+
+**New** creates a project and opens the editor dialog:
+
+- **Title and emoji** — the icon comes from a searchable emoji picker.
+- **Instructions** — a Markdown field, auto-saved moments after you stop typing (same discipline as the [procedures](/configuration/procedures) editor: no Save button, just **Done**).
+- **Files** — attach with a file picker. Each source is **copied into the project's own folder** (`uploads/project-<id>/` in the workspace), so the project owns its files and never dangles on an original that later moves or gets deleted. Removing a file deletes the project's copy; originals outside the workspace are never touched.
+- **New conversation** — starts a chat inside the project right from the dialog; **Exit project** steps the current chat out of it.
+
+Deleting a project keeps its past conversations in History — they simply lose the project context on future turns.
+
+## Conversations Inside a Project
+
+Start a project conversation any of these ways:
+
+- **Hover the New Chat button** — your projects fan out as cards; pick one and the new conversation starts inside it from the very first word.
+- **From the Projects tab of the Library page or its editor** — the New conversation action. (Since **v1.0.286** Projects, [Automations](/configuration/heartbeat) and [Procedures](/configuration/procedures) are three tabs of one **Library** destination rather than three sidebar rows; [the phone](/integrations/mobile-app#the-library) followed in its v1.0.56.)
+- **From your phone** — `/project` on [Telegram](/channels/telegram) and [WhatsApp](/channels/whatsapp) lists your projects by number; reply with one to start a conversation inside it. `/new` while inside a project deliberately stays in the project; `/project close` is the way out.
+
+The binding lives **on the conversation itself** (a `projectId` stamped on its file), so it survives restarts, merges, and channel hops — a project conversation continued anywhere is still a project conversation.
+
+Project conversations are recognizable everywhere:
+
+- An **empty project chat** swaps the Wolffish hero for the project's own identity — its emoji, title, and an instructions preview — and clicking it opens the project editor.
+- The **conversations sheet** in a project chat — behind the leading glass disc since **v1.0.267** — shows **only that project's conversations**, under the project's name.
+- Conversation chips and **History** rows wear the project's emoji.
+
+## A Project Picks Its Own Thinking Level
+
+A project is a standing brief, and since **v1.0.310** it also carries **its own thinking level** — **off, on, high or max** — chosen from a switch on its card, rather than inheriting whatever your chat happened to be set to. Conversations started inside the project and its bound [procedures](/configuration/procedures) and [automations](/configuration/heartbeat) run at the level the project declares.
+
+New projects start from **the mode you are running right now**, so nothing changes until you say so, and **anything saved before v1.0.310 carries no setting** and keeps following your chat exactly as it always did. The levels offered are **the ones your selected model actually honours**, so a card can never present one the model would silently ignore. The same switch sits on the same card on [your phone](/integrations/mobile-app#the-workspace-editable), reading and writing **the very same value**.
+
+## Procedures and Automations in a Project
+
+Recurring work can be project-bound too:
+
+- A **[procedure](/configuration/procedures)** bound to a project runs with the project's instructions and files, and its run conversations register under the project.
+- An **[automation](/configuration/heartbeat)** binds via the `project:` [setting marker](/configuration/heartbeat#job-setting-markers) in its job block — its scheduled runs get the same briefing.
+
+So a "weekly status draft" procedure inside your *Client X* project already knows the client, the tone, and the reference documents every time it fires.
+
+## Through Wolffish
+
+You don't have to touch the page — the **`projects`** capability gives Wolffish the same hands:
+
+- *"Make a project for the kitchen renovation with these PDFs"* → `project_create` + `project_add_files`
+- *"What projects do I have?"* → `project_list` (number, icon, title, file count)
+- *"Show the renovation project"* → `project_view` (full instructions + files with per-file existence and size)
+- *"Rename it / change its icon / rewrite its instructions"* → `project_update`
+- *"What have we discussed in it?"* → `project_conversations`, then `conversation_read` on any of them
+- *"Delete it"* → `project_delete` (asks you to confirm first)
+
+## Where They Live
+
+Projects are stored as a single JSON file at `brain/projects.json` in your [workspace](/architecture/workspace) — a flat list written atomically, exactly like [procedures](/configuration/procedures). Each record is `{ id, title, icon, instructions, files, createdAt, updatedAt }`, and each file reference points inside the workspace at the project's own copy. Treat it as managed data: create, edit, and delete through the page or through Wolffish rather than hand-editing.
+
+## See Also
+
+- [Context Lifecycle](/architecture/context-compaction) — the model-led attachment policy project files ride on
+- [Procedures](/configuration/procedures) — saved prompts that can run inside a project
+- [Heartbeat & Scheduling](/configuration/heartbeat) — scheduled jobs that can run inside a project
+- [Built-in Capabilities](/capabilities/built-in-capabilities) — the `projects` capability and its eight tools

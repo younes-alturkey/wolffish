@@ -1,0 +1,91 @@
+---
+title: "DeepSeek"
+description: "Set up DeepSeek — Wolffish's recommended default provider for agentic tasks"
+---
+
+# DeepSeek (Recommended)
+
+```
+POST https://api.deepseek.com/chat/completions
+```
+
+Uses SSE streaming with OpenAI-compatible tool-calling format.
+
+**DeepSeek is Wolffish's recommended default provider for agentic tasks.** The V4 family delivers frontier-class reasoning and tool-use reliability at a fraction of what competing frontier models charge on output-heavy workloads — while matching or exceeding their agentic performance on multi-step tool chains. It's also MIT-licensed, so you can self-host for $0 in API fees if you have the infra. Since August 2026 DeepSeek bills **peak/off-peak** (peak 01:00–04:00 and 06:00–10:00 UTC; off-peak is half price), which is why prices below read as ranges.
+
+Connecting DeepSeek auto-selects **DeepSeek-V4.1-Flash** — served under the plain id `deepseek-flash`, fast, cheap, and built for the tool-heavy turns most agentic work is made of. Since **September 11, 2026** it is the whole Flash line: it replaced `deepseek-v4-flash`, `deepseek-v4-flash-vision-exp` and the other V4 Flash aliases, which DeepSeek still routes to it. **V4 Pro** remains the heavier reasoning tier, one pick away in the composer's model switch.
+
+Best for: Agentic multi-step workflows, tool calling, research chains, cost-efficient daily automations.
+
+<Tip>
+  If you're setting up Wolffish for the first time and want one provider that does it all — reliable tool use, strong reasoning, fast responses, minimal cost — start with DeepSeek and leave it on the `deepseek-flash` default. It sees images too, so computer use and browser control work without switching providers. You can always add Anthropic or OpenAI later for specific use cases.
+</Tip>
+
+## Getting an API Key
+
+1. Go to [platform.deepseek.com](https://platform.deepseek.com)
+2. Sign up or log in
+3. Navigate to **API Keys** and create a new key
+4. Paste it into Wolffish → Settings → Models → DeepSeek
+
+## Models
+
+| Model | Context | Modes | Input / Output (per MTok) | Notes |
+|-------|---------|-------|--------------------------|-------|
+| **deepseek-flash** | 1M | Off, High, Max | $0.15–0.30 / $0.60–1.20 | DeepSeek-V4.1-Flash. Auto-selected on connect, **vision-capable**, strong agentic performance. Cached: $0.003–0.006/MTok. |
+| deepseek-v4-pro | 1M | Off, High, Max | $0.66–1.32 / $1.98–3.96 | The heavier reasoning tier. Cached: $0.022–0.044/MTok. |
+
+<Note>
+  **The retired Flash ids still work.** `deepseek-v4-flash`, `deepseek-v4-flash-vision-exp` and the other V4 Flash aliases are routed by DeepSeek to V4.1 Flash, and Wolffish treats them the same way — same 1M context, same 64K output ceiling, same vision gate. They no longer appear in the catalog because there is only one model behind all of them.
+
+  **`deepseek-v4-pro` is on borrowed time.** From **September 14, 2026** DeepSeek routes it to V4.1 Flash and bills at the Flash rate, while the row keeps its own prices until a V4.1 Pro ships.
+</Note>
+
+## Vision
+
+DeepSeek was text-only across its whole lineup until **August 21, 2026**, when an experimental vision Flash arrived. Since **September 11, 2026** vision is simply part of the default: **`deepseek-flash` carries the vision badge**, so the agent genuinely looks — screenshots, attached photos and [`image_view`](/capabilities/built-in-capabilities) crops reach the model as pixels, verified live against the API. In practice that means [computer use](/capabilities/built-in-capabilities#desktop-automation) and browser control work on DeepSeek without switching to another provider first.
+
+`deepseek-v4-pro` remains text-only — an image part is rejected outright — so on it the agent works from captions and tools rather than sight, and Wolffish's vision gate makes sure pixels are only ever sent where they're accepted.
+
+<Warning>
+  Before v1.0.287 the app did not recognise the version-less id: a chat on `deepseek-flash` was treated as an **8K-context, 16K-output, text-only** model rather than the 1M-context vision model it is, and images were stripped before sending. Update if you are pinning that id by hand.
+</Warning>
+
+## Reasoning modes
+
+How this model reasons is set in the **model card beside the chat input** — hover the model switch to preview the card, click to pin it open. The top chip row, labelled **Thinking**, is the control: pick a chip and it applies from your next message. Two separate ideas combine here:
+
+### Thinking — *whether* the model reasons
+
+- **Off** — the model answers immediately. Fastest and cheapest; ideal for simple, direct tasks.
+- **On** (the chip reads **Normal**) — the model first works through the problem in a dedicated reasoning pass before replying. Slower and uses more tokens, but markedly more accurate on multi-step, logical, or ambiguous tasks.
+
+### Effort — *how hard* it thinks
+
+Only effort-capable models expose this; it applies once thinking is on.
+
+- **High** — standard reasoning depth. The right default for most agentic work.
+- **Max** — the model reasons longer and deeper for the hardest problems. More tokens and latency in exchange for higher quality on complex work.
+
+### The chip row
+
+| Chip | Icon | Meaning |
+|------|------|---------|
+| Off | lightning | Thinking off — direct answer |
+| Normal | brain | Thinking on — no effort control |
+| High | AI brain | Thinking on, standard effort |
+| Max | flame | Thinking on, maximum effort |
+
+The active chip is tinted; the rest sit quiet. Each model shows only the chips it genuinely supports — a model that always reasons has no **Off**, a model with a single mode shows that one chip inert, and a model that can't reason at all replaces the row with *"Reasoning is not supported by this model."* Wolffish remembers your choice per model. (Before **v1.0.236** this was a colour-coded brain button on the composer; it moved into the model card, beside the Single/Workflow row, so every model knob sits in one panel.)
+
+**On DeepSeek:** All V4 models support Off / High / Max — and since **v1.0.251** the three settings genuinely differ. The effort field used to be sent one level too deep in the request, where nothing complained and nothing listened, so High and Max measured less than a third of a percent apart — two settings that were never sent. With the field in its correct place and measured live: **Off thinks not at all, High thinks hard, and Max thinks roughly twice as long as High** on a problem that rewards it.
+
+---
+
+## Model Selection & Retries
+
+Wolffish communicates with LLMs via ten native cloud providers, an aggregator (OpenRouter), and a local option, all using pure `fetch()` — no SDKs. Each provider has its own streaming format and tool-calling convention, which `wernicke.ts` normalizes into a single interface.
+
+Select your Brain model explicitly from the **model switch beside the chat input** — the model you choose is the one that runs. There's no cascade or fallback order; for parallel work, switch the chat into [workflow mode](/configuration/workflow-mode), where the master can run agents on any connected model, DeepSeek included.
+
+When a cloud Brain hits a transient error, `thalamus` retries the **same** model on a backoff schedule (it also uses `net.isOnline()` for instant offline detection). It does not route you to a different provider on failure.

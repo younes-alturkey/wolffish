@@ -1,0 +1,245 @@
+---
+title: "ناقل الأحداث (Corpus)"
+description: "كيف تتواصل وحدات الدماغ عبر أحداث مُصنّفة بنظام النشر والاشتراك"
+---
+
+# كيف تتواصل الوحدات
+
+يربط corpus callosum جميع مناطق الدماغ. تبث الوحدات إشعارات «هذا ما حدث» عبر أحداث مُصنّفة على corpus — لا تحتاج أي وحدة لمعرفة من يستمع. وعندما يتطلب الأمر طلبًا/استجابة مباشرين (مثل سؤال prefrontal لـ cerebellum عن فهرس القدرات، أو لـ cortex عن نتائج البحث)، فذلك يمر عبر مراجع وحدات تُحقن عند بدء التشغيل، لا عبر الناقل. هذا يبقي النظام معياريًا وقابلًا للفحص وسهل التوسيع.
+
+## البنية المعمارية
+
+مبني على [mitt](https://github.com/developit/mitt) — مُرسِل أحداث مُصنّف خفيف الوزن (200 بايت). كل وحدة تستقبل مثيل corpus الوحيد في مُنشئها:
+
+```typescript
+class MyModule {
+  constructor(private corpus: Corpus) {
+    this.corpus.on('message.received', this.handleInput.bind(this))
+  }
+}
+```
+
+يتم تهيئة corpus أولًا أثناء بدء التشغيل ويُمرَّر إلى جميع الوحدات الأخرى. الإشعارات تركب الناقل دائمًا؛ أما مسارات الطلب/الاستجابة المباشرة القليلة فهي مراجع تُسلَّم عند بدء التشغيل، وليست `import` بين الوحدات أبدًا.
+
+## الاستخدام
+
+```typescript
+// Emit an event
+corpus.emit('tool.called', {
+  taskId: 'TASK-42',
+  tool: 'shell_exec',
+  args: { command: 'ls -la' }
+})
+
+// Listen for an event
+corpus.on('tool.completed', (payload) => {
+  console.log(`${payload.tool} finished in ${payload.durationMs}ms`)
+})
+```
+
+<Info>
+  يُثبّت corpus نفسه مُعالج أحرف بدل داخليًا عند إنشائه — كل حدث يمر عبره يُلتقط ويُخزَّن مؤقتًا ثم يُفرَّغ إلى ملفات السجل اليومية. الوحدات تحصل على التسجيل مجانًا.
+</Info>
+
+## فئات الأحداث
+
+تم تعريف أكثر من 80 حدثًا مُصنّفًا في خريطة الأنواع `CorpusEvents`. الفئات الرئيسية:
+
+### أحداث الرسائل والسياق
+
+| الحدث | صادر من | الحمولة |
+|---|---|---|
+| `message.received` | Agent | `{ content, timestamp }` |
+| `message.classified` | Agent | `{ type, complexity }` |
+| `context.built` | Prefrontal | `{ tokenCount, tokenBudget, sectionsIncluded }` |
+| `tools.filtered` | Agent | `{ total, kept, dropped }` |
+| `compaction.started` | Agent | `{ messagesCount, force? }` |
+| `compaction.applied` | Agent | `{ tokensSaved, targetsCount }` |
+
+### أحداث LLM
+
+| الحدث | صادر من | الحمولة |
+|---|---|---|
+| `llm.request` | Thalamus | `{ provider, model }` |
+| `llm.response` | Thalamus | `{ provider, inputTokens, outputTokens, cacheCreationTokens, cacheReadTokens, durationMs }` |
+| `llm.error` | Thalamus | `{ provider, error }` |
+| `llm.retry` | Thalamus | `{ provider, attempt, delayMs, errorClass }` |
+| `turn.usage` | Agent | `{ provider, model, iterations, toolCalls, inputTokens, outputTokens, cacheHitRate, cost, ... }` |
+| `usage.recorded` | دفتر الاستخدام | `{ provider, model, inputTokens, outputTokens, cost }` |
+
+`turn.usage` هو التجميع الكلي للدور بأكمله، مع تسعير شطر الذاكرة المخبأة على حدة حتى تكون مكاسب التخبئة قابلة للقياس مباشرة من سجل corpus.
+
+### أحداث الأدوات والمهام
+
+| الحدث | صادر من | الحمولة |
+|---|---|---|
+| `tool.called` | Motor | `{ taskId, tool, args }` |
+| `tool.completed` | Motor | `{ taskId, tool, durationMs }` |
+| `tool.failed` | Motor | `{ taskId, tool, error, attempt }` |
+| `task.created` | Motor | `{ taskId, name, stepsTotal }` |
+| `task.stepCompleted` | Motor | `{ taskId, step, total }` |
+| `task.completed` | Motor | `{ taskId, durationMs }` |
+| `task.failed` | Motor | `{ taskId, failedAt, error }` |
+| `task.stopped` | Motor | `{ taskId, stoppedAt }` |
+
+### أحداث الأمان
+
+| الحدث | صادر من | الحمولة |
+|---|---|---|
+| `safety.allowed` | Amygdala | `{ tool, args }` |
+| `safety.blocked` | Amygdala | `{ tool, args, reason }` |
+| `safety.confirmNeeded` | Amygdala | `{ id, tool, args, reason }` |
+| `safety.approved` | Amygdala | `{ id }` |
+| `safety.denied` | Amygdala | `{ id }` |
+| `safety.autoApproved` | Amygdala | `{ id, tool, args, level, reason }` |
+
+### أحداث الذاكرة والتعلم
+
+| الحدث | صادر من | الحمولة |
+|---|---|---|
+| `memory.episodeSaved` | Hippocampus | `{ date, section }` |
+| `memory.consolidated` | Brainstem | `{ week }` |
+| `memory.knowledgeUpdated` | Hippocampus | `{ file, fact }` |
+| `feedback.recorded` | Basal Ganglia | `{ action, outcome }` |
+
+### أحداث الصحة والفهرسة
+
+| الحدث | صادر من | الحمولة |
+|---|---|---|
+| `health.warning` | Hypothalamus | `{ resource, usage, threshold }` |
+| `health.critical` | Hypothalamus | `{ resource, message }` |
+| `index.reindexStarted` | Cortex | `{ startedAt, total }` |
+| `index.reindexProgress` | Cortex | `{ done, total }` |
+| `index.reindexed` | Cortex | `{ filesCount, durationMs }` |
+
+### أحداث الجدولة
+
+| الحدث | صادر من | الحمولة |
+|---|---|---|
+| `brainstem.jobStarted` | Brainstem | `{ job, type, label, timestamp }` |
+| `brainstem.jobCompleted` | Brainstem | `{ job, type, label, timestamp, durationMs }` |
+| `brainstem.jobFailed` | Brainstem | `{ job, type, label, timestamp, error }` |
+| `brainstem.jobSkipped` | Brainstem | `{ job, label, reason }` |
+| `brainstem.jobCatchup` | Brainstem | `{ job, label, missedAt }` |
+| `brainstem.schedulerReloaded` | Brainstem | `{ jobs, timestamp }` |
+
+وفيما وراء هذه، تغطي عائلات كاملة تثبيت التبعيات (`dependency.*`)، والقنوات (`telegram.*` و`whatsapp.*`)، والصوت والكلام (`voice.*` و`stt.*`)، ورفع الملفات (`upload.*`)، وتبديل المحادثات (`conversation.changed`). كلها تتبع النمط نفسه: حمولة مُصنّفة، وتسجيل تلقائي.
+
+## تسجيل الأحداث
+
+يتم تسجيل كل حدث في ملفات Markdown يومية في `brain/corpus/YYYY-MM-DD.log.md`. تُجمَّع عمليات الكتابة عبر تفريغ مخزن مؤقت مدته ثانيتان لتحسين الأداء — كل حدث يهبط ككتلة بطابع زمني:
+
+```markdown
+## 09:15:02
+- message.received → {"content":"What PRs need review?","timestamp":"2026-07-03T09:15:02.114Z"}
+
+## 09:15:02
+- context.built → {"tokenCount":5012,"tokenBudget":200000,"sectionsIncluded":["identity","device","prefrontal","capabilities","memory_map"]}
+
+## 09:15:04
+- tool.called → {"taskId":"TASK-89","tool":"github_list_prs","args":{"state":"open"}}
+
+## 09:15:05
+- safety.allowed → {"tool":"github_list_prs","args":{"state":"open"}}
+
+## 09:15:06
+- tool.completed → {"taskId":"TASK-89","tool":"github_list_prs","durationMs":1204}
+
+## 09:15:07
+- memory.episodeSaved → {"date":"2026-07-03","section":"09:15"}
+```
+
+يتم تنظيف السجلات القديمة تلقائيًا بعد 7 أيام لمنع النمو غير المحدود لاستخدام القرص. هذا الحذف مقصود بالتصميم — كل ما يستحق الاحتفاظ به لمدة أطول محفوظ أصلًا في مكان آخر (الحلقات، والملخصات الأسبوعية، و`run-history.md`)، والسجلات نفسها يفهرسها cortex ما دامت موجودة.
+
+<Tip>
+  اقرأ سجلات corpus عند تصحيح سلوك غير متوقع. تُظهر لك التسلسل الدقيق للأحداث التي وقعت — أي وحدة فعلت ماذا ومتى.
+</Tip>
+
+## الاشتراك وإلغاء الاشتراك
+
+```typescript
+// Subscribe — returns an unsubscribe function
+const off = corpus.on('task.completed', (payload) => {
+  console.log('Task done:', payload.taskId)
+})
+
+// Unsubscribe when done
+off()
+```
+
+يستخدم مُشغّل الدور هذا النمط للاشتراك في الأحداث طوال مدة الدور، ثم يلغي الاشتراك في كتلة `finally`.
+
+## إضافة أحداث جديدة
+
+لإضافة نوع حدث جديد:
+
+1. أضف اسم الحدث ونوع حمولته إلى خريطة الأنواع `CorpusEvents` في `src/main/runtime/corpus.ts`
+2. أرسله من الوحدة المعنية
+3. اشترك فيه من أي وحدة تحتاج للتفاعل
+
+يتم تسجيل الحدث تلقائيًا بواسطة مُعالج أحرف البدل — لا حاجة لتوصيل إضافي.
+
+## فوائد التصميم
+
+توفر بنية ناقل الأحداث:
+
+- **استقلال الوحدات**: يمكن تطوير واختبار وتحديث الوحدات بشكل مستقل
+- **قابلية مراقبة كاملة**: كل تفاعل يتم تسجيله مع طابع زمني
+- **سهولة التوسيع**: الوحدات الجديدة تشترك في الأحداث الموجودة دون تعديل المُنتجين
+- **قابلية الاختبار**: استخدم corpus وهميًا في الاختبارات وتحقق من إرسال الأحداث بشكل صحيح
+
+## مثال عملي: مراقبة صحة Hypothalamus
+
+يوضح hypothalamus كيف تستخدم الوحدة corpus لمراقبة النظام بأكمله دون استيراد أي وحدة أخرى:
+
+```typescript
+class Hypothalamus {
+  private failureCount = 0
+  private lastContextTokens = 0
+
+  constructor(private corpus: Corpus) {
+    // Listen for problems from other modules
+    corpus.on('llm.error', () => {
+      this.failureCount++
+      if (this.failureCount > 5) {
+        corpus.emit('health.warning', {
+          resource: 'llm',
+          usage: this.failureCount,
+          threshold: 5
+        })
+      }
+    })
+
+    corpus.on('context.built', (payload) => {
+      this.lastContextTokens = payload.tokenCount
+      if (payload.tokenCount > payload.tokenBudget * 0.9) {
+        corpus.emit('health.warning', {
+          resource: 'context',
+          usage: payload.tokenCount,
+          threshold: payload.tokenBudget
+        })
+      }
+    })
+
+    corpus.on('tool.failed', (payload) => {
+      if (payload.attempt >= 3) {
+        corpus.emit('health.critical', {
+          resource: 'tool',
+          message: `${payload.tool}: max retries exceeded`
+        })
+      }
+    })
+
+    // Reset failure count on success
+    corpus.on('llm.response', () => {
+      this.failureCount = 0
+    })
+  }
+}
+```
+
+لا يلمس hypothalamus وحدات thalamus أو motor أو prefrontal مباشرة. بل يراقب سلوكها عبر الأحداث ويطلق أحداثه الخاصة عند تجاوز الحدود. يمكن لأي وحدة بعد ذلك التفاعل مع تحذيرات الصحة — يمكن لواجهة المستخدم عرض مؤشر، ويمكن لـ brainstem تشغيل مهمة تشخيصية، ويمكن لـ prefrontal تضمين سياق الصحة في المحث التالي.
+
+<Warning>
+  يجب أن تكون مُعالجات الأحداث سريعة وغير حاجبة. يجب تأجيل العمل الثقيل الناتج عن حدث (setTimeout أو queueMicrotask) لتجنب إبطاء مُنتج الحدث.
+</Warning>

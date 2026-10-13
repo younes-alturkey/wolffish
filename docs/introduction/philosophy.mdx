@@ -1,0 +1,48 @@
+---
+title: "Design Philosophy"
+description: "The principles that govern every decision in Wolffish"
+---
+
+# The Ground Rules
+
+These are the principles that govern every decision in Wolffish. Future changes — including community contributions — must follow them.
+
+## Markdown is the Source of Truth
+
+Every piece of agent behavior lives in human-readable markdown files: personality (`soul.md`), procedures (`agents.md`), skill instructions (`SKILL.md`), danger patterns, memory, task logs, and feedback. The code never contains opinions about what the agent should do. It just reads markdown and acts on it.
+
+This means you can read your agent's entire brain with a text editor, version-control it with git, edit behavior without rebuilding the app, and share capabilities by sharing markdown files.
+
+## Code is Pure Plumbing
+
+The 15 runtime modules are orchestration code. They move data between markdown files and the LLM. They don't make decisions — the LLM makes decisions based on the markdown context it receives. The only "smart" code is keyword matching in the RAS (for relevance scoring) and regex matching in the amygdala (for safety patterns). Everything else is file I/O, HTTP requests, and string concatenation.
+
+## One LLM Call Per Message
+
+The pipeline assembles context **before** calling the LLM, not by calling the LLM multiple times. Context building is pure code — SQLite queries, keyword matching, file reading. The LLM is called once with the assembled context. If the LLM calls tools, the results go back for another call. But there's never an LLM call to "decide what to search" or "classify the message." Those are code operations.
+
+## Deterministic Pipeline, Creative LLM
+
+The same input follows the same path through the same gates every time. The thalamus routes, the RAS scores, the prefrontal assembles, the amygdala gates. This is deterministic. The LLM adds creativity and intelligence at one specific point in the pipeline. The architecture around it is rigid and predictable.
+
+## Local-First, Cloud-Enhanced
+
+Wolffish can work 100% offline with a local Ollama model — no cloud dependency at all. Cloud providers (DeepSeek, Claude, OpenAI) and Ollama are both optional; you choose what fits your setup from the model switch beside the chat input. Memory, skills, feedback — all stored locally regardless of which LLM provider you use. There's no automatic fallback between them: the model you select is the one that runs, so to work offline, flip the model switch to Local.
+
+## Capabilities are Self-Contained
+
+The core runtime has zero knowledge of specific tools. Shell, filesystem, git — these are all capability folders in the workspace. Each has a SKILL.md and optionally a plugin/ folder. The cerebellum discovers and loads them. You can delete any capability without breaking the core.
+
+## Keep Everything, Let Compaction Decide
+
+Hippocampus saves every conversation turn. Basalganglia records every tool outcome. Corpus logs every event. Nothing is discarded at write time. The brainstem's nightly compaction job (LLM-powered) decides what's worth promoting to long-term knowledge.
+
+## Build for Smart Future Models
+
+The markdown instructions assume a smart model that follows instructions well. Don't add code workarounds for dumb model behavior — improve the markdown instead. When models get smarter, the markdown-first approach scales naturally.
+
+This extends to runtime behavior: no hard-coded timeouts, no artificial result caps, no arbitrary limits in capability plugins. Commands run until they finish. The LLM decides when to set a timeout and how many results to request. We trust the model to make good decisions — and when it doesn't, we improve the SKILL.md instructions rather than adding code guardrails. The only hard limits are OOM protection (memory safety), not functionality restrictions.
+
+## One Folder Rules All
+
+Everything Wolffish touches lives in `~/.wolffish/`. Delete it, everything resets. No orphaned processes, no system-level changes, no scattered state.

@@ -1,0 +1,223 @@
+---
+title: "Terminal CLI"
+description: "The whole app in a terminal — a wolffish command that attaches to the running agent, chats, browses settings, and works over SSH"
+---
+
+# The Whole App, in a Terminal
+
+Since **v1.0.239** there is a `wolffish` command, and it is not a smaller second Wolffish. Since **v1.0.295** it is not a smaller second *interface* either: it is a **full-screen terminal client**, on par with the app it belongs to. Every command it has is a call into **the same code the desktop windows call** — the same settings, the same conversations, the same agent. Every settings row carries a real label and a sentence or two of description, the same facts the desktop cards teach — written where the settings are defined, so the terminal can never print a raw key where a name should be. One deliberate trade since **v1.0.243**: **the terminal is an English surface** — the desktop app still speaks your language, Arabic included; only the terminal stopped translating. The desktop app remains the primary way to live with Wolffish. The terminal is the same app for the places a window can't go: an SSH session, a script, a [server with no screen](/getting-started/server-deployment).
+
+```bash
+wolffish "what changed in the workspace today?"
+```
+
+One-shot: ask, print, exit. Or just `wolffish` for an interactive session.
+
+## A View, Not the App
+
+The important part is what the terminal *is*: **a view**. Wolffish runs as a background process and the command attaches to it — if the desktop app is open, the terminal attaches to *that*, and turns you run from the shell stream into the window too. If nothing is running, the first command **starts the agent itself**, headless, and attaches.
+
+That has consequences worth internalizing:
+
+- **Leaving stops nothing.** Close the terminal or drop the SSH connection and the turn keeps working. Come back, run `wolffish`, and it reattaches to whatever is still running.
+- **Detaching is not cancelling.** Stopping a run is its own deliberate act: `Ctrl-C` during a turn, or `wolffish cancel` from anywhere — which stops a running turn on *any* channel, including a runaway automation on a headless box.
+- **Approvals park.** A tool call waiting on your yes/no when the terminal goes away doesn't fail — it parks, and is redrawn when you reattach (`/pending`), or answered from [your phone](/integrations/mobile-app).
+
+<Note>
+  Three commands never start the agent: `wolffish status`, `wolffish service`, and `wolffish path`. They report on the machine's state, so they must be able to say "not running" rather than quietly starting a daemon to answer the question. Everything else brings the agent up on demand.
+</Note>
+
+## Chat
+
+```bash
+wolffish                          # open the full-screen client
+wolffish "<prompt>"               # ask once, print, exit
+wolffish -p "<prompt>" -f a.pdf   # attach files by path
+wolffish -p "…" --project <id>    # ask inside a project
+cat log.txt | wolffish -p "why?"  # pipe context in
+wolffish resume [id]              # continue a past conversation
+```
+
+`wolffish -p "…"` with a pipe still prints plain text and exits — **scripts do not change**. Everything that took a `--json` flag still does. What changed in **v1.0.295** is the interactive session.
+
+### A real screen
+
+`wolffish` used to be a line at a time: type, wait, read, and hope the tool calls you could not see were going somewhere. The conversation now streams into a **scrolling feed with the same cards the app draws** — tool calls with their output, [file edits as diffs](/capabilities/coding#every-change-arrives-as-a-diff), delivered files, [todo lists](/capabilities/coding#the-task-list), workflow rosters, background tasks and [countdowns](/capabilities/built-in-capabilities#core-system).
+
+The prompt at the bottom is a real editor: **Shift+Enter** adds a line, a long paste folds into a placeholder, **`@path`** completes and attaches a file, and **`/`** completes every command.
+
+Under the prompt sits what a chat window shows for free and a terminal never did — the **mode, model, thinking effort, plan mode and project** on one line, and while a turn runs, **what the agent is doing right now, how long it has been at it, how much of the context window is used, and what it has cost**. It is the app's own context meter, made for a terminal.
+
+Approvals and questions arrive as **cards you answer with the keyboard**: allow once, allow always, deny; pick an option by number. A prompt typed mid-turn **[queues](#messaging-mid-turn)** instead of being refused, **`esc` twice interrupts**, and if the app restarts under you the terminal **reconnects on its own** and picks the conversation back up.
+
+### Keys
+
+**`ctrl+p`** opens a **command palette** listing every command with its key. Beyond that, `ctrl+x` is the **leader**: press it, then a letter.
+
+| Key | |
+| --- | --- |
+| `ctrl+p` | Command palette |
+| `ctrl+x` `l` · `ctrl+x` `n` | Conversations (fuzzy-searchable, with rename and delete) · New conversation |
+| `ctrl+x` `m` · `ctrl+t` | Switch model, then thinking effort · cycle thinking effort |
+| `ctrl+x` `p` · `Tab` · `ctrl+x` `j` | [Plan mode](/capabilities/coding#plan-first-change-after) · chat mode · bind a project |
+| `ctrl+x` `o` · `ctrl+x` `s` · `ctrl+x` `d` | Settings · status · usage |
+| `ctrl+x` `v` · `ctrl+x` `r` · `ctrl+o` | Show/hide tool detail · reasoning · expand the last tool output |
+| `ctrl+x` `f` · `ctrl+x` `e` · `ctrl+x` `y` | Attach a file · open the draft in `$EDITOR` · copy the last answer |
+| `ctrl+x` `c` · `ctrl+x` `x` · `ctrl+x` `a` | Compact context · export transcript · abort a countdown |
+| `esc` · `ctrl+c` · `ctrl+d` | Interrupt the turn · clear the draft · exit |
+
+`/help` (or `ctrl+x` `?`) lists the whole vocabulary. Every slash command in the table below still works, typed.
+
+### Everything the app can do, from a box with no screen
+
+**Settings** open as the app's own **page → card → row** browser: every switch, number, choice and secret edits in place, every action the app has (pairing a phone, testing a key, adding an MCP server, installing an engine) runs from the same list, and a search reaches across every row at once.
+
+**Usage** shows the same totals, providers and models as the app's panel, with a range picker and a daily strip. **Status** shows the daemon, brain, autostart, PATH and channels. Projects, procedures, automations (with what is running and queued), delivered files, parked approvals, background tasks and the daemon log each have a dialog of their own.
+
+### Built into the app, updated with it
+
+The client is a **compiled program of its own**, shipped inside the app and pointed at by the same `wolffish` command as before — **nothing to install, nothing to keep up to date**, and an app update replaces it in the same step. On Windows it is a proper console program, so the extra launcher the old client needed is gone.
+
+The terminal's own small preferences — its theme, prompt history, recent models — live with the app's data, so a machine you reach over SSH remembers them too.
+
+### Rendering and files
+
+Replies arrive as **rendered markdown** — headings, bold, lists, tables, quotes, and code in a bordered block labelled with its language, drawn as the model streams. The model sends the same markdown to every surface, deliberately; the terminal simply got the renderer the window and the phone already had.
+
+Files are **paths in both directions**, because the terminal and the agent share one filesystem: nothing is uploaded, nothing is encoded, and a delivered file prints the path you can already open.
+
+Since **v1.0.264** the input has been a genuine **multi-line composer**. **Paste is safe**: a pasted block of any size lands whole and nothing is sent until you press Enter — the terminal is asked to bracket pastes, so a newline inside one is a line break, never a send. **Shift+Enter starts a new line** on terminals that speak the modern key protocol (iTerm2 3.5+, kitty, WezTerm, Ghostty, Alacritty, foot), and **Option+Enter or Ctrl+J do the same everywhere**. Pasted text is scrubbed of stray control characters, so a hostile paste can never script your terminal — and on the Windows console, where keystrokes can't be intercepted, a pasted block is stitched back into one message instead of being sent line by line.
+
+### Messaging mid-turn
+
+Since **v1.0.296** a message typed while a turn is running is **handed to the work in flight** rather than queued behind it. The agent reads it at its **next step** — the moment the batch of tool calls it is running finishes, before it chooses the next one — so *"skip the tests folder"*, *"use the other file"*, *"that's enough, just summarise what you have"* do what they say while the run is still going.
+
+Your message sits at the end of the feed as its own entry marked **"Read at the next step"**, and **`esc` takes the last one back** — straight into the composer as a draft, so a message sent too soon costs nothing. Once the agent has read it, it cannot be unsent. Stop a turn and an unread message is handed back rather than silently applied to whatever comes next.
+
+### The slash vocabulary
+
+| | |
+| --- | --- |
+| `/new` · `/resume [id]` · `/switch <n\|id>` | Move between conversations without leaving the session |
+| `/show [tools\|clean] [n]` | Read the conversation back, paged, with or without tool calls |
+| `/attach <path…>` · `/files` · `/open <n>` · `/save <n> <dest>` | Stage files for the next message; collect what the agent delivered |
+| `/pending` | Answer approvals parked by an earlier session |
+| `/cancel` · `/info` · `/status` · `/usage` · `/logs` · `/diagnose` | The running turn, the conversation, the machine |
+| `/projects` · `/procedures` · `/automations` · `/customizations` | The [workspace](#the-app-in-the-terminal), browsable in place |
+| `/settings [name]` · `/set <id> <value>` · `/model` · `/mode` · `/plan` | Settings, from a browser to a one-liner |
+
+`Ctrl-C` follows one rule — it stops the nearest thing: a half-written draft first, then a running turn, then a nested prompt, then (pressed twice) the session itself, always saying which. `Ctrl-D` leaves immediately. **The agent keeps running without you** either way.
+
+### HTML that runs
+
+Since **v1.0.295** the client renders a **live HTML preview** for a page the agent just built, rather than a static picture of its markup.
+
+## The App, in the Terminal
+
+The top level is the app's own navigation and nothing more — `conversations`, `projects`, `procedures`, `automations`, `customizations`, `settings` — because a second taxonomy to memorize would be a second app:
+
+```bash
+wolffish conversations            # list · show · resume · diagnose · rm
+wolffish projects                 # browse · new · show · edit · copy · paste · rename · rm
+wolffish procedures               # browse · new · run · edit · copy · paste · mode · rm
+wolffish automations              # browse · show <label> · run <label> · edit · copy · paste
+wolffish customizations           # soul · user · agents — view, edit, copy or paste <name>
+```
+
+Since **v1.0.264** every prompt-shaped thing has **copy and paste**: `copy` puts the instructions or prompt on your system clipboard — pbcopy on macOS, the real clipboard on Windows and Linux, and **over SSH it fills the clipboard on the machine you are sitting at** — and `paste` takes a whole multi-line replacement in one go and overwrites the field. Pasting an automation's prompt is surgical: the schedule heading and the attached file and folder markers are preserved byte for byte. Scripts get it for free:
+
+```bash
+cat new-prompt.md | wolffish procedures paste <id>
+```
+
+Projects, procedures and automations all carry [attached files and working folders](/configuration/projects), editable here exactly as in the app:
+
+```bash
+wolffish procedures files <id> add report.pdf   # copied into the workspace
+wolffish automations dirs "Daily digest" add ~/notes
+```
+
+And the workspace itself is walkable — `wolffish files` to browse it, `wolffish view <path>` to read one file (credentials masked unless you pass `--raw`), `wolffish edit <path>` to change one.
+
+### Settings, three ways
+
+`wolffish settings` *is* the settings screen, walked the way the app walks it — **page → card → setting** — with a blank line always meaning "up one level", so there is one key to learn rather than a different escape at every depth. Jump straight to a card (`wolffish settings channels telegram`), name a destination (`wolffish settings notion`), or type any word and get everything matching it, wherever it lives.
+
+The things that were never a single value sit on their cards too: entering a provider key, choosing the brain, connecting Notion or GitHub or Google, adding an MCP server, pairing a phone, linking WhatsApp or Telegram, running a reflection now, resetting the workspace. Keys are **typed hidden** — they land in neither your terminal nor your shell history — and tested before they're saved.
+
+For scripts, skip the browsing:
+
+```bash
+wolffish settings list            # read them all, tokens redacted
+wolffish settings set channels.telegram.verbose true
+wolffish brain deepseek deepseek-v4-flash
+```
+
+### An editor that always resolves
+
+Since **v1.0.264** every "Edit" opens **nano by default** on macOS and Linux and **Notepad on Windows** — deliberately ahead of an `$EDITOR` set to vim years ago, because a modal editor you cannot leave is exactly the wrong place to land someone who just wanted to tweak a prompt. The full ladder, in order: **`$WOLFFISH_EDITOR`**, an explicit choice made for this CLI, honoured verbatim, flags and all; then the friendly default — nano, or Notepad (then Microsoft's nano-like `edit`) on Windows; then **`$VISUAL` / `$EDITOR`**, respected when the default isn't installed; and failing everything, a **built-in line editor with no dependencies at all**, which works inside an SSH session on a box with nothing on it: type to append, `:s <n> <text>` to replace a line, `:d <n>` to delete, `:show` to reprint, `:save` or `:cancel` to leave. Half the menu used to dead-end at `no $EDITOR set` — the default state of a fresh server login. Nothing dead-ends now. Windows 11's tabbed Notepad — which hands the file to an already-open window and returns instantly, silently losing the edit — is detected and **waited out** instead.
+
+## Approvals and Safety
+
+When the agent wants to do something the [amygdala](/architecture/brain-modules) flags, the terminal draws the approval card: `approve? [y]es / [n]o / [a]lways this tool` — where `a` lasts for this session only. Two properties matter more than the keystrokes:
+
+- **Non-interactive runs fail closed.** If there is no terminal to ask — a cron job, a pipe — the approval is denied, not assumed. Re-run interactively, or pass `--yes` deliberately.
+- **`--yes` puts back what it found.** It flips the app-wide bypass for the run and restores the *previous* value on exit — including on `Ctrl-C` and a dropped connection — so one scripted run can't leave every surface running with approvals off.
+
+A handful of window-only actions — file pickers, reveal-in-folder — are refused by name with the terminal's own way to do the same thing (`pass file paths instead: wolffish -f <path>`). On a box with no display, `/open` prints where the file is rather than pretending to open it.
+
+## The Terminal Is a Channel
+
+A conversation started from the terminal is a real conversation on a real channel — id `cli`, label **Terminal**. It wears its own **origin badge** in the desktop's History and conversations list and on [your phone's lists](/integrations/mobile-app), and the agent's own channel roster names the terminal as a route to you, exactly like Telegram, WhatsApp, and the phone. **Settings → Channels → CLI** holds its two knobs: **Show all tool activity** (called *Verbose task results* until v1.0.288), and [autostart](/getting-started/server-deployment#make-it-survive-a-reboot) — with `--tools` / `--clean` overriding it for a single command.
+
+The panel also answers whether the `wolffish` command is on your PATH — from **your shell's PATH, not the app's** — installs it if it isn't, takes it back off when you want it gone, and warns when something else named `wolffish` comes first. From the terminal side, the same answers live under `wolffish path status` and `wolffish path install`. On Linux the `.deb` and `.rpm` **ship the command** at `/usr/bin/wolffish`, there the moment the install finishes.
+
+Since **v1.0.296** there is nothing left to paste. Installing the client used to write the command into a folder no shell was looking in, leaving you the last step — add a line to your shell profile, by hand, on every machine. **The app now puts the folder on your PATH itself**: a marked block in the shell profiles on macOS and Linux, the user PATH on Windows. It is checked on every start, removed cleanly on uninstall, and it never touches a line you wrote. Settings, `wolffish path` and the status screens now say **"open a new terminal"** rather than handing you something to copy, and only show the manual line if the app could not do it. (Finding the command on Windows is fixed in the same release: it is matched however the name is cased on disk.)
+
+## On Windows
+
+Wolffish ships as a windowed application, and Windows hands a windowed program **no way to write into the console that started it** — which is why, before **v1.0.256**, typing `wolffish` earned you a blank line and the prompt straight back. A small **console companion** was added beside the app, whose only job was to hold a real terminal open and hand it to Wolffish. Since **v1.0.295** the client is **a compiled console program in its own right**, so that companion is gone — but the behaviour it bought is unchanged, and the command behaves like a command everywhere:
+
+- **`wolffish` opens a session and stays open** — it used to print its prompt and exit before you could reach the keyboard.
+- **Piping works in both directions**: `type notes.txt | wolffish -p "what changed?"` genuinely sends the file, and `wolffish --help | findstr` filters what it should.
+- Colour, box-drawing and the true width of your window come back, and **a secret typed at a prompt is hidden** rather than left sitting in your scrollback.
+- **Git Bash finds it too.** Bash looks for a file named exactly `wolffish` while cmd and PowerShell look for `wolffish.cmd`; Wolffish installs **both**, so each shell finds the one it is looking for. Inside Git Bash a session gets a real terminal bridged in — colours, prompts and typing all behave — while pipes and redirects are left exactly as they were.
+
+## Pairing From a Terminal
+
+The three channels that need a handshake all pair from here — built for the machine where no window will ever open:
+
+```bash
+wolffish pair phone        # QR drawn in the terminal — black-on-white, scanner-friendly
+wolffish pair phone --code # typed code instead: K7M9-2QXR, for a small window
+wolffish pair whatsapp --number +15551234567
+wolffish pair telegram     # BotFather token, typed hidden
+```
+
+The QR is measured before it is drawn: a pairing code needs 27 rows against an SSH window's usual 24, and when it can't fit, the command says so with the exact numbers and **switches to the typed code by itself** — same for WhatsApp, whose QR can never fit and which links by phone number instead. See [Mobile App](/integrations/mobile-app#pairing) for what pairing means and [Server Deployment](/getting-started/server-deployment) for why a paired phone is the best interface a server can have.
+
+## Reference
+
+| Flag | Meaning |
+| --- | --- |
+| `--json` | Machine-readable output where it applies |
+| `--yes` / `-y` | Approve tool calls for this run, restoring the prior setting after |
+| `--tools` / `--clean` | Show or hide tool calls, overriding the saved verbosity once |
+| `--last <n>` · `--limit <n>` | Trim `show` and lists |
+| `-p` / `-f` / `-c` / `--project` | Prompt, files, conversation, project |
+| `--raw` | Print credentials instead of masking them |
+| `--no-color` | Plain text |
+
+Exit codes are honest: `0` it worked, `1` the thing failed or isn't in the state you asked about, `2` you used the command wrong — and a single mistyped word gets *did you mean*, rather than being sent to the model as a question and spending a real turn to be told it wasn't understood. Anything not recognized as a command is treated as a prompt.
+
+| Environment | Effect |
+| --- | --- |
+| `WOLFFISH_EDITOR` | Editor, honoured verbatim — ahead of the nano/Notepad default and `$VISUAL` / `$EDITOR` |
+| `NO_COLOR` | Plain text, same as `--no-color` |
+| `WOLFFISH_SOCKET` | Override the control socket path |
+| `WOLFFISH_HEADLESS=1` | Start the daemon with no window and no tray |
+| `WOLFFISH_UNICODE=0` | Force plain glyphs for boxes and QR codes |
+
+<Card title="Deploy on a server" icon="server" href="/getting-started/server-deployment">
+  The terminal exists for the machine with no screen — a VPS install verified end to end on Ubuntu 24.04, running as a background service, with your phone as the daily interface.
+</Card>

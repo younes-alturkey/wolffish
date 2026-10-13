@@ -1,4 +1,4 @@
-## v1.0.318 — 2026-09-30 `Latest`
+## v1.0.318 — 2026-09-30
 
 ### A Stopped Call Says It Was Stopped, Not That It Failed
 

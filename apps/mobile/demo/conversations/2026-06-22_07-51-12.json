@@ -1,0 +1,83 @@
+{
+  "id": "2026-06-22_07-51-12",
+  "title": "What tools do you have for sending files",
+  "model": "qwen3.5:9b",
+  "createdAt": 1782103872516,
+  "updatedAt": 1782103886234,
+  "messages": [
+    {
+      "id": "m_1782103886234_6c1801",
+      "role": "user",
+      "content": "what tools do you have for sending files.",
+      "timestamp": 1782103886234
+    },
+    {
+      "id": "m_1782103886234_cadf02",
+      "role": "assistant",
+      "content": "Here's the rundown:\n\n## Direct file delivery to you\n\n| Tool | What it does | Limit |\n|------|-------------|-------|\n| **`send_file`** | Sends any file (PDF, GIF, MP3, code, anything) as an attachment in this conversation — works in-app, WhatsApp, and Telegram | 50 MB |\n| **`add_to_chat`** | Shows the last generated meme/GIF inline in chat | — |\n\n## Platform-specific\n\n| Tool | Channel | Type |\n|------|---------|------|\n| `whatsapp_send_image` | WhatsApp | Image (base64) |\n| `whatsapp_send_document` | WhatsApp | Any file (base64) |\n| `whatsapp_send_audio` | WhatsApp | Voice note (base64) |\n| `telegram_send_photo` | Telegram | Image |\n| `telegram_send_document` | Telegram | Any file (50 MB) |\n| `telegram_send_video` | Telegram | Video |\n| `telegram_send_audio` | Telegram | Audio (music player) |\n\n## Cloud upload\n\n| Tool | Service |\n|------|---------|\n| `google_drive_upload` | Uploads a file to your Google Drive |\n\n## Auto-attached\n\nSome tools attach their output automatically — like `pdf_create`, `document_create`, `spreadsheet_create`, `meme_generate`, `voice_generate`, and `ffmpeg_run` — so you don't need to call `send_file` after them.\n\nThe main one you'll use is **`send_file`** — one call, any file type, delivered to whatever channel you're talking to me on. 🐟",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782103872527_mdsxfg",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782103872527_mdsxfg",
+          "segmentId": "seg_2",
+          "delta": "Here's the rundown:\n\n## Direct file delivery to you\n\n| Tool | What it does | Limit |\n|------|-------------|-------|\n| **`send_file`** | Sends any file (PDF, GIF, MP3, code, anything) as an attachment in this conversation — works in-app, WhatsApp, and Telegram | 50 MB |\n| **`add_to_chat`** | Shows the last generated meme/GIF inline in chat | — |\n\n## Platform-specific\n\n| Tool | Channel | Type |\n|------|---------|------|\n| `whatsapp_send_image` | WhatsApp | Image (base64) |\n| `whatsapp_send_document` | WhatsApp | Any file (base64) |\n| `whatsapp_send_audio` | WhatsApp | Voice note (base64) |\n| `telegram_send_photo` | Telegram | Image |\n| `telegram_send_document` | Telegram | Any file (50 MB) |\n| `telegram_send_video` | Telegram | Video |\n| `telegram_send_audio` | Telegram | Audio (music player) |\n\n## Cloud upload\n\n| Tool | Service |\n|------|---------|\n| `google_drive_upload` | Uploads a file to your Google Drive |\n\n## Auto-attached\n\nSome tools attach their output automatically — like `pdf_create`, `document_create`, `spreadsheet_create`, `meme_generate`, `voice_generate`, and `ffmpeg_run` — so you don't need to call `send_file` after them.\n\nThe main one you'll use is **`send_file`** — one call, any file type, delivered to whatever channel you're talking to me on. 🐟"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1782103872527_mdsxfg",
+          "segmentId": "seg_364",
+          "stopReason": "end_turn",
+          "iterationCount": 1,
+          "reasoningContent": "The user is asking about what tools I have for sending files. Let me look through the tools I have available and identify the ones related to sending files.\n\nFrom my tools list, here are the file-sending tools:\n\n1. **send_file** - Deliver a file to the user as a downloadable attachment in the conversation. Works for ANY file type. Up to 50 MB.\n\n2. **whatsapp_send_image** - Send an image to a WhatsApp JID (base64)\n3. **whatsapp_send_document** - Send a file/document to a WhatsApp JID (base64)\n4. **whatsapp_send_audio** - Send a voice note to a WhatsApp JID (base64)\n\n5. **telegram_send_photo** - Send an image to Telegram\n6. **telegram_send_document** - Send any file to Telegram\n7. **telegram_send_video** - Send a video to Telegram\n8. **telegram_send_audio** - Send an audio to Telegram\n\n9. **google_drive_upload** - Upload a file to Google Drive\n\nAnd some tools also surface files as attachments automatically (pdf_create, document_create, etc.)\n\nLet me just answer concisely."
+        }
+      ],
+      "stopReason": "end_turn",
+      "timestamp": 1782103886234
+    }
+  ],
+  "stats": {
+    "allTime": {
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 10,
+      "outputTokens": 641,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "cost": 0.0053581,
+      "processingMs": 1000,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "endedAt": 1782103886234,
+      "provider": "local",
+      "model": "qwen3.5:9b"
+    },
+    "lastTurn": {
+      "endedAt": 1782103886234,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 10,
+      "outputTokens": 641,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "provider": "local",
+      "model": "qwen3.5:9b",
+      "cost": 0.0053581
+    },
+    "meter": {
+      "contextTokens": 13051,
+      "contextBudget": 1000000,
+      "compactionAt": 725424,
+      "model": "qwen3.5:9b"
+    }
+  }
+}

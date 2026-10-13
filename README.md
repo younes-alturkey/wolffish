@@ -1,8 +1,4 @@
-<picture>
-  <img src="https://cdn.wolffi.sh/generic/banner.jpg" alt="wolffish" />
-</picture>
-
-# wolffish-app
+# wolffish
 
 **A brain you own, not a chatbot you rent.**
 
@@ -10,98 +6,47 @@ Wolffish is a local-first, markdown-powered personal AI desktop agent built with
 
 Built around a 15-module runtime modeled after the human brain, from memory consolidation to safety gating. Every piece of state lives in readable markdown files. To change what the agent does, you edit markdown — not code.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.md)
-[![Version](https://img.shields.io/badge/version-1.0.318-green.svg)](https://wolffi.sh)
+> **Status: no longer maintained.** Wolffish is not under active development. There is no website, no app-store listing, no hosted relay and no support channel. The code and the [documentation](docs/README.md) stay here, under the MIT license, for anyone who wants a battle-tested, working agent harness to build on top of or run as is. Fork it and make it yours. Issues and pull requests on this repository are not actively reviewed.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/younes-alturkey/wolffish)](https://github.com/younes-alturkey/wolffish/releases/latest)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey.svg)]()
-
----
-
-## Requirements
-
-| Tool    | Minimum |
-| ------- | ------- |
-| Node.js | 24+     |
-| npm     | 11+     |
-
----
-
-## Watch
-
-<table>
-  <tr>
-    <td align="center">
-      <a href="https://www.youtube.com/watch?v=oog1q7T8H-s"><img src="https://cdn.wolffi.sh/generic/demo_walkthrough.jpg" width="360" alt="Demo walkthrough" /></a>
-      <br /><b>Demo walkthrough</b>
-    </td>
-    <td align="center">
-      <a href="https://www.youtube.com/watch?v=XZdBttn-99E"><img src="https://cdn.wolffi.sh/generic/cinematic_launch.jpg" width="360" alt="Cinematic launch" /></a>
-      <br /><b>Cinematic launch</b>
-    </td>
-    <td align="center">
-      <a href="https://www.youtube.com/watch?v=TKdTWd6BXR8"><img src="https://cdn.wolffi.sh/generic/cinematic_reveal.jpg" width="360" alt="Cinematic reveal" /></a>
-      <br /><b>Cinematic reveal</b>
-    </td>
-  </tr>
-</table>
 
 ---
 
 ## Install
 
-**macOS / Linux / Windows:**
+One line, on macOS, Linux or Windows (Git Bash / WSL). It picks the right package for the machine, verifies it against the release manifest, installs it, and tells you the three commands that follow:
 
 ```bash
-curl -fsSL https://releases.wolffi.sh/install.sh | sh
+curl -fsSL https://github.com/younes-alturkey/wolffish/releases/latest/download/install.sh | sh
 ```
 
-**Windows (PowerShell):**
+Windows, from PowerShell:
 
 ```powershell
-irm https://releases.wolffi.sh/install.ps1 | iex
+irm https://github.com/younes-alturkey/wolffish/releases/latest/download/install.ps1 | iex
 ```
 
-Or download the latest release directly from [wolffi.sh](https://wolffi.sh).
+Both scripts live in [`install/`](install/) and are attached to every GitHub release, so the URL above always serves the current one. On a server, follow with `wolffish service install` (keeps the agent up across reboots) and `wolffish web password` (the master password for the Web UI, which is on from the first launch at `http://<ip>:8787`); `wolffish web https enable` gets a trusted certificate for the bare IP.
 
----
+Or download the installer for your platform from the [latest release](https://github.com/younes-alturkey/wolffish/releases/latest):
 
-## Get the mobile app
+| Platform | File                                           |
+| -------- | ---------------------------------------------- |
+| macOS    | `.dmg` (universal: Apple Silicon + Intel)      |
+| Windows  | `-setup.exe` (NSIS installer)                  |
+| Linux    | `.AppImage` (self-updating), `.deb`, or `.rpm` |
 
-Wolffish Mobile is the companion phone app — pair it to your desktop once by scanning a QR code, then reach your agent from anywhere over an end-to-end encrypted tunnel.
+Builds are unsigned. macOS will say the app cannot be verified on first launch: open **System Settings → Privacy & Security** and choose **Open Anyway**, or clear the quarantine flag:
 
-<table>
-  <tr>
-    <td align="center">
-      <a href="https://apps.apple.com/us/app/wolffish/id6792797989"><img src="https://cdn.wolffi.sh/generic/app-store.svg" width="168" height="56" alt="Download on the App Store" /></a>
-    </td>
-    <td align="center">
-      <a href="https://play.google.com/store/apps/details?id=sh.wolffi.mobile"><img src="https://cdn.wolffi.sh/generic/google-play.svg" width="189" height="56" alt="Get it on Google Play" /></a>
-    </td>
-  </tr>
-</table>
+```bash
+xattr -d com.apple.quarantine /Applications/Wolffish.app
+```
 
-Source: [thewolffish/wolffish-mobile](https://github.com/thewolffish/wolffish-mobile)
+The app checks GitHub Releases for updates on launch. Windows and the AppImage update themselves in place. macOS downloads the new disk image to `~/.wolffish/updates/` and, on **Open installer**, opens it and quits so you can drag the new app into Applications (an unsigned app cannot replace itself). `.deb` and `.rpm` installs update by reinstalling.
 
----
-
-## Table of Contents
-
-- [Install](#install)
-- [Get the mobile app](#get-the-mobile-app)
-- [Features](#features)
-- [Architecture](#architecture)
-- [The Agent Pipeline](#the-agent-pipeline)
-- [Memory System](#memory-system)
-- [Capabilities](#capabilities)
-- [Channels](#channels)
-- [Integrations](#integrations)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-- [Configuration](#configuration)
-- [Development](#development)
-- [Safety & Control](#safety--control)
-- [Links](#links)
-- [License](#license)
+To build from source instead, see [Getting Started](#getting-started).
 
 ---
 
@@ -111,10 +56,10 @@ Source: [thewolffish/wolffish-mobile](https://github.com/thewolffish/wolffish-mo
 - **Local-first** — runs fully offline with Ollama; cloud providers (Claude, GPT) are optional quality enhancers
 - **Markdown is truth** — all behavior, memory, and configuration lives in readable, editable, versionable markdown
 - **Three-tier memory** — episodes, consolidated summaries, and long-term knowledge that grows with you
-- **20+ built-in capabilities** — shell, filesystem, git, browser automation, document processing, speech, memes, and more
-- **Multi-channel** — talk to your agent via the desktop app, Telegram, or WhatsApp
+- **20+ built-in capabilities** — shell, filesystem, git, browser automation, document processing, speech, and more
+- **Multi-channel** — desktop app, terminal client, Web UI, Telegram, or WhatsApp
 - **Safety-gated** — destructive operations require explicit approval through the amygdala module
-- **Provider cascade** — Claude → GPT → Ollama fallback chain for maximum reliability
+- **Provider cascade** — Claude → GPT → Ollama fallback chain
 - **Bilingual** — English and Arabic with full RTL support
 - **Self-contained** — everything lives in `~/.wolffish/`. Delete it and you're back to factory defaults
 
@@ -145,9 +90,7 @@ Wolffish maps human brain regions to software modules. Each module handles exact
 
 > See [ARCH.md](ARCH.md) for the full architectural deep dive.
 
----
-
-## The Agent Pipeline
+### The agent pipeline
 
 Every message follows a deterministic path through the brain:
 
@@ -163,11 +106,9 @@ User message
                 → basalganglia.recordOutcome() record success/failure
 ```
 
-The pipeline is deterministic — the LLM adds creativity at exactly one point (`thalamus.stream()`). Everything else is predictable code.
+The LLM adds creativity at exactly one point (`thalamus.stream()`). Everything else is predictable code.
 
----
-
-## Memory System
+### Memory
 
 All memory lives as markdown files in `~/.wolffish/workspace/brain/hippocampus/`:
 
@@ -185,12 +126,8 @@ The prefrontal cortex pulls memory candidates from all three tiers, passes them 
 
 A capability is a self-contained folder in `brain/cerebellum/` that gives wolffish new abilities. Drop a folder in, and the agent learns a new skill.
 
-**Two types:**
-
-- **Pure Skills** — a `SKILL.md` file with instructions for the LLM using existing tools (no code needed)
-- **Plugin Capabilities** — `SKILL.md` + executable code in `plugin/index.mjs` for complex logic
-
-**Built-in capabilities (20+):**
+- **Pure skills** — a `SKILL.md` file with instructions for the LLM using existing tools (no code needed)
+- **Plugin capabilities** — `SKILL.md` + executable code in `plugin/index.mjs` for complex logic
 
 | Category      | Capabilities                                                                |
 | ------------- | --------------------------------------------------------------------------- |
@@ -204,23 +141,24 @@ A capability is a self-contained folder in `brain/cerebellum/` that gives wolffi
 | **Fun**       | Memes, GIF Search                                                           |
 | **Meta**      | Introspect, Skills (self-extension), Automations (scheduled heartbeat jobs) |
 
+Integrations (Google Workspace, GitHub, Notion, Brave Search) are plugin capabilities. All are optional and store their credentials locally in `config.json`.
+
 ---
 
 ## Channels
 
-Wolffish communicates through three channels, all sharing the same brain state:
+Every channel shares the same brain state. A `TurnRunner` serializes turns across channels, and a `TurnRouter` routes approval requests to whichever channel owns the active turn.
 
-| Channel      | Interface                                                    | Approvals               |
-| ------------ | ------------------------------------------------------------ | ----------------------- |
-| **Electron** | Native desktop UI with real-time streaming and rich markdown | Dialog-based            |
-| **Telegram** | Personal bot with inline buttons                             | Inline button callbacks |
-| **WhatsApp** | Direct messaging via WhatsApp Web protocol                   | Text-based replies      |
+| Channel      | Interface                                                           | Approvals               |
+| ------------ | ------------------------------------------------------------------- | ----------------------- |
+| **Electron** | Native desktop UI with real-time streaming and rich markdown        | Dialog-based            |
+| **Terminal** | `wolffish`, a compiled TUI that talks to the running app            | Cards in the session    |
+| **Web UI**   | The same desktop UI, served to any browser at the machine's address | Same cards as Electron  |
+| **Telegram** | Personal bot with inline buttons                                    | Inline button callbacks |
+| **WhatsApp** | Direct messaging via WhatsApp Web protocol                          | Text-based replies      |
+| **Mobile**   | The companion phone app, built from source, over an E2E tunnel      | Cards on the phone      |
 
-A `TurnRunner` serializes turns across channels (FIFO queue). A `TurnRouter` routes approval requests to whichever channel owns the active turn.
-
-### The terminal
-
-`wolffish` is a full terminal client, built for a monitorless box as much as for a laptop next to the app. It is a compiled binary (Bun + OpenTUI) that ships inside the app and talks to the running daemon over the local socket, so it holds no agent state of its own: close the terminal and the turn keeps running.
+**Terminal.** `wolffish` ships inside the app (Bun + OpenTUI) and talks to the running daemon over the local socket, so it holds no agent state of its own: close the terminal and the turn keeps running.
 
 ```
 wolffish                     the session screen: streaming feed, cards, live context meter
@@ -228,23 +166,12 @@ wolffish -p "…" [-f file]    one shot — print and exit (pipes: cat log | wol
 wolffish resume [id]         continue a conversation
 wolffish conversations …     the app's screens as verbs, with --json for scripts
 wolffish settings …          every setting, and every action the app has
-wolffish status | usage | service | path | pair
+wolffish status | usage | service | path | pair | web
 ```
 
-While `npm run dev` is running, the `wolffish` command runs the client straight from `src/cli` under Bun, so every launch is the code on disk. Inside the session: `ctrl+p` opens the command palette, `/` completes slash commands, `@path` attaches a file, `shift+enter` inserts a newline, `esc esc` interrupts, and the footer shows the model, mode, thinking effort, plan mode, project, elapsed time, context used and cost. Approvals, questions, todos, diffs, tasks and countdowns render as cards. Settings open as a page → card → row browser with search across every row; the few flows that need a terminal conversation (pairing, key tests) run on the plain terminal and hand back.
+**Web UI.** Settings → Channels → Web UI serves the renderer bundle over HTTP(S), with the preload bridge replaced by a WebSocket into the same IPC handlers (`src/main/channels/web/`). On by default, behind a master passphrase Wolffish generates at first launch — twelve random words; `wolffish web password` prints it on a box with no screen, and `wolffish web` carries the rest of the card (on/off, signed-in browsers, a test notification, a restart). It never runs without a password. HTTPS is one button: Wolffish checks ports, privileges and firewall, asks Let's Encrypt for a 6-day IP certificate (or a 90-day domain one) with its built-in ACME client, serves it on 443 beside the plain app port, renews it every few days and keeps the history (`docs/channels/https.mdx`). Self-signed and your own PEM files remain as modes. Signed-in browsers can receive Web Push notifications, and the layout adapts to a phone. Everything it serves is behind the sign-in except what the agent publishes on purpose: `public_link` puts a file, a folder (as a static site) or a local port (reverse-proxied) at `/p/<token>` with no sign-in, for the people a result is meant for; the panel and `wolffish web public` list and revoke those links.
 
----
-
-## Integrations
-
-Integrations are plugin capabilities that connect to external services. All are stateless, optional, and store credentials locally in `config.json`.
-
-| Service              | Features                                                               |
-| -------------------- | ---------------------------------------------------------------------- |
-| **Google Workspace** | Gmail, Drive, Calendar, Contacts, Tasks, Sheets (OAuth)                |
-| **GitHub**           | Repos, issues, PRs, workflows, releases, gists (personal access token) |
-| **Notion**           | Pages, databases, search, create/query (API token)                     |
-| **Brave Search**     | Web search API                                                         |
+**Mobile.** [`apps/mobile`](apps/mobile) is the companion phone app (iOS and Android, Expo): the same conversations and settings, paired once by QR and connected through an end-to-end encrypted tunnel that a relay forwards without being able to read. It is no longer in the app stores and there is no hosted relay. If you want it, you deploy the relay in [`packages/relay`](packages/relay) to your own Cloudflare account (or anywhere that runs Node), enter its address in Settings → Channels → Mobile, build the app from source with your own Expo account and install it on your phone. The Mobile panel lists the steps; both folders' READMEs walk through them.
 
 ---
 
@@ -272,34 +199,14 @@ Integrations are plugin capabilities that connect to external services. All are 
 src/
 ├── main/                        Electron main process (Node.js)
 │   ├── index.ts                 Entry point — IPC handlers
-│   ├── runtime/                 The 15-module brain
-│   │   ├── thalamus/            LLM provider routing
-│   │   ├── prefrontal/          Context assembly
-│   │   ├── hippocampus/         Memory storage
-│   │   ├── cerebellum/          Capability loading
-│   │   ├── amygdala/            Safety gating
-│   │   ├── motor/               Task execution
-│   │   ├── wernicke/            Output parsing
-│   │   ├── broca/               Response streaming
-│   │   ├── cortex/              Search index
-│   │   ├── corpus/              Event bus
-│   │   ├── ras/                 Attention filtering
-│   │   ├── basalganglia/        Outcome telemetry
-│   │   ├── reflection/          Nightly self-review, playbook, monthly deep reflection
-│   │   ├── hypothalamus/        System health
-│   │   ├── brainstem/           Background processes
-│   │   ├── insula/              Self-awareness
+│   ├── runtime/                 The 15-module brain (one folder per region)
 │   │   └── providers/           LLM adapters (anthropic/, openai/, local/)
-│   ├── channels/                Electron, Telegram, WhatsApp adapters
+│   ├── channels/                Electron, CLI, Web UI, Telegram, WhatsApp adapters
 │   ├── conversations/           Chat storage & management
 │   ├── workspace/               ~/.wolffish init, config, purge
 │   ├── services/                GitHub, Google, Notion, Brave
 │   └── uploads/                 File processing
 ├── cli/                         The `wolffish` terminal client — Bun + OpenTUI, compiled per platform
-│   ├── index.ts                 Entry: TUI, one-shot (-p / piped), and the classic verbs
-│   ├── tui/                     Screens, dialogs, keymap, store (Solid)
-│   ├── commands/, lib/          Classic line-mode verbs and helpers (still used for scripts)
-│   └── build.ts                 `bun build --compile` per target (electron-builder beforePack)
 ├── preload/                     contextBridge (IPC types)
 ├── renderer/src/                React frontend
 │   ├── pages/                   Chat, Settings, History, ModelPicker, Onboarding, ...
@@ -310,10 +217,13 @@ src/
 ├── defaults/workspace/          Bundled brain (copied on first launch)
 └── changelog/                   Version history
 
+apps/mobile/                     The companion phone app (Expo) — build from source, see its README
+packages/relay/                  The rendezvous relay (Cloudflare Worker) — deploy your own, see its README
+packages/extension/              The browser extension source; bundled into src/defaults/workspace/extension/
 resources/                       Icons, fonts, images
 ```
 
-**Convention:** one thing per folder, file matches folder name. No barrel exports — imports use explicit alias paths (`@main/*`, `@components/*`, `@hooks/*`, etc.).
+**Convention:** one thing per folder, file matches folder name. No barrel exports — imports use explicit alias paths (`@main/*`, `@components/*`, `@hooks/*`, etc.). See [AGENTS.md](AGENTS.md) for the full guide.
 
 ---
 
@@ -321,23 +231,17 @@ resources/                       Icons, fonts, images
 
 ### Prerequisites
 
-- **[Ollama](https://ollama.ai)** — required for local LLM inference
+- **Node.js 24+** and **npm 11+**
+- **[Ollama](https://ollama.ai)** — for local LLM inference
 - **Cloud API keys** (optional) — Anthropic (Claude) or OpenAI (GPT) for higher quality
-- **macOS permissions** (optional) — Accessibility + Screen Recording for computer-use capability
+- **macOS permissions** (optional) — Accessibility + Screen Recording for the computer-use capability
 
-### Install
-
-Download the latest release for your platform from [wolffi.sh](https://wolffi.sh) or build from source:
+### Build from source
 
 ```bash
-# Clone the repo
-git clone https://github.com/thewolffish/wolffish-app.git
-cd wolffish-app
-
-# Install dependencies
+git clone https://github.com/younes-alturkey/wolffish.git
+cd wolffish
 npm install
-
-# Run in development mode
 npm run dev
 ```
 
@@ -364,7 +268,7 @@ All configuration lives in `~/.wolffish/workspace/config.json`:
 }
 ```
 
-### Brain Files
+### Brain files
 
 | File                           | Purpose                                                      |
 | ------------------------------ | ------------------------------------------------------------ |
@@ -375,54 +279,7 @@ All configuration lives in `~/.wolffish/workspace/config.json`:
 
 Edit any of these markdown files to change how your agent behaves.
 
----
-
-## Development
-
-```bash
-npm run dev            # Start with HMR (hot module replacement)
-npm run build          # Typecheck + build all targets
-npm run build:mac      # macOS DMG (universal: x64 + arm64)
-npm run build:win      # Windows NSIS installer
-npm run build:linux    # Linux AppImage
-npm run typecheck      # TypeScript validation
-npm run lint           # ESLint check
-npm run release        # npm version patch + push
-```
-
-### Path Aliases
-
-```
-@main/*         → src/main/*
-@preload/*      → src/preload/*
-@renderer/*     → src/renderer/src/*
-@components/*   → src/renderer/src/components/*
-@hooks/*        → src/renderer/src/hooks/*
-@lib/*          → src/renderer/src/lib/*
-@pages/*        → src/renderer/src/pages/*
-@providers/*    → src/renderer/src/providers/*
-@resources/*    → resources/*
-```
-
----
-
-## Safety & Control
-
-The **amygdala** module gates every tool call using patterns defined in each capability's `SKILL.md`:
-
-| Classification       | Behavior                                                  |
-| -------------------- | --------------------------------------------------------- |
-| **Danger patterns**  | Blocked completely — regex-matched destructive operations |
-| **Confirm patterns** | Requires explicit user approval before execution          |
-| **Safe**             | Executes immediately                                      |
-
-No hard-coded guardrails beyond this system. No artificial timeouts (except OOM protection). Tools run until they complete naturally. The LLM decides when to set limits.
-
----
-
-## Workspace
-
-Everything wolffish knows lives in `~/.wolffish/workspace/`:
+### Workspace
 
 ```
 ~/.wolffish/workspace/
@@ -444,19 +301,44 @@ Everything wolffish knows lives in `~/.wolffish/workspace/`:
 
 ---
 
-## Links
+## Development
 
-- **Website** — [wolffi.sh](https://wolffi.sh)
-- **App Store** — [Wolffish for iOS](https://apps.apple.com/us/app/wolffish/id6792797989)
-- **Google Play** — [Wolffish for Android](https://play.google.com/store/apps/details?id=sh.wolffi.mobile)
-- **Documentation** — [docs.wolffi.sh](https://docs.wolffi.sh/)
-- **Discord** — [Join the community](https://discord.com/invite/F5Ue36PzQ)
-- **X** — [@younesbites](https://x.com/younesbites)
+```bash
+npm run dev            # Start with HMR (hot module replacement)
+npm run typecheck      # TypeScript validation (main, renderer, CLI)
+npm run lint           # ESLint check
+npm run build          # Typecheck + build all targets
+npm run build:mac      # macOS DMG (universal: x64 + arm64)
+npm run build:win      # Windows NSIS installer
+npm run build:linux    # Linux AppImage, deb, rpm
+```
+
+### Releasing
+
+```bash
+npm run release        # npm version patch, then push main + tags
+```
+
+Pushing a `v*` tag runs [the release workflow](.github/workflows/release.yml), which builds the macOS, Windows, and Linux installers and attaches them to a GitHub Release along with the update manifests the app reads. No secrets are required: every build is unsigned (macOS is ad-hoc signed so it launches on Apple Silicon).
+
+---
+
+## Safety & Control
+
+The **amygdala** module gates every tool call using patterns defined in each capability's `SKILL.md`:
+
+| Classification       | Behavior                                                  |
+| -------------------- | --------------------------------------------------------- |
+| **Danger patterns**  | Blocked completely — regex-matched destructive operations |
+| **Confirm patterns** | Requires explicit user approval before execution          |
+| **Safe**             | Executes immediately                                      |
+
+No hard-coded guardrails beyond this system. No artificial timeouts (except OOM protection). Tools run until they complete naturally. The LLM decides when to set limits.
 
 ---
 
 ## License
 
-MIT License — Copyright (c) 2026 [Younes Alturkey](mailto:younes@wolffi.sh)
+MIT License — Copyright (c) 2026 Younes Alturkey
 
-See [LICENSE.md](LICENSE.md) for the full text.
+See [LICENSE](LICENSE) for the full text.

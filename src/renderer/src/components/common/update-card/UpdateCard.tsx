@@ -85,6 +85,16 @@ export function UpdateCard(): React.JSX.Element | null {
           <p className="truncate text-xs text-red-700 dark:text-red-200">
             {t(`settings.updates.errors.${failed.code}`, failed.message)}
           </p>
+        ) : update.installerPath ? (
+          <p dir="ltr" className="text-muted truncate text-xs">
+            {t(
+              'update.manualLine',
+              'Saved to {{path}} — opens it and quits; drag into Applications, then relaunch',
+              {
+                path: update.installerPath
+              }
+            )}
+          </p>
         ) : (
           update.releaseNotes && (
             <p className="text-muted truncate text-xs">{update.releaseNotes}</p>
@@ -121,7 +131,13 @@ export function UpdateCard(): React.JSX.Element | null {
         >
           {/* The label never becomes "Installing…" — the button stays Update and
               only dims, so the card reads the same the whole way through. */}
-          <span>{failed ? t('update.retry', 'Retry') : t('update.install', 'Update')}</span>
+          <span>
+            {failed
+              ? t('update.retry', 'Retry')
+              : update.installerPath
+                ? t('update.open', 'Open installer')
+                : t('update.install', 'Update')}
+          </span>
         </button>
       </div>
     </div>

@@ -1,0 +1,270 @@
+---
+title: "إضافة قناة جديدة"
+description: "كيفية تنفيذ قناة اتصال جديدة لـ وولفيش"
+---
+
+# ابنِ قناة من الصفر
+
+تربط القناة وولفيش بمنصة اتصال خارجية. واجهة سطح المكتب، Telegram، و WhatsApp كلها قنوات - تستقبل الرسائل من مصادر مختلفة لكنها توجهها عبر نفس خط أنابيب الدماغ.
+
+يرشدك هذا الدليل خطوة بخطوة لتنفيذ قناة جديدة من الصفر.
+
+## ما هي القناة؟
+
+القناة هي تنفيذ لواجهة TurnSink. تستقبل الأجزاء (النص المتدفق، استدعاءات الأدوات، النتائج) وتعرضها للمستخدم بأي تنسيق تدعمه المنصة. يتعامل TurnRunner مع خط أنابيب الوكيل - قناتك تحتاج فقط إلى:
+
+1. قبول الرسائل الواردة من منصتك
+2. إرسالها إلى خط أنابيب الوكيل
+3. عرض استجابة الوكيل للمستخدم
+4. التعامل مع طلبات الموافقة (لاستدعاءات الأدوات الخطرة)
+
+## واجهة TurnSink
+
+```typescript
+interface TurnSink {
+  channelId: string
+
+  onSegment(segment: Segment): void
+  onTurnEvent(event: CorpusEvent): void
+  onApprovalRequest(req: ApprovalRequest): Promise<'approved' | 'denied'>
+  onDone(): void
+  onError(error: Error): void
+  onCredentialBlocked(variable: string): void
+}
+```
+
+### شرح الدوال
+
+| الدالة | الغرض |
+|---|---|
+| `onSegment` | تستقبل المحتوى المتدفق - أجزاء النص، استدعاءات الأدوات، نتائج الأدوات، نهاية الدور |
+| `onTurnEvent` | أحداث corpus المُرحّلة أثناء الدور (لمؤشرات الحالة مثل "جارٍ التفكير...") |
+| `onApprovalRequest` | يجب أن تُرجع `'approved'` أو `'denied'` - نفّذها بالطريقة التي تطلب بها منصتك من المستخدمين |
+| `onDone` | تُستدعى عند اكتمال الدور بنجاح |
+| `onError` | تُستدعى عند فشل الدور بخطأ غير قابل للاسترداد |
+| `onCredentialBlocked` | تُستدعى عندما تحتاج أداة لمتغير غير موجود |
+
+### أنواع الأجزاء
+
+```typescript
+type Segment =
+  | { type: 'text'; delta: string }           // Streaming text chunk
+  | { type: 'tool_call'; call: ToolCallInfo } // Tool invocation starting
+  | { type: 'tool_result'; result: ToolResult } // Tool execution output
+  | { type: 'turn_end'; reason: StopReason }  // Final marker
+```
+
+- **text**: أجزاء متدفقة - اجمعها لبناء الاستجابة الكاملة
+- **tool_call**: الوكيل يستدعي أداة (اعرض مؤشر حالة)
+- **tool_result**: الأداة انتهت (اعرض المخرجات أو ملخصًا)
+- **turn_end**: الدور اكتمل مع سبب التوقف (`end_turn`، `tool_use`، `max_tokens`)
+
+## التنفيذ خطوة بخطوة
+
+### الخطوة 1: إنشاء ملف القناة
+
+```bash
+touch src/main/channels/my-channel.ts
+```
+
+### الخطوة 2: تنفيذ TurnSink
+
+```typescript
+import { TurnSink, Segment, ApprovalRequest, CorpusEvent } from '../types'
+import { TurnRunner } from '../runtime/turn-runner'
+
+export class MyChannel implements TurnSink {
+  channelId = 'my-channel'
+  private turnRunner: TurnRunner
+  private responseBuffer = ''
+
+  constructor(turnRunner: TurnRunner) {
+    this.turnRunner = turnRunner
+  }
+
+  onSegment(segment: Segment): void {
+    switch (segment.type) {
+      case 'text':
+        this.responseBuffer += segment.delta
+        this.sendPartialUpdate(this.responseBuffer)
+        break
+      case 'tool_call':
+        this.sendStatus(`Using tool: ${segment.call.name}`)
+        break
+      case 'tool_result':
+        if (!segment.result.success) {
+          this.sendStatus(`Tool failed: ${segment.result.error}`)
+        }
+        break
+      case 'turn_end':
+        // Final response is ready
+        break
+    }
+  }
+
+  onTurnEvent(event: CorpusEvent): void {
+    // Optional: show status indicators
+    // e.g., "context.built" → "Thinking..."
+  }
+
+  async onApprovalRequest(req: ApprovalRequest): Promise<'approved' | 'denied'> {
+    // Implement however your platform prompts users
+    // Must return 'approved' or 'denied'
+    const userResponse = await this.promptUser(
+      `Wolffish wants to run: ${req.toolName}\nArgs: ${JSON.stringify(req.args)}`
+    )
+    return userResponse ? 'approved' : 'denied'
+  }
+
+  onDone(): void {
+    this.sendFinalMessage(this.responseBuffer)
+    this.responseBuffer = ''
+  }
+
+  onError(error: Error): void {
+    this.sendErrorMessage(`Error: ${error.message}`)
+    this.responseBuffer = ''
+  }
+
+  onCredentialBlocked(variable: string): void {
+    this.sendErrorMessage(
+      `Missing credential: ${variable}. Add it in Settings > Variables.`
+    )
+  }
+
+  // Platform-specific methods
+  private sendPartialUpdate(text: string) { /* ... */ }
+  private sendStatus(status: string) { /* ... */ }
+  private sendFinalMessage(text: string) { /* ... */ }
+  private sendErrorMessage(text: string) { /* ... */ }
+  private promptUser(message: string): Promise<boolean> { /* ... */ }
+}
+```
+
+### الخطوة 3: التعامل مع الرسائل الواردة
+
+عندما تستقبل منصتك رسالة، حمّل أو أنشئ محادثة وأرسلها عبر TurnRunner:
+
+```typescript
+async handleIncomingMessage(externalMessage: ExternalMessage) {
+  // Map external thread to a Wolffish conversation
+  const conversationId = this.resolveConversation(externalMessage.threadId)
+
+  // Load conversation history
+  const history = await this.loadHistory(conversationId)
+
+  // Send through the agent pipeline
+  await this.turnRunner.send({
+    content: externalMessage.text,
+    history,
+    conversationId,
+    sink: this // This channel is the TurnSink
+  })
+}
+```
+
+### الخطوة 4: تسجيل القناة
+
+أضف قناتك إلى تدفق بدء التشغيل في `src/main/index.ts`:
+
+```typescript
+import { MyChannel } from './channels/my-channel'
+
+// During app initialization, after TurnRunner is created:
+const myChannel = new MyChannel(turnRunner)
+myChannel.start() // Begin listening for incoming messages
+```
+
+<Info>
+  يُشارك TurnRunner عبر جميع القنوات. يقوم بتسلسل الأدوار **لكل محادثة على حدة** — أدوار المحادثة الواحدة تصطف خلف بعضها، لكنّ المحادثات المختلفة تعمل بالتوازي بغض النظر عن القناة التي بدأتها.
+</Info>
+
+## التسلسل لكل محادثة
+
+يحتفظ TurnRunner بطابورٍ واحد لكل محادثة (الأدوار بلا معرّف محادثة تحصل على مسارٍ خاصّ مفتاحه معرّف الدور). الرسالة الثانية في المحادثة نفسها تنتظر انتهاء دور تلك المحادثة الجاري — حفظًا لترتيب النصّ ومنعًا للتعارضات في ذاكرتها وتجميع سياقها — بينما رسالةٌ لمحادثة *مختلفة* تعمل فورًا وبالتوازي.
+
+```
+Desktop conversation A: "Summarize my emails" → [running] ─┐
+Telegram conversation B: "What's the weather?" → [running] ─┴─ بالتوازي
+Desktop conversation A: "…and reply to Sam"    → [queued behind A's turn]
+```
+
+<Warning>
+  الدور طويل التشغيل يحجب فقط الرسالة التالية لمحادثته **هو** — لا المحادثات الأخرى ولا القنوات الأخرى. وتستطيع القناة أن تستبق دور محادثتها الجاري بإجهاض المتحكّم السابق قبل إرسال دور جديد.
+</Warning>
+
+## ربط المحادثات
+
+قناتك تقرر كيف تُربط الخيوط الخارجية بمحادثات وولفيش:
+
+```typescript
+private resolveConversation(externalThreadId: string): string {
+  // Option A: One conversation per external thread
+  return `my-channel-${externalThreadId}`
+
+  // Option B: Single persistent conversation for the channel
+  return `my-channel-main`
+
+  // Option C: New conversation per session (with /new command to reset)
+  return this.activeConversation || this.createNew()
+}
+```
+
+تستخدم قناة Telegram الخيار C - محادثة نشطة واحدة تستمر حتى يرسل المستخدم `/new`.
+
+## مرجع: نمط قناة Telegram
+
+توضح قناة Telegram النمط الكامل:
+
+```typescript
+// Simplified from src/main/channels/telegram.ts
+class TelegramChannel implements TurnSink {
+  channelId = 'telegram'
+
+  async onMessage(msg: TelegramMessage) {
+    // 1. Check for slash commands
+    if (msg.text.startsWith('/')) {
+      await this.handleCommand(msg)
+      return
+    }
+
+    // 2. Load or create conversation
+    const conversationId = this.activeConversation
+      || await this.createConversation()
+
+    // 3. Build history from stored messages
+    const history = await this.hippocampus.loadEpisode(conversationId)
+
+    // 4. Send through pipeline
+    await this.turnRunner.send({
+      content: msg.text,
+      history,
+      conversationId,
+      sink: this
+    })
+  }
+
+  async onApprovalRequest(req: ApprovalRequest) {
+    // Send inline keyboard with Approve/Deny buttons
+    const response = await this.sendInlineKeyboard(
+      `Wolffish wants to execute:\n  ${req.toolName}: ${JSON.stringify(req.args)}`,
+      ['Approve', 'Deny']
+    )
+    return response === 'Approve' ? 'approved' : 'denied'
+  }
+}
+```
+
+## قائمة التحقق للقنوات الجديدة
+
+قبل نشر قناتك:
+
+- [ ] تنفذ جميع دوال TurnSink
+- [ ] تتعامل مع طلبات الموافقة بواجهة مستخدم واضحة
+- [ ] تربط الخيوط الخارجية بالمحادثات بشكل متسق
+- [ ] تنظف `responseBuffer` عند `onDone` و `onError`
+- [ ] تتعامل مع `onCredentialBlocked` برسالة مفيدة
+- [ ] مسجلة في بدء تشغيل العملية الرئيسية
+- [ ] مُختبرة مع محادثات متعددة الأدوار
+- [ ] مُختبرة مع استدعاءات الأدوات (بما في ذلك الفشل والإلغاء)
+- [ ] مُختبرة مع رسائل متزامنة من قنوات متعددة

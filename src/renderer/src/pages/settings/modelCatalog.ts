@@ -71,7 +71,7 @@ export const DEFAULT_MODEL: Partial<Record<ProviderId, string>> = {
   mimo: 'mimo-v2.5-pro',
   stepfun: 'step-3.7-flash',
   anthropic: 'claude-opus-4-8',
-  openai: 'gpt-5.5',
+  openai: 'gpt-6.1-sol',
   xai: 'grok-4.6',
   openrouter: 'deepseek/deepseek-v4-pro'
 }
@@ -171,19 +171,87 @@ export const MODEL_SPECS: Record<ProviderId, ModelSpec[]> = {
       modes: ['none', 'high', 'max']
     }
   ],
+  // OpenAI — prices from the official pricing page, context/output ceilings
+  // and reasoning ladders verified live 2026-10-12 (every row answered a
+  // probe on /v1/responses). The 1.05M-window models (gpt-6*, 5.6*, 5.5,
+  // 5.4) bill the WHOLE request at 2x input / 1.5x output once the prompt
+  // passes 272K tokens; rows show the standard (≤272K) rate.
   openai: [
     {
+      name: 'gpt-6-astra',
+      context: '1.05M',
+      input: '$10.00',
+      output: '$50.00',
+      cached: '$1.00',
+      badges: ['frontier', 'reasoning'],
+      modes: ['on', 'high', 'max']
+    },
+    {
+      name: 'gpt-6.1-sol',
+      context: '1.05M',
+      input: '$2.00',
+      output: '$10.00',
+      cached: '$0.10',
+      badges: ['reasoning'],
+      modes: ['on', 'high', 'max']
+    },
+    {
+      name: 'gpt-6-sol',
+      context: '1.05M',
+      input: '$2.00',
+      output: '$10.00',
+      cached: '$0.20',
+      badges: ['reasoning'],
+      modes: ['none', 'high', 'max']
+    },
+    {
+      name: 'gpt-6-luna',
+      context: '1.05M',
+      input: '$0.10',
+      output: '$0.50',
+      cached: '$0.01',
+      badges: ['fast', 'reasoning'],
+      modes: ['none', 'high', 'max']
+    },
+    {
+      name: 'gpt-5.6-sol',
+      context: '1.05M',
+      input: '$4.00',
+      output: '$20.00',
+      cached: '$0.40',
+      badges: ['reasoning'],
+      modes: ['none', 'high', 'max']
+    },
+    {
+      name: 'gpt-5.6-terra',
+      context: '1.05M',
+      input: '$2.00',
+      output: '$12.00',
+      cached: '$0.20',
+      badges: ['reasoning'],
+      modes: ['none', 'high', 'max']
+    },
+    {
+      name: 'gpt-5.6-luna',
+      context: '1.05M',
+      input: '$0.20',
+      output: '$1.20',
+      cached: '$0.02',
+      badges: ['fast', 'reasoning'],
+      modes: ['none', 'high', 'max']
+    },
+    {
       name: 'gpt-5.5',
-      context: '1M',
+      context: '1.05M',
       input: '$5.00',
       output: '$30.00',
       cached: '$0.50',
-      badges: ['frontier', 'reasoning'],
+      badges: ['reasoning'],
       modes: ['none', 'high', 'max']
     },
     {
       name: 'gpt-5.4',
-      context: '1M',
+      context: '1.05M',
       input: '$2.50',
       output: '$15.00',
       cached: '$0.25',
@@ -192,16 +260,16 @@ export const MODEL_SPECS: Record<ProviderId, ModelSpec[]> = {
     },
     {
       name: 'gpt-5.4-mini',
-      context: '1M',
+      context: '400K',
       input: '$0.75',
       output: '$4.50',
-      cached: '$0.08',
+      cached: '$0.075',
       badges: ['fast', 'reasoning'],
       modes: ['none', 'high', 'max']
     },
     {
       name: 'gpt-5.4-nano',
-      context: '1M',
+      context: '400K',
       input: '$0.20',
       output: '$1.25',
       cached: '$0.02',
@@ -209,67 +277,75 @@ export const MODEL_SPECS: Record<ProviderId, ModelSpec[]> = {
       modes: ['none', 'high', 'max']
     },
     {
+      name: 'chat-latest',
+      context: '400K',
+      input: '$5.00',
+      output: '$30.00',
+      cached: '$0.50',
+      badges: ['fast']
+    },
+    {
       name: 'gpt-5.2',
-      context: '1M',
-      input: '—',
-      output: '—',
-      cached: null,
+      context: '400K',
+      input: '$1.75',
+      output: '$14.00',
+      cached: '$0.175',
       badges: ['reasoning'],
       modes: ['none', 'high', 'max']
     },
     {
       name: 'gpt-5.1',
-      context: '1M',
-      input: '—',
-      output: '—',
-      cached: null,
+      context: '400K',
+      input: '$1.25',
+      output: '$10.00',
+      cached: '$0.125',
       badges: ['reasoning'],
-      modes: ['none', 'high', 'max']
+      modes: ['none', 'high']
     },
     {
       name: 'gpt-5',
-      context: '1M',
-      input: '$2.50',
+      context: '400K',
+      input: '$1.25',
       output: '$10.00',
-      cached: '$1.25',
+      cached: '$0.125',
       badges: ['reasoning'],
-      modes: ['none', 'high', 'max']
+      modes: ['on', 'high']
     },
     {
       name: 'gpt-5-mini',
-      context: '1M',
+      context: '400K',
       input: '$0.25',
       output: '$2.00',
-      cached: '$0.03',
+      cached: '$0.025',
       badges: ['fast', 'reasoning'],
-      modes: ['none', 'high', 'max']
+      modes: ['on', 'high']
     },
     {
       name: 'gpt-5-nano',
-      context: '1M',
+      context: '400K',
       input: '$0.05',
       output: '$0.40',
-      cached: '$0.01',
+      cached: '$0.005',
       badges: ['fast', 'reasoning'],
-      modes: ['none', 'high', 'max']
+      modes: ['on', 'high']
     },
     {
       name: 'o3',
       context: '200K',
-      input: '$10.00',
-      output: '$40.00',
-      cached: '$5.00',
+      input: '$2.00',
+      output: '$8.00',
+      cached: '$0.50',
       badges: ['reasoning'],
-      modes: ['none', 'high', 'max']
+      modes: ['on', 'high']
     },
     {
       name: 'o4-mini',
       context: '200K',
       input: '$1.10',
       output: '$4.40',
-      cached: '$0.55',
+      cached: '$0.275',
       badges: ['fast', 'reasoning'],
-      modes: ['none', 'high', 'max']
+      modes: ['on', 'high']
     },
     {
       name: 'o3-mini',
@@ -278,7 +354,7 @@ export const MODEL_SPECS: Record<ProviderId, ModelSpec[]> = {
       output: '$4.40',
       cached: '$0.55',
       badges: ['fast', 'reasoning'],
-      modes: ['none', 'high', 'max']
+      modes: ['on', 'high']
     },
     {
       name: 'o1',
@@ -287,7 +363,7 @@ export const MODEL_SPECS: Record<ProviderId, ModelSpec[]> = {
       output: '$60.00',
       cached: '$7.50',
       badges: ['reasoning'],
-      modes: ['none', 'high', 'max']
+      modes: ['on', 'high']
     },
     {
       name: 'gpt-4.1',
@@ -309,7 +385,7 @@ export const MODEL_SPECS: Record<ProviderId, ModelSpec[]> = {
       context: '1M',
       input: '$0.10',
       output: '$0.40',
-      cached: '$0.03',
+      cached: '$0.025',
       badges: ['fast']
     },
     {
@@ -324,7 +400,7 @@ export const MODEL_SPECS: Record<ProviderId, ModelSpec[]> = {
       context: '128K',
       input: '$0.15',
       output: '$0.60',
-      cached: '$0.08',
+      cached: '$0.075',
       badges: ['fast']
     },
     {
@@ -1117,7 +1193,7 @@ export const BADGE_STYLES: Record<BadgeKind, string> = {
 
 export function isModelDisabled(id: string): boolean {
   if (/tts|voiceclone|voicedesign/.test(id)) return true
-  if (/^(gpt-5[\d.]*-(pro|codex)|o\d+-pro)/.test(id)) return true
+  if (/^(gpt-[\d.]+-(pro|codex)|o\d+-pro|gpt-live)/.test(id)) return true
   if (/(-image|-audio|lyria)/i.test(id)) return true
   // MiniMax video models (H3, Hailuo): generation models, not chat brains —
   // the `video` capability is their surface. The main-side fetch filter

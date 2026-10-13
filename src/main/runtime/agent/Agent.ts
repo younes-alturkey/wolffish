@@ -134,7 +134,10 @@ import {
   PHONE_NOTIFY_CHANNEL_NOTICE,
   PHONE_NOTIFY_NOTICE,
   PHONE_NOTIFY_SENT_NOTICE,
-  VOICE_REPLY_NOTICE
+  VOICE_REPLY_NOTICE,
+  WEB_NOTIFY_CHANNEL_NOTICE,
+  WEB_NOTIFY_NOTICE,
+  WEB_NOTIFY_SENT_NOTICE
 } from '@main/runtime/outbound'
 import fs from 'node:fs/promises'
 import { Prefrontal } from '@main/runtime/prefrontal'
@@ -1282,6 +1285,19 @@ export class Agent {
     // turn (or may have — see the UNCONFIRMED note at the call site). One tail
     // transition per turn, like deliveredThisTurn.
     let notifiedThisTurn = false
+    // The browser twin. notify_web is registered while a browser is signed in
+    // to the Web UI and notifications are allowed (index.ts syncWebCapability
+    // ties the registration to exactly that), so presence is the check here
+    // too — same channel narrowing, same once-per-turn flip.
+    const webNotifyAvailable =
+      turn.role !== 'agent' &&
+      !this.cerebellum.isDisabled('web-ui') &&
+      this.cerebellum.getCapabilities().some((c) => c.name === 'web-ui')
+    const webNotifyIdle =
+      turn.channel === 'telegram' || turn.channel === 'whatsapp'
+        ? WEB_NOTIFY_CHANNEL_NOTICE
+        : WEB_NOTIFY_NOTICE
+    let webNotifiedThisTurn = false
     // The task list this turn continues: the conversation's latest todo list
     // when it still has unfinished items (a turn interrupted mid-work leaves
     // one behind). Model-led — the model is told about it every iteration
@@ -1573,6 +1589,11 @@ export class Agent {
           : notifiedThisTurn
             ? PHONE_NOTIFY_SENT_NOTICE
             : phoneNotifyIdle
+        const webNotifyText = !webNotifyAvailable
+          ? undefined
+          : webNotifiedThisTurn
+            ? WEB_NOTIFY_SENT_NOTICE
+            : webNotifyIdle
 
         // Escalate a SUBAGENT's runaway to its master (onNoProgress is wired only
         // for agent turns) so the master can manage it — cancel, steer, or keep
@@ -1610,6 +1631,7 @@ export class Agent {
           checkIns: checkInsText,
           voiceReply: voiceReplyNotice,
           phoneNotify: phoneNotifyText,
+          webNotify: webNotifyText,
           screenIndicator: screenIndicatorText,
           interjection: interjectionNoticeText
         }
@@ -1768,6 +1790,7 @@ export class Agent {
               closingNoticeText ||
               voiceReplyNotice ||
               phoneNotifyText ||
+              webNotifyText ||
               screenIndicatorText ||
               interjectionNoticeText ||
               checkInsText)
@@ -1785,6 +1808,7 @@ export class Agent {
                   checkIns: checkInsText,
                   voiceReply: voiceReplyNotice,
                   phoneNotify: phoneNotifyText,
+                  webNotify: webNotifyText,
                   screenIndicator: screenIndicatorText,
                   interjection: interjectionNoticeText
                 }) +
@@ -2560,6 +2584,9 @@ export class Agent {
             (result.ok || result.output.includes('UNCONFIRMED'))
           ) {
             notifiedThisTurn = true
+          }
+          if (call.name === 'notify_web' && (result.ok || result.output.includes('UNCONFIRMED'))) {
+            webNotifiedThisTurn = true
           }
 
           const toolMsg: ChatMessage & { role: 'tool' } = {

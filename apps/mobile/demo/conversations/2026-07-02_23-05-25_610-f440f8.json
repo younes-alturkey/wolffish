@@ -1,0 +1,403 @@
+{
+  "id": "2026-07-02_23-05-25_610-f440f8",
+  "title": "Change add a hello world message to my",
+  "model": "gemma4:e2b",
+  "createdAt": 1783019125610,
+  "updatedAt": 1783019174908,
+  "messages": [
+    {
+      "id": "m_1783019174908_c8344c",
+      "role": "user",
+      "content": "Change add a hello world message to my general channel in Wolffish server?",
+      "timestamp": 1783019174908
+    },
+    {
+      "id": "m_1783019174908_d2fe63",
+      "role": "assistant",
+      "content": "Ah — \"Wolffish server\" sounds like Discord. Let me check what we've got connected.Discord's connected. Let me find the send-message action and the general channel.Let me find the `#general` channel and then drop the message.Two steps: find `#general`, then send the message.Found it. Now sending the message.Done. \"hello world 👋🐟\" is live in `#general` on the Wolffish Discord server. The fish has announced itself.",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_td_17dsdfs_1a",
+          "toolCallId": "call_td_17dsdfs_1",
+          "name": "todo_write",
+          "args": {
+            "todos": [
+              {
+                "content": "List the enabled zapier actions",
+                "status": "in_progress"
+              },
+              {
+                "content": "Execute the zapier read action",
+                "status": "pending"
+              },
+              {
+                "content": "Execute the zapier write action",
+                "status": "pending"
+              }
+            ]
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_td_17dsdfs_1b",
+          "toolCallId": "call_td_17dsdfs_1",
+          "status": "success",
+          "output": "3 todos (0 completed, 1 in progress)\n[\n  {\n    \"content\": \"List the enabled zapier actions\",\n    \"status\": \"in_progress\"\n  },\n  {\n    \"content\": \"Execute the zapier read action\",\n    \"status\": \"pending\"\n  },\n  {\n    \"content\": \"Execute the zapier write action\",\n    \"status\": \"pending\"\n  }\n]"
+        },
+        {
+          "kind": "todo",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_td_17dsdfs_1c",
+          "items": [
+            {
+              "content": "List the enabled zapier actions",
+              "status": "in_progress"
+            },
+            {
+              "content": "Execute the zapier read action",
+              "status": "pending"
+            },
+            {
+              "content": "Execute the zapier write action",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_2",
+          "delta": "Ah — \"Wolffish server\" sounds like Discord. Let me check what we've got connected."
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_24",
+          "toolCallId": "call_00_zDbI2lUePPbYsTOfS7Tb4430",
+          "name": "wolffish_zapier_list_enabled_zapier_actions",
+          "args": {}
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_25",
+          "toolCallId": "call_00_zDbI2lUePPbYsTOfS7Tb4430",
+          "status": "success",
+          "output": "{\"apps\":[{\"app\":\"Discord\",\"selected_api\":\"DiscordCLIAPI\",\"action_count\":11}],\"hint\":\"To drill into an app's actions, call this tool again with selected_api set to the app's selected_api value. Do NOT display selected_api values to the user — they are internal tool-call identifiers only. Show only the app name in user-facing output.\"}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_26",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_27",
+          "delta": "Discord's connected. Let me find the send-message action and the general channel."
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_45",
+          "toolCallId": "call_00_kCaAgienBvM6xLljOQf97797",
+          "name": "wolffish_zapier_list_enabled_zapier_actions",
+          "args": {
+            "selected_api": "DiscordCLIAPI"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_46",
+          "toolCallId": "call_00_kCaAgienBvM6xLljOQf97797",
+          "status": "success",
+          "output": "[{\"app\":\"Discord\",\"selected_api\":\"DiscordCLIAPI\",\"actions\":[{\"key\":\"find_channel\",\"name\":\"Find Channel\",\"tool\":\"execute_zapier_read_action\",\"tool_name\":\"discord_find_channel\"},{\"key\":\"find_user\",\"name\":\"Find User\",\"tool\":\"execute_zapier_read_action\",\"tool_name\":\"discord_find_user\"},{\"key\":\"add_role\",\"name\":\"Add Role\",\"tool\":\"execute_zapier_write_action\",\"tool_name\":\"discord_add_role\"},{\"key\":\"create_forum_post\",\"name\":\"Create new Forum Post\",\"tool\":\"execute_zapier_write_action\",\"tool_name\":\"discord_create_new_forum_post\"},{\"key\":\"remove_user_role\",\"name\":\"Remove User Role\",\"tool\":\"execute_zapier_write_action\",\"tool_name\":\"discord_remove_user_role\"},{\"key\":\"rename_channel\",\"name\":\"Rename Channel\",\"tool\":\"execute_zapier_write_action\",\"tool_name\":\"discord_rename_channel\"},{\"key\":\"send_channel_message\",\"name\":\"Send Channel Message\",\"tool\":\"execute_zapier_write_action\",\"tool_name\":\"discord_send_channel_message\"},{\"key\":\"send_direct_message\",\"name\":\"Send Direct Message\",\"tool\":\"execute_zapier_write_action\",\"tool_name\":\"discord_send_direct_message\"},{\"key\":\"send_forum_message\",\"name\":\"Send message in Forum Post\",\"tool\":\"execute_zapier_write_action\",\"tool_name\":\"discord_send_message_in_forum_post\"},{\"key\":\"_zap_raw_request\",\"name\":\"Make API GET Request\",\"tool\":\"execute_zapier_read_action\",\"tool_name\":\"discord_make_api_get_request\"},{\"key\":\"_zap_raw_request\",\"name\":\"Make API Mutating Request\",\"tool\":\"execute_zapier_write_action\",\"tool_name\":\"discord_make_api_mutating_request\"}],\"hint\":\"Pass an action key to see its parameters.\",\"code_action_hint\":\"If a desired action is not available and it should be possible from the service API, you can use write_code_action to create a custom code action for this app.\"}]"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_47",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_48",
+          "delta": "Let me find the `#general` channel and then drop the message."
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_63",
+          "toolCallId": "call_00_YKGGQ94pAqOBlJl5NUVF9212",
+          "name": "wolffish_zapier_list_enabled_zapier_actions",
+          "args": {
+            "selected_api": "DiscordCLIAPI",
+            "action": "find_channel"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_64",
+          "toolCallId": "call_01_RXjp4w3yYU9Q9IZ7rc6S3476",
+          "name": "wolffish_zapier_list_enabled_zapier_actions",
+          "args": {
+            "selected_api": "DiscordCLIAPI",
+            "action": "send_channel_message"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_65",
+          "toolCallId": "call_00_YKGGQ94pAqOBlJl5NUVF9212",
+          "status": "success",
+          "output": "[{\"app\":\"Discord\",\"selected_api\":\"DiscordCLIAPI\",\"actions\":[{\"key\":\"find_channel\",\"name\":\"Find Channel\",\"tool\":\"execute_zapier_read_action\",\"tool_name\":\"discord_find_channel\",\"params\":[{\"key\":\"name\",\"label\":\"Channel Name\",\"type\":\"string\",\"required\":true,\"help_text\":\"This will only work if the name is an exact match.\"}]}]}]"
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_66",
+          "toolCallId": "call_01_RXjp4w3yYU9Q9IZ7rc6S3476",
+          "status": "success",
+          "output": "[{\"app\":\"Discord\",\"selected_api\":\"DiscordCLIAPI\",\"actions\":[{\"key\":\"send_channel_message\",\"name\":\"Send Channel Message\",\"tool\":\"execute_zapier_write_action\",\"tool_name\":\"discord_send_channel_message\",\"params\":[{\"key\":\"tts\",\"label\":\"Text to Speech\",\"type\":\"boolean\",\"help_text\":\"Choose if text-to-speech is enabled\",\"choices\":[{\"key\":\"false\",\"label\":\"False\"},{\"key\":\"true\",\"label\":\"True\"}],\"format\":\"SELECT\"},{\"key\":\"file\",\"label\":\"File Attachments\",\"type\":\"file\",\"help_text\":\"Optional file(s) to upload as attachments.\",\"list\":true},{\"key\":\"content\",\"label\":\"Message Text\",\"type\":\"text\",\"required\":true,\"help_text\":\"Must be less than 2000 characters. For mentions, see [Discord Formatting Help](https://zapier.com/help/doc/tips-formatting-discord-messages)\"},{\"key\":\"filename\",\"label\":\"Filename for Attachments\",\"type\":\"string\",\"help_text\":\"Optional. Filenames for attached files. Defaults to a generated filename based on the file type.\",\"list\":true},{\"key\":\"username\",\"label\":\"Bot Name\",\"type\":\"string\",\"help_text\":\"Must be between 1 and 80 characters in length. Defaults to \\\"Zapier\\\". \"},{\"key\":\"avatar_url\",\"label\":\"Bot Icon\",\"type\":\"string\",\"help_text\":\"Must be the full URL of an image, like `https://example.com/my-image.png`. Defaults to the Zapier logo.\"},{\"key\":\"channel_id\",\"label\":\"Channel\",\"type\":\"string\",\"required\":true,\"placeholder\":\"Select a Channel\",\"format\":\"SELECT\",\"is_dynamic_enum\":true},{\"key\":\"ping_usernames\",\"label\":\"Ping Username, Role and everyone mentions?\",\"type\":\"boolean\",\"help_text\":\"Users, roles and everyone/here mentions will be pinged if you choose true.\",\"choices\":[{\"key\":\"false\",\"label\":\"False\"},{\"key\":\"true\",\"label\":\"True\"}],\"format\":\"SELECT\"}]}]}]"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_67",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_68",
+          "delta": "Two steps: find `#general`, then send the message."
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_81",
+          "toolCallId": "call_00_7FtmrgkRR4EIrVCBhMpe9355",
+          "name": "wolffish_zapier_execute_zapier_read_action",
+          "args": {
+            "selected_api": "DiscordCLIAPI",
+            "action": "find_channel",
+            "instructions": "Find the channel named \"general\" on the Wolffish Discord server",
+            "params": {
+              "name": "general"
+            },
+            "output": "Channel ID and name"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_82",
+          "toolCallId": "call_00_7FtmrgkRR4EIrVCBhMpe9355",
+          "status": "success",
+          "output": "{\"results\":{\"channel_id\":\"1505175587197812829\",\"channel_name\":\"general\"},\"feedbackUrl\":\"https://mcp.zapier.com/mcp/servers/963d4004-a389-4f38-8aed-ffb804db22d6/history/executions/0a5e6462-145d-4ec6-b999-a324e6591ce7\",\"execution\":{\"id\":\"0a5e6462-145d-4ec6-b999-a324e6591ce7\",\"actionId\":\"fddf7010-7b69-4bd1-b3ca-3647202ca067\",\"mcpServerId\":\"963d4004-a389-4f38-8aed-ffb804db22d6\",\"toolName\":\"discord_find_channel\",\"actionDisplayName\":\"Discord: Find Channel\",\"actionSelectedApi\":\"DiscordCLIAPI\",\"instructions\":\"Find the channel named \\\"general\\\" on the Wolffish Discord server\",\"params\":{\"name\":\"general\",\"output_hint\":\"Channel ID and name\",\"instructions\":\"Find the channel named \\\"general\\\" on the Wolffish Discord server\"},\"resolvedParams\":{\"name\":{\"name\":\"Channel Name\",\"label\":null,\"value\":\"general\",\"reason\":\"top-level-hint\",\"status\":\"locked\"}},\"status\":\"SUCCESS\",\"createdDT\":\"2026-07-02T19:05:57.870Z\",\"invocationId\":\"806b84cf-02d2-4058-8ab6-b83c72d67c65\",\"moderationResult\":null},\"isPreview\":false}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_83",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_84",
+          "delta": "Found it. Now sending the message."
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_92",
+          "toolCallId": "call_00_02li3tOzTk3ba3FV4aTq3575",
+          "name": "wolffish_zapier_execute_zapier_write_action",
+          "args": {
+            "selected_api": "DiscordCLIAPI",
+            "action": "send_channel_message",
+            "instructions": "Send a simple \"hello world\" message to the general channel on the Wolffish Discord server",
+            "params": {
+              "channel_id": "1505175587197812829",
+              "content": "hello world 👋🐟"
+            },
+            "output": "Confirmation message was sent"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_93",
+          "toolCallId": "call_00_02li3tOzTk3ba3FV4aTq3575",
+          "status": "success",
+          "output": "{\"results\":\"Confirmation message was sent\",\"feedbackUrl\":\"https://mcp.zapier.com/mcp/servers/963d4004-a389-4f38-8aed-ffb804db22d6/history/executions/e765f791-006e-4bb8-9dbd-b7b754ca1c2d\",\"execution\":{\"id\":\"e765f791-006e-4bb8-9dbd-b7b754ca1c2d\",\"actionId\":\"16283c9b-0b68-4992-8bcb-2cac041dec83\",\"mcpServerId\":\"963d4004-a389-4f38-8aed-ffb804db22d6\",\"toolName\":\"discord_send_channel_message\",\"actionDisplayName\":\"Discord: Send Channel Message\",\"actionSelectedApi\":\"DiscordCLIAPI\",\"instructions\":\"Send a simple \\\"hello world\\\" message to the general channel on the Wolffish Discord server\",\"params\":{\"content\":\"hello world 👋🐟\",\"channel_id\":\"1505175587197812829\",\"output_hint\":\"Confirmation message was sent\",\"instructions\":\"Send a simple \\\"hello world\\\" message to the general channel on the Wolffish Discord server\"},\"resolvedParams\":{\"content\":{\"name\":\"Message Text\",\"label\":null,\"value\":\"hello world 👋🐟\",\"reason\":\"top-level-hint\",\"status\":\"locked\"},\"channel_id\":{\"name\":\"Channel\",\"label\":null,\"value\":\"1505175587197812829\",\"reason\":\"id-like\",\"status\":\"locked\"}},\"status\":\"SUCCESS\",\"createdDT\":\"2026-07-02T19:06:10.344Z\",\"invocationId\":\"57c76d45-e27e-478c-b9f4-d90ccc3c3c4f\",\"moderationResult\":null},\"isPreview\":false}"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_td_17dsdfs_2a",
+          "toolCallId": "call_td_17dsdfs_2",
+          "name": "todo_write",
+          "args": {
+            "todos": [
+              {
+                "content": "List the enabled zapier actions",
+                "status": "completed"
+              },
+              {
+                "content": "Execute the zapier read action",
+                "status": "completed"
+              },
+              {
+                "content": "Execute the zapier write action",
+                "status": "completed"
+              }
+            ]
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_td_17dsdfs_2b",
+          "toolCallId": "call_td_17dsdfs_2",
+          "status": "success",
+          "output": "3 todos (3 completed, 0 in progress)\n[\n  {\n    \"content\": \"List the enabled zapier actions\",\n    \"status\": \"completed\"\n  },\n  {\n    \"content\": \"Execute the zapier read action\",\n    \"status\": \"completed\"\n  },\n  {\n    \"content\": \"Execute the zapier write action\",\n    \"status\": \"completed\"\n  }\n]"
+        },
+        {
+          "kind": "todo",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_td_17dsdfs_2c",
+          "items": [
+            {
+              "content": "List the enabled zapier actions",
+              "status": "completed"
+            },
+            {
+              "content": "Execute the zapier read action",
+              "status": "completed"
+            },
+            {
+              "content": "Execute the zapier write action",
+              "status": "completed"
+            }
+          ]
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_94",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_95",
+          "delta": "Done. \"hello world 👋🐟\" is live in `#general` on the Wolffish Discord server. The fish has announced itself."
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1783019125622_6vw7u7",
+          "segmentId": "seg_123",
+          "stopReason": "end_turn",
+          "iterationCount": 6,
+          "reasoningContent": "Done. The message was sent successfully to the #general channel on the Wolffish Discord server."
+        }
+      ],
+      "toolTimings": {
+        "call_00_zDbI2lUePPbYsTOfS7Tb4430": {
+          "startedAt": 1783019137695,
+          "endedAt": 1783019138443
+        },
+        "call_00_kCaAgienBvM6xLljOQf97797": {
+          "startedAt": 1783019141175,
+          "endedAt": 1783019142132
+        },
+        "call_00_YKGGQ94pAqOBlJl5NUVF9212": {
+          "startedAt": 1783019146117,
+          "endedAt": 1783019147723
+        },
+        "call_01_RXjp4w3yYU9Q9IZ7rc6S3476": {
+          "startedAt": 1783019146128,
+          "endedAt": 1783019148347
+        },
+        "call_00_7FtmrgkRR4EIrVCBhMpe9355": {
+          "startedAt": 1783019151890,
+          "endedAt": 1783019159165
+        },
+        "call_00_02li3tOzTk3ba3FV4aTq3575": {
+          "startedAt": 1783019163058,
+          "endedAt": 1783019171726
+        },
+        "call_td_17dsdfs_2": {
+          "startedAt": 1783019172326,
+          "endedAt": 1783019172366
+        },
+        "call_td_17dsdfs_1": {
+          "startedAt": 1783019136295,
+          "endedAt": 1783019136335
+        }
+      },
+      "stopReason": "end_turn",
+      "timestamp": 1783019174908
+    }
+  ],
+  "stats": {
+    "allTime": {
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 8,
+      "inputTokens": 19,
+      "outputTokens": 1943,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "cost": 0.006793,
+      "processingMs": 1000,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "endedAt": 1783019174908,
+      "provider": "local",
+      "model": "gemma4:e2b"
+    },
+    "lastTurn": {
+      "endedAt": 1783019174908,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "apiCalls": 1,
+      "toolCalls": 8,
+      "inputTokens": 19,
+      "outputTokens": 1943,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "provider": "local",
+      "model": "gemma4:e2b",
+      "cost": 0.006793
+    },
+    "meter": {
+      "contextTokens": 14362,
+      "contextBudget": 131072,
+      "compactionAt": 73728,
+      "model": "gemma4:e2b"
+    }
+  }
+}

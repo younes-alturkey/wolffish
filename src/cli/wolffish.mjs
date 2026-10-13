@@ -71,6 +71,8 @@ import {
 import { pathCommand, service, status } from './commands/service.mjs'
 import { processCommand } from './commands/process.mjs'
 import { pair } from './commands/pair.mjs'
+import { webCommand } from './commands/web.mjs'
+import { reboot } from './commands/reboot.mjs'
 
 /**
  * The top level is the app's own nav, and nothing else.
@@ -127,10 +129,13 @@ ${c.gray('MACHINE')}
   wolffish status                   daemon, brain, autostart, channels
   wolffish cancel [id|--all]        stop a running turn, on any channel
   wolffish service <install|status|uninstall|stop|logs>
+  wolffish reboot                   stop everything and start again ${c.gray('· --yes to skip the question')}
   wolffish process                  what the agent keeps running ${c.gray('· show · start · stop · restart · logs · autostart · rm · ports')}
   wolffish path <status|install>    make "wolffish" resolvable
   wolffish pair <phone|whatsapp|telegram>
     ${c.gray('on a box with no screen: pair phone --code, pair whatsapp --number')}
+  wolffish web                      the Web UI: status, addresses, master password, browsers
+    ${c.gray("on a VPS: web password shows the passphrase · web https enable gets a Let's Encrypt certificate")}
 
 ${c.gray('FLAGS')}
   --tools / --clean  show or hide tool calls, overriding the saved setting
@@ -356,7 +361,9 @@ const ALIASES = new Map([
   ['soul', ['customizations', 'soul']],
   ['user', ['customizations', 'user']],
   ['agents', ['customizations', 'agents']],
-  ['setting', ['settings']]
+  ['setting', ['settings']],
+  ['webui', ['web']],
+  ['restart', ['reboot']]
 ])
 
 async function dispatch(client, command, args, flags) {
@@ -532,6 +539,22 @@ async function dispatch(client, command, args, flags) {
     case 'pair':
       return pair(client, args)
 
+    /**
+     * The Web UI is on from the first launch behind a generated passphrase,
+     * and on a VPS the terminal is the only place that passphrase can be
+     * read. The rest is the settings card's buttons without the window.
+     */
+    case 'web':
+      return webCommand(client, args, flags)
+
+    /**
+     * The Settings rail's Reboot. The daemon replies before it goes down and
+     * the command waits for a different pid to answer, so a script can chain
+     * on it.
+     */
+    case 'reboot':
+      return reboot(client, flags)
+
     // ── Retired verbs, still honoured ──────────────────────────────────────
     // Each kept its own grammar, so each keeps its own case. Their homes are
     // now cards inside `wolffish settings`.
@@ -608,6 +631,8 @@ const COMMANDS = [
   'service',
   'path',
   'pair',
+  'web',
+  'reboot',
   'config',
   'keys',
   'brain',

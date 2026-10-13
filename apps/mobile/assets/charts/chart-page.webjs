@@ -1,0 +1,793 @@
+/*
+ * Chart page runtime — runs inside the chart card's WebView alongside the
+ * vendored ECharts build (see README.md in this directory).
+ *
+ * The option builder is a line-for-line port of wolffish-app
+ * `src/renderer/src/components/charts/chart-spec/toOption.ts` — the one
+ * place the house chart style lives. Keep the two in sync. The only
+ * deliberate deviation is `confine: true` on tooltips: on a phone an
+ * unconfined tooltip clips at the viewport edge.
+ *
+ * Protocol (RN ⇄ page):
+ *   RN → page  window.__wolffishChart.dispatch(msg) via injectJavaScript:
+ *     { type: 'render',   spec, theme, animate? }        — live chart in #live
+ *     { type: 'resize' }                                 — refit live chart
+ *     { type: 'snapshot', id, spec, theme, width, height,
+ *       scale, background? }                             — offscreen PNG
+ *   page → RN  window.ReactNativeWebView.postMessage(JSON):
+ *     { type: 'ready' }                                  — fonts loaded, accepting work
+ *     { type: 'snapshot', id, dataUrl }
+ *     { type: 'error', id?, message }
+ *
+ * Messages sent before the page is ready are queued and flushed on ready.
+ */
+;(function (global) {
+  'use strict'
+
+  // ------------------------------------------------------------------
+  // Spec → ECharts option (port of toOption.ts — keep in sync)
+  // ------------------------------------------------------------------
+
+  /** Objects merge recursively; arrays and primitives replace. */
+  function deepMerge(base, patch) {
+    const out = Object.assign({}, base)
+    for (const key of Object.keys(patch)) {
+      const value = patch[key]
+      const prev = out[key]
+      if (
+        typeof prev === 'object' &&
+        prev !== null &&
+        !Array.isArray(prev) &&
+        typeof value === 'object' &&
+        value !== null &&
+        !Array.isArray(value)
+      ) {
+        out[key] = deepMerge(prev, value)
+      } else {
+        out[key] = value
+      }
+    }
+    return out
+  }
+
+  function formatChartValue(value, unit) {
+    const prefix = (unit && unit.prefix) || ''
+    const suffix = (unit && unit.suffix) || ''
+    const abs = Math.abs(value)
+    if (unit && unit.compact) {
+      const decimals = unit.decimals === undefined ? 1 : unit.decimals
+      const compactOne = function (v, div, mark) {
+        const scaled = v / div
+        const text = scaled.toFixed(decimals).replace(/\.0+$/, '')
+        return text + mark
+      }
+      if (abs >= 1e12) return prefix + compactOne(value, 1e12, 'T') + suffix
+      if (abs >= 1e9) return prefix + compactOne(value, 1e9, 'B') + suffix
+      if (abs >= 1e6) return prefix + compactOne(value, 1e6, 'M') + suffix
+      if (abs >= 1e3) return prefix + compactOne(value, 1e3, 'K') + suffix
+    }
+    const decimals =
+      unit && unit.decimals !== undefined ? unit.decimals : Number.isInteger(value) ? 0 : 1
+    return (
+      prefix +
+      value.toLocaleString('en-US', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      }) +
+      suffix
+    )
+  }
+
+  function seriesColor(series, index, theme) {
+    if (typeof series.color === 'string' && series.color.trim().length > 0) return series.color
+    if (typeof series.color === 'number' && series.color >= 1 && series.color <= 8) {
+      return theme.palette[series.color - 1]
+    }
+    return theme.palette[index % theme.palette.length]
+  }
+
+  function numericValues(spec) {
+    const values = []
+    for (const series of spec.series) {
+      for (const datum of series.data) {
+        if (typeof datum === 'number') values.push(datum)
+        else if (Array.isArray(datum)) for (const n of datum) values.push(n)
+        else if (datum && typeof datum === 'object') values.push(datum.value)
+      }
+    }
+    return values
+  }
+
+  function axisText(theme) {
+    return { color: theme.muted, fontSize: 11, fontFamily: theme.fontFamily }
+  }
+
+  function baseTooltip(spec, theme, trigger) {
+    const tooltip = {
+      trigger: trigger,
+      // Mobile deviation: keep the tooltip inside the plot viewport.
+      confine: true,
+      backgroundColor: theme.surface,
+      borderColor: theme.border,
+      borderWidth: 1,
+      padding: [8, 12],
+      textStyle: { color: theme.fg, fontSize: 12, fontFamily: theme.fontFamily },
+      extraCssText: 'box-shadow: 0 4px 16px rgba(0,0,0,0.12); border-radius: 8px;',
+      valueFormatter: function (value) {
+        return typeof value === 'number'
+          ? formatChartValue(value, spec.unit)
+          : String(value === undefined || value === null ? '' : value)
+      }
+    }
+    if (trigger === 'axis') {
+      tooltip.axisPointer = { type: 'line', lineStyle: { color: theme.border, width: 1 } }
+    }
+    return tooltip
+  }
+
+  function baseLegend(spec, theme) {
+    const show = spec.legend === undefined ? spec.series.length > 1 : spec.legend
+    // No `icon` override: ECharts mirrors each series' mark in its legend key
+    // (rect for bars/pies, line+marker for lines) — the identity channel the
+    // dataviz method wants.
+    return {
+      show: show,
+      bottom: 0,
+      left: 'center',
+      itemWidth: 14,
+      itemHeight: 9,
+      itemGap: 16,
+      textStyle: { color: theme.muted, fontSize: 11, fontFamily: theme.fontFamily }
+    }
+  }
+
+  /**
+   * Estimated rows the bottom legend wraps to at a plot width. ECharts wraps
+   * a horizontal legend at layout time, but the grid inset is fixed at option
+   * time — an unaccounted second row lands on the x-axis labels (seen at
+   * phone-card widths with three long series names). Text is estimated at
+   * fontSize 11 as ~7.5px per Latin glyph, ~11px otherwise — calibrated a
+   * touch wide against on-device wrapping, so a borderline row wraps in the
+   * estimate before it wraps on canvas; the overshoot costs one row of plot
+   * height, an underestimate recreates the overlap. Unknown width reports one
+   * row, the pre-existing inset.
+   */
+  function legendRows(names, width) {
+    if (!width || width <= 0 || names.length === 0) return 1
+    const usable = Math.max(width - 16, 40)
+    let rows = 1
+    let x = 0
+    for (const name of names) {
+      let text = 0
+      for (const ch of name) text += (ch.codePointAt(0) || 0) <= 0x2ff ? 7.5 : 11
+      const item = 14 + 5 + Math.ceil(text) // icon + icon-text gap + label
+      if (x === 0) x = item
+      else if (x + 16 + item <= usable) x += 16 + item // itemGap between items
+      else {
+        rows += 1
+        x = item
+      }
+    }
+    return rows
+  }
+
+  const CARTESIAN_TYPES = ['column', 'bar', 'line', 'area', 'scatter']
+
+  /**
+   * Rows this spec's bottom legend needs at this width — the resize boundary
+   * at which the grid inset (and so the whole option) must be rebuilt. Only
+   * cartesian charts inset a grid; every other type reports 1 so width
+   * changes never force a rebuild.
+   */
+  function chartLegendRows(spec, width) {
+    if (CARTESIAN_TYPES.indexOf(spec.type) === -1) return 1
+    const show = spec.legend === undefined ? spec.series.length > 1 : spec.legend
+    if (!show) return 1
+    return legendRows(
+      spec.series.map(function (series) {
+        return series.name
+      }),
+      width
+    )
+  }
+
+  function baseGrid(hasLegend, legendRowCount) {
+    const rows = legendRowCount === undefined ? 1 : legendRowCount
+    return {
+      left: 8,
+      right: 16,
+      top: 14,
+      // One row keeps the long-standing 34; each wrapped row adds its height.
+      bottom: hasLegend ? 10 + rows * 24 : 10,
+      containLabel: true
+    }
+  }
+
+  function categoryAxis(spec, theme, boundaryGap) {
+    return {
+      type: 'category',
+      data: spec.categories || [],
+      boundaryGap: boundaryGap,
+      name: spec.xAxis && spec.xAxis.name,
+      nameTextStyle: axisText(theme),
+      axisTick: { show: false },
+      axisLine: { lineStyle: { color: theme.border } },
+      axisLabel: Object.assign(axisText(theme), { hideOverlap: true })
+    }
+  }
+
+  function valueAxis(spec, theme) {
+    return {
+      type: 'value',
+      name: spec.yAxis && spec.yAxis.name,
+      nameTextStyle: axisText(theme),
+      min: spec.yAxis && spec.yAxis.min,
+      max: spec.yAxis && spec.yAxis.max,
+      axisLine: { show: false },
+      axisTick: { show: false },
+      splitLine: { lineStyle: { color: theme.border, width: 1, type: 'solid' } },
+      axisLabel: Object.assign(axisText(theme), {
+        formatter: function (value) {
+          const unit = Object.assign({}, spec.unit)
+          if (unit.compact === undefined) unit.compact = true
+          return formatChartValue(value, unit)
+        }
+      })
+    }
+  }
+
+  /** Round-cap the data end of a bar; square at the baseline. */
+  function barRadius(horizontal) {
+    return horizontal ? [0, 3, 3, 0] : [3, 3, 0, 0]
+  }
+
+  function cartesianSeries(spec, theme) {
+    const horizontal = spec.type === 'bar'
+    return spec.series.map(function (series, index) {
+      const color = seriesColor(series, index, theme)
+      const stack = series.stack || (spec.stacked ? 'stack' : undefined)
+      if (spec.type === 'column' || spec.type === 'bar') {
+        return {
+          name: series.name,
+          type: 'bar',
+          data: series.data,
+          stack: stack,
+          barMaxWidth: 28,
+          itemStyle: Object.assign(
+            {
+              color: color,
+              borderRadius: stack ? 0 : barRadius(horizontal)
+            },
+            // The surface-color border is the 2px-gap effect between touching
+            // stack segments; standalone bars get the rounded data-end instead.
+            stack ? { borderColor: theme.surface, borderWidth: 1 } : {}
+          )
+        }
+      }
+      if (spec.type === 'scatter') {
+        return {
+          name: series.name,
+          type: 'scatter',
+          data: series.data,
+          symbolSize: function (value) {
+            return Array.isArray(value) && typeof value[2] === 'number'
+              ? Math.max(8, Math.min(40, Math.sqrt(value[2]) * 4))
+              : 10
+          },
+          itemStyle: { color: color, borderColor: theme.surface, borderWidth: 2 }
+        }
+      }
+      // line / area
+      const pointCount = series.data.length
+      return Object.assign(
+        {
+          name: series.name,
+          type: 'line',
+          data: series.data,
+          stack: spec.type === 'area' ? stack : undefined,
+          smooth: spec.smooth ? 0.3 : false,
+          lineStyle: { color: color, width: 2 },
+          symbol: 'circle',
+          symbolSize: 7,
+          showSymbol: pointCount <= 30,
+          itemStyle: { color: color, borderColor: theme.surface, borderWidth: 2 },
+          emphasis: { focus: spec.series.length > 1 ? 'series' : 'none' }
+        },
+        spec.type === 'area'
+          ? { areaStyle: { color: color, opacity: spec.stacked || series.stack ? 0.18 : 0.12 } }
+          : {}
+      )
+    })
+  }
+
+  function cartesianOption(spec, theme, width) {
+    const horizontal = spec.type === 'bar'
+    const boundaryGap = spec.type === 'column' || spec.type === 'bar'
+    const legend = baseLegend(spec, theme)
+    const category = categoryAxis(spec, theme, boundaryGap)
+    const value = valueAxis(spec, theme)
+    // Scatter without categories plots numeric x directly.
+    const numericX = spec.type === 'scatter' && !spec.categories
+    const xAxis = horizontal
+      ? value
+      : numericX
+        ? Object.assign({}, value, { name: spec.xAxis && spec.xAxis.name })
+        : category
+    const yAxis = horizontal ? category : value
+    return {
+      color: theme.palette,
+      tooltip: baseTooltip(spec, theme, spec.type === 'scatter' ? 'item' : 'axis'),
+      legend: legend,
+      grid: baseGrid(legend.show === true, chartLegendRows(spec, width)),
+      xAxis: xAxis,
+      yAxis: yAxis,
+      series: cartesianSeries(spec, theme)
+    }
+  }
+
+  function namedData(series) {
+    if (!series) return []
+    return series.data.filter(function (item) {
+      return typeof item === 'object' && item !== null && !Array.isArray(item)
+    })
+  }
+
+  function pieOption(spec, theme) {
+    const donut = spec.type === 'donut'
+    const data = namedData(spec.series[0])
+    const legend = Object.assign(baseLegend(spec, theme), {
+      show: spec.legend === undefined ? data.length > 1 : spec.legend
+    })
+    return {
+      color: theme.palette,
+      tooltip: Object.assign(baseTooltip(spec, theme, 'item'), {
+        formatter: function (params) {
+          return (
+            params.name +
+            '  <b>' +
+            formatChartValue(params.value, spec.unit) +
+            '</b>  ·  ' +
+            params.percent +
+            '%'
+          )
+        }
+      }),
+      legend: legend,
+      series: [
+        {
+          name: (spec.series[0] && spec.series[0].name) || spec.title,
+          type: 'pie',
+          radius: donut ? ['52%', '76%'] : '72%',
+          center: ['50%', legend.show ? '46%' : '50%'],
+          data: data.slice().sort(function (a, b) {
+            return b.value - a.value
+          }),
+          itemStyle: { borderColor: theme.surface, borderWidth: 2 },
+          label: {
+            color: theme.muted,
+            fontSize: 11,
+            fontFamily: theme.fontFamily,
+            formatter: '{b} · {d}%'
+          },
+          labelLine: { lineStyle: { color: theme.border } },
+          emphasis: { scaleSize: 4 }
+        }
+      ]
+    }
+  }
+
+  function heatmapOption(spec, theme) {
+    const values = numericValues(spec)
+    const min =
+      spec.yAxis && spec.yAxis.min !== undefined
+        ? spec.yAxis.min
+        : Math.min.apply(null, [0].concat(values))
+    const max =
+      spec.yAxis && spec.yAxis.max !== undefined
+        ? spec.yAxis.max
+        : Math.max.apply(null, values.concat([1]))
+    return {
+      tooltip: Object.assign(baseTooltip(spec, theme, 'item'), {
+        formatter: function (params) {
+          const x = params.value[0]
+          const y = params.value[1]
+          const v = params.value[2]
+          const col = (spec.categories && spec.categories[x]) || String(x)
+          const row = (spec.yCategories && spec.yCategories[y]) || String(y)
+          return row + ' · ' + col + '  <b>' + formatChartValue(v, spec.unit) + '</b>'
+        }
+      }),
+      grid: { left: 8, right: 16, top: 14, bottom: 56, containLabel: true },
+      xAxis: Object.assign(categoryAxis(spec, theme, true), { splitArea: { show: false } }),
+      yAxis: {
+        type: 'category',
+        data: spec.yCategories || [],
+        axisTick: { show: false },
+        axisLine: { lineStyle: { color: theme.border } },
+        axisLabel: axisText(theme)
+      },
+      visualMap: {
+        min: min,
+        max: max,
+        orient: 'horizontal',
+        left: 'center',
+        bottom: 0,
+        itemHeight: 100,
+        calculable: false,
+        inRange: { color: CHART_SEQUENTIAL_BLUES.slice() },
+        textStyle: { color: theme.muted, fontSize: 10, fontFamily: theme.fontFamily },
+        formatter: function (value) {
+          return formatChartValue(value, spec.unit)
+        }
+      },
+      series: [
+        {
+          name: (spec.series[0] && spec.series[0].name) || spec.title,
+          type: 'heatmap',
+          data: (spec.series[0] && spec.series[0].data) || [],
+          itemStyle: { borderColor: theme.surface, borderWidth: 2 },
+          label: { show: false },
+          emphasis: { itemStyle: { shadowBlur: 6, shadowColor: 'rgba(0,0,0,0.25)' } }
+        }
+      ]
+    }
+  }
+
+  function radarOption(spec, theme) {
+    const values = numericValues(spec)
+    const max =
+      spec.yAxis && spec.yAxis.max !== undefined
+        ? spec.yAxis.max
+        : Math.ceil(Math.max.apply(null, values.concat([1])) * 1.15)
+    const legend = baseLegend(spec, theme)
+    return {
+      color: theme.palette,
+      tooltip: baseTooltip(spec, theme, 'item'),
+      legend: legend,
+      radar: {
+        indicator: (spec.categories || []).map(function (name) {
+          return { name: name, max: max }
+        }),
+        radius: '68%',
+        axisName: { color: theme.muted, fontSize: 11, fontFamily: theme.fontFamily },
+        splitLine: { lineStyle: { color: theme.border } },
+        splitArea: { show: false },
+        axisLine: { lineStyle: { color: theme.border } }
+      },
+      series: [
+        {
+          type: 'radar',
+          data: spec.series.map(function (series, index) {
+            const color = seriesColor(series, index, theme)
+            return {
+              name: series.name,
+              value: series.data.filter(function (d) {
+                return typeof d === 'number'
+              }),
+              lineStyle: { color: color, width: 2 },
+              itemStyle: { color: color, borderColor: theme.surface, borderWidth: 2 },
+              areaStyle: { color: color, opacity: 0.12 },
+              symbolSize: 6
+            }
+          })
+        }
+      ]
+    }
+  }
+
+  function gaugeOption(spec, theme) {
+    const first = spec.series[0]
+    let item = namedData(first)[0]
+    if (!item) {
+      let numeric = 0
+      if (first) {
+        for (const d of first.data) {
+          if (typeof d === 'number') {
+            numeric = d
+            break
+          }
+        }
+      }
+      item = { name: (first && first.name) || '', value: numeric }
+    }
+    const max = spec.yAxis && spec.yAxis.max !== undefined ? spec.yAxis.max : 100
+    const color = seriesColor(first || { name: '', data: [] }, 0, theme)
+    return {
+      series: [
+        {
+          type: 'gauge',
+          startAngle: 210,
+          endAngle: -30,
+          min: spec.yAxis && spec.yAxis.min !== undefined ? spec.yAxis.min : 0,
+          max: max,
+          progress: { show: true, width: 14, roundCap: true, itemStyle: { color: color } },
+          axisLine: { roundCap: true, lineStyle: { width: 14, color: [[1, theme.deemphasis]] } },
+          pointer: { show: false },
+          axisTick: { show: false },
+          splitLine: { show: false },
+          axisLabel: { show: false },
+          title: {
+            show: true,
+            offsetCenter: [0, '32%'],
+            color: theme.muted,
+            fontSize: 12,
+            fontFamily: theme.fontFamily
+          },
+          detail: {
+            offsetCenter: [0, 0],
+            color: theme.fg,
+            fontSize: 30,
+            fontWeight: 700,
+            fontFamily: theme.fontFamily,
+            formatter: function (value) {
+              return formatChartValue(value, spec.unit)
+            }
+          },
+          data: [{ value: item.value, name: item.name }]
+        }
+      ]
+    }
+  }
+
+  function funnelOption(spec, theme) {
+    const data = namedData(spec.series[0])
+    const legend = Object.assign(baseLegend(spec, theme), {
+      show: spec.legend === undefined ? false : spec.legend
+    })
+    return {
+      color: theme.palette,
+      tooltip: baseTooltip(spec, theme, 'item'),
+      legend: legend,
+      series: [
+        {
+          name: (spec.series[0] && spec.series[0].name) || spec.title,
+          type: 'funnel',
+          sort: 'descending',
+          gap: 2,
+          top: 8,
+          bottom: legend.show ? 34 : 8,
+          left: '12%',
+          width: '76%',
+          data: data,
+          itemStyle: { borderColor: theme.surface, borderWidth: 1 },
+          label: { show: true, position: 'inside', color: '#ffffff', fontSize: 11 },
+          emphasis: { label: { fontSize: 12 } }
+        }
+      ]
+    }
+  }
+
+  /** One-hue magnitude ramp — mirror of theme.ts CHART_SEQUENTIAL_BLUES. */
+  const CHART_SEQUENTIAL_BLUES = [
+    '#cde2fb',
+    '#9ec5f4',
+    '#6da7ec',
+    '#3987e5',
+    '#256abf',
+    '#184f95',
+    '#0d366b'
+  ]
+
+  function chartSpecToOption(spec, theme, width) {
+    let option
+    switch (spec.type) {
+      case 'pie':
+      case 'donut':
+        option = pieOption(spec, theme)
+        break
+      case 'heatmap':
+        option = heatmapOption(spec, theme)
+        break
+      case 'radar':
+        option = radarOption(spec, theme)
+        break
+      case 'gauge':
+        option = gaugeOption(spec, theme)
+        break
+      case 'funnel':
+        option = funnelOption(spec, theme)
+        break
+      default:
+        option = cartesianOption(spec, theme, width)
+    }
+    option.textStyle = { fontFamily: theme.fontFamily }
+    option.animationDuration = 400
+    option.animationDurationUpdate = 200
+    if (spec.echarts) option = deepMerge(option, spec.echarts)
+    return option
+  }
+
+  // ------------------------------------------------------------------
+  // Narrow-host adaptation (mobile-only, applied after the ported builder)
+  // ------------------------------------------------------------------
+
+  /**
+   * Below this width, pie/donut outside labels clip at the card edge and
+   * read as broken half-words. The desktop keeps them (its plot is wide);
+   * here they hide when the legend already carries identity, and the ring
+   * grows into the reclaimed gutter. Skipped entirely for passthrough
+   * specs — full ECharts control means the author's layout wins.
+   */
+  const NARROW_PIE_LABEL_WIDTH = 440
+
+  function adaptOptionForWidth(option, spec, width) {
+    if (spec.echarts) return option
+    if (spec.type !== 'pie' && spec.type !== 'donut') return option
+    if (!(width > 0 && width < NARROW_PIE_LABEL_WIDTH)) return option
+    const legendShows = option.legend && option.legend.show === true
+    if (!legendShows) return option
+    const series = Array.isArray(option.series) && option.series[0]
+    if (!series) return option
+    option.series[0] = Object.assign({}, series, {
+      label: { show: false },
+      labelLine: { show: false },
+      radius: spec.type === 'donut' ? ['58%', '84%'] : '80%'
+    })
+    return option
+  }
+
+  // ------------------------------------------------------------------
+  // Host protocol
+  // ------------------------------------------------------------------
+
+  function post(msg) {
+    if (global.ReactNativeWebView) global.ReactNativeWebView.postMessage(JSON.stringify(msg))
+  }
+
+  function fail(id, error) {
+    post({ type: 'error', id: id, message: String((error && error.message) || error) })
+  }
+
+  let live = null
+  let liveMsg = null
+
+  function liveOption(msg, el) {
+    const option = adaptOptionForWidth(
+      chartSpecToOption(msg.spec, msg.theme, el.clientWidth),
+      msg.spec,
+      el.clientWidth
+    )
+    if (msg.animate === false) option.animation = false
+    return option
+  }
+
+  function renderLive(msg) {
+    const el = document.getElementById('live')
+    if (!el) return
+    if (live) {
+      live.dispose()
+      live = null
+    }
+    const chart = global.echarts.init(el, null, { renderer: 'canvas' })
+    chart.setOption(liveOption(msg, el), { notMerge: true })
+    live = chart
+    liveMsg = msg
+  }
+
+  function resizeLive() {
+    const el = document.getElementById('live')
+    if (!live || !el) return
+    live.resize()
+    // Width may have crossed the narrow-label threshold — rebuild in place.
+    if (liveMsg) live.setOption(liveOption(liveMsg, el), { notMerge: true })
+  }
+
+  function snapshot(msg) {
+    const el = document.createElement('div')
+    el.style.cssText =
+      'position:absolute;left:-10000px;top:0;width:' +
+      msg.width +
+      'px;height:' +
+      msg.height +
+      'px;'
+    document.body.appendChild(el)
+    const chart = global.echarts.init(el, null, {
+      renderer: 'canvas',
+      width: msg.width,
+      height: msg.height
+    })
+    let done = false
+    const finish = function () {
+      if (done) return
+      done = true
+      try {
+        const dataUrl = chart.getDataURL({
+          type: 'png',
+          pixelRatio: msg.scale || 2,
+          backgroundColor: msg.background || 'transparent'
+        })
+        post({ type: 'snapshot', id: msg.id, dataUrl: dataUrl })
+      } catch (error) {
+        fail(msg.id, error)
+      }
+      chart.dispose()
+      el.remove()
+    }
+    try {
+      const option = adaptOptionForWidth(
+        chartSpecToOption(msg.spec, msg.theme, msg.width),
+        msg.spec,
+        msg.width
+      )
+      // A snapshot is the final frame — never a mid-animation one. Applied
+      // after the passthrough merge so it always wins.
+      option.animation = false
+      // 'finished' covers progressive renders; the double-rAF covers the
+      // common small-chart case; the timer covers anything that never paints.
+      chart.on('finished', finish)
+      chart.setOption(option, { notMerge: true })
+      requestAnimationFrame(function () {
+        requestAnimationFrame(finish)
+      })
+      setTimeout(finish, 2000)
+    } catch (error) {
+      fail(msg.id, error)
+      chart.dispose()
+      el.remove()
+    }
+  }
+
+  let ready = false
+  const queue = []
+
+  function handle(msg) {
+    if (!msg || typeof msg !== 'object') return
+    switch (msg.type) {
+      case 'render':
+        renderLive(msg)
+        break
+      case 'resize':
+        resizeLive()
+        break
+      case 'snapshot':
+        snapshot(msg)
+        break
+      default:
+        break
+    }
+  }
+
+  function dispatch(msg) {
+    if (!ready) {
+      queue.push(msg)
+      return
+    }
+    try {
+      handle(msg)
+    } catch (error) {
+      fail(msg && msg.id, error)
+    }
+  }
+
+  global.__wolffishChart = { dispatch: dispatch }
+  // Pure internals, exposed for the app's jest harness — no DOM required.
+  global.__wolffishChartInternals = {
+    deepMerge: deepMerge,
+    formatChartValue: formatChartValue,
+    chartSpecToOption: chartSpecToOption,
+    chartLegendRows: chartLegendRows,
+    adaptOptionForWidth: adaptOptionForWidth
+  }
+
+  if (typeof document !== 'undefined') {
+    const boot = function () {
+      // The canvas measures text at render time — the embedded face must be
+      // usable before the first chart, or labels draw in the fallback font.
+      const loaded =
+        document.fonts && document.fonts.load
+          ? Promise.all([
+              document.fonts.load("12px 'IBM Plex Sans Arabic'"),
+              document.fonts.ready
+            ]).catch(function () {})
+          : Promise.resolve()
+      loaded.then(function () {
+        ready = true
+        post({ type: 'ready' })
+        const pending = queue.splice(0)
+        for (const msg of pending) dispatch(msg)
+      })
+    }
+    if (document.readyState === 'complete' || document.readyState === 'interactive') boot()
+    else document.addEventListener('DOMContentLoaded', boot)
+  }
+})(typeof window !== 'undefined' ? window : globalThis)

@@ -86,7 +86,10 @@ function openaiSupportsVision(m: string): boolean {
   if (/gpt-3\.5|o1-mini|o1-preview|o3-mini|gpt-4-32k/.test(m)) return false
   // Bare gpt-4 and its dated snapshots predate vision.
   if (/^gpt-4($|-\d)/.test(m)) return false
-  return /gpt-4o|gpt-4\.\d|gpt-4-turbo|gpt-5|chatgpt|^o\d/.test(m)
+  // gpt-6*, gpt-5.6*, chat-latest: image parts verified live 2026-10-12
+  // (every row of the catalogue answered a solid-colour probe; bare gpt-4
+  // is the one 400 — "does not support image inputs").
+  return /gpt-4o|gpt-4\.\d|gpt-4-turbo|gpt-5|gpt-6|chat-latest|chatgpt|^o\d/.test(m)
 }
 
 // OpenRouter ids are namespaced ("anthropic/claude-sonnet-4"); route to

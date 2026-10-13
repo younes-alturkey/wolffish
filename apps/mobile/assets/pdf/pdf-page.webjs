@@ -1,0 +1,280 @@
+/*
+ * PDF page runtime — runs inside the PDF card's WebView alongside the vendored
+ * pdf.js build and its worker (see README.md in this directory). Android only:
+ * iOS renders PDFs in WKWebView natively and never loads this page.
+ *
+ * The document is already in the page — the host writes the file's bytes in as
+ * base64 (`window.__wolffishPdfData`) so the frame is self-contained and both
+ * mounts of the card, the inline preview and the expanded sheet, can load the
+ * same URL independently with no message sequencing. Which of the two is
+ * asking comes from the hash:
+ *
+ *   #preview  page 1 only, fit to width, no scroll, no zoom — the card body
+ *   #full     every page, lazily rasterized, scrollable and pinch-zoomable
+ *
+ * page → RN  window.ReactNativeWebView.postMessage(JSON):
+ *   { type: 'ready', pages }        — first page painted, document page count
+ *   { type: 'error', message }      — nothing renderable; the card falls back
+ *
+ * Rendering is canvas-only: no text layer, so text in the expanded sheet is
+ * not selectable the way it is in the iOS viewer. Deliberate for now — the
+ * layer needs its own stylesheet and fights the pinch-zoom transform.
+ */
+;(function (global) {
+  'use strict'
+
+  /* Rasterize above CSS pixels so the page is not soft, but cap it: at DPR 3
+     an A4 page is already a ~2500px canvas, and a long document holds several. */
+  var MAX_DPR = 2.5
+  /* How far outside the viewport a page is rasterized ahead of being scrolled
+     to. One screen of lead time hides the work without holding the whole
+     document in bitmaps. */
+  var LAZY_MARGIN = '100% 0px'
+
+  function post(message) {
+    if (global.ReactNativeWebView) global.ReactNativeWebView.postMessage(JSON.stringify(message))
+  }
+
+  function fail(error) {
+    post({ type: 'error', message: (error && error.message) || String(error) })
+  }
+
+  /** base64 → bytes, in slices: one atob of a multi-megabyte string is a stall. */
+  function decode(base64) {
+    var CHUNK = 8192
+    var binary = global.atob(base64)
+    var bytes = new Uint8Array(binary.length)
+    for (var offset = 0; offset < binary.length; offset += CHUNK) {
+      var end = Math.min(offset + CHUNK, binary.length)
+      for (var i = offset; i < end; i++) bytes[i] = binary.charCodeAt(i)
+    }
+    return bytes
+  }
+
+  /**
+   * The width every page in a pass is fitted to.
+   *
+   * Measured ONCE per pass and threaded through, never re-read per page: the
+   * viewport meta this page rewrites at boot relays the document, so two reads
+   * a few milliseconds apart can disagree — and a page reserved at one width
+   * and rasterized at another comes out the wrong size, or, if the read lands
+   * mid-relayout and returns 0, as a 0×0 canvas and a blank card.
+   */
+  function measure(root) {
+    var width = root.clientWidth || document.documentElement.clientWidth || global.innerWidth || 0
+    // A frame that has not been laid out yet has no width to fit to; a page
+    // rasterized against that is invisible either way, so refuse the pass and
+    // let the resize handler take it once the frame is real.
+    return width > 0 ? width : 0
+  }
+
+  function paint(page, canvas, width) {
+    var unscaled = page.getViewport({ scale: 1 })
+    // Fit the page to the frame's width; the height follows the aspect.
+    var scale = width / unscaled.width
+    var dpr = Math.min(global.devicePixelRatio || 1, MAX_DPR)
+    var viewport = page.getViewport({ scale: scale * dpr })
+    canvas.width = Math.floor(viewport.width)
+    canvas.height = Math.floor(viewport.height)
+    // The CSS box stays in layout pixels — only the bitmap behind it is dense.
+    canvas.style.width = '100%'
+    canvas.style.height = 'auto'
+    return page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise
+  }
+
+  /**
+   * A page's slot in the document flow, sized from its viewport before anything
+   * is rasterized. Reserving the true height up front is what keeps the scroll
+   * position still as pages fill in behind the scrollbar.
+   */
+  function slotFor(page, index, width) {
+    var unscaled = page.getViewport({ scale: 1 })
+    var slot = document.createElement('div')
+    slot.className = 'page'
+    slot.style.height = Math.round(unscaled.height * (width / unscaled.width)) + 'px'
+    slot.setAttribute('data-page', String(index))
+    return slot
+  }
+
+  function renderInto(slot, page, width) {
+    var canvas = document.createElement('canvas')
+    return paint(page, canvas, width).then(function () {
+      slot.style.height = 'auto'
+      slot.textContent = ''
+      slot.appendChild(canvas)
+    })
+  }
+
+  function renderPreview(doc, root, width) {
+    return doc.getPage(1).then(function (page) {
+      var canvas = document.createElement('canvas')
+      var slot = document.createElement('div')
+      slot.className = 'page'
+      slot.setAttribute('data-page', '1')
+      slot.appendChild(canvas)
+      root.appendChild(slot)
+      return paint(page, canvas, width)
+    })
+  }
+
+  function renderFull(doc, root, width) {
+    var slots = []
+    var chain = Promise.resolve()
+    // Sequential: pdf.js runs on this thread (see the fake-worker note in
+    // lib/pdf/html.ts), so measuring every page at once would block the paint
+    // of the first one — which is the only page anybody is waiting on.
+    for (var number = 1; number <= doc.numPages; number++) {
+      chain = chain.then(
+        (function (n) {
+          return function () {
+            return doc.getPage(n).then(function (page) {
+              var slot = slotFor(page, n, width)
+              root.appendChild(slot)
+              slots.push({ slot: slot, page: page, rendered: false })
+            })
+          }
+        })(number)
+      )
+    }
+
+    return chain.then(function () {
+      var first = slots[0]
+      var painted = first ? renderInto(first.slot, first.page, width) : Promise.resolve()
+      first && (first.rendered = true)
+
+      if (typeof IntersectionObserver === 'undefined') {
+        // No observer: rasterize the rest behind the first page, in order.
+        var rest = Promise.resolve()
+        slots.slice(1).forEach(function (entry) {
+          rest = rest.then(function () {
+            entry.rendered = true
+            return renderInto(entry.slot, entry.page, width)
+          })
+        })
+        return painted
+      }
+
+      var observer = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return
+            var match = null
+            for (var i = 0; i < slots.length; i++) {
+              if (slots[i].slot === entry.target) match = slots[i]
+            }
+            if (!match || match.rendered) return
+            match.rendered = true
+            observer.unobserve(entry.target)
+            renderInto(match.slot, match.page, width).catch(function () {
+              // One unrenderable page leaves its reserved gap; the rest stand.
+            })
+          })
+        },
+        { root: null, rootMargin: LAZY_MARGIN }
+      )
+      slots.forEach(function (entry) {
+        if (!entry.rendered) observer.observe(entry.slot)
+      })
+      return painted
+    })
+  }
+
+  function boot() {
+    var mode = global.location.hash === '#full' ? 'full' : 'preview'
+    var root = document.getElementById('doc')
+    var viewport = document.getElementById('viewport')
+    if (viewport) {
+      // Pinch-zoom belongs to the sheet, never to a card sitting in the feed.
+      viewport.setAttribute(
+        'content',
+        mode === 'full'
+          ? 'width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=6'
+          : 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'
+      )
+    }
+    document.body.className = mode
+
+    var data = global.__wolffishPdfData
+    if (!data) {
+      fail(new Error('no document data'))
+      return
+    }
+    // Freeing the base64 copy matters: the bytes are already in the Uint8Array
+    // and the string is the larger of the two.
+    var bytes
+    try {
+      bytes = decode(data)
+      global.__wolffishPdfData = null
+    } catch (error) {
+      fail(error)
+      return
+    }
+
+    global.pdfjsLib
+      .getDocument({
+        data: bytes,
+        // CVE-2024-4367 was an eval() reachable from a crafted font; the bytes
+        // here come from an agent's workspace, so the door stays shut even on
+        // a build that has the fix.
+        isEvalSupported: false,
+        // Nothing in a PDF gets to run — no form scripting, no XFA.
+        enableScripting: false,
+        enableXfa: false,
+        // No network: the standard 14 faces resolve against the device's own
+        // fonts instead of the font data pdf.js would otherwise fetch.
+        useSystemFonts: true,
+        verbosity: 0
+      })
+      .promise.then(function (doc) {
+        var announced = false
+        var width = 0
+
+        // A frame still without a width after this long is not going to get
+        // one; report it rather than leaving a blank page in the card.
+        var attempts = 0
+        var pass = function () {
+          var next = measure(root)
+          if (next === 0) {
+            if (++attempts > 20) return Promise.reject(new Error('frame has no width'))
+            return new Promise(function (resolve) {
+              global.setTimeout(resolve, 100)
+            }).then(pass)
+          }
+          if (next === width) return Promise.resolve()
+          width = next
+          root.textContent = ''
+          var work = mode === 'full' ? renderFull(doc, root, width) : renderPreview(doc, root, width)
+          return work.then(function () {
+            if (!announced) {
+              announced = true
+              post({ type: 'ready', pages: doc.numPages })
+            }
+          })
+        }
+
+        // Rotation, and the split second after the viewport meta above relays
+        // the document: both arrive here, and both mean every canvas is now
+        // the wrong size. Coalesced, because a rotation fires several.
+        var settle = null
+        global.addEventListener('resize', function () {
+          if (settle) global.clearTimeout(settle)
+          settle = global.setTimeout(function () {
+            settle = null
+            pass().catch(fail)
+          }, 150)
+        })
+
+        // One turn of the event loop before the first measurement, so the
+        // relayout the viewport meta triggered is already in the numbers.
+        return new Promise(function (resolve) {
+          global.setTimeout(resolve, 0)
+        }).then(pass)
+      })
+      .catch(fail)
+  }
+
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'complete' || document.readyState === 'interactive') boot()
+    else document.addEventListener('DOMContentLoaded', boot)
+  }
+})(typeof window !== 'undefined' ? window : globalThis)

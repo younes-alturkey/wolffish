@@ -1,0 +1,179 @@
+---
+title: "Retrieval Tools"
+description: "The model-callable toolset for searching and reading everything Wolffish has ever done, said, produced, or spent"
+---
+
+# Everything, One Tool Call Away
+
+The [lean context system](/architecture/lean-context) puts a coverage map in the prompt, not the content. What makes that work is the retrieval toolset: model-callable tools, served by the always-loaded `introspect` capability over a CortexHost bridge, that reach the cortex index in milliseconds. All of them are read-only except `memory_save`.
+
+| Tool | What it does |
+|---|---|
+| `memory_search` | Ranked full-text search across all 11 indexed sources — returns snippets with refs |
+| `memory_get` | Fetch the full stored content behind a ref |
+| `conversation_list` | Enumerate past conversations across every channel |
+| `conversation_read` | Read one conversation — messages *and* tool calls — with pagination |
+| `memory_save` | Durably save one fact to the long-term knowledge files (deduplicated) |
+| `usage_report` | Wolffish's own LLM spend from the usage ledger |
+| `wolffish_recall` | Stable alias over the same index — query/date/source shortcuts |
+
+## memory_search
+
+The primary retrieval tool: ranked FTS across everything indexed. Returns snippets with refs — follow up with `memory_get` or `conversation_read` for full content.
+
+| Parameter | Required | Description |
+|---|---|---|
+| `query` | Yes | Keywords to search (exact-word matching, OR-combined) |
+| `sources` | No | Comma-separated subset of: `episode`, `knowledge`, `consolidated`, `conversation`, `task`, `feedback`, `usage`, `corpus`, `log`, `artifact`, `doc`. Default: all |
+| `after` / `before` | No | Date bounds (`YYYY-MM-DD`) |
+| `limit` | No | Max hits (default 15, max 50) |
+
+<Tip>
+  Search is exact-word based. If the first query misses, rephrase — don't repeat. The doctrine requires 2–3 differently-worded attempts before concluding something was never recorded.
+</Tip>
+
+## memory_get
+
+Fetches the full content behind a `memory_search` ref: a whole episode day, a knowledge file, a task transcript with its detail log, or all records of a conversation.
+
+| Parameter | Required | Description |
+|---|---|---|
+| `ref` | Yes | A ref from `memory_search` (see ref formats below) |
+| `limit` | No | Max records for prefix refs (default 50) |
+
+`file:` refs return the **actual file** — workspace-confined, with a head+tail excerpt past 12K characters.
+
+### Ref Formats
+
+| Ref shape | Resolves to |
+|---|---|
+| `conversation:<id>#3` | Message 3 of a conversation |
+| `conversation:<id>#3.1` | Tool call 1 inside message 3 (the call and its output) |
+| `conversation:<id>#` | Prefix ref — all records of the conversation, in order |
+| `task:<id>` | A task transcript |
+| `task:<id>#detail2` | A section of the task's untruncated detail log |
+| `file:brain/hippocampus/episodes/2026-07-01.md` | A workspace file, returned as-is |
+| `file:<path>#<anchor>` | A chunk of a large file (section, line range, or per-chat WhatsApp chunk) |
+
+## conversation_list
+
+Enumerates past conversations, newest first: id, channel, title, message count, last-updated. This has never existed before v1.0.203 — the model previously had no way to see its own conversation history as a list. It's served from the index's `conversations` table, so enumeration is instant.
+
+| Parameter | Required | Description |
+|---|---|---|
+| `channel` | No | Filter to one channel: `electron`, `telegram`, `whatsapp`, `heartbeat`, `procedure` |
+| `query` | No | Rank conversations by content matches for these keywords |
+| `after` / `before` | No | Only conversations updated in this date range (`YYYY-MM-DD`) |
+| `limit` | No | Max conversations (default 20, max 100) |
+
+## conversation_read
+
+Reads a specific conversation — the messages *and* the tool calls/results inside it — with pagination. It also **recovers turns of the current conversation** that were folded into a rolling summary and are no longer in the model's context (see [Context Compaction](/architecture/context-compaction)).
+
+| Parameter | Required | Description |
+|---|---|---|
+| `id` | Yes | Conversation id — a unique suffix is enough |
+| `from` / `to` | No | Message index range (default: last 15 messages) |
+| `what` | No | `messages` (text only), `tools` (tool calls/results only), or `all` (default) |
+| `detail` | No | `brief` (default) or `full` — full raises the per-item excerpt caps |
+
+Output is excerpted; the tool prints a `file:` ref alongside, and `memory_get` on that ref returns the complete untruncated bytes.
+
+## memory_save
+
+The one write tool: durably saves a single self-contained fact to the long-term [knowledge files](/memory/knowledge), deduplicated. Use it for preferences, decisions, project facts, or people details — not transient task state. Episodes and task logs are recorded automatically.
+
+| Parameter | Required | Description |
+|---|---|---|
+| `fact` | Yes | One durable, self-contained sentence |
+| `type` | No | Which knowledge file: `projects`, `people`, `preferences`, `technical`, `decisions` (default `technical`) |
+
+## usage_report
+
+Wolffish's own LLM spend, read from the structured usage ledger: requests, tokens (in/out/cache), and cost — total and per model.
+
+| Parameter | Required | Description |
+|---|---|---|
+| `period` | No | `today` (default), `yesterday`, `week`, `month`, `all` |
+| `after` / `before` | No | Explicit date range (`YYYY-MM-DD`) — overrides `period` |
+
+## wolffish_recall
+
+Kept as a stable alias with simpler ergonomics — search by keyword and/or pin to a single day. It now rides the same index as `memory_search` (it used to be a linear scan over ~80 files on disk; that path is gone).
+
+| Parameter | Required | Description |
+|---|---|---|
+| `query` | No | Keywords, case-insensitive (optional if `date` is given) |
+| `date` | No | Pin results to one day (`YYYY-MM-DD`) |
+| `source` | No | `episodes`, `tasks`, `feedback`, `knowledge`, `conversations`, or `all` (default) |
+| `limit` | No | Max matches (default 8, max 30) |
+
+<Info>
+  The introspect capability also carries the status tools — `wolffish_status`, `wolffish_performance`, `wolffish_memory`, `wolffish_list_files` — unchanged in this redesign, plus `channel_status` for live Telegram/WhatsApp/in-app connectivity (fixed in v1.0.203; it was previously defined but unroutable).
+</Info>
+
+## Example: "Send me the flight plan"
+
+A definite reference to something not in context — the model searches first, then follows the ref, then delivers:
+
+```
+User: "send me the flight plan"
+
+memory_search   query: "flight plan"
+  → conversation:conv-8f21…#42 — "…generated the final flight plan PDF…"
+
+conversation_read   id: "8f21"   from: 40   to: 44
+  → message 42 shows the tool call that produced files/flight-plan-riyadh.pdf
+
+send_file   path: "files/flight-plan-riyadh.pdf"
+```
+
+More patterns:
+
+- "What did Sana say on WhatsApp?" → `memory_search` — inbound channel messages are indexed too.
+- "What did we do on the 18th?" → `wolffish_recall` with `date: "2026-06-18"`.
+- "Did that backup task finish?" → `memory_search` with `sources: "task"`.
+- "What did today cost?" → `usage_report`.
+- "What was the confirmation number I gave you earlier?" (long conversation) → `conversation_read` on the current conversation.
+
+## The Recall Doctrine
+
+Retrieval is **unprompted** — the operating contract (`agents.core.md`) instructs the model to decide recall from the intent of your message, not to wait for "search your memory":
+
+- **Definite references** to things not in context — "*the* flight plan", "that file", "the email I sent her", "like last time" — mean you know it has it. Search first, whether it's from an hour ago or months ago.
+- **Repeat-task smell** — "send an email to Sarah", "post the update", "do the weekly report" — quick search for prior instances first: there may be an established pattern, template, or recipient list you expect it to reuse.
+- **Anything touching preferences** (tone, format, recipients, schedules, naming) — check the learned-preferences digest in the prompt; if that doesn't cover it, search before guessing.
+- **Pure-present tasks** — weather, a calculation, a fresh web lookup — need no recall. Just act.
+
+And the hard rules: never claim ignorance about its own past without **at least two differently-worded searches**, and a search miss — like the memory map itself — is a coverage statement, **never evidence of absence**.
+
+## What Is Indexed
+
+The cortex indexes 11 sources, at section/message granularity:
+
+| Source | Covers |
+|---|---|
+| `episode` | Daily activity logs ([episodes](/memory/episodes)) |
+| `knowledge` | The long-term [knowledge files](/memory/knowledge) |
+| `consolidated` | Weekly digests ([consolidation](/memory/consolidation)) |
+| `conversation` | Every message **and every tool call with its output**, across all channels — including inbound WhatsApp messages (the per-chat read-history buffer, indexed in per-chat chunks) |
+| `task` | Motor task transcripts plus their untruncated detail logs |
+| `feedback` | Tool-outcome feedback (basalganglia) |
+| `usage` | Structured usage-ledger rows: timestamp, provider, model, tokens, cost |
+| `corpus` | Daily event logs |
+| `log` | App and extension logs (last 16KB of each) |
+| `artifact` | Generated and uploaded files — `files/`, `uploads/`, `screenshots/`, `speech/` — metadata and provenance: name, size, kind, mtime, owning conversation |
+| `doc` | Identity files, `heartbeat.md`, `run-history.md`, and other workspace markdown |
+
+**Excluded by design:** `config.json` (secrets), `whatsapp/auth`, Telegram state, `.debug`, dot-directories, and `node_modules`. Binary files are indexed as metadata only, never content.
+
+The index is schema-versioned: a full rebuild happens **only** on a version bump (~1.3s for a 2GB workspace); a normal launch runs an incremental mtime/size diff in ~22ms.
+
+<CardGroup cols={2}>
+  <Card title="The Lean Context System" icon="feather" href="/architecture/lean-context">
+    Why the prompt carries a map instead of the content.
+  </Card>
+  <Card title="How Memory Works" icon="brain" href="/memory/overview">
+    Episodes, consolidation, and knowledge — the memory tiers behind the index.
+  </Card>
+</CardGroup>

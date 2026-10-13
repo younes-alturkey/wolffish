@@ -1,0 +1,132 @@
+---
+title: "Reflection"
+description: "How Wolffish reviews its finished conversations every night, distills a playbook that rides into every future turn, and treats your own words as ground truth"
+---
+
+# Wolffish Sleeps On It
+
+Memory records what happened. The [feedback loop](/memory/feedback-loop) records what worked at the tool level. **Reflection** closes the last gap: every night, Wolffish reviews its own finished conversations the way a careful colleague reviews their day — what was attempted, how it actually ended, what worked well enough to repeat, what failed and why, and what you showed it about how you like things done. The lessons distill into a **playbook** that rides into every future conversation.
+
+The strongest signal in that review is yours — not a grade, but **your own words in the transcript**: what you appreciated, what you corrected, what you asked it never to do again.
+
+## Location
+
+```
+~/.wolffish/workspace/brain/reflection/
+├── playbook.md          # The distilled lessons — injected into every prompt
+├── playbook.md.bak      # The previous version, kept on every rewrite
+├── 2026-08-01.md        # Nightly review blocks, one file per day
+└── reviewed.json        # Bookkeeping — which conversations were reviewed when
+```
+
+Like everything else in the workspace, these are plain markdown — open the playbook in any editor to see exactly what Wolffish has taught itself. `reviewed.json` entries are pruned after 14 days.
+
+## The Nightly Review
+
+The nightly job looks back over the last **7 days** and reviews every conversation — [automations](/configuration/heartbeat) and [procedure](/configuration/procedures) runs included — that has been **quiet for at least the configured window** (default 12 hours). A conversation that gets continued after its review is simply re-reviewed the next night.
+
+Each conversation gets one review call on your configured Brain (reasoning off, billed like the other utility side-calls, never against the conversation's own meter). The result is an honest block appended to the day file:
+
+```markdown
+## Draft the Q3 board update
+outcome: delivered after two false starts
+score: self=7
+win: pulled last quarter's deck for structure before writing
+fail: first draft used markdown tables in WhatsApp — rewritten after format bounce
+pref: user wants numbers rounded to one decimal in summaries
+note: template now saved under files/board/
+```
+
+The `score:` line is the model's own honest **self-score** — held to what actually happened rather than effort, with your own words in the transcript as the strongest evidence: a turn that annoyed you, wasted work, or failed silently scores low even if every tool "succeeded". It stays internal to reflection, never shown in chat.
+
+## The Playbook
+
+The same nightly run folds new review blocks into `playbook.md` — a **living document rewritten whole**, never an append-only log. It has exactly five sections:
+
+```markdown
+# Playbook
+
+## Do
+- Pull prior-quarter documents for structure before drafting recurring reports (inferred, 2026-07-29)
+
+## Avoid
+- Markdown tables in WhatsApp replies — the format gate bounces them (inferred, 2026-07-28)
+
+## User likes
+- Numbers rounded to one decimal in summaries (user-said, 2026-08-01)
+
+## User dislikes
+- Being asked to re-confirm file locations it already knows (user-said, 2026-07-26)
+
+## Recipes
+- Weekly news digest: three sources, five bullets each, one "so what" line (user-said, 2026-07-27)
+```
+
+Every entry carries its **provenance and date** — `user-said` (you stated it) or `inferred` (the review concluded it). The merge rules keep it trustworthy:
+
+- **Newest evidence wins a contradiction** — a re-learned preference replaces the stale one instead of sitting beside it.
+- **Inferred entries decay after 30 days** unless reinforced; what you said yourself doesn't fade.
+- **Hard ceiling of 6,000 characters** — the playbook must stay a briefing, not an archive.
+- **Every rewrite keeps the previous version** as `playbook.md.bak`, so a bad night is one copy away from undone.
+
+The playbook rides in **every system prompt**, framed as tendencies rather than laws — your live instruction in the conversation always outranks it. Once the first playbook exists, it takes over the prompt slot previously held by the [learned-preferences digest](/memory/feedback-loop), which remains as the bootstrap fallback.
+
+## Your Words Are Its Ground Truth
+
+Earlier versions asked you to grade every answer on a **0–10 rating bar** — in the app, on the phone, or by texting a bare number to Telegram or WhatsApp. Since **v1.0.260** that scoring is **retired everywhere**: the bar, the channel invitations, the bare-number votes, and the terminal's `/rate` are all gone, along with their switches. Grading every answer was homework, and the numbers told the review less than what you already say naturally.
+
+What reflection reads instead is **the conversation itself** — the strongest evidence there is:
+
+- **Appreciation** — "perfect, exactly that" marks a win worth repeating, along with what triggered it.
+- **Corrections** — "no, round to one decimal" becomes a durable preference the moment you say it.
+- **Frustration** — a redo, a complaint, an abandoned thread scores a conversation honestly without you filing anything.
+
+A number you type is simply a message again, on every surface — and teaching Wolffish is the same act as talking to it.
+
+<Tip>
+  Say what you think in the conversation, in your own words — "great, do it like this from now on" or "that table format doesn't work for me" teaches the nightly review more than any number could, and lands in the playbook with `user-said` provenance, which never decays.
+</Tip>
+
+## The Monthly Deep Reflection
+
+Nightly accumulation has a failure mode: self-taught bad habits. Once a month (the 1st, one hour after the nightly run), a **deep reflection** takes the opposite stance and attacks what the nights built up — stale rules, sweeping conclusions drawn from one incident, entries the evidence has turned against. It audits the playbook **and** the five [knowledge files](/memory/knowledge), reading up to a month of reflection day files as evidence, and rewrites only what changed — knowledge rewrites keep a `.bak` beside the original, same as the playbook.
+
+It skips itself until reflection has actually produced something to audit.
+
+## Schedule and Settings
+
+Everything lives in **Settings → Knowledge → Reflection** (the Knowledge page now has two tabs: **Compaction** and **Reflection**):
+
+- **Nightly reflection** — the hour it runs (default 3 AM).
+- **Review after quiet for** — how long a conversation must sit untouched before it counts as settled: 1, 2, 3, 6, 12 (default), 24, or 48 hours.
+- **Run now** buttons for both the nightly review and the deep reflection, plus last-run cards showing when each ran, how long it took, the tokens in and out, and what it produced.
+
+The same settings persist in `config.json`:
+
+```json
+{
+  "reflection": {
+    "hour": 3,
+    "quietHours": 12
+  }
+}
+```
+
+| Key | Default | Description |
+|---|---|---|
+| `hour` | `3` | Hour of day (0–23) for the nightly review; the monthly deep reflection runs at `hour + 1` on the 1st |
+| `quietHours` | `12` | How long a conversation must be quiet before it's reviewed (1, 2, 3, 6, 12, 24, or 48) |
+
+<Info>
+  Reflection is **core** — there is no off switch, only the hour. Like [compaction](/memory/consolidation), it runs through the brainstem's scheduler: a laptop asleep at 3 AM simply runs its review on the next launch (missed fires are swept 90 seconds after startup and every 30 minutes after that). Both runs also appear on the [Automations page](/configuration/heartbeat) as "Nightly reflection" and "Deep reflection".
+</Info>
+
+## Reflection vs. the Other Learning Loops
+
+| Aspect | [Feedback loop](/memory/feedback-loop) | [Consolidation](/memory/consolidation) | Reflection |
+|---|---|---|---|
+| Watches | Individual tool calls | The day's episodes | Whole finished conversations |
+| Produces | Outcome records + digest | Weekly summaries + knowledge files | Review blocks + the playbook |
+| Cadence | Every tool call, instantly | Nightly + weekly | Nightly + monthly deep clean |
+| Your input | Approvals and denials | None | **Your own words in the transcript** |
+| In the prompt | Digest (until the playbook exists) | Never — retrieved on demand | The playbook, every turn |

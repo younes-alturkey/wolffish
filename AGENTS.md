@@ -18,6 +18,10 @@ src/
 │   ├── workspace/   ~/.wolffish init, config, purge
 │   ├── lockfile/    single-instance guard
 │   ├── system/      OS info (platform, RAM, disk)
+│   ├── channels/    one folder per surface: electron/, cli/, mobile/, telegram/, whatsapp/, web/
+│   │                web/ is the Web UI — the renderer bundle served over HTTP(S), window.api replaced by a
+│   │                WebSocket into ipc-registry (server.ts), auth/sessions, the generated master passphrase
+│   │                (passphrase.ts — on by default, so there is always a password), ACME + self-signed TLS, Web Push
 │   └── runtime/     the brain — one folder per region
 │       ├── thalamus/, prefrontal/, hippocampus/, ...
 │       └── providers/  LLM provider adapters (anthropic/, openai/, local/)
@@ -28,7 +32,8 @@ src/
 │   └── build.ts     `bun build --compile` (CI beforePack; `npm run cli:build` to check the artifact)
 │                    DEV: `npm run dev` writes a `wolffish` shim that runs src/cli/index.ts under Bun —
 │                    every launch is the source on disk, no build; relaunch + `wolffish resume` after edits
-├── preload/         contextBridge — types in index.d.ts
+├── preload/         contextBridge — types in index.d.ts; api.ts is the transport-agnostic `window.api`
+│                    factory shared by the preload (ipcRenderer) and the Web UI bridge (renderer/src/lib/web-bridge)
 ├── renderer/src/
 │   ├── App.tsx, main.tsx, env.d.ts, assets/
 │   ├── components/  common/ (composed) and core/ (primitives)
@@ -37,6 +42,12 @@ src/
 │   ├── hooks/       custom hooks
 │   └── lib/         i18n, utils
 └── defaults/workspace/  bundled into the app, copied to ~/.wolffish on first launch
+
+apps/mobile/     the companion phone app (Expo). Not in the stores any more: users build it from
+                 source with their own Expo account — its README is the guide. src/lib/tunnel/ there is
+                 vendored byte-identical from src/main/tunnel/ here.
+packages/relay/  the rendezvous relay (Cloudflare Worker) users deploy to their own account; the
+                 desktop's Mobile panel takes its wss:// URL. No hosted instance exists.
 
 resources/   fonts/, icons/, images/  (use @resources alias)
 scripts/     build helpers (one folder each)

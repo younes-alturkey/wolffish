@@ -13,7 +13,7 @@ import type { WhatsAppChannelStatus } from '@main/channels/whatsapp/channel'
  */
 export type ChannelStatusSnapshot = {
   /** Stable channel id used in tool output and logs. */
-  id: 'telegram' | 'whatsapp' | 'mobile' | 'cli' | 'electron'
+  id: 'telegram' | 'whatsapp' | 'mobile' | 'cli' | 'web' | 'electron'
   /** Human label shown to the user (e.g. "Telegram"). */
   label: string
   /** True when the channel is connected and able to send right now. */
@@ -37,9 +37,21 @@ export type ChannelStatusDeps = {
   mobile: () => MobileStatus
   /** Terminals attached to the control socket right now. */
   cli?: () => { clients: number; listening: boolean }
+  /** The Web UI: browsers connected now, browsers that have ever signed in. */
+  web?: () => {
+    enabled: boolean
+    listening: boolean
+    clients: number
+    sessions: number
+    error: string | null
+  }
   /** True when this process has no window and never will. */
   headless?: () => boolean
 }
+
+const WEB_ENABLE =
+  'Open Settings → Channels → Web UI, set a master password and switch it on — then open the address it shows in a browser.'
+const WEB_OPEN = 'Open the Web UI address in a browser and sign in with the master password.'
 
 const TELEGRAM_RECONNECT =
   'Open Settings → Telegram, paste your bot token (from @BotFather) and your allowed Telegram user ID, then enable the channel.'
@@ -62,8 +74,58 @@ export function collectChannelStatus(deps: ChannelStatusDeps): ChannelStatusSnap
     whatsappSnapshot(deps.whatsapp()),
     mobileSnapshot(deps.mobile()),
     cliSnapshot(deps.cli?.() ?? null),
+    webSnapshot(deps.web?.() ?? null),
     electronSnapshot(deps.headless?.() ?? false)
   ]
+}
+
+/**
+ * The Web UI, as a channel. Connected means a browser holds a live socket
+ * right now; a signed-in browser with the tab closed is still reachable
+ * through notify_web, which the detail line says.
+ */
+function webSnapshot(
+  web: {
+    enabled: boolean
+    listening: boolean
+    clients: number
+    sessions: number
+    error: string | null
+  } | null
+): ChannelStatusSnapshot {
+  if (!web || !web.enabled) {
+    return {
+      id: 'web',
+      label: 'Web UI',
+      connected: false,
+      state: 'off',
+      detail: 'not enabled',
+      reconnect: WEB_ENABLE
+    }
+  }
+  if (!web.listening) {
+    return {
+      id: 'web',
+      label: 'Web UI',
+      connected: false,
+      state: 'error',
+      detail: web.error ? `not listening — ${web.error}` : 'not listening',
+      reconnect: WEB_ENABLE
+    }
+  }
+  const connected = web.clients > 0
+  return {
+    id: 'web',
+    label: 'Web UI',
+    connected,
+    state: connected ? 'connected' : 'listening',
+    detail: connected
+      ? `${web.clients} browser${web.clients === 1 ? '' : 's'} connected`
+      : web.sessions > 0
+        ? `no browser open right now — ${web.sessions} signed in (notify_web still reaches them)`
+        : 'listening — no browser has signed in yet',
+    reconnect: connected ? '' : WEB_OPEN
+  }
 }
 
 /**

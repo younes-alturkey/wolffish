@@ -1,0 +1,158 @@
+{
+  "notifications": [
+    {
+      "id": "01KZBP5XJACYV1V152RZJY8BQC",
+      "title": "Pacer test is green",
+      "body": "Fixed the race, added the changelog line and pushed. Fourteen runs since, no flakes.",
+      "at": 1786025014858,
+      "conversationId": "code-showcase",
+      "deeplink": "wolffish://chat?id=code-showcase",
+      "phase": "completed",
+      "read": false,
+      "archived": false
+    },
+    {
+      "id": "01KZBP2XVJV3AM3ZNSSKJ8569V",
+      "title": "README is dirty — commit it too?",
+      "body": "The changelog line is in, but README.md was already modified before I started. Commit it with the fix, or leave it out?",
+      "at": 1786024916850,
+      "conversationId": "code-showcase",
+      "deeplink": null,
+      "phase": "needs_input",
+      "read": false,
+      "archived": false
+    },
+    {
+      "id": "01KZBNYM18A8R7BW6HT7JJ20TA",
+      "title": "Reproduced it: 3 in 40 runs",
+      "body": "It is the timer, not the pacer. The test reads Date.now() twice and assumes the gap is zero.",
+      "at": 1786024775720,
+      "conversationId": "code-showcase",
+      "deeplink": null,
+      "phase": "info",
+      "read": false,
+      "archived": false
+    },
+    {
+      "id": "01KZBNV15ZSC6TKTP9TVJW0TCT",
+      "title": "Started on the flaky pacer test",
+      "body": "Reproducing it first — running the pacer suite in a loop to see how often it actually goes red.",
+      "at": 1786024658111,
+      "conversationId": "code-showcase",
+      "deeplink": null,
+      "phase": "started",
+      "read": false,
+      "archived": false
+    },
+    {
+      "id": "01KZATHQYBGC3PVA33NFKPK3GE",
+      "title": "The review deck is ready",
+      "body": "Seven slides, with the depth chart on slide 5 and speaker notes throughout. Worth a look before the review tomorrow.",
+      "at": 1785996042187,
+      "conversationId": "deck-showcase",
+      "deeplink": "wolffish://chat?id=deck-showcase",
+      "phase": "completed",
+      "read": true,
+      "archived": false
+    },
+    {
+      "id": "01KZAKN3VVXTDFK3NARBJMBH5W",
+      "title": "Which depth column is the real one?",
+      "body": "The survey workbook has two depth columns and the averages are built from both. Tell me which one counts and I will redo the formulas.",
+      "at": 1785988812667,
+      "conversationId": "workbook-showcase",
+      "deeplink": "wolffish://chat?id=workbook-showcase",
+      "phase": "needs_input",
+      "read": false,
+      "archived": false
+    },
+    {
+      "id": "01KZACKWMK18M3KCKBNVKCP9YY",
+      "title": "Read back, and stopped there",
+      "body": "Read your user file back out loud and stopped, as you asked. Nothing in it has been changed since.",
+      "at": 1785981432467,
+      "conversationId": "voice-showcase",
+      "deeplink": null,
+      "phase": "info",
+      "read": true,
+      "archived": false
+    },
+    {
+      "id": "01KZ93DVWBJ36GBF3MM7K2SFDF",
+      "title": "Your Soul, User and Agents files are written",
+      "body": "All three written from the interview — one pass, no follow-ups needed. Open Customization if you want to change any of it.",
+      "at": 1785938243467,
+      "conversationId": "ask-showcase",
+      "deeplink": "wolffish://chat?id=ask-showcase",
+      "phase": "completed",
+      "read": true,
+      "archived": false
+    },
+    {
+      "id": "01KZ7T7AGVZHH938MVP3K0GX2X",
+      "title": "Approve the force-push?",
+      "body": "Rebasing the release branch onto main means force-pushing it to origin. Nothing has been pushed yet — say go and I will finish.",
+      "at": 1785895037467,
+      "conversationId": "approval-showcase",
+      "deeplink": "wolffish://chat?id=approval-showcase",
+      "phase": "needs_input",
+      "read": false,
+      "archived": false
+    },
+    {
+      "id": "01KZ7SSDSKENZWB64JQQJAEQMD",
+      "title": "Cutting the 1.0.18 release branch",
+      "body": "Three steps: rebase onto main, clear the download cache, install ffmpeg. I will stop before anything is pushed.",
+      "at": 1785894582067,
+      "conversationId": "approval-showcase",
+      "deeplink": null,
+      "phase": "started",
+      "read": false,
+      "archived": false
+    },
+    {
+      "id": "01KZ6H0KWK3ZRY3HJWKKKRVNV0",
+      "title": "Eleven chart types, one conversation",
+      "body": "Every chart the desktop can draw is now in one place: bars, lines, area, scatter, pie, radar, gauge, heatmap and the rest.",
+      "at": 1785851826067,
+      "conversationId": "chart-showcase",
+      "deeplink": "wolffish://chat?id=chart-showcase",
+      "phase": "completed",
+      "read": true,
+      "archived": false
+    },
+    {
+      "id": "01KZ57TBABMTABVK24KZKEYV9G",
+      "title": "The file type showcase is built",
+      "body": "One card per file type the app can open — images, video, audio, PDF, Office documents, code and archives — in a single conversation.",
+      "at": 1785808629067,
+      "conversationId": "file-showcase",
+      "deeplink": "wolffish://chat?id=file-showcase",
+      "phase": "completed",
+      "read": true,
+      "archived": true
+    },
+    {
+      "id": "01KYXZFT8Z5PVRKPJDJBK411Q1",
+      "title": "Workspace disk breakdown is done",
+      "body": "2.4 GB of the 3.1 GB is sitting in downloads. I left the cache alone as you asked; the five heaviest files are listed in the reply.",
+      "at": 1785565014303,
+      "conversationId": "2026-08-01_09-14-27_412-7e41c8",
+      "deeplink": "wolffish://chat?id=2026-08-01_09-14-27_412-7e41c8",
+      "phase": "completed",
+      "read": true,
+      "archived": true
+    },
+    {
+      "id": "01KYHRPVVPWGN46XGRMPW6GX2M",
+      "title": "Telegram stopped answering",
+      "body": "The Telegram channel dropped its connection twice this morning and is offline now. Check the token in Channels when you get a moment.",
+      "at": 1785155252086,
+      "conversationId": null,
+      "deeplink": "wolffish://settings/channels",
+      "phase": "failed",
+      "read": true,
+      "archived": true
+    }
+  ]
+}

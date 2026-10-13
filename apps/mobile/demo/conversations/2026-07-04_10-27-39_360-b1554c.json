@@ -1,0 +1,83 @@
+{
+  "id": "2026-07-04_10-27-39_360-b1554c",
+  "title": "Hello",
+  "model": "gemma4:e2b",
+  "createdAt": 1783146459360,
+  "updatedAt": 1783146461811,
+  "messages": [
+    {
+      "id": "m_1783146461811_bdb9b5",
+      "role": "user",
+      "content": "hello",
+      "timestamp": 1783146461811
+    },
+    {
+      "id": "m_1783146461811_423507",
+      "role": "assistant",
+      "content": "Hey Younes. How's the build going? 🐟",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1783146459372_fbvict",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1783146459372_fbvict",
+          "segmentId": "seg_2",
+          "delta": "Hey Younes. How's the build going? 🐟"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1783146459372_fbvict",
+          "segmentId": "seg_14",
+          "stopReason": "end_turn",
+          "iterationCount": 1,
+          "reasoningContent": "The user just said \"hello\" - a casual greeting. No complex task to delegate, no need for workers. This is a simple direct response situation. Keep it brief and in character."
+        }
+      ],
+      "stopReason": "end_turn",
+      "timestamp": 1783146461811
+    }
+  ],
+  "stats": {
+    "allTime": {
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 1,
+      "outputTokens": 19,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "cost": 0.0046711999999999995,
+      "processingMs": 1000,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "endedAt": 1783146461811,
+      "provider": "local",
+      "model": "gemma4:e2b"
+    },
+    "lastTurn": {
+      "endedAt": 1783146461811,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 1,
+      "outputTokens": 19,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "provider": "local",
+      "model": "gemma4:e2b",
+      "cost": 0.0046711999999999995
+    },
+    "meter": {
+      "contextTokens": 12420,
+      "contextBudget": 131072,
+      "compactionAt": 73728,
+      "model": "gemma4:e2b"
+    }
+  }
+}

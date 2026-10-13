@@ -1,0 +1,122 @@
+---
+title: "الأحداث"
+description: "سجلات المحادثات اليومية — التدفق الخام لما حدث"
+---
+
+# التيار الخام
+
+الأحداث هي التدفق الخام لكل ما حدث. كل دورة محادثة تحصل على كتلة مدمجة تُلحَق بملف أحداث اليوم — عنوان بطابع زمني، رسالة المستخدم، الأدوات التي شُغِّلت، ومعاينة للرد. بدون استدعاء LLM — مجرد استخراج منسّق ومحدود الطول لما جرى في الدورة.
+
+## الموقع
+
+```
+~/.wolffish/workspace/brain/hippocampus/episodes/
+├── 2026-05-14.md
+├── 2026-05-15.md
+└── 2026-05-16.md
+```
+
+كل ملف يُسمّى بالتاريخ: `YYYY-MM-DD.md`.
+
+## كيف تُكتب الأحداث
+
+بعد اكتمال كل دورة محادثة، تُلحق `hippocampus.appendEpisode()` كتلة بملف اليوم:
+
+```typescript
+// Simplified from src/main/runtime/hippocampus.ts
+async appendEpisode(turn: TurnSummary): Promise<void> {
+  const date = formatDate(turn.timestamp)
+  const file = join(this.episodesDir, `${date}.md`)
+  const origin = turn.origin && turn.origin !== 'electron' ? ` [${turn.origin}]` : ''
+  const block =
+    `## ${formatTime(turn.timestamp)}${origin} — ${headline(turn.userMessage)}\n` +
+    `- **User:** ${truncate(turn.userMessage, 280)}\n` +
+    `- **Tools:** ${turn.toolCalls.map(formatToolCall).join(', ') || 'none'}\n` +
+    `- **Response:** ${truncate(turn.assistantResponse, 200)}\n\n`
+  await diskWriter.appendLine(file, block)
+  this.corpus.emit('memory.episodeSaved', { date, section: headline(turn.userMessage) })
+}
+```
+
+كل كتلة تلتقط العنوان (بحد أقصى 80 حرفاً)، ورسالة المستخدم (بحد أقصى 280)، وكل استدعاء أداة مع نتيجته (`success` أو `failed` أو `denied` أو `blocked`)، ومعاينة للرد (بحد أقصى 200). النص الكامل عالي الدقة يعيش في `brain/conversations/*.json` ويظل قابلاً للوصول دائماً عبر `conversation_read`.
+
+### وسوم الأصل
+
+الدورات التي لم تأتِ من كتابتك داخل التطبيق تحمل وسم أصل في الترويسة — `[heartbeat]` لتشغيلات الأتمتة المجدولة، و`[worker]` لمهام وكلاء [سير العمل](/ar/configuration/workflow-mode)، و`[telegram]` أو `[whatsapp]` لرسائل القنوات، و`[procedure]` لتشغيلات الموجهات المحفوظة. الدورات داخل التطبيق لا تحمل وسماً. هذا يُبقي النشاط المُولَّد آلياً مميَّزاً عن نشاط المستخدم الحقيقي، سواء لتصفية الاسترجاع أو للتجميع الليلي.
+
+<Info>
+  لا يوجد استدعاء لـ LLM. الكتلة استخراج حتمي لما حدث، وليست ملخصاً مُولَّداً. هذا يجعل تسجيل الأحداث فورياً ومجانياً.
+</Info>
+
+## مثال على ملف أحداث
+
+هكذا قد يبدو ملف `2026-05-16.md` بعد يوم من الاستخدام:
+
+```markdown
+# 2026-05-16
+
+## 08:32 — Asked about React 19 Server Components
+- **User:** What changed with Server Components streaming in React 19?
+- **Tools:** web_search {"query":"React 19 Server Components streaming"} (success)
+- **Response:** React 19 stabilized the streaming SSR contract. The key changes are…
+
+## 09:10 — Review PR #247
+- **User:** Review PR #247 and tell me if the auth middleware can be simplified
+- **Tools:** shell_exec {"command":"gh pr view 247"} (success), file_read (success)
+- **Response:** The middleware duplicates the token check — you can collapse the two…
+
+## 11:30 [telegram] — Search for flights to Riyadh
+- **User:** find me flights to Riyadh next weekend
+- **Tools:** web_search (success), ext_get_url (success)
+- **Response:** Found three options. The best is the Saudia 14:20 departure at…
+
+## 14:00 [heartbeat] — Hourly inbox check
+- **User:** Check the inbox and flag anything urgent
+- **Tools:** google_gmail_list (success)
+- **Response:** Nothing urgent. Two newsletters, one receipt.
+
+## 17:40 — Remember I prefer pnpm over npm
+- **User:** remember I prefer pnpm over npm
+- **Tools:** memory_save {"fact":"Prefers pnpm over npm","type":"preferences"} (success)
+- **Response:** Saved — I'll use pnpm going forward.
+```
+
+## كيف تُستخدم الأحداث
+
+### الاسترجاع لا الحقن
+
+الأحداث **لا تُحمَّل في الموجّه أبداً**. خريطة `<memory_map>` في موجّه النظام تخبر النموذج بعدد سجلات الأحداث الموجودة ونطاق تواريخها؛ أما المحتوى نفسه فيُسترجَع عند الطلب:
+
+- `memory_search` مع `sources: "episode"` للبحث بالكلمات المفتاحية عبر كل الأيام
+- `wolffish_recall` مع `date: "2026-05-16"` لتثبيت النتائج على يوم واحد
+- `memory_get` على مرجع `file:` لقراءة ملف أحداث كامل
+
+### مدخلات التجميع
+
+الأحداث هي المدخل الخام لتمريرة الضغط اليومية. في كل ليلة يقرأ brainstem ملف أحداث ذلك اليوم، ويرسله إلى LLM لاستخراج الحقائق، ويُرقّي الحقائق الدائمة إلى ملفات المعرفة، ويُلحق ملخصاً يومياً بملف الأسبوع المُجمَّع. ثم تُسجّل المراجعة الأسبوعية ملخص تغطية عن الأيام السبعة الأخيرة. تبقى الأحداث على القرص بعد ذلك — لا تُحذف تلقائياً أبداً.
+
+### بحث Cortex
+
+جميع ملفات الأحداث مُفهرَسة بواسطة cortex‏ (SQLite FTS5) على مستوى المقاطع — كل كتلة `## HH:MM` هي سجل بحث مستقل. عندما تسأل «ماذا ناقشنا عن المصادقة الأسبوع الماضي؟»، تُرجع `memory_search` الكتل المتطابقة مع ترتيب صلة BM25 ومراجع يمكنك تتبّعها عبر `memory_get`.
+
+## التعديل اليدوي
+
+ملفات الأحداث هي Markdown عادي. يمكنك:
+
+- **حذف إدخالات** لا تريد أن تُتذكَّر
+- **إضافة إدخالات** لتغذية الذاكرة (مثلاً: كتلة `## 09:00 — Started the billing service project`)
+- **تعديل إدخالات** لتصحيح الأخطاء
+
+التغييرات يلتقطها مراقب الملفات في brainstem ويُعاد فهرستها في cortex تلقائياً.
+
+<Warning>
+  إذا حذفت ملف أحداث بالكامل، فإن تاريخ ذلك اليوم يختفي من الذاكرة. سيُزيله cortex من فهرس البحث في دورة مراقبة الملفات التالية.
+</Warning>
+
+## الإعدادات
+
+الأحداث تُكتب دائماً — لا يوجد خيار لتعطيلها. فهي أساس نظام الذاكرة بأكمله. ولأن الأحداث تُسترجَع عند الطلب بدلاً من حقنها في الموجّه، لا يوجد أيضاً أي إعداد لنافذة السياق يحتاج إلى ضبط: سنة كاملة من الأحداث تكلّف في كل دورة ما يكلّفه يوم واحد.
+
+<Tip>
+  جدولة تمريرات الضغط التي تستهلك الأحداث قابلة للإعداد — راجع [التجميع](/memory/consolidation).
+</Tip>

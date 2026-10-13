@@ -50,6 +50,11 @@ const CASES: Array<[provider: string, model: string, vision: boolean]> = [
   ['anthropic', 'claude-fable-5', true],
   ['anthropic', 'claude-haiku-4-5-20251001', true],
   // openai — vision families with text-only exceptions
+  ['openai', 'gpt-6-astra', true],
+  ['openai', 'gpt-6.1-sol', true],
+  ['openai', 'gpt-6-luna', true],
+  ['openai', 'gpt-5.6-sol', true],
+  ['openai', 'chat-latest', true],
   ['openai', 'gpt-4o', true],
   ['openai', 'gpt-4o-mini', true],
   ['openai', 'gpt-4.1', true],

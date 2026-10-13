@@ -495,6 +495,23 @@ export async function buildConfigSnapshot(sources: SnapshotSources): Promise<Con
         notifications: bool(mobile.notifications, true),
         verbose: bool(mobile.verbose)
       },
+      // The Web UI — the browser channel's settings, minus the secrets: the
+      // password is reported as set-or-not, never as a hash.
+      web: {
+        enabled: bool(config.web?.enabled),
+        port: str(config.web?.port, '8787'),
+        bind: str(config.web?.bind, '0.0.0.0'),
+        https: str(config.web?.https?.mode, 'off'),
+        httpsPort: str(config.web?.https?.port, '443'),
+        httpPort: str(config.web?.https?.httpPort ?? '', ''),
+        acmeDirectory: str(config.web?.https?.acme?.directory, 'production'),
+        acmeIdentifiers: (config.web?.https?.acme?.identifiers ?? []).join(', '),
+        acmeEmail: str(config.web?.https?.acme?.email, ''),
+        notifications: bool(config.web?.notifications, true),
+        verbose: bool(config.web?.verbose),
+        passwordSet:
+          typeof config.web?.passwordHash === 'string' && config.web.passwordHash.length > 0
+      },
       telegram: {
         enabled: bool(telegram.enabled),
         // Stored as number[]; the phone renders one comma-joined line.

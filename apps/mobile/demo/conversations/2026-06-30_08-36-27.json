@@ -1,0 +1,82 @@
+{
+  "id": "2026-06-30_08-36-27",
+  "title": "A",
+  "model": "gemma4:e2b",
+  "createdAt": 1782797787714,
+  "updatedAt": 1782798029214,
+  "messages": [
+    {
+      "id": "m_1782798029214_b2f7b8",
+      "role": "user",
+      "content": "heya?",
+      "timestamp": 1782798029214
+    },
+    {
+      "id": "m_1782798029214_fa409b",
+      "role": "assistant",
+      "content": "Hey",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782797787730_q8v769",
+          "segmentId": "seg_1",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782797787730_q8v769",
+          "segmentId": "seg_2",
+          "delta": "Hey"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1782797787730_q8v769",
+          "segmentId": "seg_3",
+          "stopReason": "max_tokens",
+          "iterationCount": 1
+        }
+      ],
+      "stopReason": "max_tokens",
+      "timestamp": 1782798029214
+    }
+  ],
+  "stats": {
+    "allTime": {
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 1,
+      "outputTokens": 2,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "cost": 0.0046525,
+      "processingMs": 1000,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "endedAt": 1782798029214,
+      "provider": "local",
+      "model": "gemma4:e2b"
+    },
+    "lastTurn": {
+      "endedAt": 1782798029214,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 1,
+      "outputTokens": 2,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "provider": "local",
+      "model": "gemma4:e2b",
+      "cost": 0.0046525
+    },
+    "meter": {
+      "contextTokens": 12403,
+      "contextBudget": 131072,
+      "compactionAt": 73728,
+      "model": "gemma4:e2b"
+    }
+  }
+}

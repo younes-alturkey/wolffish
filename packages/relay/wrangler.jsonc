@@ -1,0 +1,36 @@
+/**
+ * wolffish-relay — Cloudflare configuration.
+ *
+ * ZDR invariants encoded here (keep them forever):
+ * - observability disabled: no Workers Logs, no traces
+ * - no storage bindings of any kind: no KV, no D1, no R2, no queues, no
+ *   analytics engine — the only binding is the in-memory Tunnel DO
+ * - send_metrics off: wrangler reports nothing about this project to Cloudflare
+ *
+ * Hostname: `npx wrangler deploy` publishes to your account's workers.dev
+ * subdomain (https://wolffish-relay.<your-subdomain>.workers.dev), which
+ * speaks wss:// and is all the apps need. To use your own domain instead,
+ * add a route and turn workers_dev off:
+ *   "workers_dev": false,
+ *   "routes": [{ "pattern": "relay.example.com", "custom_domain": true }]
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "wolffish-relay",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-01",
+
+  "workers_dev": true,
+  "preview_urls": false,
+  "send_metrics": false,
+
+  "observability": {
+    "enabled": false
+  },
+
+  "durable_objects": {
+    "bindings": [{ "name": "TUNNEL", "class_name": "Tunnel" }]
+  },
+
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Tunnel"] }]
+}

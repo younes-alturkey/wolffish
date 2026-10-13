@@ -1,0 +1,271 @@
+{
+  "id": "2026-06-29_22-19-30",
+  "title": "Who is you",
+  "model": "gemma4:e2b",
+  "createdAt": 1782760770122,
+  "updatedAt": 1782760859898,
+  "messages": [
+    {
+      "id": "m_1782760859898_94c862",
+      "role": "user",
+      "content": "who is you?",
+      "timestamp": 1782760859898
+    },
+    {
+      "id": "m_1782760859898_e2f4ba",
+      "role": "assistant",
+      "content": "IWhatWhatWhatWhatWhatWhatWhatWhatWhatWhatWhatWhatWhatHow",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_1",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_2",
+          "delta": "I"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_3",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_4",
+          "delta": "What"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_5",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_6",
+          "delta": "What"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_7",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_8",
+          "delta": "What"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_9",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_10",
+          "delta": "What"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_11",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_12",
+          "delta": "What"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_13",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_14",
+          "delta": "What"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_15",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_16",
+          "delta": "What"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_17",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_18",
+          "delta": "What"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_19",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_20",
+          "delta": "What"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_21",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_22",
+          "delta": "What"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_23",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_24",
+          "delta": "What"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_25",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_26",
+          "delta": "What"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_27",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_28",
+          "delta": "What"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_29",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_30",
+          "delta": "How"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_31",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1782760770129_qzx57y",
+          "segmentId": "seg_32",
+          "stopReason": "end_turn",
+          "iterationCount": 16
+        }
+      ],
+      "stopReason": "end_turn",
+      "timestamp": 1782760859898
+    }
+  ],
+  "stats": {
+    "allTime": {
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 3,
+      "outputTokens": 28,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "cost": 0.0046817,
+      "processingMs": 1000,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "endedAt": 1782760859898,
+      "provider": "local",
+      "model": "gemma4:e2b"
+    },
+    "lastTurn": {
+      "endedAt": 1782760859898,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 3,
+      "outputTokens": 28,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "provider": "local",
+      "model": "gemma4:e2b",
+      "cost": 0.0046817
+    },
+    "meter": {
+      "contextTokens": 12431,
+      "contextBudget": 131072,
+      "compactionAt": 73728,
+      "model": "gemma4:e2b"
+    }
+  }
+}

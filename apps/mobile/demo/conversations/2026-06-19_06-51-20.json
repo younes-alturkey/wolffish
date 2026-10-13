@@ -1,0 +1,244 @@
+{
+  "id": "2026-06-19_06-51-20",
+  "title": "Flip a coin",
+  "model": null,
+  "createdAt": 1781841080171,
+  "updatedAt": 1781841183358,
+  "messages": [
+    {
+      "id": "m_1781841183358_424529",
+      "role": "user",
+      "content": "flip a coin",
+      "timestamp": 1781841183358
+    },
+    {
+      "id": "m_1781841183358_8e7355",
+      "role": "assistant",
+      "content": "Heads!",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781841080176_evo708",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1781841080176_evo708",
+          "segmentId": "seg_2",
+          "delta": "Heads!"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1781841080176_evo708",
+          "segmentId": "seg_5",
+          "stopReason": "end_turn",
+          "iterationCount": 1,
+          "reasoningContent": "The user wants me to flip a coin. I'll follow the coin-flip skill — pick heads or tails at random and announce clearly."
+        }
+      ],
+      "stopReason": "end_turn",
+      "timestamp": 1781841183358
+    },
+    {
+      "id": "m_1781841183358_1516f3",
+      "role": "user",
+      "content": "roll 2d20",
+      "timestamp": 1781841183358
+    },
+    {
+      "id": "m_1781841183358_fa0e01",
+      "role": "assistant",
+      "content": "🎲 **6** and **🟢 20** = **26 total**\n\nA nat 20! The wolf takes flight — you crit, whatever you were rolling for just became legendary. 🐟⚔️",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781841106116_h7w5b7",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1781841106116_h7w5b7",
+          "segmentId": "seg_2",
+          "toolCallId": "call_00_auxjg7t9hqGaIWyNuDCd6021",
+          "name": "roll_dice",
+          "args": {
+            "count": 2,
+            "sides": 20
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1781841106116_h7w5b7",
+          "segmentId": "seg_3",
+          "toolCallId": "call_00_auxjg7t9hqGaIWyNuDCd6021",
+          "status": "success",
+          "output": "{\"sides\":20,\"count\":2,\"rolls\":[6,20],\"total\":26}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781841106116_h7w5b7",
+          "segmentId": "seg_4",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1781841106116_h7w5b7",
+          "segmentId": "seg_5",
+          "delta": "🎲 **6** and **🟢 20** = **26 total**\n\nA nat 20! The wolf takes flight — you crit, whatever you were rolling for just became legendary. 🐟⚔️"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1781841106116_h7w5b7",
+          "segmentId": "seg_45",
+          "stopReason": "end_turn",
+          "iterationCount": 2,
+          "reasoningContent": "The user rolled 2d20 and got a 6 and a 20, total 26. The 20 is a natural 20 — a critical success. Let me give a fun interpretation."
+        }
+      ],
+      "toolTimings": {
+        "call_00_auxjg7t9hqGaIWyNuDCd6021": {
+          "startedAt": 1781841122372,
+          "endedAt": 1781841122379
+        }
+      },
+      "stopReason": "end_turn",
+      "timestamp": 1781841183358
+    },
+    {
+      "id": "m_1781841183358_810beb",
+      "role": "user",
+      "content": "convert #ff5733 to rgb",
+      "timestamp": 1781841183358
+    },
+    {
+      "id": "m_1781841183358_6b0a92",
+      "role": "assistant",
+      "content": "**RGB:** `rgb(255, 87, 51)`\n\nAlso for free: HSL is `hsl(11, 100%, 60%)` — a hot red-orange. Good pick.",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781841163535_47icfp",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1781841163535_47icfp",
+          "segmentId": "seg_2",
+          "toolCallId": "call_00_f2yOXevT57Gs9SX6HrRk8086",
+          "name": "convert_color",
+          "args": {
+            "value": "#ff5733",
+            "from": "hex"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1781841163535_47icfp",
+          "segmentId": "seg_3",
+          "toolCallId": "npm_color-mixer_mqke8dq9_b7n6cl",
+          "name": "__npm_install",
+          "args": {
+            "capability": "color-mixer",
+            "packages": {
+              "color-convert": "^2.0.1"
+            }
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1781841163535_47icfp",
+          "segmentId": "seg_4",
+          "toolCallId": "npm_color-mixer_mqke8dq9_b7n6cl",
+          "status": "success",
+          "output": "Installed 1 npm package(s) for color-mixer."
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1781841163535_47icfp",
+          "segmentId": "seg_5",
+          "toolCallId": "call_00_f2yOXevT57Gs9SX6HrRk8086",
+          "status": "success",
+          "output": "{\"hex\":\"#ff5733\",\"rgb\":\"rgb(255, 87, 51)\",\"hsl\":\"hsl(11, 100%, 60%)\"}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781841163535_47icfp",
+          "segmentId": "seg_6",
+          "provider": "deepseek",
+          "model": "deepseek-v4-pro"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1781841163535_47icfp",
+          "segmentId": "seg_7",
+          "delta": "**RGB:** `rgb(255, 87, 51)`\n\nAlso for free: HSL is `hsl(11, 100%, 60%)` — a hot red-orange. Good pick."
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1781841163535_47icfp",
+          "segmentId": "seg_51",
+          "stopReason": "end_turn",
+          "iterationCount": 2,
+          "reasoningContent": "The user asked to convert #ff5733 to rgb. The result is done."
+        }
+      ],
+      "toolTimings": {
+        "call_00_f2yOXevT57Gs9SX6HrRk8086": {
+          "startedAt": 1781841179989,
+          "endedAt": 1781841180845
+        },
+        "npm_color-mixer_mqke8dq9_b7n6cl": {
+          "startedAt": 1781841180033,
+          "endedAt": 1781841180835
+        }
+      },
+      "stopReason": "end_turn",
+      "timestamp": 1781841183358
+    }
+  ],
+  "stats": {
+    "allTime": {
+      "turns": 3,
+      "apiCalls": 3,
+      "toolCalls": 3,
+      "inputTokens": 11,
+      "outputTokens": 195,
+      "cacheReadTokens": 24902,
+      "cacheCreationTokens": 12400,
+      "cost": 0.005614859999999999,
+      "processingMs": 3000,
+      "elapsedMs": 3000,
+      "apiMs": 2460,
+      "endedAt": 1781841183358,
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro"
+    },
+    "lastTurn": {
+      "endedAt": 1781841183358,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "apiCalls": 1,
+      "toolCalls": 2,
+      "inputTokens": 6,
+      "outputTokens": 104,
+      "cacheReadTokens": 12496,
+      "cacheCreationTokens": 0,
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro",
+      "cost": 0.00049108
+    },
+    "meter": {
+      "contextTokens": 12606,
+      "contextBudget": 1000000,
+      "compactionAt": 725424,
+      "model": "deepseek-v4-pro"
+    }
+  }
+}

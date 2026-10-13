@@ -1,0 +1,110 @@
+---
+title: "What to Schedule"
+description: "Which workflows are safe to run autonomously on the heartbeat, which must stay on-demand, and how to turn a risky workflow into a safe scheduled one"
+---
+
+# The Power and the Danger
+
+The [heartbeat](/configuration/heartbeat) will run *any* prompt on a timer — that's the point, and that's the danger. The right workflows on a schedule save you hours every week. The wrong ones run destructive or irreversible actions while you're asleep, with no one watching.
+
+This guide is the decision layer that sits on top of the heartbeat mechanics: **what makes a good scheduled job, what must stay on-demand, and how to convert a risky workflow into a safe one.** For the schedule formats and how jobs are parsed, see [Heartbeat & Scheduling](/configuration/heartbeat).
+
+## The One Rule That Matters
+
+Heartbeat jobs **auto-approve every tool call.** The Amygdala confirmation dialog — your safety net for `rm -rf`, `sudo`, sends, payments, and every other destructive action — is bypassed for scheduled runs ([see Job Execution](/configuration/heartbeat#job-execution)). On-demand, a risky call pauses and asks you. On the heartbeat, it just happens.
+
+So every scheduling decision comes down to one question:
+
+<Warning>
+**Would I be comfortable with this running, unattended and unconfirmed, at 3 AM?**
+
+If the honest answer is no, it stays on-demand. No exceptions for "it'll probably be fine."
+</Warning>
+
+## Good Candidates
+
+The safest scheduled jobs are **read-mostly and reversible** — they observe, summarize, and report, or they produce new files without touching existing ones. If the worst case of a buggy run is "it wrote a slightly wrong summary," it's a great fit.
+
+<CardGroup cols={2}>
+  <Card title="Read-only / reporting" icon="magnifying-glass">
+    Reads state and tells you about it. Nothing is modified, so nothing can break.
+  </Card>
+  <Card title="Idempotent / additive" icon="copy">
+    Produces new output (a file, a digest) and leaves originals untouched. Running it twice is harmless.
+  </Card>
+  <Card title="Draft, not send" icon="pen-to-square">
+    Prepares something for your review — a draft reply, a saved file — without taking the outward-facing action itself.
+  </Card>
+  <Card title="Bounded blast radius" icon="crop">
+    Scoped to a specific folder, a small batch, or a single account, so even a mistake stays contained.
+  </Card>
+</CardGroup>
+
+Typical examples of workflows built to be scheduled:
+
+| Workflow | Why it's safe to schedule | Suggested cadence |
+|----------|---------------------------|-------------------|
+| Security audit | Read-only scan; reports findings, applies no fixes on its own | `Weekly (Sunday 06:00)` |
+| Inbox briefing | Reads and summarizes; explicitly told not to modify or send | `Weekday (07:30)` |
+| Media conversion | Creates new audio files; originals untouched | `Daily (09:00)` or `Every (30m)` |
+| Report generation | Generates new documents; nothing destructive | `Daily (08:00)` |
+| Morning briefing / PR watch | Pure read-and-report across email, calendar, GitHub | `Weekday (07:45)` / `Every (30m)` |
+
+## What NOT to Schedule
+
+These are the red-light categories. Each one assumes the auto-approval rule above — there's no dialog to stop it once it fires.
+
+<CardGroup cols={2}>
+  <Card title="Destructive / irreversible" icon="trash">
+    Deletes, uninstalls, migrations, overwrites, formatting. Once a scheduled job deletes something, there's no approval gate and no undo. That kind of excision is a deliberate, one-time, human-approved act — never a timer.
+  </Card>
+  <Card title="Money / financial" icon="credit-card">
+    Purchases, trades, transfers, subscription changes, anything that moves funds. Never automate. Full stop.
+  </Card>
+  <Card title="Outward-facing, unreviewed" icon="paper-plane">
+    Sending email, posting publicly, messaging people, opening PRs — anything others see and you can't fully take back. Schedule the *draft*, not the *send*.
+  </Card>
+  <Card title="Privileged / system-changing" icon="lock">
+    `sudo` / Administrator actions, firewall changes, editing system configs, package upgrades that could break a working setup.
+  </Card>
+  <Card title="Judgment-heavy / ambiguous" icon="circle-question">
+    Tasks where the right move is "it depends" and a wrong guess is costly. The model has no one to ask at 3 AM, so it will guess.
+  </Card>
+  <Card title="High blast radius" icon="bomb">
+    Anything that could touch a wide, unbounded set of files, accounts, or recipients in one run. Scope it down first, or keep it manual.
+  </Card>
+</CardGroup>
+
+## Make a Risky Workflow Safe to Schedule
+
+Most "no" workflows have a "yes" version. The trick is to schedule the *safe half* and keep the *acting half* on-demand:
+
+| Pattern | Instead of… | Schedule this |
+|---------|-------------|---------------|
+| **Report, don't act** | "Delete files older than 30 days" | "List files older than 30 days and tell me what you'd delete" |
+| **Draft, don't send** | "Reply to my unread emails" | "Draft replies and save them for my review — don't send" |
+| **Detect, don't fix** | "Audit security and fix what's wrong" | "Audit and report findings; I'll approve fixes myself" |
+| **Narrow the scope** | "Clean up my disk" | "List the 10 largest files in ~/Downloads" |
+| **Add a stop-check** | "Archive matching emails" | "If more than 20 emails match, stop and just show me the count first" |
+
+<Tip>
+The best scheduled prompts follow these patterns — they read and report on a schedule, but leave sending and fixing to you. Copy that shape.
+</Tip>
+
+## The Pre-Schedule Checklist
+
+Before you paste a prompt into `heartbeat.md`, run it through this:
+
+- [ ] **Read-only or reversible** — the worst case is a wrong summary, not lost data
+- [ ] **No money** — no purchases, trades, or transfers
+- [ ] **No unreviewed sends** — outward-facing actions produce drafts, not final sends
+- [ ] **No privileged commands** — no `sudo` / Administrator / destructive shell
+- [ ] **Bounded scope** — limited to a known folder, batch, or account
+- [ ] **Comfortable unattended** — you'd accept this running at 3 AM with no confirmation
+
+If every box is checked, schedule it. If any box is empty, run it on-demand instead — the heartbeat is for the workflows you trust to run without you.
+
+## See Also
+
+- [Heartbeat & Scheduling](/configuration/heartbeat) — schedule formats, job execution, and how jobs are parsed
+- [Safety Patterns](/extending/safety-patterns) — how the Amygdala classifies and gates tool calls

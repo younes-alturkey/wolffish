@@ -158,6 +158,86 @@ export type MobileChannelConfig = {
   verbose?: boolean
 }
 
+/**
+ * How the Web UI terminates TLS. `off` serves plain HTTP (chat works; the
+ * browser refuses notifications and the microphone on an insecure origin).
+ * `selfsigned` generates a certificate in-process (one-time browser warning;
+ * desktop notifications only). `acme` asks Let's Encrypt for a certificate for
+ * the server's IP address or hostname (trusted everywhere; needs port 80
+ * reachable). `custom` serves a certificate the user provides.
+ */
+export type WebUiHttpsMode = 'off' | 'selfsigned' | 'acme' | 'custom'
+
+/**
+ * The Web UI channel — the desktop app served to a browser. On by default,
+ * so a VPS install answers at its address from the first launch, and it
+ * refuses to start without a master password: whoever holds that password
+ * holds an agent with full system access, so there is no password-less mode.
+ * A twelve-word passphrase is generated on first launch (channels/web/
+ * passphrase) so the door is never open and never unlocked.
+ *
+ * `passwordHash` is a self-describing scrypt string (see channels/web/auth).
+ * `password` is the generated passphrase in clear — what the panel and the
+ * CLI show on a box with no screen — and is null once the user sets a
+ * password of their own, which is stored hashed only. Sessions and push
+ * subscriptions live in their own file (channels/web/state) rather than
+ * here, because they change on every visit and config.json is the file the
+ * user hand-edits.
+ */
+export type WebUiConfig = {
+  enabled?: boolean
+  /** The port the UI is served on — HTTPS when `https.mode` is not `off`. */
+  port?: number
+  /** Interface to listen on. `0.0.0.0` is every interface, which a VPS wants. */
+  bind?: string
+  passwordHash?: string | null
+  /** The generated passphrase, in clear; null when the user chose their own. */
+  password?: string | null
+  https?: {
+    mode?: WebUiHttpsMode
+    /**
+     * The HTTPS listener's port — 443 by default, so https://<ip> needs no
+     * port. The plain app port (`port`) stays up beside it and, once a
+     * trusted certificate is served, redirects to it.
+     */
+    port?: number
+    /**
+     * A second, plain-HTTP listener used only to answer Let's Encrypt's
+     * HTTP-01 challenge and to redirect browsers to the HTTPS port. Null
+     * means none. Let's Encrypt validates on port 80 and nowhere else.
+     */
+    httpPort?: number | null
+    acme?: {
+      /** IP addresses and/or hostnames the certificate is issued for. */
+      identifiers?: string[]
+      /** Optional contact for expiry mail from the CA. */
+      email?: string
+      /** `production` (default), `staging`, or a full ACME directory URL. */
+      directory?: string
+    }
+    custom?: {
+      certPath?: string
+      keyPath?: string
+    }
+  }
+  /** Gates the model's notify_web tool, exactly as mobile.notifications gates notify_phone. */
+  notifications?: boolean
+  /**
+   * The origin public links are handed out at, e.g. `https://files.example.com`.
+   * Null means derive it from the listeners (the certificate's name, else the
+   * first reachable address) — set it when a domain or reverse proxy fronts
+   * the box and the derived address is not the one people should see.
+   */
+  publicOrigin?: string | null
+  /** Same feed preference every channel carries — display-only. */
+  verbose?: boolean
+  /** VAPID key pair for Web Push, generated the first time the channel starts. */
+  push?: {
+    vapidPublicKey?: string
+    vapidPrivateKey?: string
+  }
+}
+
 export type BraveConfig = {
   enabled: boolean
   apiKey: string
@@ -450,6 +530,9 @@ export type WorkspaceConfig = {
   // Mobile channel preferences. Optional so legacy configs migrate cleanly
   // — when absent, model-initiated phone notifications default to ON.
   mobile?: MobileChannelConfig
+  // The Web UI channel. Optional so legacy configs migrate cleanly — absent
+  // means disabled, which is also the default for a fresh workspace.
+  web?: WebUiConfig
   // Brave Search API key + toggle. When enabled and a key is set, the
   // web-search plugin uses Brave first and falls back to DuckDuckGo on
   // failure. Optional so legacy configs migrate cleanly.
@@ -1534,6 +1617,103 @@ export async function setMobileChannelConfig(
       verbose: patch.verbose ?? current.verbose
     }
     return { ...c, mobile: next }
+  })
+}
+
+export const WEB_UI_DEFAULT_PORT = 8787
+export const WEB_UI_DEFAULT_BIND = '0.0.0.0'
+export const WEB_UI_DEFAULT_HTTPS_PORT = 443
+
+const EMPTY_WEB_CONFIG: WebUiConfig = {
+  enabled: true,
+  port: WEB_UI_DEFAULT_PORT,
+  bind: WEB_UI_DEFAULT_BIND,
+  passwordHash: null,
+  password: null,
+  https: { mode: 'off', port: WEB_UI_DEFAULT_HTTPS_PORT, httpPort: null },
+  notifications: true,
+  publicOrigin: null,
+  verbose: false
+}
+
+/** Merged over the defaults, so an absent field reads as its default. */
+export async function getWebUiConfig(): Promise<WebUiConfig> {
+  const config = await readConfig()
+  return mergeWebUiConfig(config?.web)
+}
+
+export function mergeWebUiConfig(stored: WebUiConfig | undefined): WebUiConfig {
+  const https = { ...EMPTY_WEB_CONFIG.https, ...(stored?.https ?? {}) }
+  return { ...EMPTY_WEB_CONFIG, ...(stored ?? {}), https }
+}
+
+export type WebUiConfigPatch = Partial<Omit<WebUiConfig, 'https'>> & {
+  https?: Partial<NonNullable<WebUiConfig['https']>>
+}
+
+/**
+ * Patch the Web UI config. `https` merges one level deep so a panel that
+ * changes only the mode keeps the identifiers the user typed. The port and
+ * bind address are validated here, not in the panel, so the CLI path and the
+ * panel path cannot disagree about what a legal value is.
+ */
+export async function setWebUiConfig(patch: WebUiConfigPatch): Promise<WorkspaceConfig> {
+  if (patch.port !== undefined) {
+    if (!Number.isInteger(patch.port) || patch.port < 1 || patch.port > 65535) {
+      throw new Error('port must be an integer between 1 and 65535')
+    }
+  }
+  if (patch.https?.httpPort !== undefined && patch.https.httpPort !== null) {
+    const p = patch.https.httpPort
+    if (!Number.isInteger(p) || p < 1 || p > 65535) {
+      throw new Error('httpPort must be an integer between 1 and 65535, or null')
+    }
+  }
+  if (patch.https?.port !== undefined) {
+    const p = patch.https.port
+    if (!Number.isInteger(p) || p < 1 || p > 65535) {
+      throw new Error('https.port must be an integer between 1 and 65535')
+    }
+  }
+  if (patch.bind !== undefined && !/^[0-9a-fA-F.:[\]]+$/.test(patch.bind.trim())) {
+    throw new Error('bind must be an IP address')
+  }
+  if (patch.publicOrigin !== undefined && patch.publicOrigin !== null) {
+    const trimmed = patch.publicOrigin.trim()
+    if (trimmed === '') patch.publicOrigin = null
+    else {
+      let parsed: URL
+      try {
+        parsed = new URL(trimmed)
+      } catch {
+        throw new Error('publicOrigin must be a full origin like https://example.com')
+      }
+      if (
+        !/^https?:$/.test(parsed.protocol) ||
+        parsed.pathname !== '/' ||
+        parsed.search ||
+        parsed.hash
+      )
+        throw new Error('publicOrigin must be a full origin like https://example.com — no path')
+      patch.publicOrigin = parsed.origin
+    }
+  }
+  return patchConfig((c) => {
+    const current = mergeWebUiConfig(c.web)
+    const next: WebUiConfig = {
+      ...current,
+      ...patch,
+      bind: patch.bind !== undefined ? patch.bind.trim() : current.bind,
+      https: {
+        ...current.https,
+        ...(patch.https ?? {}),
+        // One field of the Let's Encrypt or custom block at a time, from a
+        // settings row, must not wipe the others.
+        acme: { ...(current.https?.acme ?? {}), ...(patch.https?.acme ?? {}) },
+        custom: { ...(current.https?.custom ?? {}), ...(patch.https?.custom ?? {}) }
+      }
+    }
+    return { ...c, web: next }
   })
 }
 

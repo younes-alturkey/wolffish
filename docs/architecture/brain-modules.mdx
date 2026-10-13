@@ -1,0 +1,128 @@
+---
+title: "Brain Modules"
+description: "Detailed reference for all 15 runtime modules"
+---
+
+# The 15 Runtime Modules
+
+## How the Brain Works
+
+Wolffish models its runtime after the human brain — not as a metaphor, but as an architecture pattern. Each module handles exactly one cognitive function, and they communicate through a shared event bus (the corpus callosum) rather than calling each other directly.
+
+When a message arrives, it flows through the modules like a neural signal:
+
+1. **Input arrives** — the channel adapter (Desktop, Telegram, or WhatsApp) emits a `message.received` event on the corpus
+2. **Context is built** — the prefrontal cortex assembles a lean system prompt: your identity files, device facts, the operating contract, a learned-preferences digest, a one-line capability index from the cerebellum, and a memory map describing what exists to be recalled — never memory content itself. The RAS guards the token budget
+3. **The LLM thinks** — the thalamus sends the assembled prompt to the one Brain model you selected (`config.llm.brain`) and streams the response back; there's no cascade between providers
+4. **Response is parsed** — Wernicke's area extracts tool calls and text from the stream, normalizing across all eleven cloud provider formats
+5. **Safety is checked** — if tool calls are present, the amygdala checks them against danger patterns and either approves, requests confirmation, or blocks
+6. **Tools execute** — the motor cortex runs approved tools, logging every step to task files with retry logic. This is also where memory happens: when the turn needs something from the past, the model calls `memory_search` against the cortex index instead of having memories pre-injected
+7. **Response is delivered** — Broca's area streams the final text back to the user through the channel
+8. **Memory is saved** — the hippocampus appends the conversation to today's episode file, tagged with where the turn originated
+9. **Learning happens** — the basal ganglia records whether tool calls succeeded or failed, building a feedback history
+
+All of this happens in a deterministic 17-step pipeline. The brainstem runs background processes (file watching, scheduled tasks, nightly memory consolidation), the hypothalamus monitors system health, and the insula provides self-awareness so the agent can report on its own state.
+
+The key insight: because every module communicates through events and writes its state to markdown files, the entire brain is observable and editable at every layer.
+
+---
+
+## Module Reference
+
+Wolffish has 15 runtime modules, each handling one specific function. They all live in `src/main/runtime/` and communicate exclusively via the event bus (`corpus`).
+
+## corpus.ts — Event Bus
+
+Maps to the **corpus callosum**. The nervous system connecting all modules.
+
+Built on `mitt` with 80+ typed events. A wildcard handler logs every event to daily markdown files at `brain/corpus/YYYY-MM-DD.log.md` with a 2-second buffer flush. Old logs are cleaned up after 7 days by design — what matters long-term persists elsewhere (episodes, summaries, run history). Initialized first and passed as a singleton to all other modules.
+
+## thalamus.ts — Model Gateway
+
+Maps to the **thalamus** (sensory gateway). Manages eleven cloud LLM providers plus Ollama via pure `fetch()`.
+
+Resolves the one Brain model you selected (`config.llm.brain`) and streams from it — there's no cascade or automatic substitution between providers. Uses `net.isOnline()` for instant offline detection. On a transient error it retries the **same** Brain on a backoff schedule; health tracking with exponential backoff feeds that same-model retry and diagnostics, not provider switching. Exposes a unified `async *stream()` generator yielding `StreamChunk` types.
+
+## prefrontal.ts — Context Builder
+
+Maps to the **prefrontal cortex** (executive function). The most important module.
+
+Assembles a lean system prompt — ~5,000 tokens for a fresh conversation — with XML-tagged sections: `<identity>` (soul.md + user.md), `<device>` facts, `<prefrontal>` (the `agents.core.md` operating contract, your `agents.md` overrides, and the bounded learned-preferences digest from basalganglia), `<capabilities>` (a one-line-per-capability index with `[loaded]` markers), `<memory_map>` (a byte-stable-per-day map of what memory exists — record counts, date ranges, topics — never content), and a slim `<runtime>` block. No memory dumps, no episode dumps, no prose tool catalog: everything else lives in the cortex index and is retrieved on demand via `memory_search` and `tool_search`. Writes a debug snapshot of every assembled prompt to `brain/prefrontal/.debug/` (rotated, newest 50 kept).
+
+## ras.ts — Attention Filter
+
+Maps to the **Reticular Activating System**. Guards the token budget.
+
+Since the lean-context redesign, RAS no longer scores memory candidates — memory is never injected into the prompt, so there is nothing to score. What remains is the budget guard: it clamps the assembly budget regardless of how large the model's context window is, allocates it across the prompt's fixed sections, and head+tail-trims any single candidate that would swallow the budget. Uses ~4 chars per token estimation, shared by the rest of the runtime.
+
+## cortex.ts — Search Index
+
+Maps to the **cerebral cortex**. One records index over everything.
+
+`cortex.db` (SQLite, WAL mode, FTS5, BM25 ranking) is a records store — section- and message-granular rows with head+tail excerpt caps — covering 11 sources: episodes, knowledge, weekly consolidations, conversations (every message and every tool call plus its output), task runs, feedback, the usage ledger, corpus event logs, app/extension logs, artifacts (files, uploads, screenshots, speech — metadata and provenance), and standalone docs like heartbeat.md and run-history.md. Inbound WhatsApp messages are indexed too. Startup is schema-versioned: a full rebuild happens only on a version bump (~1.3s for a 2GB workspace); a normal launch is an incremental mtime/size diff (~22ms). Fully disposable — delete `cortex.db` and it rebuilds from the source files. Serves the `memory_search`/`conversation_read` retrieval tools and instant conversation enumeration for the History page. Supports single-file index/remove for the brainstem file watcher.
+
+## hippocampus.ts — Memory
+
+Maps to the **hippocampus**. Three-tier memory system.
+
+- **Episodes** (`episodes/YYYY-MM-DD.md`): Daily conversation logs, appended every turn with no LLM call. Entries are origin-tagged (`## HH:MM [heartbeat] — …`) so heartbeat, procedure, and workflow-agent turns are distinguishable from chat
+- **Consolidated** (`consolidated/YYYY-WNN.md`): Weekly summaries generated by brainstem's nightly compaction
+- **Knowledge** (`knowledge/`): Permanent topic files promoted from episodes; promotion deduplicates so re-derived facts don't pile up
+
+The hippocampus is the writer. Retrieval goes through the cortex index — everything it writes is searchable via `memory_search`.
+
+## cerebellum.ts — Capability Loader
+
+Maps to the **cerebellum** (motor coordination). Discovers and loads capabilities.
+
+Scans `brain/cerebellum/` for capability folders, parses SKILL.md frontmatter (YAML), dynamic-imports plugins, registers tools and danger patterns. Passes `PluginContext` (pluginDir + workspaceRoot) to plugins on init.
+
+It also decides which tool schemas ship to the model. A core set is always loaded — tool-discovery, introspect, filesystem, shell, ask, utilities, web-search, secrets, system, video, the operating-manual loader and the pdf-design/web-design/dataviz manuals, plus workflow (master-gated) and telegram/whatsapp/phone/electron while connected. Everything else — github, google, notion, browser, computer-use, media tools, all MCP servers — is one `tool_search` or `tool_activate` away, callable the same turn. Activations are conversation-scoped (an `ActiveToolset` keyed by conversationId, LRU-capped at 10 non-core capabilities), so loading github in a heartbeat run never invalidates a live chat's prompt cache, and calling an evicted tool transparently reactivates it. `pinnedCapabilities` in config.json adds extra always-loaded capabilities.
+
+## wernicke.ts — Response Parser
+
+Maps to **Wernicke's area** (language comprehension). Understands LLM output.
+
+Parses streaming chunks, extracts tool calls, normalizes across three provider formats into a single `ToolCall` type. Handles partial JSON and thinking blocks.
+
+## broca.ts — Response Assembler
+
+Maps to **Broca's area** (language production). Produces the final response.
+
+Streams tokens to renderer via IPC, formats tool results, manages line breaks between text segments from different LLM turns.
+
+## amygdala.ts — Safety Gate
+
+Maps to the **amygdala** (threat detection). Zero hardcoded patterns — all loaded from SKILL.md via cerebellum.
+
+Matches against `toolName + " " + JSON.stringify(args)`. Three classification levels: `safe` (proceed), `confirm` (show approval dialog), `block` (deny). IPC approval flow with Promise-based bridge.
+
+## motor.ts — Task Executor
+
+Maps to the **motor cortex**. Runs tool calls with full logging.
+
+Creates task markdown files at `brain/motor/tasks/TASK-{id}.md`. Per-step logging with args, output, duration, and attempt count. 3x retry with 2s/6s/18s exponential backoff. AbortController for stop support.
+
+## basalganglia.ts — Feedback Loop
+
+Maps to the **basal ganglia** (reward/learning). Learns from outcomes.
+
+Daily feedback files with full args and output snippet (~200 char truncation). Records four outcome types: success, failure, denial, approval.
+
+## hypothalamus.ts — System Monitor
+
+Maps to the **hypothalamus** (homeostasis). Watches system health.
+
+60-second `setInterval` monitoring RAM, disk, CPU, and context window usage. Emits `health.warning` and `health.critical` events on corpus when thresholds are exceeded.
+
+## brainstem.ts — Background Processes
+
+Maps to the **brainstem** (autonomic functions). Runs without user interaction.
+
+`chokidar` file watcher triggers cortex reindexing on file changes — it covers `brain/` plus the workspace trees the retrieval tools index (usage, logs, files, uploads, screenshots, speech, whatsapp) with a 500ms debounce; chatty corpus and app logs get a slow 60s debounce so the indexer isn't thrashed. `node-cron` scheduler reads schedules from `brainstem/heartbeat.md` and persists automation run history to `brainstem/run-history.md`, which outlives the 7-day corpus purge. Nightly LLM-powered compaction consolidates episodes into weekly summaries (cloud-first for quality). All in-process — no system-level daemons.
+
+## insula.ts — Self-Awareness
+
+Maps to the **insula** (interoception). Knows its own state.
+
+Exposed via the `introspect` capability: `wolffish_status`, `channel_status`, `wolffish_performance`, `wolffish_memory`, and `wolffish_list_files` read workspace files directly for stats. The same capability carries the retrieval toolset that rides the cortex index — `memory_search`, `memory_get`, `conversation_list`, `conversation_read`, `memory_save`, `usage_report`, and `wolffish_recall`. Ask Wolffish "how are you doing?" and it reads its own logs to answer; ask "what did we decide last week?" and it searches its own index.

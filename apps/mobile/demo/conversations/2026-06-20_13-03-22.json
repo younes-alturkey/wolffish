@@ -1,0 +1,83 @@
+{
+  "id": "2026-06-20_13-03-22",
+  "title": "Are you available",
+  "model": "qwen3.5:9b",
+  "createdAt": 1781949802576,
+  "updatedAt": 1781949833889,
+  "messages": [
+    {
+      "id": "m_1781949833889_3eea40",
+      "role": "user",
+      "content": "Are you available?",
+      "timestamp": 1781949833889
+    },
+    {
+      "id": "m_1781949833889_10f621",
+      "role": "assistant",
+      "content": "Always here, Younes. 🐟\n\nWhat's on your mind?",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1781949802580_fz236r",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1781949802580_fz236r",
+          "segmentId": "seg_2",
+          "delta": "Always here, Younes. 🐟\n\nWhat's on your mind?"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1781949802580_fz236r",
+          "segmentId": "seg_17",
+          "stopReason": "end_turn",
+          "iterationCount": 1,
+          "reasoningContent": "Yeah, they're just checking if I'm around. Simple check-in, no tools needed. Just a warm response."
+        }
+      ],
+      "stopReason": "end_turn",
+      "timestamp": 1781949833889
+    }
+  ],
+  "stats": {
+    "allTime": {
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 5,
+      "outputTokens": 23,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "cost": 0.0046768,
+      "processingMs": 1000,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "endedAt": 1781949833889,
+      "provider": "local",
+      "model": "qwen3.5:9b"
+    },
+    "lastTurn": {
+      "endedAt": 1781949833889,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 5,
+      "outputTokens": 23,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "provider": "local",
+      "model": "qwen3.5:9b",
+      "cost": 0.0046768
+    },
+    "meter": {
+      "contextTokens": 12428,
+      "contextBudget": 1000000,
+      "compactionAt": 725424,
+      "model": "qwen3.5:9b"
+    }
+  }
+}

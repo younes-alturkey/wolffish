@@ -1,0 +1,82 @@
+{
+  "id": "2026-06-30_17-36-35",
+  "title": "Hey",
+  "model": "gemma4:e2b",
+  "createdAt": 1782830195127,
+  "updatedAt": 1782830205554,
+  "messages": [
+    {
+      "id": "m_1782830205554_667841",
+      "role": "user",
+      "content": "hey",
+      "timestamp": 1782830205554
+    },
+    {
+      "id": "m_1782830205554_7ec120",
+      "role": "assistant",
+      "content": "What's up? Ready to chew through something? 🐟",
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782830195135_fkn62j",
+          "segmentId": "seg_1",
+          "provider": "local",
+          "model": "gemma4:e2b"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782830195135_fkn62j",
+          "segmentId": "seg_2",
+          "delta": "What's up? Ready to chew through something? 🐟"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1782830195135_fkn62j",
+          "segmentId": "seg_15",
+          "stopReason": "end_turn",
+          "iterationCount": 1
+        }
+      ],
+      "stopReason": "end_turn",
+      "timestamp": 1782830205554
+    }
+  ],
+  "stats": {
+    "allTime": {
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 1,
+      "outputTokens": 23,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "cost": 0.0046756,
+      "processingMs": 1000,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "endedAt": 1782830205554,
+      "provider": "local",
+      "model": "gemma4:e2b"
+    },
+    "lastTurn": {
+      "endedAt": 1782830205554,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 1,
+      "outputTokens": 23,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "provider": "local",
+      "model": "gemma4:e2b",
+      "cost": 0.0046756
+    },
+    "meter": {
+      "contextTokens": 12424,
+      "contextBudget": 131072,
+      "compactionAt": 73728,
+      "model": "gemma4:e2b"
+    }
+  }
+}

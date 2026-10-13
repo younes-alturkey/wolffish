@@ -1,0 +1,93 @@
+---
+title: "Diagnostic Export"
+description: "Bundle everything about one conversation into a single zip for the developer"
+---
+
+# One Button, One Archive
+
+The four sources of truth are all readable on their own — but when a conversation goes wrong and you want someone *else* to look at it, collecting the right files by hand is the tedious part. Which log, which task file, which prompt snapshot, and which of them actually belong to the conversation that broke.
+
+The **diagnostic export** does that collection for you. One press gathers everything relevant to **one conversation** — and nothing about any other — into a single zip you can forward as-is.
+
+<Note>
+The export only ever **reads**. The one thing it writes is the archive itself. It is safe to run on a conversation that is still streaming.
+</Note>
+
+## Running It
+
+**The export lives on the History page.** Since **v1.0.236** the bug icon has left the chat's button row, which had grown a button per feature: every row on **History** carries its own bug button, including the row for the conversation you currently have open. One home, one button, and no ambiguity about which conversation a press belongs to.
+
+A row's button rests only when there is nothing yet to collect — a conversation whose very first turn is still running has no saved transcript. A conversation that exists but hasn't reached the index yet says **"Not indexed yet"** rather than going quietly dead on the click.
+
+You can also start one **from your phone**: the [mobile app](/integrations/mobile-app#diagnostics-from-the-phone) collects the same bundle, shows the same step-by-step progress, and hands the finished archive to the system share sheet.
+
+An overlay takes over while collection runs, showing each stage as it completes and a running file count. It takes a few seconds. When it finishes you get a card listing what went in, with two actions:
+
+- **Reveal** — opens the archive in your file manager
+- **Save a copy** — writes a duplicate anywhere you like
+
+The archive itself lands in your workspace either way:
+
+```
+~/.wolffish/workspace/diagnostics/wolffish-diagnostics-{conversation}-{timestamp}.zip
+```
+
+<Tip>
+Only one export runs at a time — the collectors read the same log files, so parallel runs would only fight for IO. Triggering the export again while one is in flight simply **attaches you to the running export** instead of failing it. The same single-flight guard covers the phone, so a run started there and one started here can never fight over the same files.
+</Tip>
+
+## What Goes In
+
+The archive is organized into numbered folders so the reading order is obvious:
+
+| Folder | What it is |
+|---|---|
+| `(root)` | `00_README.md`, `00_METRICS.md` (a roll-up of the conversation's turns, tokens and failures) and `00_ENVIRONMENT.json` (app version, provider, model, chat mode, locale) |
+| `01_conversation` | The raw conversation JSON, a readable transcript, and the failures pulled out on their own |
+| `02_logs` | The daily [corpus logs](/debugging/event-logs) for every day the conversation spans, **plus a slice filtered to just this conversation's turns**, the app and extension logs for those days, and the usage ledgers |
+| `03_tasks` | The [task files](/debugging/task-files) for every task this conversation spawned — tool by tool, with arguments and results. Since v1.0.246 the bundle **reads them step by step** too: the metrics carry their own task-steps line (counted apart, since a turn's own steps duplicate its tool calls), and every failed step lands in the failures file in full — arguments and untruncated error — because a worker that stumbled mid-run and recovered still ends its task SUCCEEDED, which is exactly why steps are checked, not statuses |
+| `04_memory` | The [episodes](/memory/episodes), consolidated memory and [knowledge](/memory/knowledge) files that were in play |
+| `05_context` | `agents.core.md`, your `agents.md`, `soul.md`, `user.md`, the workflow contracts, `heartbeat.md`, the [debug snapshots](/debugging/debug-snapshots) falling inside the conversation's span, and the `SKILL.md` contract of every capability this conversation **actually called** |
+| `06_settings` | The **redacted** `config.json`, compaction bookkeeping, and the bound [project](/configuration/projects) if the conversation had one |
+| `07_attachments` | A manifest of every attachment — names, types, sizes, paths — including files the transcript references that are **no longer on disk**. Text attachments under 256 KB are copied in full |
+| `08_analysis` | The model's own opinion on what went wrong, when one was collected |
+
+The corpus slice in `02_logs` is the useful one: it is every logged event whose turn scope names this conversation, in order, with the surrounding noise of everything else the machine was doing stripped out.
+
+## What Stays Out
+
+Two exclusions are deliberate, and both exist so the bundle is safe to hand to someone else:
+
+- **Credentials are redacted.** Every credential-shaped value in `config.json` is replaced by a length marker — `[redacted — 51 chars]` — never the value. The redaction is keyed on the *name*, so a key added to the config later is redacted the day it arrives as long as it is named like one. If `config.json` can't be parsed, it is **omitted entirely** rather than shipped unredacted.
+- **Attachment media is listed, not included.** A 200 MB video in the conversation contributes a manifest row, not 200 MB of archive.
+
+<Warning>
+"Redacted" covers credential-shaped config values. The transcript, logs, and memory files are included **verbatim** — if you pasted a secret into the chat itself, it is in the archive. Skim `01_conversation/transcript.md` before forwarding a bundle from a conversation where that might have happened.
+</Warning>
+
+## The Model's Opinion
+
+When the export runs on a **cloud** model, it also makes one side-call: it hands the conversation material to the model and asks what it thinks went wrong, then drops that answer into `08_analysis/model-opinion.md`.
+
+This is a lean one-shot call — no tools, no streaming, no conversation created — and it is billed like the other utility side-calls (titling, summarization) against your configured Brain.
+
+It is skipped, with the reason recorded on the result card, when:
+
+| Reason | Meaning |
+|---|---|
+| `no-model` | No model is configured |
+| `local-only` | The active model is local — the call is quick on a cloud provider and isn't on a local one |
+| `failed` | The provider didn't answer |
+| `empty` | The model returned nothing |
+
+The call is also on a clock: it gives up after **ninety seconds**, so a stalled provider costs the bundle this one section — never the whole export.
+
+<Note>
+The opinion is the model's unverified first read, not a verdict. The `00_README.md` inside the archive says so too — it is a starting point for whoever opens the bundle, not a diagnosis.
+</Note>
+
+## Collection Is Best-Effort
+
+Every collector is best-effort by design: a missing or unreadable source produces a **warning**, never a failed export. The warnings are listed both on the result card and in the archive's `00_README.md`, so the person reading the bundle knows what wasn't there rather than wondering.
+
+The most common one is benign: corpus logs are kept for **7 days**, so exporting an older conversation will report that no event log survives for it. The transcript, tasks and context are still there.

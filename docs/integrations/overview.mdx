@@ -1,0 +1,131 @@
+---
+title: "Integrations Overview"
+description: "Connect Wolffish to external services — Google, GitHub, Notion, and more"
+---
+
+# What an Integration Is
+
+Integrations connect Wolffish to external services. Each integration is a capability (a cerebellum skill with a plugin) that adds tools for interacting with a specific API — Gmail, GitHub, Notion, Brave Search, and more.
+
+## Design Principles
+
+<CardGroup cols={2}>
+  <Card title="Stateless" icon="plug">
+    Every integration reads credentials on-demand at tool-call time. No background daemons, no persistent connections, no polling loops.
+  </Card>
+  <Card title="Optional" icon="toggle-off">
+    Wolffish works fully without any integrations configured. Each one is independent — enable only what you need.
+  </Card>
+</CardGroup>
+
+## How Integrations Work
+
+The integration architecture follows the standard capability pipeline:
+
+```
+Settings panel ──► config.json / Variables ──► Plugin reads token ──► API call ──► Result ──► motor ──► broca ──► User
+```
+
+1. You configure credentials in the Settings panel (or edit `config.json` directly)
+2. The credential is stored in `~/.wolffish/workspace/config.json` or as a Variable
+3. When the LLM decides to use an integration tool, the plugin reads the token at call time
+4. The plugin makes the API request and returns a `ToolResult`
+5. The result flows through `motor` (execution engine) back to `broca` (output renderer)
+
+<Note>
+  Integration credentials configured in the Settings panel (Notion, GitHub, Brave, Google OAuth, etc.) are never sent to the LLM — plugins read them directly from `config.json` when a tool executes. The LLM only sees the tool result.
+</Note>
+
+<Warning>
+  **Variables are different.** Any value stored in Settings → Variables is included in the system prompt in plaintext on every turn so the agent can reference and use them. If you store a secret as a Variable, the LLM will see it — that's intentional, since it needs the value to use it in tool calls. Use Variables for credentials the agent needs to act on directly (e.g. passing an API key as a shell argument). Use the integration-specific settings pages for credentials the plugin handles itself.
+</Warning>
+
+## Credential Storage
+
+Integration tokens live in `config.json` under their respective integration sections:
+
+```json
+// Example: config.json integration section
+{
+  "integrations": {
+    "google": {
+      "accounts": [
+        {
+          "email": "you@gmail.com",
+          "accessToken": "ya29.a0...",
+          "refreshToken": "1//0e..."
+        }
+      ]
+    }
+  }
+}
+```
+
+<Info>
+  Like all workspace data, credentials are stored in plain text on your local machine. Wolffish is a personal, local-first app — your workspace is your own. If you version-control your workspace, add `config.json` to `.gitignore`.
+</Info>
+
+## Available Integrations
+
+<CardGroup cols={2}>
+  <Card title="Browser Extension" icon="browser" href="/integrations/browser-extension">
+    Control your real browsers — several at once, profiles included — navigate, click, read, screenshot. 51 tools in your logged-in sessions.
+  </Card>
+  <Card title="Mobile App" icon="mobile" href="/integrations/mobile-app">
+    The phone companion — pair once by QR or code, then chat, history, usage, and every settings page over an end-to-end encrypted tunnel.
+  </Card>
+  <Card title="Phone Notifications" icon="bell" href="/integrations/notifications">
+    The agent reaches your paired phone when a run finishes, fails, or needs you — a deliberate tool call every time, never an automatic ping.
+  </Card>
+  <Card title="Video Generation" icon="video" href="/integrations/video-generation">
+    Make video with MiniMax H3 — text, images, frames, or reference media — with the prompt written by whichever model you're chatting with.
+  </Card>
+  <Card title="Google Workspace" icon="google" href="/integrations/google-workspace">
+    Gmail, Drive, Calendar, Contacts, Tasks, and Sheets. OAuth-based multi-account support.
+  </Card>
+  <Card title="GitHub" icon="github" href="/integrations/github">
+    Repositories, issues, pull requests, workflows, releases, and gists via personal access token.
+  </Card>
+  <Card title="Notion" icon="book" href="/integrations/notion">
+    Pages, databases, and knowledge bases. Search, read, create, and query your Notion workspace.
+  </Card>
+  <Card title="Brave Search" icon="magnifying-glass" href="/capabilities/built-in-capabilities">
+    Web search via Brave Search API. Results are returned as structured data for the LLM to summarize.
+  </Card>
+  <Card title="MCP Servers" icon="server" href="/integrations/mcp">
+    Connect any Model Context Protocol server — a local command or a remote URL — and its tools become Wolffish's tools on your next message.
+  </Card>
+</CardGroup>
+
+<Note>
+  **MCP servers are the open-ended integration.** The integrations above are built in and hand-tuned; MCP connections bring in the whole third-party tool-server ecosystem. Unlike the stateless integrations, an MCP connection is a live, managed link — Wolffish keeps it healthy in the background (silent reconnects, health checks, OAuth token refresh). See [MCP Servers](/integrations/mcp).
+</Note>
+
+## Integration vs. Capability
+
+Every integration is a capability, but not every capability is an integration. The distinction:
+
+| | Capability | Integration |
+|---|---|---|
+| Location | `brain/cerebellum/` | `brain/cerebellum/` |
+| Has SKILL.md | Yes | Yes |
+| Has plugin/ | Maybe | Always |
+| Needs credentials | No | Yes |
+| Calls external APIs | No | Yes |
+| Example | `git`, `shell` | `google`, `github` |
+
+Integrations are plugin capabilities that require external credentials and make network requests to third-party APIs. Pure capabilities like `git` and `shell` only use local system resources.
+
+## Activation
+
+Integrations are **discoverable capabilities**. Their tool schemas don't ship on every request — each integration costs one line in the system prompt's capability index (name, short description, tool count). When a task calls for one, the model activates it with `tool_search` (or by calling one of its tools directly, which auto-activates the capability) and its tools are callable the same turn.
+
+For example, saying "check my email" leads the model to activate the Google capability and call the right tool (`google_gmail_search`, `google_gmail_read`, etc.) based on your intent. Activation is scoped to the conversation, so a background job loading GitHub never touches your live chat.
+
+<Tip>
+  Use an integration constantly? Add it to `pinnedCapabilities` in [config.json](/configuration/config-json) to ship its tools on every request alongside the built-in core set.
+</Tip>
+
+<Note>
+  Activation makes an integration's tools callable, but the plugin still reads its credential at call time — a missing token surfaces as a tool error, not a missing tool. If calls fail, check the credential in Settings first.
+</Note>

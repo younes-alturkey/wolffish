@@ -1,0 +1,144 @@
+---
+title: "إعداد بيئة التطوير"
+description: "إعداد بيئة التطوير للمساهمة في وولفيش"
+---
+
+# من الصفر إلى التشغيل في خمس دقائق
+
+انطلق من الصفر إلى نسخة تطوير تعمل في أقل من خمس دقائق.
+
+## المتطلبات الأساسية
+
+| الأداة  | الإصدار  | السبب                                        |
+| ------- | -------- | -------------------------------------------- |
+| Node.js | +20      | بيئة التشغيل للعملية الرئيسية وأدوات البناء  |
+| npm     | +10      | إدارة الحزم                                  |
+| Git     | أي إصدار | التحكم بالمصادر                              |
+| Ollama  | الأحدث   | اختبار النماذج المحلية (اختياري لكن موصى به) |
+
+<Note>
+  الوحدات الأصلية مثل `better-sqlite3` تُجمّع أثناء التثبيت عبر
+  `electron-rebuild`. على macOS تحتاج أدوات سطر أوامر Xcode (`xcode-select
+  --install`). على Linux تحتاج `build-essential` و `python3`.
+</Note>
+
+## الاستنساخ والتثبيت
+
+```bash
+git clone https://github.com/younes-alturkey/wolffish.git
+cd wolffish
+npm install
+```
+
+يقوم سكريبت `postinstall` بتشغيل `electron-rebuild` تلقائيًا لتجميع الوحدات الأصلية وفقًا لواجهة Electron ABI الصحيحة.
+
+## التشغيل في وضع التطوير
+
+```bash
+npm run dev
+```
+
+يُشغّل هذا `electron-vite` الذي يبدأ ثلاث عمليات:
+
+| العملية      | الدور                                        | إعادة التحميل     |
+| ------------ | -------------------------------------------- | ----------------- |
+| **main**     | Node.js - معالجات IPC، بيئة التشغيل، الخدمات | إعادة تشغيل يدوية |
+| **preload**  | contextBridge - IPC آمن الأنواع              | إعادة تشغيل يدوية |
+| **renderer** | React - واجهة المستخدم                       | HMR (فوري)        |
+
+تنعكس تغييرات العارض (المكونات، الأنماط، الخطافات) فورًا عبر HMR. تغييرات العملية الرئيسية تتطلب إيقاف وإعادة تشغيل `npm run dev`.
+
+## الأوامر المتاحة
+
+```bash
+npm run dev          # Start dev mode with HMR
+npm run typecheck    # Full TypeScript check (all configs)
+npm run lint         # ESLint
+npm run build        # Production build (current platform)
+npm run build:mac    # macOS .dmg
+npm run build:win    # Windows .exe
+npm run build:linux  # Linux .AppImage / .deb
+```
+
+<Warning>
+  شغّل دائمًا `npm run typecheck` بعد التغييرات الهيكلية (ملفات جديدة، استيرادات
+  منقولة، واجهات متغيرة). يمكن أن يخفي HMR في Vite أخطاء الأنواع - تطبيقك يعمل
+  بشكل جيد حتى تحاول البناء.
+</Warning>
+
+## أسماء المسارات المستعارة
+
+يستخدم الكود أسماء مسارات مستعارة في كل مكان. لا تستخدم أبدًا المسارات النسبية عبر حدود العمليات.
+
+```typescript
+// Good
+import { Corpus } from "@main/runtime/corpus/corpus";
+import { useFlow } from "@providers/flow/useFlow";
+import { Button } from "@components/core/button/Button";
+
+// Bad — never cross folders with relative paths
+import { Corpus } from "../../../main/runtime/corpus/corpus";
+```
+
+الأسماء المستعارة المتاحة:
+
+| الاسم المستعار  | يُحلّ إلى                       |
+| --------------- | ------------------------------- |
+| `@main/*`       | `src/main/*`                    |
+| `@preload/*`    | `src/preload/*`                 |
+| `@renderer/*`   | `src/renderer/src/*`            |
+| `@components/*` | `src/renderer/src/components/*` |
+| `@hooks/*`      | `src/renderer/src/hooks/*`      |
+| `@lib/*`        | `src/renderer/src/lib/*`        |
+| `@pages/*`      | `src/renderer/src/pages/*`      |
+| `@providers/*`  | `src/renderer/src/providers/*`  |
+| `@resources/*`  | `resources/*`                   |
+
+<Tip>
+  استخدم استيرادات `./` النسبية فقط داخل نفس المجلد. لأي شيء آخر، استخدم الاسم
+  المستعار.
+</Tip>
+
+الأسماء المستعارة مُعدّة في ثلاثة أماكن:
+
+- `electron.vite.config.ts` - دقة Vite
+- `tsconfig.web.json` - TypeScript للعارض
+- `tsconfig.node.json` - TypeScript للعملية الرئيسية + preload
+
+## بنية العمليات الثلاث
+
+```
+┌──────────────────────────────────────────┐
+│  main (Node.js)                          │
+│  - IPC handlers                          │
+│  - Runtime pipeline (15 brain modules)   │
+│  - Services (GitHub, Google, Ollama...)  │
+├──────────────────────────────────────────┤
+│  preload (contextBridge)                 │
+│  - Exposes typed IPC to renderer         │
+│  - No direct Node.js access in renderer  │
+├──────────────────────────────────────────┤
+│  renderer (React)                        │
+│  - Pages, components, hooks              │
+│  - Communicates with main ONLY via IPC   │
+└──────────────────────────────────────────┘
+```
+
+لا يستورد العارض أبدًا من `@main/*` مباشرة. جميع الاتصالات تمر عبر قنوات IPC المعرّفة في طبقة preload.
+
+<CardGroup cols={2}>
+  <Card
+    title="هيكل المشروع"
+    icon="folder-tree"
+    href="/ar/development/project-structure"
+  >
+    فهم كيفية تنظيم الكود.
+  </Card>
+  <Card
+    title="المساهمة"
+    icon="code-pull-request"
+    href="/ar/development/contributing"
+  >
+    مستعد لتقديم كود؟ اقرأ دليل المساهمة.
+  </Card>
+</CardGroup>

@@ -1,0 +1,126 @@
+{
+  "id": "2026-06-22_07-44-14",
+  "title": "All fish, good morning, what did we do",
+  "model": null,
+  "createdAt": 1782103454539,
+  "updatedAt": 1782103479905,
+  "messages": [
+    {
+      "id": "m_1782103458936_f40905",
+      "role": "user",
+      "content": "Hello all fish, good morning, what did we do yesterday?",
+      "timestamp": 1782103458936,
+      "attachments": [
+        {
+          "type": "audio",
+          "filePath": "uploads/conv-2026-06-22_07-44-14/voice_771.ogg",
+          "originalName": "voice_771.ogg",
+          "mimeType": "audio/ogg",
+          "sizeBytes": 0
+        }
+      ],
+      "voicePrompt": true
+    },
+    {
+      "id": "m_1782103479904_66cfb0",
+      "role": "assistant",
+      "content": "Voice memo sent 🐟",
+      "timestamp": 1782103479904,
+      "segments": [
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782103458938_r8qiiz",
+          "segmentId": "seg_1",
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash"
+        },
+        {
+          "kind": "tool_call",
+          "turnId": "turn_1782103458938_r8qiiz",
+          "segmentId": "seg_2",
+          "toolCallId": "call_00_SUdsg6yh7qKPKtCJn7VI9305",
+          "name": "voice_respond",
+          "args": {
+            "text": "Good morning, Younes! Yesterday, June 21st, was a pretty quiet day. The main thing we did was the daily security audit — the heartbeat check at 8:21 AM. Searched for the latest macOS CVEs and security advisories, scanned your system: open ports, firewall status, disk encryption, SSH config, outdated software, all that. Cross-referenced everything against known vulnerabilities. Verdict was the same as always: your system is solid — FileVault on, firewall active, SSH off, fully patched. Just the usual maintenance items like some outdated Homebrew formulas and that ancient Ruby 2.6 that ships with macOS. Other than that, yesterday was a chill one. So what are we getting into today, boss? 🐟",
+            "voice": "en-US-GuyNeural"
+          }
+        },
+        {
+          "kind": "tool_result",
+          "turnId": "turn_1782103458938_r8qiiz",
+          "segmentId": "seg_3",
+          "toolCallId": "call_00_SUdsg6yh7qKPKtCJn7VI9305",
+          "status": "success",
+          "output": "{\"filePath\":\"/Users/younes/.wolffish/workspace/speech/conv-2026-06-22_07-44-14/1782103473126-b4358bf7.mp3\",\"fileName\":\"1782103473126-b4358bf7.mp3\",\"sizeBytes\":293040,\"voice\":\"en-US-GuyNeural\",\"speed\":\"+0%\",\"isResponse\":true,\"textLength\":696}"
+        },
+        {
+          "kind": "active_model",
+          "turnId": "turn_1782103458938_r8qiiz",
+          "segmentId": "seg_4",
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash"
+        },
+        {
+          "kind": "text",
+          "turnId": "turn_1782103458938_r8qiiz",
+          "segmentId": "seg_5",
+          "delta": "Voice memo sent 🐟"
+        },
+        {
+          "kind": "turn_end",
+          "turnId": "turn_1782103458938_r8qiiz",
+          "segmentId": "seg_9",
+          "stopReason": "end_turn",
+          "iterationCount": 2,
+          "reasoningContent": "The voice response was sent successfully. The tool call was the voice_respond, which delivered the voice memo. Since there are no more tool calls to make, the task is complete - I already responded to the user's voice note with a voice memo."
+        }
+      ],
+      "toolTimings": {
+        "call_00_SUdsg6yh7qKPKtCJn7VI9305": {
+          "startedAt": 1782103473117,
+          "endedAt": 1782103476544
+        }
+      },
+      "stopReason": "end_turn"
+    }
+  ],
+  "channel": "telegram",
+  "stats": {
+    "allTime": {
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 1,
+      "inputTokens": 834,
+      "outputTokens": 253,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "cost": 0.0051785,
+      "processingMs": 20968,
+      "elapsedMs": 20968,
+      "apiMs": 17194,
+      "endedAt": 1782103479904,
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro"
+    },
+    "lastTurn": {
+      "endedAt": 1782103479904,
+      "elapsedMs": 20968,
+      "apiMs": 17194,
+      "apiCalls": 1,
+      "toolCalls": 1,
+      "inputTokens": 834,
+      "outputTokens": 253,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro",
+      "cost": 0.0051785
+    },
+    "meter": {
+      "contextTokens": 13487,
+      "contextBudget": 1000000,
+      "compactionAt": 725424,
+      "model": "deepseek-v4-pro"
+    }
+  }
+}

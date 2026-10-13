@@ -1,0 +1,61 @@
+{
+  "id": "2026-07-16_06-16-49_754-3c10e5",
+  "title": "Hourly: report",
+  "model": null,
+  "createdAt": 1784171809754,
+  "updatedAt": 1784171809789,
+  "messages": [
+    {
+      "id": "m_1784171809754_c52237",
+      "role": "user",
+      "content": "instruction",
+      "timestamp": 1784171809754
+    },
+    {
+      "id": "m_1784171809789_fb904b",
+      "role": "assistant",
+      "content": "job done",
+      "timestamp": 1784171809789
+    }
+  ],
+  "channel": "heartbeat",
+  "sealed": true,
+  "stats": {
+    "allTime": {
+      "turns": 1,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 3,
+      "outputTokens": 2,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "cost": 0.0046531,
+      "processingMs": 1000,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "endedAt": 1784171809789,
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro"
+    },
+    "lastTurn": {
+      "endedAt": 1784171809789,
+      "elapsedMs": 1000,
+      "apiMs": 820,
+      "apiCalls": 1,
+      "toolCalls": 0,
+      "inputTokens": 3,
+      "outputTokens": 2,
+      "cacheReadTokens": 0,
+      "cacheCreationTokens": 12400,
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro",
+      "cost": 0.0046531
+    },
+    "meter": {
+      "contextTokens": 12405,
+      "contextBudget": 1000000,
+      "compactionAt": 725424,
+      "model": "deepseek-v4-pro"
+    }
+  }
+}

@@ -7,34 +7,72 @@ import type {
   ToolDefinition,
   UserContentBlock
 } from '@main/runtime/thalamus'
-import { effortFromMode } from '@main/runtime/reasoning'
-import { openaiCompatToolContent } from '@main/runtime/tool-images'
+import {
+  normalizeReasoningMode,
+  reasoningModesFor,
+  type ReasoningMode
+} from '@main/runtime/reasoning'
+import { openaiResponsesToolContent } from '@main/runtime/tool-images'
 
-const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions'
+// Responses API, not chat/completions. Verified live 2026-10-12: on
+// chat/completions gpt-6-astra and gpt-6.1-sol refuse function tools
+// outright, and every other gpt-5.4+/5.6/6 model only accepts tools with
+// reasoning_effort:none — so the agent loop would run every tool turn with
+// reasoning off. Responses takes tools + any effort on all of them, streams
+// reasoning summaries, and accepts the top 'max' rung that chat/completions
+// 400s on.
+const OPENAI_ENDPOINT = 'https://api.openai.com/v1/responses'
 
-// Per-model output ceilings — the highest value the API accepts for each
-// family. Cost is irrelevant; we never want a reply truncated by a
-// conservative cap.
-function maxTokensFor(model: string): number {
+/**
+ * Per-model output ceiling, as reported by the API itself
+ * ("This model supports at most N completion tokens", 2026-10-12). We ask
+ * for the full ceiling — cost is irrelevant; a reply must never be
+ * truncated by a conservative cap. thalamus reserves this much of the
+ * context window for output, so it must stay the single source of truth.
+ */
+export function openaiMaxOutputTokens(model: string): number {
   const m = model.toLowerCase()
-  if (m.startsWith('gpt-5')) return 65536
-  if (m.startsWith('gpt-4.1')) return 32768
-  if (m.startsWith('gpt-4o')) return 16384
-  if (m.startsWith('o4')) return 65536
-  if (m.startsWith('o3')) return 65536
-  if (m.startsWith('o1-mini')) return 32768
-  if (m.startsWith('o1')) return 32768
-  if (m.startsWith('gpt-4-turbo')) return 4096
-  if (m.startsWith('gpt-4')) return 8192
-  if (m.startsWith('gpt-3.5')) return 4096
-  return 16384
+  if (m.startsWith('gpt-6') || m.startsWith('gpt-5') || m.startsWith('chat-latest')) return 128_000
+  if (/^o[134]/.test(m)) return 100_000
+  if (m.startsWith('gpt-4.1')) return 32_768
+  if (m.startsWith('gpt-4o')) return 16_384
+  if (m.startsWith('gpt-4-turbo')) return 4_096
+  if (m.startsWith('gpt-4')) return 4_096
+  return 16_384
 }
 
-// Reasoning models (o-series, gpt-5) require `max_completion_tokens` and
-// reject the legacy `max_tokens` field. Older chat models still take
-// `max_tokens`. Detection is by model-name prefix.
-function isReasoningModel(model: string): boolean {
-  return /^(o1|o3|o4|gpt-5)/i.test(model)
+// The top effort rung differs per family (all verified live on
+// /v1/responses): gpt-6* and gpt-5.6* take 'max'; gpt-5.2/5.4/5.5 stop at
+// 'xhigh' and 400 on 'max'; gpt-5/5.1/o-series stop at 'high'.
+function topEffort(model: string): 'max' | 'xhigh' | 'high' {
+  const m = model.toLowerCase()
+  if (m.startsWith('gpt-6') || m.startsWith('gpt-5.6')) return 'max'
+  if (/^gpt-5\.[245]/.test(m)) return 'xhigh'
+  return 'high'
+}
+
+/**
+ * Canonical mode → `reasoning.effort`. Null when the model takes no
+ * reasoning field at all (gpt-4.x, gpt-4o, chat-latest 400 on its mere
+ * presence). thalamus clamps `thinkingMode` to the model's registry, and
+ * the clamp is repeated here (as xai.ts does) so a caller that skips it
+ * can't send 'none' to an always-on model and 400 the turn. 'on' is the
+ * provider default (medium) — the always-on models' lowest exposed setting.
+ */
+function responsesEffort(model: string, mode: ReasoningMode | undefined): string | null {
+  const modes = reasoningModesFor('openai', model)
+  if (modes.length === 0) return null
+  switch (normalizeReasoningMode(mode, modes)) {
+    case 'off':
+      return 'none'
+    case 'on':
+      return 'medium'
+    case 'max':
+      return topEffort(model)
+    case 'high':
+    default:
+      return 'high'
+  }
 }
 
 export class OpenAIProvider {
@@ -46,19 +84,13 @@ export class OpenAIProvider {
   ) {}
 
   async *stream(options: ProviderStreamOptions): AsyncGenerator<StreamChunk> {
-    const messages = [
-      { role: 'system' as const, content: options.system } as Record<string, unknown>,
-      ...toOpenAIMessages(options.messages)
-    ]
-
-    const maxOutput = maxTokensFor(this.model)
     const body: Record<string, unknown> = {
       model: this.model,
-      messages,
+      instructions: options.system,
+      input: toResponsesInput(options.messages),
       stream: true,
-      // Ask OpenAI to append a final usage chunk so we can populate
-      // turn_meta with API-reported token counts instead of guessing.
-      stream_options: { include_usage: true }
+      store: false,
+      max_output_tokens: openaiMaxOutputTokens(this.model)
     }
     // Cache-shard routing hint. Agentic loops exceed ~15 req/min on one
     // prefix, which overflows to machines with cold caches; a stable
@@ -66,26 +98,15 @@ export class OpenAIProvider {
     if (options.cacheKey) {
       body.prompt_cache_key = options.cacheKey
     }
-    if (isReasoningModel(this.model)) {
-      body.max_completion_tokens = maxOutput
-
-      // OpenAI reasoning: reasoning_effort controls depth.
-      // off → 'none' (disabled), high → 'high', max → 'xhigh' (maximum).
-      const effort = effortFromMode(options.thinkingMode)
-      body.reasoning_effort = effort === 'off' ? 'none' : effort === 'max' ? 'xhigh' : 'high'
-    } else {
-      body.max_tokens = maxOutput
+    const effort = responsesEffort(this.model, options.thinkingMode)
+    if (effort) {
+      // summary:auto streams the model's reasoning summary as it thinks —
+      // the only reasoning text OpenAI exposes; raw chain-of-thought stays
+      // server-side.
+      body.reasoning = { effort, summary: 'auto' }
     }
     if (options.tools && options.tools.length > 0) {
-      body.tools = options.tools.map(toOpenAITool)
-    }
-
-    if (body.tools && body.reasoning_effort) {
-      delete body.reasoning_effort
-      this.corpus?.emit('llm.reasoning_effort.stripped', {
-        model: this.model,
-        reason: 'tools present'
-      })
+      body.tools = options.tools.map(toResponsesTool)
     }
 
     const response = await fetch(this.endpoint, {
@@ -100,23 +121,35 @@ export class OpenAIProvider {
 
     if (!response.ok || !response.body) {
       const text = await response.text().catch(() => '')
-      throw new Error(`openai chat failed: HTTP ${response.status} ${text}`.trim())
+      throw new Error(`openai responses failed: HTTP ${response.status} ${text}`.trim())
     }
 
-    type ToolBuffer = { id: string; name: string; argsBuffer: string }
-    const tools = new Map<number, ToolBuffer>()
     let stopReason: StopReason = 'unknown'
+    let sawToolCall = false
     let inputTokens = 0
     let outputTokens = 0
     let cacheReadTokens = 0
 
+    const applyUsage = (usage: ResponsesUsage | undefined): void => {
+      if (!usage) return
+      if (typeof usage.input_tokens === 'number') inputTokens = usage.input_tokens
+      if (typeof usage.output_tokens === 'number') outputTokens = usage.output_tokens
+      // input_tokens is inclusive of cache hits. Separate them so the cost
+      // formula can apply the cached-input rate (Anthropic convention:
+      // inputTokens = uncached only).
+      const cached = usage.input_tokens_details?.cached_tokens
+      if (typeof cached === 'number' && cached > 0) {
+        cacheReadTokens = cached
+        inputTokens = inputTokens - cached
+      }
+    }
+
     for await (const event of readSSE(response.body)) {
       if (!event.data) continue
-      if (event.data === '[DONE]') break
 
-      let parsed: OpenAIEvent
+      let parsed: ResponsesEvent
       try {
-        parsed = JSON.parse(event.data) as OpenAIEvent
+        parsed = JSON.parse(event.data) as ResponsesEvent
       } catch (err) {
         const detail = err instanceof Error ? err.message : String(err)
         yield {
@@ -127,59 +160,61 @@ export class OpenAIProvider {
         return
       }
 
-      if (parsed.usage) {
-        if (typeof parsed.usage.prompt_tokens === 'number') inputTokens = parsed.usage.prompt_tokens
-        if (typeof parsed.usage.completion_tokens === 'number')
-          outputTokens = parsed.usage.completion_tokens
-        // OpenAI reports cached tokens inside prompt_tokens (inclusive).
-        // Separate them so the cost formula can apply the 50% discount.
-        const cached = parsed.usage.prompt_tokens_details?.cached_tokens
-        if (typeof cached === 'number' && cached > 0) {
-          cacheReadTokens = cached
-          inputTokens = inputTokens - cached // uncached only, matching Anthropic convention
-        }
-      }
-
-      const choice = parsed.choices?.[0]
-      if (!choice) continue
-      const delta = choice.delta
-
-      if (delta) {
-        if (typeof delta.reasoning_content === 'string' && delta.reasoning_content.length > 0) {
-          yield { type: 'reasoning', text: delta.reasoning_content }
-        }
-        if (typeof delta.content === 'string' && delta.content.length > 0) {
-          yield { type: 'text', text: delta.content }
-        }
-
-        if (Array.isArray(delta.tool_calls)) {
-          for (const call of delta.tool_calls) {
-            const idx = call.index ?? 0
-            let buf = tools.get(idx)
-            if (!buf) {
-              buf = { id: call.id ?? generateToolId(), name: '', argsBuffer: '' }
-              tools.set(idx, buf)
-            }
-            if (call.id) buf.id = call.id
-            if (call.function?.name) buf.name = call.function.name
-            if (typeof call.function?.arguments === 'string') {
-              buf.argsBuffer += call.function.arguments
+      switch (parsed.type) {
+        case 'response.output_text.delta':
+          if (typeof parsed.delta === 'string' && parsed.delta.length > 0) {
+            yield { type: 'text', text: parsed.delta }
+          }
+          break
+        case 'response.reasoning_summary_text.delta':
+          if (typeof parsed.delta === 'string' && parsed.delta.length > 0) {
+            yield { type: 'reasoning', text: parsed.delta }
+          }
+          break
+        // Arguments stream as deltas too, but the done item carries the
+        // complete string — one authoritative source beats reassembly.
+        case 'response.output_item.done': {
+          const item = parsed.item
+          if (item?.type === 'function_call' && item.name) {
+            sawToolCall = true
+            const args = item.arguments ? safeParseJSON(item.arguments) : {}
+            yield {
+              type: 'tool_call',
+              id: item.call_id ?? item.id ?? generateToolId(),
+              name: item.name,
+              args: args ?? {}
             }
           }
+          break
         }
-      }
-
-      const finish = choice.finish_reason
-      if (finish === 'tool_calls' || finish === 'stop' || finish === 'length') {
-        for (const buf of tools.values()) {
-          if (!buf.name) continue
-          const args = buf.argsBuffer.length > 0 ? safeParseJSON(buf.argsBuffer) : {}
-          yield { type: 'tool_call', id: buf.id, name: buf.name, args: args ?? {} }
+        case 'response.completed':
+          applyUsage(parsed.response?.usage)
+          stopReason = sawToolCall ? 'tool_use' : 'end_turn'
+          break
+        case 'response.incomplete':
+          applyUsage(parsed.response?.usage)
+          stopReason =
+            parsed.response?.incomplete_details?.reason === 'max_output_tokens'
+              ? 'max_tokens'
+              : sawToolCall
+                ? 'tool_use'
+                : 'end_turn'
+          break
+        case 'response.failed': {
+          applyUsage(parsed.response?.usage)
+          const message = parsed.response?.error?.message ?? 'response failed'
+          this.corpus?.emit('llm.error', { provider: 'openai', error: message })
+          yield { type: 'error', message: `openai: ${message}`, recoverable: false }
+          return
         }
-        tools.clear()
-        stopReason = mapFinishReason(finish)
-      } else if (typeof finish === 'string' && finish.length > 0) {
-        stopReason = mapFinishReason(finish)
+        case 'error': {
+          const message = parsed.message ?? parsed.error?.message ?? 'stream error'
+          this.corpus?.emit('llm.error', { provider: 'openai', error: message })
+          yield { type: 'error', message: `openai: ${message}`, recoverable: false }
+          return
+        }
+        default:
+          break
       }
     }
 
@@ -191,111 +226,103 @@ export class OpenAIProvider {
   }
 }
 
-function mapFinishReason(s: string): StopReason {
-  switch (s) {
-    case 'stop':
-      return 'end_turn'
-    case 'tool_calls':
-      return 'tool_use'
-    case 'length':
-      return 'max_tokens'
-    case 'content_filter':
-      return 'end_turn'
-    default:
-      return 'unknown'
-  }
+type ResponsesUsage = {
+  input_tokens?: number
+  output_tokens?: number
+  total_tokens?: number
+  input_tokens_details?: { cached_tokens?: number; cache_write_tokens?: number }
+  output_tokens_details?: { reasoning_tokens?: number }
 }
 
-type OpenAIEvent = {
-  choices?: Array<{
-    delta?: {
-      reasoning_content?: string
-      content?: string
-      tool_calls?: Array<{
-        index?: number
-        id?: string
-        function?: { name?: string; arguments?: string }
-      }>
-    }
-    finish_reason?: string | null
-  }>
-  usage?: {
-    prompt_tokens?: number
-    completion_tokens?: number
-    total_tokens?: number
-    prompt_tokens_details?: { cached_tokens?: number }
+type ResponsesEvent = {
+  type: string
+  delta?: string
+  item?: {
+    type?: string
+    id?: string
+    call_id?: string
+    name?: string
+    arguments?: string
   }
+  response?: {
+    status?: string
+    usage?: ResponsesUsage
+    incomplete_details?: { reason?: string }
+    error?: { message?: string }
+  }
+  // `error` events carry the message at the top level; some wrap it.
+  message?: string
+  error?: { message?: string }
 }
 
-function toOpenAITool(tool: ToolDefinition): Record<string, unknown> {
+function toResponsesTool(tool: ToolDefinition): Record<string, unknown> {
   return {
     type: 'function',
-    function: {
-      name: tool.name,
-      description: tool.description,
-      parameters: tool.parameters
-    }
+    name: tool.name,
+    description: tool.description,
+    parameters: tool.parameters,
+    strict: false
   }
 }
 
-function userContentToOpenAI(content: string | UserContentBlock[]): string | unknown[] {
+function userContentToResponses(content: string | UserContentBlock[]): string | unknown[] {
   if (typeof content === 'string') return content
+  if (content.length === 1 && content[0].type === 'text') return content[0].text
   const parts: unknown[] = []
   for (const block of content) {
     if (block.type === 'text') {
-      parts.push({ type: 'text', text: block.text })
+      parts.push({ type: 'input_text', text: block.text })
     } else if (block.type === 'image') {
       parts.push({
-        type: 'image_url',
-        image_url: { url: `data:${block.mediaType};base64,${block.data}` }
+        type: 'input_image',
+        image_url: `data:${block.mediaType};base64,${block.data}`,
+        detail: 'auto'
       })
     } else if (block.type === 'document') {
       parts.push({
-        type: 'file',
-        file: {
-          filename: 'document.pdf',
-          file_data: `data:${block.mediaType};base64,${block.data}`
-        }
+        type: 'input_file',
+        filename: 'document.pdf',
+        file_data: `data:${block.mediaType};base64,${block.data}`
       })
     }
-  }
-  if (parts.length === 1 && (content[0] as UserContentBlock).type === 'text') {
-    return (content[0] as Extract<UserContentBlock, { type: 'text' }>).text
   }
   return parts
 }
 
-function toOpenAIMessages(messages: ChatMessage[]): Array<Record<string, unknown>> {
+/**
+ * History → Responses `input` items. The system prompt travels as
+ * `instructions`, so system messages are skipped here. Tool calls become
+ * standalone `function_call` items keyed by call_id, and tool results
+ * `function_call_output` items — the call_id is the only link between
+ * them, so it must round-trip the id the model (or any provider the
+ * conversation ran on before) issued.
+ */
+function toResponsesInput(messages: ChatMessage[]): Array<Record<string, unknown>> {
   const out: Array<Record<string, unknown>> = []
   for (const m of messages) {
     if (m.role === 'system') continue
     if (m.role === 'tool') {
       out.push({
-        role: 'tool',
-        tool_call_id: m.toolUseId,
-        content: openaiCompatToolContent(m.content, m.images, m.toolName)
+        type: 'function_call_output',
+        call_id: m.toolUseId,
+        output: openaiResponsesToolContent(m.content, m.images, m.toolName)
       })
       continue
     }
     if (m.role === 'user') {
-      out.push({ role: 'user', content: userContentToOpenAI(m.content) })
+      out.push({ role: 'user', content: userContentToResponses(m.content) })
       continue
     }
-    if (m.toolUses && m.toolUses.length > 0) {
-      out.push({
-        role: 'assistant',
-        content: m.content && m.content.length > 0 ? m.content : null,
-        tool_calls: m.toolUses.map((use) => ({
-          id: use.id,
-          type: 'function',
-          function: {
-            name: use.name,
-            arguments: JSON.stringify(use.args)
-          }
-        }))
-      })
-    } else {
+    if (m.content && m.content.length > 0) {
       out.push({ role: 'assistant', content: m.content })
+    }
+    for (const use of m.toolUses ?? []) {
+      out.push({
+        type: 'function_call',
+        call_id: use.id,
+        name: use.name,
+        arguments: JSON.stringify(use.args)
+      })
     }
   }
   return out

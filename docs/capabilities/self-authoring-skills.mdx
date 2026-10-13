@@ -1,0 +1,99 @@
+---
+title: "Self-Authoring Skills"
+description: "How Wolffish authors its own skills — writing, testing, editing, and deleting its own capabilities at runtime from a plain-language request"
+---
+
+The fastest way to add a capability is not to write one — it's to **ask Wolffish to write it for itself**. The built-in [`skills`](/capabilities/built-in-capabilities) capability gives Wolffish the tools to author, load, **test**, edit, and delete its own capabilities at runtime. You describe the ability in plain language; Wolffish produces a working skill and verifies it before handing back — no filesystem, no code, no restart.
+
+<Note>
+  This page is the **let-Wolffish-do-it** path. If you'd rather build a capability by hand in the filesystem, see [Creating Capabilities](/capabilities/creating-capabilities).
+</Note>
+
+## When it self-authors a skill
+
+Wolffish promotes work into a reusable capability when it's **recurring, complex, and worth keeping** — a "do this every time" request, a multi-step dance you've watched it repeat by hand, or a real tool it doesn't have yet. It picks the smallest shape that fits:
+
+- a **pure skill** — a written procedure it follows using tools it already has,
+- a **plugin skill** — a real new tool backed by JavaScript,
+- a **plugin with dependencies** — when the tool needs an npm package or a bundled script (even another language, like a Python worker).
+
+For a one-off it just does the work directly — a skill is for abilities it will reuse.
+
+## The tools it uses
+
+Self-authoring is powered by the `skills` capability. You never call these yourself; Wolffish does, on your behalf:
+
+| Tool | What it does |
+|---|---|
+| `skill_list` | List every skill — name, description, enabled/official status, tool count |
+| `skill_search` | Search skills by keyword across name, description, triggers, tool names |
+| `skill_read_source` | Read a skill's `SKILL.md` and plugin code — to learn the pattern or before editing |
+| `skill_create` | Author a brand-new pure skill or plugin capability |
+| `skill_reload` | Re-scan the workspace so a new or edited skill takes effect |
+| `skill_enable` / `skill_disable` | Toggle any skill on or off (reversible) |
+| `skill_delete` | Permanently remove a skill it created (official/built-in skills are protected) |
+
+See [Built-in Capabilities → skills](/capabilities/built-in-capabilities) for the full reference.
+
+## How it builds *and verifies* — in a single turn
+
+Wolffish doesn't write files and hope. Because a freshly created tool becomes callable on its very next step, it closes the loop itself before telling you it's done:
+
+<Steps>
+  <Step title="Create">
+    `skill_create` writes the `SKILL.md` plus `plugin/index.mjs`, validates them, and reloads — all checked before anything lands on disk.
+  </Step>
+  <Step title="Test">
+    It calls the new tool with a realistic input and reads the actual result.
+  </Step>
+  <Step title="Edit if needed">
+    If the output is wrong, it patches the plugin with `file_write` and `skill_reload`s — the edited code runs on the next call.
+  </Step>
+  <Step title="Verify, then conclude">
+    It re-tests until the tool genuinely works, then reports what it made and that it confirmed it by running it.
+  </Step>
+</Steps>
+
+It's deliberately **forgiving about how the plugin is written** — it accepts the common conventions (an `execute` dispatcher *or* per-tool handlers, and several return shapes) and derives the `SKILL.md` boilerplate for you. You don't have to know the exact format; a reasonable attempt becomes a working skill instead of an error.
+
+Since **v1.0.260** the standard is visible from the outside too. Wolffish now **offers to build a skill** when it spots you repeating a pattern, every skill it creates is stamped as its own work — a **Wolffish badge** in Settings → Capabilities, distinct from Official and imported ones — and a freshly built or freshly edited skill wears **Untested** until one of its tools **succeeds in a real call**. The badge cannot be talked away, only earned: it clears live the moment the first genuine call passes, so a skill that claims to be ready has to prove it.
+
+## A complete example: build, exercise, and delete a skill in one turn
+
+You can drive the whole lifecycle from a single message. Copy this prompt and paste it into chat — it has Wolffish create a tiny `coinflip` skill, use it, edit it, toggle it, and remove it, exercising every part of self-authoring end to end:
+
+```text Coin-flip lifecycle prompt
+First call skill_reload. Then in one turn: skill_search "coinflip" and skill_list to confirm it doesn't exist; create a coinflip skill with a coinflip_do tool that returns "heads" or "tails"; call coinflip_do to prove it works in the same turn; skill_read_source, then edit it to also allow "edge" (file_write into the printed folder path, then skill_reload), and call coinflip_do again; skill_disable then skill_enable; finally skill_delete and skill_list to confirm it's gone.
+```
+
+What Wolffish does, step by step:
+
+| # | Action | Result |
+|---|---|---|
+| 1 | `skill_reload` | 28 skills loaded |
+| 2 | `skill_search "coinflip"` + `skill_list` | confirms it doesn't exist |
+| 3 | `skill_create` (SKILL.md + plugin) | created — 1 tool |
+| 4 | `coinflip_do` | 🪙 heads |
+| 5 | `skill_read_source` → `file_write` (add "edge") → `skill_reload` | patched & reloaded |
+| 6 | `coinflip_do` | 🪙 tails |
+| 7 | `skill_disable` → `skill_enable` | toggled off, then on |
+| 8 | `skill_delete` → `skill_list` | gone — back to 28 skills |
+
+<Tip>
+  In real use you'd just say *"make yourself a coin-flip tool"* and stop there — Wolffish writes and tests it in one turn. The lifecycle prompt above is for **watching the full machinery at once**.
+</Tip>
+
+## Everyday self-authoring requests
+
+You rarely spell out the steps. The clearest requests name a **recurring trigger** and the **outcome** you want:
+
+- *"From now on, whenever I send you a CSV, clean it and reply with a summary table."*
+- *"Make yourself a skill that posts our daily standup to Slack."*
+- *"You keep doing this resize-and-watermark by hand — turn it into a reusable tool."*
+- *"Teach yourself to look up parcel tracking from a tracking number."*
+
+And to manage what it has built, just ask: *"list your skills"*, *"turn off the browser"*, *"delete that coinflip skill."*
+
+<Tip>
+  Be specific about the **trigger** ("whenever I…", "every time a…") and the **outcome**. Wolffish builds reusable skills, not one-offs — for a single task it just does the work directly instead of creating a skill.
+</Tip>

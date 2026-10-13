@@ -1,0 +1,87 @@
+---
+title: "OpenAI"
+description: "Set up OpenAI (GPT) — general-purpose tasks, broad knowledge, fast responses"
+---
+
+# OpenAI (GPT)
+
+```
+POST https://api.openai.com/v1/chat/completions
+```
+
+Uses SSE streaming. Tool calls arrive as `function_call` objects.
+
+Best for: General-purpose tasks, broad knowledge, fast responses.
+
+## Getting an API Key
+
+1. Go to [platform.openai.com](https://platform.openai.com)
+2. Sign up or log in
+3. Navigate to **API Keys** and create a new key
+4. Paste it into Wolffish → Settings → Models → OpenAI
+
+## Models
+
+### GPT-5 family (reasoning)
+
+| Model | Context | Modes | Input / Output (per MTok) | Notes |
+|-------|---------|-------|--------------------------|-------|
+| **gpt-5.5** | 1M | Off, High, Max | $5.00 / $30.00 | Flagship. Frontier reasoning. Cached: $0.50/MTok. |
+| gpt-5.4 | 1M | Off, High, Max | $2.50 / $15.00 | Cached: $0.25/MTok. |
+| gpt-5.4-mini | 1M | Off, High, Max | $0.75 / $4.50 | Fast reasoning. Cached: $0.08/MTok. |
+| gpt-5.4-nano | 1M | Off, High, Max | $0.20 / $1.25 | Ultra-cheap reasoning. Cached: $0.02/MTok. |
+| gpt-5.2 | 1M | Off, High, Max | — / — | Pricing TBD. |
+| gpt-5.1 | 1M | Off, High, Max | — / — | Pricing TBD. |
+| gpt-5 | 1M | Off, High, Max | $2.50 / $10.00 | Cached: $1.25/MTok. |
+| gpt-5-mini | 1M | Off, High, Max | $0.25 / $2.00 | Fast reasoning. Cached: $0.03/MTok. |
+| gpt-5-nano | 1M | Off, High, Max | $0.05 / $0.40 | Fast reasoning. Cached: $0.01/MTok. |
+
+### o-series (reasoning)
+
+| Model | Context | Modes | Input / Output (per MTok) | Notes |
+|-------|---------|-------|--------------------------|-------|
+| o3 | 200K | Off, High, Max | $10.00 / $40.00 | Cached: $5.00/MTok. |
+| o4-mini | 200K | Off, High, Max | $1.10 / $4.40 | Fast reasoning. Cached: $0.55/MTok. |
+| o3-mini | 200K | Off, High, Max | $1.10 / $4.40 | Fast reasoning. Cached: $0.55/MTok. |
+| o1 | 200K | Off, High, Max | $15.00 / $60.00 | Cached: $7.50/MTok. |
+
+### GPT-4 family (non-reasoning)
+
+| Model | Context | Modes | Input / Output (per MTok) | Notes |
+|-------|---------|-------|--------------------------|-------|
+| gpt-4.1 | 1M | — | $2.00 / $8.00 | Cached: $0.50/MTok. |
+| gpt-4.1-mini | 1M | — | $0.40 / $1.60 | Fast. Cached: $0.10/MTok. |
+| gpt-4.1-nano | 1M | — | $0.10 / $0.40 | Fast. Cached: $0.03/MTok. |
+| gpt-4o | 128K | — | $2.50 / $10.00 | Cached: $1.25/MTok. |
+| gpt-4o-mini | 128K | — | $0.15 / $0.60 | Fast. Cached: $0.08/MTok. |
+| gpt-4-turbo | 128K | — | $10.00 / $30.00 | |
+| gpt-4 | 8K | — | $30.00 / $60.00 | |
+
+## Reasoning modes
+
+How this model reasons is set in the **model card beside the chat input** — hover the model switch to preview the card, click to pin it open. The top chip row, labelled **Thinking**, is the control: pick a chip and it applies from your next message. Two separate ideas combine here:
+
+### Thinking — *whether* the model reasons
+
+- **Off** — the model answers immediately. Fastest and cheapest; ideal for simple, direct tasks.
+- **On** (the chip reads **Normal**) — the model first works through the problem in a dedicated reasoning pass before replying. Slower and uses more tokens, but markedly more accurate on multi-step, logical, or ambiguous tasks.
+
+### Effort — *how hard* it thinks
+
+Only effort-capable models expose this; it applies once thinking is on.
+
+- **High** — standard reasoning depth. The right default for most agentic work.
+- **Max** — the model reasons longer and deeper for the hardest problems. More tokens and latency in exchange for higher quality on complex work.
+
+### The chip row
+
+| Chip | Icon | Meaning |
+|------|------|---------|
+| Off | lightning | Thinking off — direct answer |
+| Normal | brain | Thinking on — no effort control |
+| High | AI brain | Thinking on, standard effort |
+| Max | flame | Thinking on, maximum effort |
+
+The active chip is tinted; the rest sit quiet. Each model shows only the chips it genuinely supports — a model that always reasons has no **Off**, a model with a single mode shows that one chip inert, and a model that can't reason at all replaces the row with *"Reasoning is not supported by this model."* Wolffish remembers your choice per model. (Before **v1.0.236** this was a colour-coded brain button on the composer; it moved into the model card, beside the Single/Workflow row, so every model knob sits in one panel.)
+
+**On OpenAI:** GPT-5 and o-series models support Off / High / Max (Max maps to OpenAI's `xhigh` effort). Note: OpenAI's chat API can't combine reasoning effort with tool calls, so during tool-using turns Wolffish drops the effort and the model reasons at its default.
