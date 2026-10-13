@@ -260,7 +260,7 @@
           "segmentId": "seg_87",
           "toolCallId": "call_00_EAnOfaYYk5W9nKBYgpbu7817",
           "status": "success",
-          "output": "{\"tabs\":[{\"id\":2109154401,\"url\":\"https://mail.google.com/mail/u/0/?ogbl#inbox\",\"title\":\"Inbox - younes@wolffi.sh - Wolffish Mail\",\"active\":false,\"pinned\":false,\"windowId\":2109154400},{\"id\":2109154471,\"url\":\"https://app.notion.com/p/Notepad-35161e97b4a2807e8f7ce11a3778f97c\",\"title\":\"Notepad | Notion\",\"active\":false,\"pinned\":false,\"windowId\":2109154400},{\"id\":2109154474,\"url\":\"https://docs.wolffi.sh/use-cases/ai-news-linkedin-post\",\"title\":\"Daily LinkedIn Post - Wolffish\",\"active\":true,\"pinned\":false,\"windowId\":2109154400},{\"id\":2109154487,\"url\":\"https://www.reddit.com/user/OddSaved7318/comments/\",\"title\":\"OddSaved7318 (u/OddSaved7318) - Reddit\",\"active\":false,\"pinned\":false,\"windowId\":2109154400}]}"
+          "output": "{\"tabs\":[{\"id\":2109154401,\"url\":\"https://mail.google.com/mail/u/0/?ogbl#inbox\",\"title\":\"Inbox - younes@example.com - Wolffish Mail\",\"active\":false,\"pinned\":false,\"windowId\":2109154400},{\"id\":2109154471,\"url\":\"https://app.notion.com/p/Notepad-35161e97b4a2807e8f7ce11a3778f97c\",\"title\":\"Notepad | Notion\",\"active\":false,\"pinned\":false,\"windowId\":2109154400},{\"id\":2109154474,\"url\":\"https://docs.wolffi.sh/use-cases/ai-news-linkedin-post\",\"title\":\"Daily LinkedIn Post - Wolffish\",\"active\":true,\"pinned\":false,\"windowId\":2109154400},{\"id\":2109154487,\"url\":\"https://www.reddit.com/user/OddSaved7318/comments/\",\"title\":\"OddSaved7318 (u/OddSaved7318) - Reddit\",\"active\":false,\"pinned\":false,\"windowId\":2109154400}]}"
         },
         {
           "kind": "active_model",

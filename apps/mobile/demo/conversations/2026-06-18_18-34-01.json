@@ -14,7 +14,7 @@
     {
       "id": "m_1781796870261_3bcfa2",
       "role": "assistant",
-      "content": "You're **Younes Alharbi** — senior full-stack software engineer based in Riyadh, working remotely at Sadeem while building Wolffish on the side. 5+ years in the game, TypeScript/React/Electron/Node.js. Born in Jeddah, now settled in Riyadh, married to Sana. Currently deep in building a local-first markdown-powered AI agent that lives in `~/.wolffish`. You ship code, hate unnecessary dependencies, and you're building something you fully own.\n\nAnd I'm the fish that lives in your `~/.wolffish` folder. What a time to be alive 🐟",
+      "content": "You're **Younes Alharbi** — senior full-stack software engineer based in Riyadh, working remotely at Northwind while building Wolffish on the side. 5+ years in the game, TypeScript/React/Electron/Node.js. Born in Jeddah, now settled in Riyadh, married to Sana. Currently deep in building a local-first markdown-powered AI agent that lives in `~/.wolffish`. You ship code, hate unnecessary dependencies, and you're building something you fully own.\n\nAnd I'm the fish that lives in your `~/.wolffish` folder. What a time to be alive 🐟",
       "segments": [
         {
           "kind": "active_model",
@@ -27,7 +27,7 @@
           "kind": "text",
           "turnId": "turn_1781796841414_tlawos",
           "segmentId": "seg_2",
-          "delta": "You're **Younes Alharbi** — senior full-stack software engineer based in Riyadh, working remotely at Sadeem while building Wolffish on the side. 5+ years in the game, TypeScript/React/Electron/Node.js. Born in Jeddah, now settled in Riyadh, married to Sana. Currently deep in building a local-first markdown-powered AI agent that lives in `~/.wolffish`. You ship code, hate unnecessary dependencies, and you're building something you fully own.\n\nAnd I'm the fish that lives in your `~/.wolffish` folder. What a time to be alive 🐟"
+          "delta": "You're **Younes Alharbi** — senior full-stack software engineer based in Riyadh, working remotely at Northwind while building Wolffish on the side. 5+ years in the game, TypeScript/React/Electron/Node.js. Born in Jeddah, now settled in Riyadh, married to Sana. Currently deep in building a local-first markdown-powered AI agent that lives in `~/.wolffish`. You ship code, hate unnecessary dependencies, and you're building something you fully own.\n\nAnd I'm the fish that lives in your `~/.wolffish` folder. What a time to be alive 🐟"
         },
         {
           "kind": "turn_end",
@@ -35,7 +35,7 @@
           "segmentId": "seg_139",
           "stopReason": "end_turn",
           "iterationCount": 1,
-          "reasoningContent": "The user is asking \"who am I?\" — a simple question about their identity. I don't need any tools for this since their identity is clearly defined in the `user.md` file in my context. Let me pull from that.\n\nFrom `brain/identity/user.md`:\n- Name: Younes Alharbi\n- Location: Riyadh, Saudi Arabia\n- Role: Senior Full-stack Software Engineer at Sadeem (remote) / building Wolffish\n- Background, interests, etc.\n\nI can answer this directly from context without any tool calls."
+          "reasoningContent": "The user is asking \"who am I?\" — a simple question about their identity. I don't need any tools for this since their identity is clearly defined in the `user.md` file in my context. Let me pull from that.\n\nFrom `brain/identity/user.md`:\n- Name: Younes Alharbi\n- Location: Riyadh, Saudi Arabia\n- Role: Senior Full-stack Software Engineer at Northwind (remote) / building Wolffish\n- Background, interests, etc.\n\nI can answer this directly from context without any tool calls."
         }
       ],
       "stopReason": "end_turn",

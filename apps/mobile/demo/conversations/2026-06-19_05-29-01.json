@@ -14,7 +14,7 @@
     {
       "id": "m_1781836205088_df000d",
       "role": "assistant",
-      "content": "# 🩺 System Health — All Clear 🐟\n\n| System | Status | Detail |\n|--------|--------|--------|\n| **Shell** | ✅ | `/bin/zsh` · 26 PATH entries · Home writable |\n| **Git** | ✅ | `2.47.1` · Younes Alharbi / youneswolf@gmail.com · rebase on pull |\n| **Node** | ✅ | `v24.16.0` installed |\n| **Internet** | ✅ | DNS ~33ms · Connect ~123ms · TTFB ~374ms · HTTP 200 |\n| **Disk** | ✅ | `526 GiB free` (57%) · Wolffish workspace: 298 MB |\n\n**No issues.** The usual suspects eating disk: Library (128G), Documents (19G), .ollama models (13G), and Movies (13G). Your `.ollama` and `.lmstudio` together are ~22 GB — those model files add up quick, but at 57% free you've got breathing room.",
+      "content": "# 🩺 System Health — All Clear 🐟\n\n| System | Status | Detail |\n|--------|--------|--------|\n| **Shell** | ✅ | `/bin/zsh` · 26 PATH entries · Home writable |\n| **Git** | ✅ | `2.47.1` · Younes Alharbi / younes@example.com · rebase on pull |\n| **Node** | ✅ | `v24.16.0` installed |\n| **Internet** | ✅ | DNS ~33ms · Connect ~123ms · TTFB ~374ms · HTTP 200 |\n| **Disk** | ✅ | `526 GiB free` (57%) · Wolffish workspace: 298 MB |\n\n**No issues.** The usual suspects eating disk: Library (128G), Documents (19G), .ollama models (13G), and Movies (13G). Your `.ollama` and `.lmstudio` together are ~22 GB — those model files add up quick, but at 57% free you've got breathing room.",
       "segments": [
         {
           "kind": "active_model",
@@ -158,7 +158,7 @@
           "segmentId": "seg_8",
           "toolCallId": "call_01_7SZId5FeRKGIuZRiubvs4505",
           "status": "success",
-          "output": "=== GIT ===\ngit version 2.47.1\n---\nYounes Alharbi\nyouneswolf@gmail.com\n---\npull.rebase=true\ncore.editor=true",
+          "output": "=== GIT ===\ngit version 2.47.1\n---\nYounes Alharbi\nyounes@example.com\n---\npull.rebase=true\ncore.editor=true",
           "meta": {
             "label": "Run git command",
             "cwd": "/Users/younes",
@@ -282,7 +282,7 @@
           "kind": "text",
           "turnId": "turn_1781836141690_ga8wvk",
           "segmentId": "seg_13",
-          "delta": "# 🩺 System Health — All Clear 🐟\n\n| System | Status | Detail |\n|--------|--------|--------|\n| **Shell** | ✅ | `/bin/zsh` · 26 PATH entries · Home writable |\n| **Git** | ✅ | `2.47.1` · Younes Alharbi / youneswolf@gmail.com · rebase on pull |\n| **Node** | ✅ | `v24.16.0` installed |\n| **Internet** | ✅ | DNS ~33ms · Connect ~123ms · TTFB ~374ms · HTTP 200 |\n| **Disk** | ✅ | `526 GiB free` (57%) · Wolffish workspace: 298 MB |\n\n**No issues.** The usual suspects eating disk: Library (128G), Documents (19G), .ollama models (13G), and Movies (13G). Your `.ollama` and `.lmstudio` together are ~22 GB — those model files add up quick, but at 57% free you've got breathing room."
+          "delta": "# 🩺 System Health — All Clear 🐟\n\n| System | Status | Detail |\n|--------|--------|--------|\n| **Shell** | ✅ | `/bin/zsh` · 26 PATH entries · Home writable |\n| **Git** | ✅ | `2.47.1` · Younes Alharbi / younes@example.com · rebase on pull |\n| **Node** | ✅ | `v24.16.0` installed |\n| **Internet** | ✅ | DNS ~33ms · Connect ~123ms · TTFB ~374ms · HTTP 200 |\n| **Disk** | ✅ | `526 GiB free` (57%) · Wolffish workspace: 298 MB |\n\n**No issues.** The usual suspects eating disk: Library (128G), Documents (19G), .ollama models (13G), and Movies (13G). Your `.ollama` and `.lmstudio` together are ~22 GB — those model files add up quick, but at 57% free you've got breathing room."
         },
         {
           "kind": "turn_end",

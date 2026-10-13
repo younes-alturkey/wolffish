@@ -31,7 +31,7 @@
           "toolCallId": "call_00_ELEDZAktLAJ2OyCpxx9u2446",
           "name": "whatsapp_check",
           "args": {
-            "number": "+966507219348"
+            "number": "+966555000004"
           }
         },
         {
@@ -40,7 +40,7 @@
           "segmentId": "seg_3",
           "toolCallId": "call_00_ELEDZAktLAJ2OyCpxx9u2446",
           "status": "success",
-          "output": "Lookup results:\n✓ 966507219348 → on WhatsApp, jid=966507219348@s.whatsapp.net\n\nUse the jid (…@s.whatsapp.net) with whatsapp_send / whatsapp_send_image / whatsapp_send_document."
+          "output": "Lookup results:\n✓ 966555000004 → on WhatsApp, jid=contact-e0bf14@example.com\n\nUse the jid (…@s.whatsapp.net) with whatsapp_send / whatsapp_send_image / whatsapp_send_document."
         },
         {
           "kind": "active_model",
@@ -56,7 +56,7 @@
           "toolCallId": "call_00_dW64rbMd3KUo60k4quLA7393",
           "name": "whatsapp_send",
           "args": {
-            "jid": "966507219348@s.whatsapp.net",
+            "jid": "contact-e0bf14@example.com",
             "message": "Hey Sana! 🐟 Younes asked me to explain the meme I sent earlier.\n\nThe Gru meme format:\n\nStep 1: Gru presents a plan (meet you)\nStep 2: The plan continues (marry you)\nStep 3: Gru looks confused with \"???????\" — this is the joke step. It represents the total mystery of how he got so lucky. No rational explanation. The universe just handed him a jackpot.\nStep 4: The happy ending (being happily married to you)\n\nBasically — Step 3 is Younes admitting he has no idea what he did to deserve you. The math doesn't add up and science can't explain it. That's the whole joke. ❤️🐟"
           }
         },
@@ -66,7 +66,7 @@
           "segmentId": "seg_6",
           "toolCallId": "call_00_dW64rbMd3KUo60k4quLA7393",
           "status": "success",
-          "output": "Sent. messageId=3EB0545AD82F609A6E5F02 to=966507219348@s.whatsapp.net"
+          "output": "Sent. messageId=3EB0545AD82F609A6E5F02 to=contact-e0bf14@example.com"
         },
         {
           "kind": "active_model",

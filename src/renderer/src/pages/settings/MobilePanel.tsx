@@ -41,8 +41,9 @@ let loadPromise: Promise<MobileStatus | null> | null = null
 
 // The app is not in the stores and no hosted relay exists, so the panel's
 // first job is to say what the user has to build and run — the repository
-// holds the phone app, the relay and both READMEs.
+// holds the phone app, the relay and both READMEs; the link lands on the app.
 const REPO_URL = 'https://github.com/younes-alturkey/wolffish'
+const MOBILE_URL = `${REPO_URL}/tree/main/apps/mobile`
 const SETUP_STEPS = ['relay', 'address', 'build', 'install', 'pair'] as const
 
 function loadStatus(): Promise<MobileStatus | null> {
@@ -242,7 +243,7 @@ export function MobilePanel(): React.JSX.Element {
               <span className="text-fg text-sm font-medium">
                 {t('settings.mobile.setup.title')}
               </span>
-              <ExternalLink href={REPO_URL} label={t('settings.mobile.setup.repo')} />
+              <ExternalLink href={MOBILE_URL} label={t('settings.mobile.setup.repo')} />
             </div>
             <p className="text-muted text-sm leading-relaxed">{t('settings.mobile.setup.intro')}</p>
             <ol className="flex flex-col gap-4">
@@ -669,7 +670,7 @@ export function MobilePanel(): React.JSX.Element {
         <section className="bg-surface border-border flex flex-col gap-5 rounded-2xl border p-6">
           <div className="flex items-center justify-between gap-4">
             <span className="text-fg text-sm font-medium">{t('settings.mobile.how.title')}</span>
-            <ExternalLink href={REPO_URL} label={t('settings.mobile.setup.repo')} />
+            <ExternalLink href={MOBILE_URL} label={t('settings.mobile.setup.repo')} />
           </div>
 
           <HowRow

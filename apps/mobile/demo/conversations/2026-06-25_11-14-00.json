@@ -8,7 +8,7 @@
     {
       "id": "m_1782375240023_51b117",
       "role": "user",
-      "content": "Send a romantic funny meme about how much I'm glad she's in my life to me wife on whatsapp her number is +966507219348 let her know it's from you Wolffish.",
+      "content": "Send a romantic funny meme about how much I'm glad she's in my life to me wife on whatsapp her number is +966555000004 let her know it's from you Wolffish.",
       "timestamp": 1782375240023
     },
     {
@@ -83,7 +83,7 @@
           "toolCallId": "call_00_coqj9PuCX2mKzvNXSvwA8710",
           "name": "whatsapp_check",
           "args": {
-            "number": "+966507219348"
+            "number": "+966555000004"
           }
         },
         {
@@ -102,7 +102,7 @@
           "segmentId": "seg_4",
           "toolCallId": "call_00_coqj9PuCX2mKzvNXSvwA8710",
           "status": "success",
-          "output": "Lookup results:\n✓ 966507219348 → on WhatsApp, jid=966507219348@s.whatsapp.net\n\nUse the jid (…@s.whatsapp.net) with whatsapp_send / whatsapp_send_image / whatsapp_send_document."
+          "output": "Lookup results:\n✓ 966555000004 → on WhatsApp, jid=contact-e0bf14@example.com\n\nUse the jid (…@s.whatsapp.net) with whatsapp_send / whatsapp_send_image / whatsapp_send_document."
         },
         {
           "kind": "tool_result",
@@ -224,7 +224,7 @@
           "toolCallId": "call_00_fsElsV2fmZUxwGd9Jj5E9329",
           "name": "whatsapp_send_image",
           "args": {
-            "jid": "966507219348@s.whatsapp.net",
+            "jid": "contact-e0bf14@example.com",
             "path": "uploads/memes/db-1782375266720.png",
             "caption": "Hey Sana! It's Wolffish — Younes's AI assistant 🐟\n\nJust wanted to remind you that Younes (and apparently his AI fish too) only has eyes for you. Hope this makes you smile ❤️"
           }
@@ -235,7 +235,7 @@
           "segmentId": "seg_34",
           "toolCallId": "call_00_fsElsV2fmZUxwGd9Jj5E9329",
           "status": "success",
-          "output": "Sent image. messageId=3EB0C588EC355E8885F77E to=966507219348@s.whatsapp.net"
+          "output": "Sent image. messageId=3EB0C588EC355E8885F77E to=contact-e0bf14@example.com"
         },
         {
           "kind": "tool_call",

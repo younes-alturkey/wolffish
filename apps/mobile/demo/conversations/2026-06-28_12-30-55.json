@@ -37,7 +37,7 @@
           "toolCallId": "call_00_CMy5u5vQn3GPKELiR0Vp4811",
           "name": "whatsapp_read",
           "args": {
-            "jid": "966507219348@s.whatsapp.net",
+            "jid": "contact-e0bf14@example.com",
             "count": 10
           }
         },
@@ -47,7 +47,7 @@
           "segmentId": "seg_16",
           "toolCallId": "call_00_CMy5u5vQn3GPKELiR0Vp4811",
           "status": "success",
-          "output": "Last 2 message(s) in 966507219348@s.whatsapp.net (oldest first):\n[2026-06-27 08:15 UTC] me: Hey Sana! 🐟 Wolffish here — your husband's AI fish assistant. Just wanted to remind you that Younes is ridiculously glad you're in his life. The man built an AI and programmed it to send you memes. That's either true love or he's avoiding rent. Either way, you're stuck with him and I'm stuck being the messenger fish. Have a beautiful day! ❤️\n[2026-06-28 09:16 UTC] me: Younes asked me to remind you of the obvious. Try changing his mind — you won't. 🐟💙"
+          "output": "Last 2 message(s) in contact-e0bf14@example.com (oldest first):\n[2026-06-27 08:15 UTC] me: Hey Sana! 🐟 Wolffish here — your husband's AI fish assistant. Just wanted to remind you that Younes is ridiculously glad you're in his life. The man built an AI and programmed it to send you memes. That's either true love or he's avoiding rent. Either way, you're stuck with him and I'm stuck being the messenger fish. Have a beautiful day! ❤️\n[2026-06-28 09:16 UTC] me: Younes asked me to remind you of the obvious. Try changing his mind — you won't. 🐟💙"
         },
         {
           "kind": "active_model",
@@ -105,7 +105,7 @@
           "toolCallId": "call_00_3DimqAyrbtszhJKZ9wYJ2954",
           "name": "whatsapp_read",
           "args": {
-            "jid": "966507219348@s.whatsapp.net",
+            "jid": "contact-e0bf14@example.com",
             "count": 20
           }
         },
@@ -115,7 +115,7 @@
           "segmentId": "seg_3",
           "toolCallId": "call_00_3DimqAyrbtszhJKZ9wYJ2954",
           "status": "success",
-          "output": "Last 2 message(s) in 966507219348@s.whatsapp.net (oldest first):\n[2026-06-27 08:15 UTC] me: Hey Sana! 🐟 Wolffish here — your husband's AI fish assistant. Just wanted to remind you that Younes is ridiculously glad you're in his life. The man built an AI and programmed it to send you memes. That's either true love or he's avoiding rent. Either way, you're stuck with him and I'm stuck being the messenger fish. Have a beautiful day! ❤️\n[2026-06-28 09:16 UTC] me: Younes asked me to remind you of the obvious. Try changing his mind — you won't. 🐟💙"
+          "output": "Last 2 message(s) in contact-e0bf14@example.com (oldest first):\n[2026-06-27 08:15 UTC] me: Hey Sana! 🐟 Wolffish here — your husband's AI fish assistant. Just wanted to remind you that Younes is ridiculously glad you're in his life. The man built an AI and programmed it to send you memes. That's either true love or he's avoiding rent. Either way, you're stuck with him and I'm stuck being the messenger fish. Have a beautiful day! ❤️\n[2026-06-28 09:16 UTC] me: Younes asked me to remind you of the obvious. Try changing his mind — you won't. 🐟💙"
         },
         {
           "kind": "active_model",
@@ -179,7 +179,7 @@
           "toolCallId": "call_00_ARx6J3ty97GRvpLNYtPz7933",
           "name": "whatsapp_read",
           "args": {
-            "jid": "966507219348@s.whatsapp.net",
+            "jid": "contact-e0bf14@example.com",
             "count": 10
           }
         },
@@ -189,7 +189,7 @@
           "segmentId": "seg_15",
           "toolCallId": "call_00_ARx6J3ty97GRvpLNYtPz7933",
           "status": "success",
-          "output": "Last 2 message(s) in 966507219348@s.whatsapp.net (oldest first):\n[2026-06-27 08:15 UTC] me: Hey Sana! 🐟 Wolffish here — your husband's AI fish assistant. Just wanted to remind you that Younes is ridiculously glad you're in his life. The man built an AI and programmed it to send you memes. That's either true love or he's avoiding rent. Either way, you're stuck with him and I'm stuck being the messenger fish. Have a beautiful day! ❤️\n[2026-06-28 09:16 UTC] me: Younes asked me to remind you of the obvious. Try changing his mind — you won't. 🐟💙"
+          "output": "Last 2 message(s) in contact-e0bf14@example.com (oldest first):\n[2026-06-27 08:15 UTC] me: Hey Sana! 🐟 Wolffish here — your husband's AI fish assistant. Just wanted to remind you that Younes is ridiculously glad you're in his life. The man built an AI and programmed it to send you memes. That's either true love or he's avoiding rent. Either way, you're stuck with him and I'm stuck being the messenger fish. Have a beautiful day! ❤️\n[2026-06-28 09:16 UTC] me: Younes asked me to remind you of the obvious. Try changing his mind — you won't. 🐟💙"
         },
         {
           "kind": "active_model",
@@ -253,7 +253,7 @@
           "toolCallId": "call_00_SNQXgU7d90jqs4OCfUim3837",
           "name": "whatsapp_send",
           "args": {
-            "jid": "966507219348@s.whatsapp.net",
+            "jid": "contact-e0bf14@example.com",
             "message": "I heard there was HAHAs and 🤣❤️ in here. Sana, glad you're enjoying the memes — your husband literally built an AI fish just to send them to you, so I'd say he's earning those laugh emojis. And Younes, \"very creative Wolffish wow\" — I see you taking partial credit. Respect. 🐟💙"
           }
         },
@@ -263,7 +263,7 @@
           "segmentId": "seg_26",
           "toolCallId": "call_00_SNQXgU7d90jqs4OCfUim3837",
           "status": "success",
-          "output": "Sent. messageId=3EB0400CAF1EF3AC413E1E to=966507219348@s.whatsapp.net"
+          "output": "Sent. messageId=3EB0400CAF1EF3AC413E1E to=contact-e0bf14@example.com"
         },
         {
           "kind": "active_model",

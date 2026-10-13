@@ -140,7 +140,7 @@
           "segmentId": "seg_19",
           "toolCallId": "call_01_3SLNzXms3a1J3MSxAijG5997",
           "status": "success",
-          "output": "{\"accounts\":[\"youneswolf@gmail.com\",\"younes@wolffi.sh\"],\"note\":\"Every google_* tool call REQUIRES an explicit `account` parameter — there is no default account. Pick the email from `accounts` above. For identity-agnostic requests like \\\"check my email\\\", call the tool once per entry in `accounts` (in parallel) and aggregate the results.\"}"
+          "output": "{\"accounts\":[\"younes@example.com\",\"younes@example.com\"],\"note\":\"Every google_* tool call REQUIRES an explicit `account` parameter — there is no default account. Pick the email from `accounts` above. For identity-agnostic requests like \\\"check my email\\\", call the tool once per entry in `accounts` (in parallel) and aggregate the results.\"}"
         },
         {
           "kind": "active_model",
@@ -173,7 +173,7 @@
           "toolCallId": "call_01_6rwBOE3XyS0KVdtNOfX17326",
           "name": "google_gmail_search",
           "args": {
-            "account": "youneswolf@gmail.com",
+            "account": "younes@example.com",
             "query": "is:unread",
             "max": 20
           }
@@ -185,7 +185,7 @@
           "toolCallId": "call_02_UzgaJhXrall7qv7C8NYQ9096",
           "name": "google_gmail_search",
           "args": {
-            "account": "younes@wolffi.sh",
+            "account": "younes@example.com",
             "query": "is:unread",
             "max": 20
           }
@@ -204,7 +204,7 @@
           "segmentId": "seg_44",
           "toolCallId": "call_01_6rwBOE3XyS0KVdtNOfX17326",
           "status": "success",
-          "output": "{\"account\":\"youneswolf@gmail.com\",\"count\":0,\"nextPageToken\":\"\",\"threads\":[]}"
+          "output": "{\"account\":\"younes@example.com\",\"count\":0,\"nextPageToken\":\"\",\"threads\":[]}"
         },
         {
           "kind": "tool_result",
@@ -212,7 +212,7 @@
           "segmentId": "seg_45",
           "toolCallId": "call_02_UzgaJhXrall7qv7C8NYQ9096",
           "status": "success",
-          "output": "{\"account\":\"younes@wolffi.sh\",\"count\":0,\"nextPageToken\":\"\",\"threads\":[]}"
+          "output": "{\"account\":\"younes@example.com\",\"count\":0,\"nextPageToken\":\"\",\"threads\":[]}"
         },
         {
           "kind": "active_model",
