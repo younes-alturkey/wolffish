@@ -1,4 +1,10 @@
-## v1.0.324 — 2026-10-13 `Latest`
+## v1.0.325 — 2026-10-13 `Latest`
+
+### `wolffish service install` Survives a Reboot on a Server
+
+On a Linux server, `wolffish service install` — the command the install script tells you to run — registered a desktop autostart entry instead of a service. It reported success and showed autostart as on, but a box with no desktop never reads that entry, so **Wolffish stayed down after a reboot**. Run from a shell with no display, it now **installs the systemd service with lingering**, the same as `--headless`. Run it once more after this update to switch an affected server over; `--gui` keeps the desktop entry if that is what you want.
+
+## v1.0.324 — 2026-10-13
 
 ### Changing the Password Keeps You Signed In
 

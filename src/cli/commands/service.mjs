@@ -171,7 +171,17 @@ export async function service(client, args) {
     // `--headless` is the declaration that this machine is a server. It
     // decides between a login item / .desktop entry and a real service unit,
     // and it is persisted so a later status check asks the same question.
-    const mode = rest.includes('--headless') || rest.includes('headless') ? 'headless' : undefined
+    //
+    // A bare `install` from a Linux shell with no display is that declaration
+    // too: it is what the install script tells a server to run, and the stored
+    // default ('gui') would answer it with an XDG .desktop entry — reported as
+    // registered, read by no session manager, so the box never comes back after
+    // a reboot. The CALLER's shell is the right probe; the daemon's own
+    // environment says nothing about the machine (see autostart.ts).
+    const explicit = rest.includes('--headless') || rest.includes('headless')
+    const displayless =
+      process.platform === 'linux' && !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY
+    const mode = explicit || (displayless && !rest.includes('--gui')) ? 'headless' : undefined
     const state = await client.invoke('service:install', mode)
     if (!state.active) {
       out(`${icon.fail()} ${c.red('could not register autostart')}`)
@@ -249,7 +259,7 @@ export async function service(client, args) {
   }
 
   out(c.red(`unknown: wolffish service ${sub}`))
-  out(c.gray('  status | install [--headless] | uninstall | stop | logs'))
+  out(c.gray('  status | install [--headless|--gui] | uninstall | stop | logs'))
   return 2
 }
 
