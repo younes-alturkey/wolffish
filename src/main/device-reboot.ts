@@ -119,3 +119,34 @@ export async function prepareDeviceReboot(): Promise<DeviceRebootPlan> {
   if (process.platform === 'linux') return prepareLinux()
   return { ok: false, error: 'unsupported' }
 }
+
+/**
+ * How long a reboot the OS accepted may leave this process alive. Every path
+ * that really goes down ends it well inside this: macOS asks each app to quit
+ * at once, Windows force-ends apps seconds into its "apps are preventing
+ * shutdown" screen, and systemd sends SIGTERM at once and SIGKILL at its
+ * default 90 s stop timeout. Still here after that means it was cancelled — an
+ * app with unsaved work on macOS, `shutdown /a` on Windows — and a drained
+ * Wolffish would otherwise sit behind the reboot overlay forever.
+ */
+export const REBOOT_WATCHDOG_MS = 90_000
+
+/** Calls `recover` once if not disarmed within `ms`. Unref'd: it never holds the process up. */
+export function armRebootWatchdog(
+  recover: () => void,
+  ms = REBOOT_WATCHDOG_MS
+): { disarm: () => void } {
+  let done = false
+  const timer = setTimeout(() => {
+    if (done) return
+    done = true
+    recover()
+  }, ms)
+  timer.unref?.()
+  return {
+    disarm: () => {
+      done = true
+      clearTimeout(timer)
+    }
+  }
+}

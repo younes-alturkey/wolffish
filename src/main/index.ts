@@ -191,7 +191,11 @@ import { Thalamus } from '@main/runtime/thalamus'
 import type { TimeRange as UsageTimeRange } from '@main/runtime/usage'
 import { cloudModelSupportsVision } from '@main/runtime/vision'
 import { detectSystem, type SystemInfo } from '@main/system'
-import { prepareDeviceReboot, type DeviceRebootRefusal } from '@main/device-reboot'
+import {
+  armRebootWatchdog,
+  prepareDeviceReboot,
+  type DeviceRebootRefusal
+} from '@main/device-reboot'
 import {
   checkForUpdatesIfEnabled,
   getUpdaterState,
@@ -3180,6 +3184,7 @@ let pendingDrainResolvers: Array<() => void> = []
 let quitInProgress = false
 let updateInstallInProgress = false
 let rebootInProgress = false
+let rebootWatchdog: { disarm: () => void } | null = null
 
 async function trackBackgroundTask<T>(work: () => Promise<T>): Promise<T> {
   pendingBackgroundTasks += 1
@@ -3283,8 +3288,9 @@ async function restartApp(): Promise<void> {
  * quit and a before-quit that held the quit for in-flight work would cancel
  * the whole restart, and Windows and systemd give a process seconds at most.
  * The sockets stay up so browsers keep the overlay until the OS takes them
- * down. A command that fails after the drain brings Wolffish back as a
- * restart rather than leaving it stopped.
+ * down. A command that fails after the drain, or a reboot the OS accepts and
+ * then cancels, brings Wolffish back as a restart rather than leaving it
+ * stopped.
  */
 async function rebootDeviceApp(
   run: () => Promise<{ ok: true } | { ok: false; error: string }>
@@ -3307,12 +3313,23 @@ async function rebootDeviceApp(
   const result = await run()
   if (result.ok) {
     wlog.info('[reboot-device]', 'reboot accepted by the OS')
+    rebootWatchdog = armRebootWatchdog(() => {
+      wlog.warn(
+        '[reboot-device]',
+        'still running — the OS cancelled the reboot; restarting Wolffish'
+      )
+      void comeBackFromReboot()
+    })
     return
   }
   wlog.warn(
     '[reboot-device]',
     `reboot command failed — restarting Wolffish instead: ${result.error}`
   )
+  await comeBackFromReboot()
+}
+
+async function comeBackFromReboot(): Promise<void> {
   await cliServer.stop().catch(() => undefined)
   await webServer.stop().catch(() => undefined)
   relaunchApp()
@@ -6724,6 +6741,8 @@ app.on('before-quit', (event) => {
 })
 
 app.on('will-quit', () => {
+  // The OS is taking the app down for the reboot it accepted: no comeback.
+  rebootWatchdog?.disarm()
   // Attached terminals get their socket closed rather than left dangling on a
   // path whose daemon is gone — the client reads that as "detached", not as a
   // hang. Fire-and-forget: will-quit is synchronous and the OS reclaims the
