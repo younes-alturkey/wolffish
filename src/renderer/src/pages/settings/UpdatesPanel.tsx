@@ -2,6 +2,8 @@ import { ErrorDetailBlock } from '@components/common/provider-error-card/Provide
 import { Button } from '@components/core/Button'
 import { useToast } from '@components/core/toast/useToast'
 import { cn } from '@lib/utils/cn'
+import { isWeb } from '@lib/utils/platform'
+import { markWebUpdatePending } from '@lib/web-bridge/pending-update'
 import type { UpdateCheckResult, UpdaterErrorInfo } from '@preload/index'
 import { useFlow } from '@providers/flow/useFlow'
 import { Download01Icon, RefreshIcon, SystemUpdate02Icon } from 'hugeicons-react'
@@ -177,6 +179,10 @@ export function UpdatesPanel(): React.JSX.Element {
 
   const onInstall = useCallback(() => {
     setPhase('installing')
+    if (isWeb) {
+      void markWebUpdatePending().then(() => window.api.updater.install())
+      return
+    }
     void window.api.updater.install()
   }, [])
 

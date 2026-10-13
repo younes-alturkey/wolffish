@@ -1,3 +1,5 @@
+import { isWeb } from '@lib/utils/platform'
+import { consumeWebUpdate } from '@lib/web-bridge/pending-update'
 import type { DataAnalytics, SystemInfo, WorkspaceStatus } from '@preload/index'
 import { FlowContext, type FlowContextValue, type Screen } from '@providers/flow/useFlow'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
@@ -59,11 +61,14 @@ export function FlowProvider({ children }: { children: ReactNode }): React.JSX.E
     void Promise.all([
       decideInitialScreen(),
       window.api.system.getInfo(),
-      window.api.updater.consumePostUpdate().catch(() => false)
-    ]).then(([r, sys, justUpdated]) => {
+      window.api.updater.consumePostUpdate().catch(() => false),
+      // The browser tab that clicked Update: its own flag, since a desktop
+      // window usually consumes the one above before this page reloads.
+      isWeb ? consumeWebUpdate() : Promise.resolve(false)
+    ]).then(([r, sys, justUpdated, webUpdated]) => {
       if (cancelled) return
       setStatus(r.status)
-      setScreen(justUpdated && r.screen === 'chat' ? 'changelog' : r.screen)
+      setScreen((justUpdated || webUpdated) && r.screen === 'chat' ? 'changelog' : r.screen)
       setSystemInfo(sys)
       setReady(true)
     })

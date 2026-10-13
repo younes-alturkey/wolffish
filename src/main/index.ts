@@ -196,6 +196,7 @@ import {
   isUpdateReady,
   markInstalling,
   onUpdaterState,
+  setUpdaterBroadcastSink,
   stampPreUpdateVersion,
   type UpdaterState
 } from '@main/updater'
@@ -3297,6 +3298,9 @@ app.whenReady().then(async () => {
   onUpdaterState((state) => {
     if (mobileChannel.hasPeer) mobileChannel.pushUpdaterState(toWireUpdaterState(state))
   })
+  // Browsers signed into the Web UI get the updater's pushes too — the
+  // updater fans out to windows itself, so it cannot ride broadcast() above.
+  setUpdaterBroadcastSink((channel, payload) => webServer.pushBroadcast(channel, payload))
   agent.init().catch((err) => {
     console.error('agent.init failed:', err)
   })

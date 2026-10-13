@@ -3063,7 +3063,8 @@
       "lost": "{{name}} is no longer available — attach it again."
     },
     "connection": {
-      "lost": "Connection lost — reconnecting…"
+      "lost": "Connection lost — reconnecting…",
+      "updating": "Updating Wolffish — this page reloads when it's back…"
     }
   }
 }

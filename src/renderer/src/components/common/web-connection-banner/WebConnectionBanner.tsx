@@ -1,4 +1,5 @@
 import { webTransport } from '@lib/web-bridge/boot'
+import { isWebUpdatePending } from '@lib/web-bridge/pending-update'
 import type { ConnectionState } from '@lib/web-bridge/transport'
 import { RefreshIcon } from 'hugeicons-react'
 import { useEffect, useState } from 'react'
@@ -49,7 +50,9 @@ export function WebConnectionBanner(): React.JSX.Element | null {
     >
       <div className="flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-900 shadow-lg dark:border-amber-700 dark:bg-amber-900/80 dark:text-amber-100">
         <RefreshIcon size={14} className="animate-spin" aria-hidden />
-        <span>{t('web.connection.lost')}</span>
+        <span>
+          {isWebUpdatePending() ? t('web.connection.updating') : t('web.connection.lost')}
+        </span>
       </div>
     </div>
   )

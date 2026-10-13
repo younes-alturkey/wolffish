@@ -124,19 +124,55 @@ function classifyUpdaterError(
   return { code: 'unknown', message: 'The update failed to download.', detail }
 }
 
+// The GitHub provider hands over the release body as the HTML of the releases
+// atom feed ("<p><strong>Full Changelog</strong>: <a …>"); the update card and
+// the phone print the notes as text, so they are flattened to text here, once.
+export function releaseNotesToText(notes: string): string {
+  if (!/<\/?[a-z][^>]*>/i.test(notes)) return notes.trim()
+  return notes
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|li|ul|ol|h[1-6]|tr|blockquote|pre|details|summary)>/gi, '\n')
+    .replace(/<li\b[^>]*>/gi, '• ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&#(\d+);/g, (_, n: string) => String.fromCodePoint(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, h: string) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
 function extractReleaseNotes(info: UpdateInfo): string | null {
   if (!info.releaseNotes) return null
-  if (typeof info.releaseNotes === 'string') return info.releaseNotes
-  if (Array.isArray(info.releaseNotes)) {
-    return info.releaseNotes.map((n) => (typeof n === 'string' ? n : (n.note ?? ''))).join('\n')
+  let raw: string | null = null
+  if (typeof info.releaseNotes === 'string') raw = info.releaseNotes
+  else if (Array.isArray(info.releaseNotes)) {
+    raw = info.releaseNotes.map((n) => (typeof n === 'string' ? n : (n.note ?? ''))).join('\n')
   }
-  return null
+  if (raw === null) return null
+  const text = releaseNotesToText(raw)
+  return text.length > 0 ? text : null
+}
+
+// The Web UI has no BrowserWindow: index.ts plugs the web server's fan-out in
+// here so a browser sees the same updater:state / updater:ready pushes a
+// window does, instead of a panel that only moves on remount.
+let extraSink: ((channel: string, payload: unknown) => void) | null = null
+
+export function setUpdaterBroadcastSink(sink: (channel: string, payload: unknown) => void): void {
+  extraSink = sink
 }
 
 function broadcast<T>(channel: string, payload: T): void {
   for (const w of BrowserWindow.getAllWindows()) {
     w.webContents.send(channel, payload)
   }
+  extraSink?.(channel, payload)
 }
 
 let lastReady: UpdateReadyEvent | null = null

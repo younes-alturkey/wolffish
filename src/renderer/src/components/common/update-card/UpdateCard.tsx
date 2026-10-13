@@ -1,4 +1,6 @@
 import { cn } from '@lib/utils/cn'
+import { isWeb } from '@lib/utils/platform'
+import { markWebUpdatePending } from '@lib/web-bridge/pending-update'
 import type { UpdaterErrorInfo, UpdateReadyEvent } from '@preload/index'
 import { useFlow } from '@providers/flow/useFlow'
 import { ArrowUp02Icon, Cancel01Icon } from 'hugeicons-react'
@@ -55,6 +57,10 @@ export function UpdateCard(): React.JSX.Element | null {
       return
     }
     setInstalling(true)
+    if (isWeb) {
+      void markWebUpdatePending().then(() => window.api.updater.install())
+      return
+    }
     void window.api.updater.install()
   }, [failed])
 
