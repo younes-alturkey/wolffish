@@ -48,7 +48,11 @@ async function main(): Promise<number> {
   }
 
   const noAutostart = new Set(['status', 'service', 'path'])
-  const attemptedStart = !noAutostart.has(command)
+  // `service install` is the one of the three that CHANGES the machine, and
+  // it needs the daemon it registers: the installer tells a fresh box to run
+  // it first, so refusing to start one there sent people in a circle.
+  const attemptedStart =
+    !noAutostart.has(command) || (command === 'service' && args[0] === 'install')
   let client
   try {
     client = await connect({ autostart: attemptedStart, quiet: flags.json })

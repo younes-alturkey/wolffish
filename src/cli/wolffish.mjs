@@ -254,7 +254,11 @@ async function main() {
   // Whether this command was even willing to start a daemon, which decides
   // what a failure to reach one MEANS. These three report ON the agent, so
   // launching one to answer "is it running?" would make the answer always yes.
-  const attemptedStart = !noAutostart.has(command)
+  // `service install` is the one of the three that CHANGES the machine, and
+  // it needs the daemon it registers: the installer tells a fresh box to run
+  // it first, so refusing to start one there sent people in a circle.
+  const attemptedStart =
+    !noAutostart.has(command) || (command === 'service' && args[0] === 'install')
   let client
   try {
     client = await connect({ autostart: attemptedStart, quiet: flags.json })
