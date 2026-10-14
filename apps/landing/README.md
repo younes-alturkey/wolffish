@@ -13,4 +13,4 @@ npm run dev       # http://localhost:5173
 npm run build     # typecheck + dist/
 ```
 
-The fonts come from the repo's `resources/fonts/` through the `@resources` alias. `public/og.jpg` is a copy of `resources/images/og_image.jpg`, kept in `public/` so it has a fixed URL for link previews.
+The fonts come from the repo's `resources/fonts/` through the `@resources` alias. `public/og.jpg` is the link-preview image (1200×630: logo, tagline, subtitle), kept in `public/` so it has a fixed URL.
