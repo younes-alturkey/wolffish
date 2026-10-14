@@ -12,12 +12,6 @@ export type ToastInput = {
    * states like "network offline" that end at an unknown future moment.
    */
   sticky?: boolean
-  /**
-   * Where the toast stacks. 'bottom' (default) keeps the classic transient
-   * position; 'top' is for ambient app-state notices (network status) that
-   * must not sit over the chat composer.
-   */
-  placement?: 'top' | 'bottom'
   /** Runs when the toast body is clicked, before it dismisses. */
   onClick?: () => void
 }

@@ -41,7 +41,6 @@ export function ToastProvider({ children }: { children: ReactNode }): React.JSX.
         tone: input.tone ?? 'info',
         durationMs: input.durationMs ?? DEFAULT_DURATION_MS,
         sticky: input.sticky ?? false,
-        placement: input.placement ?? 'bottom',
         message: input.message,
         onClick: input.onClick
       }
@@ -66,35 +65,20 @@ export function ToastProvider({ children }: { children: ReactNode }): React.JSX.
 
   const value = useMemo<ToastContextValue>(() => ({ show, dismiss }), [show, dismiss])
 
-  // Two stacks: transient toasts keep the classic bottom position; ambient
-  // app-state notices (placement: 'top') stack under the titlebar. top-12
-  // keeps the top stack clear of the 40px titlebar drag strip
+  // top-12 keeps the stack clear of the 40px titlebar drag strip
   // (.app-titlebar) — a toast inside the drag region would swallow clicks.
-  const top = toasts.filter((t) => t.placement === 'top')
-  const bottom = toasts.filter((t) => t.placement !== 'top')
   const portal =
     typeof document !== 'undefined'
       ? createPortal(
-          <>
-            <div
-              aria-live="polite"
-              aria-atomic="true"
-              className="pointer-events-none fixed inset-x-0 top-12 z-50 flex flex-col items-center gap-2 px-4"
-            >
-              {top.map((t) => (
-                <ToastItem key={t.id} toast={t} onDismiss={() => dismiss(t.id)} />
-              ))}
-            </div>
-            <div
-              aria-live="polite"
-              aria-atomic="true"
-              className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex flex-col items-center gap-2 px-4"
-            >
-              {bottom.map((t) => (
-                <ToastItem key={t.id} toast={t} onDismiss={() => dismiss(t.id)} />
-              ))}
-            </div>
-          </>,
+          <div
+            aria-live="polite"
+            aria-atomic="true"
+            className="pointer-events-none fixed inset-x-0 top-12 z-50 flex flex-col items-center gap-2 px-6 max-sm:px-3"
+          >
+            {toasts.map((t) => (
+              <ToastItem key={t.id} toast={t} onDismiss={() => dismiss(t.id)} />
+            ))}
+          </div>,
           document.body
         )
       : null
@@ -139,14 +123,14 @@ function ToastItem({
         onDismiss()
       }}
       className={cn(
-        'pointer-events-auto flex max-w-md cursor-pointer items-start gap-2 rounded-xl border px-4 py-2.5 text-sm shadow-md backdrop-blur',
+        'pointer-events-auto flex w-full max-w-3xl cursor-pointer items-start gap-2 rounded-xl border px-4 py-2.5 text-sm shadow-md backdrop-blur',
         TONE_STYLES[toast.tone ?? 'info']
       )}
     >
       <span className="mt-0.5 shrink-0">
         <ToneIcon tone={toast.tone ?? 'info'} />
       </span>
-      <span className="min-w-0 wrap-break-word leading-relaxed">{toast.message}</span>
+      <span className="min-w-0 flex-1 wrap-break-word leading-relaxed">{toast.message}</span>
       <button
         type="button"
         aria-label={t('common.dismiss')}

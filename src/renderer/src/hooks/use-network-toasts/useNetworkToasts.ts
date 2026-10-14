@@ -25,8 +25,7 @@ export function useNetworkToasts(): void {
       offlineToastRef.current = toast.show({
         tone: 'warning',
         message: t('common.networkOffline'),
-        sticky: true,
-        placement: 'top'
+        sticky: true
       })
     }
     const notifyOnline = (): void => {
@@ -36,9 +35,7 @@ export function useNetworkToasts(): void {
         toast.dismiss(offlineToastRef.current)
         offlineToastRef.current = null
       }
-      // The restore notice appears where the offline one lived — top — so the
-      // swap reads as one state resolving, not two unrelated toasts.
-      toast.show({ tone: 'success', message: t('common.networkRestored'), placement: 'top' })
+      toast.show({ tone: 'success', message: t('common.networkRestored') })
     }
     if (!navigator.onLine) notifyOffline()
     window.addEventListener('offline', notifyOffline)

@@ -1,4 +1,10 @@
-## v1.0.329 — 2026-10-14 `Latest`
+## v1.0.330 — 2026-10-14 `Latest`
+
+### Notices Line Up With the Conversation
+
+The short notices that pop up — an error, a confirmation, "no network connection" — used to be a narrow box, some at the bottom of the window over the message box and some at the top. They now **all appear at the top**, stacked under the title bar, and each one is **exactly as wide as the conversation** below it, so a longer message reads on one line and nothing covers where you type.
+
+## v1.0.329 — 2026-10-14
 
 ### The Changelog After Every Update in the Web UI
 
