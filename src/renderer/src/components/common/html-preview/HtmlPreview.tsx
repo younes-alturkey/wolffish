@@ -1,3 +1,4 @@
+import { isWeb } from '@lib/utils/platform'
 import { createElement, useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react'
 
 /**
@@ -7,6 +8,14 @@ import { createElement, useEffect, useImperativeHandle, useRef, useState, type R
  * permission policy lives.
  */
 const PARTITION = 'persist:htmlpreview'
+
+/**
+ * The Web UI frame's powers — mirrored by main's PREVIEW_CSP, which the
+ * /preview/ route sends with the page. No allow-same-origin: the page runs in
+ * an opaque origin, so it can never reach the app it is shown inside.
+ */
+const WEB_SANDBOX =
+  'allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-pointer-lock allow-downloads'
 
 /** The subset of the Electron <webview> API the preview drives imperatively. */
 type PreviewWebview = HTMLElement & {
@@ -36,18 +45,30 @@ export type HtmlPreviewHandle = {
  *
  * Main hardens every guest (will-attach-webview strips preload/node; popups
  * and web links from a file: page go to the system browser) — see index.ts.
+ *
+ * A browser has no <webview> — the tag is an unknown element there and draws
+ * nothing — so the Web UI frames the page instead: a sandboxed <iframe> on the
+ * server's /preview/ grant (src comes from upload.previewUrl), where relative
+ * assets resolve without the session cookie. A cross-origin frame cannot be
+ * measured or zoomed, so `fit` does nothing there; the page lays out at the
+ * card's width the way a phone browser would show it.
  */
 export function HtmlPreview({
   src,
+  title,
   fit = false,
   ref
 }: {
   src: string
+  title?: string
   fit?: boolean
   ref?: Ref<HtmlPreviewHandle>
 }): React.JSX.Element {
   const hostRef = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
+  // The Web UI's reload: a cross-origin frame cannot be told to reload, so
+  // it is mounted afresh.
+  const [generation, setGeneration] = useState(0)
 
   useEffect(() => {
     if (visible) return
@@ -72,7 +93,7 @@ export function HtmlPreview({
   useImperativeHandle(
     ref,
     () => ({
-      reload: () => webview()?.reload(),
+      reload: () => (isWeb ? setGeneration((g) => g + 1) : webview()?.reload()),
       openDevTools: () => webview()?.openDevTools()
     }),
     []
@@ -114,18 +135,28 @@ export function HtmlPreview({
 
   return (
     <div ref={hostRef} className="h-full w-full bg-white">
-      {visible
-        ? createElement('webview', {
-            src,
-            partition: PARTITION,
-            // Popups (target=_blank, window.open) must reach the guest's
-            // window-open handler in main, which routes them to the system
-            // browser; without this the guest drops them silently.
-            allowpopups: 'true',
-            webpreferences: 'contextIsolation=yes,nodeIntegration=no,sandbox=yes',
-            style: { width: '100%', height: '100%', border: '0', display: 'inline-flex' }
-          })
-        : null}
+      {!visible ? null : isWeb ? (
+        <iframe
+          key={generation}
+          src={src}
+          title={title}
+          sandbox={WEB_SANDBOX}
+          allow="fullscreen"
+          referrerPolicy="no-referrer"
+          className="block h-full w-full border-0"
+        />
+      ) : (
+        createElement('webview', {
+          src,
+          partition: PARTITION,
+          // Popups (target=_blank, window.open) must reach the guest's
+          // window-open handler in main, which routes them to the system
+          // browser; without this the guest drops them silently.
+          allowpopups: 'true',
+          webpreferences: 'contextIsolation=yes,nodeIntegration=no,sandbox=yes',
+          style: { width: '100%', height: '100%', border: '0', display: 'inline-flex' }
+        })
+      )}
     </div>
   )
 }

@@ -12,7 +12,14 @@
  */
 import type { IpcHandler } from '@main/ipc-registry'
 import Module from 'node:module'
-import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs'
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  existsSync,
+  readFileSync,
+  symlinkSync
+} from 'node:fs'
 import http from 'node:http'
 import https from 'node:https'
 import net from 'node:net'
@@ -84,6 +91,22 @@ async function run(): Promise<void> {
     path.join(workspace, 'uploads', 'conv_x', 'hello.txt'),
     'hello world, twelve bytes and more'
   )
+  // Previews: a page with relative assets, a page beside the app's secrets,
+  // a page inside them, and a link out of the page's folder.
+  mkdirSync(path.join(workspace, 'files', 'pv', 'img'), { recursive: true })
+  writeFileSync(
+    path.join(workspace, 'files', 'pv', 'index.html'),
+    '<!doctype html><script src="app.js"></script><img src="img/a b.png">'
+  )
+  writeFileSync(path.join(workspace, 'files', 'pv', 'app.js'), 'document.title = "ran"')
+  writeFileSync(path.join(workspace, 'files', 'pv', 'img', 'a b.png'), 'png')
+  symlinkSync(
+    path.join(workspace, 'uploads', 'conv_x', 'hello.txt'),
+    path.join(workspace, 'files', 'pv', 'leak.txt')
+  )
+  writeFileSync(path.join(workspace, 'page.html'), '<!doctype html><p>root page</p>')
+  writeFileSync(path.join(workspace, 'notes.txt'), 'beside the config')
+  writeFileSync(path.join(workspace, 'web', 'inside.html'), '<p>secret side</p>')
   const renderer = path.join(SANDBOX, 'renderer')
   mkdirSync(path.join(renderer, 'assets'), { recursive: true })
   writeFileSync(
@@ -645,6 +668,104 @@ async function run(): Promise<void> {
     legacy.status === 200 && legacy.text.startsWith('hello world'),
     String(legacy.status)
   )
+
+  console.log('step: html previews')
+  const pvUrl = String((await invoke('upload:previewUrl', 'files/pv/index.html')).value)
+  ok(
+    'previewUrl is a /preview/ grant',
+    /^\/preview\/[A-Za-z0-9_-]{32}\/index\.html$/.test(pvUrl),
+    pvUrl
+  )
+  const pvPage = await call(`${base}${pvUrl}`)
+  const pvCsp = pvPage.headers.get('content-security-policy') ?? ''
+  ok(
+    'preview served with no cookie',
+    pvPage.status === 200 && pvPage.text.includes('app.js'),
+    String(pvPage.status)
+  )
+  ok(
+    'preview runs in an opaque origin',
+    /^sandbox allow-scripts/.test(pvCsp) &&
+      !pvCsp.includes('allow-same-origin') &&
+      !pvCsp.includes('allow-top-navigation'),
+    pvCsp
+  )
+  ok('preview frameable by the app only', pvPage.headers.get('x-frame-options') === 'SAMEORIGIN')
+  ok(
+    'preview page carries the storage stand-in, after its doctype',
+    pvPage.text.startsWith('<!doctype html><script>(()=>{const m=') &&
+      pvPage.text.endsWith('<script src="app.js"></script><img src="img/a b.png">'),
+    pvPage.text.slice(0, 60)
+  )
+  const { withStorageShim } = await import('@main/channels/web/preview')
+  ok(
+    'storage stand-in goes after <head>',
+    withStorageShim(
+      '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"></head>'
+    ).startsWith('<!DOCTYPE html><html lang="en"><head><script>')
+  )
+  ok(
+    'storage stand-in is not fooled by <header>',
+    withStorageShim('<header>x</header>').startsWith('<script>')
+  )
+  ok(
+    "preview answers its opaque origin's CORS requests",
+    pvPage.headers.get('access-control-allow-origin') === '*'
+  )
+  const pvBase = pvUrl.slice(0, pvUrl.lastIndexOf('/'))
+  ok('preview asset resolves relatively', (await call(`${base}${pvBase}/app.js`)).status === 200)
+  ok(
+    'preview nested asset with a space',
+    (await call(`${base}${pvBase}/img/a%20b.png`)).status === 200
+  )
+  ok(
+    'preview refuses an encoded climb',
+    (await call(`${base}${pvBase}/..%2F..%2Fuploads%2Fconv_x%2Fhello.txt`)).status === 404
+  )
+  ok(
+    'preview refuses a symlink out of its folder',
+    (await call(`${base}${pvBase}/leak.txt`)).status === 404
+  )
+  ok('preview refuses a folder', (await call(`${base}${pvBase}/img`)).status === 404)
+  ok('preview refuses POST', (await call(`${base}${pvUrl}`, { method: 'POST' })).status === 405)
+  ok(
+    'unknown preview token is 404',
+    (await call(`${base}/preview/${'x'.repeat(32)}/index.html`)).status === 404
+  )
+  const pvAgain = String(
+    (await invoke('upload:previewUrl', path.join(workspace, 'files', 'pv', 'app.js'))).value
+  )
+  ok('same folder, same session → same token', pvAgain === `${pvBase}/app.js`, pvAgain)
+  const rootPage = String((await invoke('upload:previewUrl', 'page.html')).value)
+  const rootBase = rootPage.slice(0, rootPage.lastIndexOf('/'))
+  ok('a page beside the secrets previews', (await call(`${base}${rootPage}`)).status === 200)
+  ok(
+    '…alone: its folder is not handed out',
+    (await call(`${base}${rootBase}/notes.txt`)).status === 404
+  )
+  ok(
+    '…nor the web state under it',
+    (await call(`${base}${rootBase}/web/inside.html`)).status === 404
+  )
+  ok(
+    'a page inside the secrets gets no preview',
+    (await invoke('upload:previewUrl', 'web/inside.html')).value === null
+  )
+  ok(
+    'a path outside the workspace gets no preview',
+    (await invoke('upload:previewUrl', '../../etc/hosts')).value === null
+  )
+  const openHtml = await invoke('upload:openExternal', 'files/pv/index.html')
+  ok(
+    'opening a page opens its preview',
+    String((openHtml.value as { openUrl?: string }).openUrl).startsWith(`${pvBase}/`),
+    JSON.stringify(openHtml.value)
+  )
+  const openTxt = await invoke('upload:openExternal', 'uploads/conv_x/hello.txt')
+  ok(
+    'opening anything else opens the file',
+    (openTxt.value as { openUrl?: string }).openUrl === '/files/uploads/conv_x/hello.txt'
+  )
   const dl = await invoke('upload:download', 'uploads/conv_x/hello.txt')
   ok(
     'download rewritten',
@@ -1173,6 +1294,7 @@ async function run(): Promise<void> {
       .authenticated === false
   )
   ok('no sessions left', (await server.listSessions()).length === 0)
+  ok("a signed-out session's previews end with it", (await call(`${base}${pvUrl}`)).status === 404)
   ok('status changes were announced', statusChanges > 0)
 
   // applyConfig rebinds the listeners (port 0 → a new OS port): this runs last.

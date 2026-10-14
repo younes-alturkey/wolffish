@@ -295,6 +295,7 @@ export function buildApi(transport: ApiTransport): WolffishApi {
       validate: (payload) => transport.invoke('upload:validate', payload),
       openExternal: (relativePath) => transport.invoke('upload:openExternal', relativePath),
       fileUrl: (relativePath) => transport.invoke('upload:fileUrl', relativePath),
+      previewUrl: (relativePath) => transport.invoke('upload:previewUrl', relativePath),
       statPath: (path) => transport.invoke('upload:statPath', path),
       projectFolders: (dirs, workingFolders) =>
         transport.invoke('upload:projectFolders', dirs, workingFolders),

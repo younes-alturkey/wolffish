@@ -3,7 +3,7 @@ import { CopyButton } from '@components/core/CopyButton'
 import { ExpandedSheet } from '@components/core/ExpandedSheet'
 import { HtmlPreview, type HtmlPreviewHandle } from '@components/common/html-preview/HtmlPreview'
 import { cn } from '@lib/utils/cn'
-import { canRevealInFolder } from '@lib/utils/platform'
+import { canRevealInFolder, isWeb } from '@lib/utils/platform'
 import { formatBytesL } from '@lib/utils/format'
 import hljs from 'highlight.js/lib/common'
 import {
@@ -98,7 +98,7 @@ export function CodeFileViewer({
    * browser tab), Source shows the highlighted markup.
    */
   htmlPreview?: boolean
-  /** file: URL the live preview loads. Required for the preview to render. */
+  /** What the live preview loads (upload.previewUrl). Required for the preview to render. */
   previewUrl?: string
   /**
    * The file was too large to read into the renderer: `content` is empty and
@@ -197,10 +197,12 @@ export function CodeFileViewer({
         {t('chat.htmlViewer.openInSheet')}
       </div>
     ) : (
-      <HtmlPreview ref={previewRef} src={previewUrl} fit />
+      <HtmlPreview ref={previewRef} src={previewUrl} title={fileName} fit />
     )
   ) : null
-  const sheetPreview = livePreview ? <HtmlPreview ref={previewRef} src={previewUrl} /> : null
+  const sheetPreview = livePreview ? (
+    <HtmlPreview ref={previewRef} src={previewUrl} title={fileName} />
+  ) : null
 
   // Individual action controls, composed in opposite orders per surface.
   const iconButton =
@@ -236,7 +238,7 @@ export function CodeFileViewer({
   ) : null
   // Preview only: reload the page (a game back to its start screen) and open
   // the guest's own DevTools — the two things a browser tab gives that a card
-  // otherwise wouldn't.
+  // otherwise wouldn't. A Web UI page has the browser's own DevTools instead.
   const reloadButton = livePreview ? (
     <button
       type="button"
@@ -248,17 +250,18 @@ export function CodeFileViewer({
       <RefreshIcon size={14} />
     </button>
   ) : null
-  const devToolsButton = livePreview ? (
-    <button
-      type="button"
-      onClick={() => previewRef.current?.openDevTools()}
-      title={t('chat.htmlViewer.devTools')}
-      aria-label={t('chat.htmlViewer.devTools')}
-      className={cn(iconButton)}
-    >
-      <Bug01Icon size={14} />
-    </button>
-  ) : null
+  const devToolsButton =
+    livePreview && !isWeb ? (
+      <button
+        type="button"
+        onClick={() => previewRef.current?.openDevTools()}
+        title={t('chat.htmlViewer.devTools')}
+        aria-label={t('chat.htmlViewer.devTools')}
+        className={cn(iconButton)}
+      >
+        <Bug01Icon size={14} />
+      </button>
+    ) : null
   // Website cards drop copy: what the card shows is a rendered page, not source
   // worth putting on the clipboard — open/download/reveal cover what's useful.
   const copyButton =

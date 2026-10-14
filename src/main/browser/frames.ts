@@ -30,6 +30,21 @@ const TAG = 'browser'
 /** Minimum gap between frames handed to the card, per rate. */
 const INTERVAL_MS: Record<BrowserFps, number> = { 5: 200, 30: 33 }
 
+/**
+ * The capture clock for a view that is not composited — its window hidden (a
+ * headless box with a display, an app closed to the tray). The screencast is
+ * blind there, so frames are taken with captureScreenshot instead, which is
+ * a full encode each time: the fast rate is held well under the screencast's.
+ */
+const POLL_MS: Record<BrowserFps, number> = { 5: 200, 30: 100 }
+
+/**
+ * Input or a load just changed the page, so a frame is owed. The screencast
+ * pays it within a frame or two; one still unpaid after this long is captured,
+ * so a compositor that runs but streams nothing still shows every change.
+ */
+const OWED_FRAME_MS = 400
+
 /** JPEG quality. 60 is the knee: visibly fine in a ~650px card, ~35KB/frame. */
 const QUALITY = 60
 
@@ -59,6 +74,8 @@ export class FrameStreamer {
   private readonly cdp: CdpSession
   private readonly tabId: string
   private readonly sink: FrameSink
+  /** Whether the view's window is on show — false means the screencast is blind. */
+  private readonly shown: () => boolean
   private viewers = 0
   private running = false
   private fps: BrowserFps = 5
@@ -69,11 +86,18 @@ export class FrameStreamer {
   /** Set the moment a start is issued, so two concurrent attaches cannot
    *  both call startScreencast — Chromium throws "already active". */
   private starting = false
+  /** Chromium's last word (Page.screencastVisibilityChanged) was "not composited". */
+  private hidden = false
+  private pollTimer: ReturnType<typeof setTimeout> | null = null
+  /** A poll's capture is in flight; nothing schedules another meanwhile. */
+  private polling = false
+  private owedTimer: ReturnType<typeof setTimeout> | null = null
 
-  constructor(tabId: string, cdp: CdpSession, sink: FrameSink) {
+  constructor(tabId: string, cdp: CdpSession, sink: FrameSink, shown: () => boolean = () => true) {
     this.tabId = tabId
     this.cdp = cdp
     this.sink = sink
+    this.shown = shown
   }
 
   get isStreaming(): boolean {
@@ -84,11 +108,13 @@ export class FrameStreamer {
     return this.viewers
   }
 
+  /** The newest viewer's size wins, as with setSize: the sheet opening over its card. */
   async attachViewer(size: { width: number; height: number }, fps: BrowserFps): Promise<void> {
-    this.size = size
     this.fps = fps
     this.viewers += 1
-    if (this.viewers === 1) await this.start()
+    if (this.viewers > 1) return this.setSize(size)
+    this.size = size
+    await this.start()
   }
 
   async detachViewer(): Promise<void> {
@@ -126,10 +152,12 @@ export class FrameStreamer {
           // Chromium's own word on whether the parked view is composited.
           // `false` here means frames have stopped for a reason we did not
           // cause; it is the tripwire for the visibility-proof fallback.
-          wlog.info(
-            TAG,
-            `screencast visibility for ${this.tabId}: ${String((params as { visible?: boolean }).visible)}`
-          )
+          // Debug, not info: on a hidden window every capture below flips it
+          // true and back, several times a second.
+          const visible = (params as { visible?: boolean }).visible !== false
+          wlog.debug(TAG, `screencast visibility for ${this.tabId}: ${String(visible)}`)
+          this.hidden = !visible
+          this.schedulePoll(0)
           return
         }
         if (method !== 'Page.screencastFrame') return
@@ -153,6 +181,7 @@ export class FrameStreamer {
         `screencast started for ${this.tabId} at ${this.fps}fps ${this.size.width}x${this.size.height}`
       )
       void this.primeFirstFrame()
+      this.schedulePoll(POLL_MS[this.fps])
     } catch (err) {
       this.unsubscribe?.()
       this.unsubscribe = null
@@ -174,39 +203,97 @@ export class FrameStreamer {
    */
   private async primeFirstFrame(): Promise<void> {
     const startedAt = this.seq
+    const data = await this.capture()
+    // A real screencast frame beat us: nothing to do.
+    if (!this.running || this.seq !== startedAt || !data) return
+    wlog.debug(TAG, `primed first frame for ${this.tabId} (${data.length} b64 chars)`)
+    this.emitCaptured(data)
+  }
+
+  /** One real capture of the page as it is now, base64 JPEG; null when it failed. */
+  private async capture(): Promise<string | null> {
     try {
       const res = await this.cdp.send<{ data: string }>('Page.captureScreenshot', {
         format: 'jpeg',
         quality: QUALITY,
         fromSurface: true
       })
-      // A real screencast frame beat us: nothing to do.
-      if (!this.running || this.seq !== startedAt || !res.data) return
-      wlog.debug(TAG, `primed first frame for ${this.tabId} (${res.data.length} b64 chars)`)
-      this.lastSentAt = Date.now()
-      this.sink({
-        tabId: this.tabId,
-        data: Buffer.from(res.data, 'base64'),
-        width: this.size.width,
-        height: this.size.height,
-        page: {
-          offsetTop: 0,
-          pageScaleFactor: 1,
-          deviceWidth: this.size.width,
-          deviceHeight: this.size.height,
-          scrollOffsetX: 0,
-          scrollOffsetY: 0
-        },
-        seq: this.seq++
-      })
+      return res.data || null
     } catch (err) {
-      wlog.debug(TAG, `first-frame capture failed for ${this.tabId}:`, err)
+      wlog.debug(TAG, `capture failed for ${this.tabId}:`, err)
+      return null
     }
+  }
+
+  private emitCaptured(data: string): void {
+    this.lastSentAt = Date.now()
+    this.sink({
+      tabId: this.tabId,
+      data: Buffer.from(data, 'base64'),
+      width: this.size.width,
+      height: this.size.height,
+      page: {
+        offsetTop: 0,
+        pageScaleFactor: 1,
+        deviceWidth: this.size.width,
+        deviceHeight: this.size.height,
+        scrollOffsetX: 0,
+        scrollOffsetY: 0
+      },
+      seq: this.seq++
+    })
+  }
+
+  private blind(): boolean {
+    return this.hidden || !this.shown()
+  }
+
+  /** The capture clock, running only while a viewer streams a blind view. */
+  private schedulePoll(delayMs: number): void {
+    if (this.pollTimer || this.polling || !this.running || !this.blind()) return
+    this.pollTimer = setTimeout(() => {
+      this.pollTimer = null
+      void this.poll()
+    }, delayMs)
+  }
+
+  private async poll(): Promise<void> {
+    if (!this.running || !this.blind()) return
+    this.polling = true
+    const data = await this.capture()
+    this.polling = false
+    if (data && this.running && this.blind()) this.emitCaptured(data)
+    this.schedulePoll(POLL_MS[this.fps])
+  }
+
+  /**
+   * The page was clicked, scrolled, typed into or finished loading: a frame
+   * is owed (see OWED_FRAME_MS). A blind view is on the capture clock
+   * already. Also re-checks the window, which may have come on show or gone.
+   */
+  expectFrame(): void {
+    if (!this.running) return
+    this.schedulePoll(0)
+    if (this.blind() || this.owedTimer) return
+    const since = this.seq
+    this.owedTimer = setTimeout(() => {
+      this.owedTimer = null
+      if (!this.running || this.seq !== since) return
+      void this.capture().then((data) => {
+        if (data && this.running && this.seq === since) this.emitCaptured(data)
+      })
+    }, OWED_FRAME_MS)
   }
 
   private async stop(): Promise<void> {
     this.unsubscribe?.()
     this.unsubscribe = null
+    if (this.pollTimer) clearTimeout(this.pollTimer)
+    if (this.owedTimer) clearTimeout(this.owedTimer)
+    this.pollTimer = null
+    this.owedTimer = null
+    this.polling = false
+    this.hidden = false
     if (!this.running) return
     this.running = false
     this.cdp.sendSilent('Page.stopScreencast')

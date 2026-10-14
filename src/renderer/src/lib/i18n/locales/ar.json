@@ -2373,7 +2373,8 @@
       "openInBrowser": "فتح في المتصفح",
       "closedNote": "المتصفح مغلق",
       "relaunch": "إعادة تشغيل المتصفح",
-      "opening": "جارٍ فتح {{host}}"
+      "opening": "جارٍ فتح {{host}}",
+      "keyboard": "الكتابة في الصفحة"
     },
     "wait": {
       "status": {

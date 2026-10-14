@@ -445,12 +445,12 @@ app.commandLine.appendSwitch('no-zygote')
  * all. Applied ONLY when this really is a headless Linux launch, so a normal
  * desktop start is untouched.
  */
-if (
+const OZONE_HEADLESS =
   process.platform === 'linux' &&
   IS_HEADLESS_BOOT &&
   !process.env.DISPLAY &&
   !process.env.WAYLAND_DISPLAY
-) {
+if (OZONE_HEADLESS) {
   app.commandLine.appendSwitch('ozone-platform', 'headless')
   app.commandLine.appendSwitch('disable-gpu')
   app.commandLine.appendSwitch('disable-software-rasterizer')
@@ -2545,11 +2545,44 @@ let trayPopup: BrowserWindow | null = null
 let trayPopupShownAt = 0
 let trayMenuLocale: Locale = 'en'
 
-// The main app window — never the tray popup. Adding the popup means a bare
-// `getAllWindows()[0]` could grab the wrong window, so restore/show paths use
-// this helper instead.
+/**
+ * Where the in-app browser's tabs live on a headless boot. Every tab is a view
+ * inside some window's contentView and headless has no window, so the browser
+ * gets one of its own: never the app's UI, never a target for attention or
+ * restore. Under ozone's headless platform (a VPS) it is shown, which draws
+ * nowhere and keeps its pages composited and streaming; with a real display it
+ * stays hidden and the streamer captures frames itself (frames.ts).
+ */
+let browserHost: BrowserWindow | null = null
+function browserHostWindow(): BrowserWindow {
+  if (browserHost && !browserHost.isDestroyed()) return browserHost
+  browserHost = new BrowserWindow({
+    show: false,
+    width: 1920,
+    height: 1200,
+    frame: false,
+    skipTaskbar: true,
+    webPreferences: {
+      javascript: false,
+      sandbox: true,
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  })
+  void browserHost.loadURL('about:blank')
+  if (OZONE_HEADLESS) browserHost.showInactive()
+  return browserHost
+}
+
+// The main app window — never the tray popup or the browser's headless host.
+// Adding the popup means a bare `getAllWindows()[0]` could grab the wrong
+// window, so restore/show paths use this helper instead.
 function mainBrowserWindow(): BrowserWindow | null {
-  return BrowserWindow.getAllWindows().find((w) => w !== trayPopup && !w.isDestroyed()) ?? null
+  return (
+    BrowserWindow.getAllWindows().find(
+      (w) => w !== trayPopup && w !== browserHost && !w.isDestroyed()
+    ) ?? null
+  )
 }
 
 function restoreMainWindow(): void {
@@ -3514,10 +3547,10 @@ app.whenReady().then(async () => {
   // another app. Pointed at the main window only: the tray popup is not a
   // window anyone is waiting at.
   installAttention(mainBrowserWindow)
-  // The in-app browser hosts its tabs inside the main window's contentView.
-  // Same resolver, same reason: headless boot has no window, and the tab
-  // manager must read that as "nowhere to show a page", not crash.
-  browserTabs.install(mainBrowserWindow)
+  // The in-app browser hosts its tabs inside the main window's contentView —
+  // or, on a headless boot, which has none, inside a host window of its own,
+  // so a Web UI browser card works on a box with no screen.
+  browserTabs.install(() => mainBrowserWindow() ?? (IS_HEADLESS ? browserHostWindow() : null))
 
   // <webview> guests. Two browser-tab behaviors the bare tag lacks: a popup
   // (window.open, target=_blank) never becomes a naked BrowserWindow — an
@@ -5215,6 +5248,12 @@ app.whenReady().then(async () => {
   // script-src 'self' blocked every inline <script>). Same workspace-scoped
   // resolver as readFile, so a malformed path can't point the guest elsewhere.
   handle('upload:fileUrl', async (_e, relativePath: string): Promise<string | null> => {
+    const abs = resolveUploadPath(relativePath)
+    return abs ? pathToFileURL(abs).href : null
+  })
+  // What a live .html preview loads. Here the guest's file: URL, as above;
+  // the Web UI answers with a sandboxed /preview/ grant instead (preview.ts).
+  handle('upload:previewUrl', async (_e, relativePath: string): Promise<string | null> => {
     const abs = resolveUploadPath(relativePath)
     return abs ? pathToFileURL(abs).href : null
   })

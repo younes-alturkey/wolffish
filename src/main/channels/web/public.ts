@@ -122,7 +122,7 @@ export async function forbiddenRoots(): Promise<string[]> {
   return Promise.all(raw.map((p) => fs.realpath(p).catch(() => p)))
 }
 
-function isWithin(target: string, root: string): boolean {
+export function isWithin(target: string, root: string): boolean {
   if (target === root) return true
   const rel = path.relative(root, target)
   return rel !== '' && !rel.startsWith('..') && !path.isAbsolute(rel)

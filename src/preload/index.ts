@@ -2583,8 +2583,11 @@ export type UploadApi = {
     currentTotalBytes: number
   }) => Promise<UploadValidationError | null>
   openExternal: (relativePath: string) => Promise<{ ok: boolean; error?: string }>
-  /** file: URL of an upload, for the in-chat HTML preview <webview>; null when the path is invalid. */
+  /** file: URL of an upload (the Web UI: its /files/ route); null when the path is invalid. */
   fileUrl: (relativePath: string) => Promise<string | null>
+  /** What the live HTML preview loads: the <webview>'s file: URL, or in the Web UI a
+   *  sandboxed /preview/ grant whose relative assets resolve; null when refused. */
+  previewUrl: (relativePath: string) => Promise<string | null>
   /** Existence + type of a device path (resolves a leading ~), for chat path cards. */
   statPath: (path: string) => Promise<{ exists: boolean; isDirectory: boolean }>
   /** The project folder each directory is charged to, keyed by the directory

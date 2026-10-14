@@ -15,8 +15,9 @@ export type HtmlFileViewerProps = {
 /**
  * Inline renderer for HTML attachments and generated .html files. Reuses the
  * CodeFileViewer card with `htmlPreview`: the Preview view is a <webview>
- * guest loading the file from disk by its file: URL (scripts, canvas,
- * keyboard, audio — the page as a browser shows it), the Source view is the
+ * guest loading the file from disk by its file: URL (in the Web UI, a
+ * sandboxed iframe — see HtmlPreview) — scripts, canvas, keyboard, audio, the
+ * page as a browser shows it — and the Source view is the
  * highlighted markup read over the upload IPC channel. The size gate below
  * only applies to that Source read — the guest streams a file of any size —
  * so an oversized page still previews and its Source view says why it is
@@ -57,14 +58,15 @@ export function HtmlFileViewer({
   const oversized = sizeKnown && resolvedSize > MAX_SOURCE_BYTES
   const { text, error } = useUploadText(fileExists && sizeKnown && !oversized ? filePath : null)
 
-  // The file: URL the live preview guest loads. Resolved in main so the path
-  // stays workspace-scoped; null means the path was refused.
+  // The URL the live preview loads — the guest's file: URL, or the Web UI's
+  // sandboxed /preview/ grant. Resolved in main so the path stays
+  // workspace-scoped; null means the path was refused.
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   useEffect(() => {
     if (!fileExists) return
     let cancelled = false
     window.api.upload
-      .fileUrl(filePath)
+      .previewUrl(filePath)
       .then((url) => {
         if (!cancelled) setPreviewUrl(url)
       })

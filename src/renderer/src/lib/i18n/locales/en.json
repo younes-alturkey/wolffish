@@ -2343,7 +2343,8 @@
       "openInBrowser": "Open in browser",
       "closedNote": "The browser is closed",
       "relaunch": "Relaunch the browser",
-      "opening": "Opening {{host}}"
+      "opening": "Opening {{host}}",
+      "keyboard": "Type into the page"
     },
     "wait": {
       "status": {

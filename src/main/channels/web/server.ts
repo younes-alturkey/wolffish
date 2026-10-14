@@ -69,6 +69,14 @@ import {
   type PublicShare
 } from '@main/channels/web/public'
 import {
+  PREVIEW_CSP,
+  PREVIEW_PATH_PREFIX,
+  PREVIEW_SHIM_MAX_BYTES,
+  PreviewGrants,
+  previewFile,
+  withStorageShim
+} from '@main/channels/web/preview'
+import {
   WebInbox,
   type WebNotificationAction,
   type WebNotificationRecord
@@ -633,6 +641,8 @@ export class WebServer {
   private readonly preflightDeps: PreflightDeps
   private statusTimer: ReturnType<typeof setTimeout> | null = null
   private readonly pdfs = new Map<string, { data: Buffer; name: string; expires: number }>()
+  /** Sandboxed .html previews for the chat's file cards — see preview.ts. */
+  private readonly previews = new PreviewGrants()
   private readonly stagingDir: string
   /** App ports this process already asked the host firewall about. */
   private readonly firewallAsked = new Set<number>()
@@ -1666,6 +1676,7 @@ export class WebServer {
       method === 'GET' &&
       !p.startsWith('/api/') &&
       !p.startsWith(PUBLIC_PATH_PREFIX) &&
+      !p.startsWith(PREVIEW_PATH_PREFIX) &&
       isNavigation(req)
     ) {
       const host = (req.headers.host ?? 'localhost').replace(/:\d+$/, '')
@@ -1696,6 +1707,9 @@ export class WebServer {
     // Public links: the one route a request reaches with no cookie. The
     // token in the path is the whole permission; public.ts owns the records.
     if (p.startsWith(PUBLIC_PATH_PREFIX)) return this.routePublic(req, res, url)
+    // Previews carry no cookie either — a sandboxed page's requests cannot.
+    // The token was minted for a signed-in session; preview.ts owns them.
+    if (p.startsWith(PREVIEW_PATH_PREFIX)) return this.routePreview(req, res, url)
 
     // Everything below needs a signed-in browser.
     const session = await this.sessionFor(req)
@@ -2292,6 +2306,41 @@ export class WebServer {
 
   // ─── file routes ───────────────────────────────────────────────────────────
 
+  /**
+   * A private preview (preview.ts). The sandbox header rides every answer —
+   * it is what keeps a page opened in a tab of its own out of the app's
+   * origin — and CORS is `*` because the sandboxed page's module scripts,
+   * fonts and fetches are cross-origin requests from an opaque origin: the
+   * token, not the origin, is the permission. A page itself is read whole to
+   * carry the storage stand-in an opaque origin lacks.
+   */
+  private async routePreview(
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+    url: URL
+  ): Promise<void> {
+    const method = req.method ?? 'GET'
+    if (method !== 'GET' && method !== 'HEAD')
+      return sendJson(res, 405, { ok: false, error: 'method not allowed' })
+    const m = /^\/preview\/([A-Za-z0-9_-]{16,128})(\/.*)?$/.exec(url.pathname)
+    const grant = m ? this.previews.resolve(m[1]) : null
+    const abs = grant && m ? await previewFile(grant, m[2] ?? '') : null
+    if (!abs) return sendJson(res, 404, { ok: false, error: 'not found' })
+    res.setHeader('Content-Security-Policy', PREVIEW_CSP)
+    res.setHeader('Access-Control-Allow-Origin', '*')
+    if (method === 'GET' && /\.html?$/i.test(abs)) {
+      const { size } = await fs.stat(abs)
+      if (size <= PREVIEW_SHIM_MAX_BYTES)
+        return this.serveText(
+          res,
+          withStorageShim(await fs.readFile(abs, 'utf8')),
+          'text/html; charset=utf-8',
+          { 'Cache-Control': 'private, no-cache', 'X-Frame-Options': 'SAMEORIGIN' }
+        )
+    }
+    return this.serveFile(req, res, abs, { download: false, cache: 'private, no-cache' })
+  }
+
   private async routeWorkspaceFile(
     req: http.IncomingMessage,
     res: http.ServerResponse,
@@ -2689,9 +2738,10 @@ export class WebServer {
     if (this.pages.get(pageId) === link) this.pages.delete(pageId)
   }
 
-  /** A signed-out session's pages are owed nothing — not even events queued for them. */
+  /** A signed-out session's pages are owed nothing — not even events queued for them, or its previews. */
   private retireSessionPages(keep: (sessionId: string) => boolean): void {
     for (const [id, link] of [...this.pages]) if (!keep(link.sessionId)) this.retirePage(id, link)
+    this.previews.revoke((sessionId) => !keep(sessionId))
   }
 
   private sweepClients(): void {
@@ -2795,6 +2845,10 @@ export class WebServer {
       const relative = typeof args[0] === 'string' ? args[0] : ''
       return resolveUploadPath(relative) ? fileUrl('/files', relative) : null
     },
+    'upload:previewUrl': async (args, ctx) => {
+      const abs = resolveUploadPath(typeof args[0] === 'string' ? args[0] : '')
+      return abs ? this.previews.grant(ctx.client.session.id, abs) : null
+    },
     'upload:download': async (args) => {
       const relative = typeof args[0] === 'string' ? args[0] : ''
       return resolveUploadPath(relative)
@@ -2817,11 +2871,17 @@ export class WebServer {
       if (!p) return { ok: false }
       return { ok: true, downloadUrl: `/device?path=${encodeURIComponent(p)}` }
     },
-    'upload:openExternal': async (args) => {
+    'upload:openExternal': async (args, ctx) => {
       const relative = typeof args[0] === 'string' ? args[0] : ''
-      return resolveUploadPath(relative)
-        ? { ok: true, openUrl: fileUrl('/files', relative) }
-        : { ok: false, error: 'invalid path' }
+      const abs = resolveUploadPath(relative)
+      if (!abs) return { ok: false, error: 'invalid path' }
+      // A page opens the way its card shows it: sandboxed, assets resolving —
+      // never as /files/, where its scripts would run as the app.
+      if (/\.(html?|xhtml)$/i.test(abs)) {
+        const preview = await this.previews.grant(ctx.client.session.id, abs)
+        if (preview) return { ok: true, openUrl: preview }
+      }
+      return { ok: true, openUrl: fileUrl('/files', relative) }
     },
     'browser:openExternal': async (args) => {
       const url = (args[0] as { url?: unknown } | undefined)?.url

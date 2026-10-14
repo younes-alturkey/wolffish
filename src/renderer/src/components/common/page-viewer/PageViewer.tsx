@@ -1,4 +1,5 @@
 import { CodeBlock } from '@components/core/CodeBlock'
+import { isWeb } from '@lib/utils/platform'
 import { GlobalIcon, LinkSquare01Icon } from 'hugeicons-react'
 import { createElement, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -22,7 +23,9 @@ function isWebUrl(url: string | null | undefined): url is string {
  * website (we have an http(s) URL) it renders the live site in a borderless,
  * sandboxed <webview>; otherwise it shows the captured text/HTML in a
  * collapsible code block. The webview is lazy-mounted so a long transcript
- * doesn't spin up many live guests at once.
+ * doesn't spin up many live guests at once. In the Web UI it is an iframe
+ * (see frameSandbox), and a site that forbids framing shows its refusal there
+ * — the header link opens it in a tab.
  */
 export function PageViewer({
   content,
@@ -51,6 +54,21 @@ export function PageViewer({
       format={format}
     />
   )
+}
+
+/**
+ * The Web UI frames the site instead (a browser has no <webview>). A third
+ * party keeps its own origin, so its sign-ins and storage work and it still
+ * cannot reach the app; a page from the app's own server never does — with
+ * scripts and the app's origin it could lift its own sandbox.
+ */
+function frameSandbox(url: string): string {
+  const base = 'allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox'
+  try {
+    return new URL(url).origin === window.location.origin ? base : `${base} allow-same-origin`
+  } catch {
+    return base
+  }
 }
 
 /**
@@ -148,7 +166,15 @@ function WebsiteCard({
         </a>
       </div>
       <div className="bg-white" style={{ height: 440 }}>
-        {visible ? (
+        {visible && isWeb ? (
+          <iframe
+            src={url}
+            title={heading}
+            sandbox={frameSandbox(url)}
+            referrerPolicy="no-referrer"
+            className="block h-full w-full border-0"
+          />
+        ) : visible ? (
           createElement('webview', {
             src: url,
             partition: 'pageviewer',

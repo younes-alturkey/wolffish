@@ -59,6 +59,9 @@ const TAG = 'browser'
  *  reflows the page to garbage (Electron #44590). */
 const DEFAULT_STAGE: BrowserRect = { x: 0, y: 0, width: 1024, height: 700 }
 
+/** The largest page a parked view is given, per side, whatever a viewer asks for. */
+const MAX_PARKED_PX = 4096
+
 export type TabEvents = {
   /** Every state change, for the post-turn fold (browser:changed) and, while
    *  the opening turn is live, for the `browser` segment in its transcript. */
@@ -143,7 +146,12 @@ export class Tab {
 
     this.cdp = new CdpSession(this.view.webContents)
     this.session = createSnapshotSession((method, params) => this.cdp.send(method, params))
-    this.streamer = new FrameStreamer(this.id, this.cdp, (frame) => this.events.onFrame(frame))
+    this.streamer = new FrameStreamer(
+      this.id,
+      this.cdp,
+      (frame) => this.events.onFrame(frame),
+      () => !!this.window && !this.window.isDestroyed() && this.window.isVisible()
+    )
 
     // Attach once, park immediately in the corner.
     opts.window.contentView.addChildView(this.view)
@@ -211,6 +219,7 @@ export class Tab {
     })
     wc.on('did-stop-loading', () => {
       this.scheduleStill()
+      this.streamer.expectFrame()
       this.loadState = this.error ? 'error' : 'ready'
       this.emit()
     })
@@ -256,13 +265,21 @@ export class Tab {
   private applyBounds(): void {
     if (!this.isAlive || !this.window || this.window.isDestroyed()) return
     const content = this.window.getContentBounds()
-    const width = Math.max(1, Math.min(Math.round(this.stage.width), content.width))
-    const height = Math.max(1, Math.min(Math.round(this.stage.height), content.height))
     if (this.mode === 'card') {
-      // Parked: one pixel of the page inside the window, at the corner.
-      this.view.setBounds({ x: content.width - 1, y: content.height - 1, width, height })
+      // Parked: one pixel of the page inside the window, at the corner. The
+      // rest hangs outside it, so the page takes its viewer's size, not the
+      // window's — a Web UI sheet can be larger than this window, and its
+      // clicks map 1:1 only if the page is exactly the sheet.
+      this.view.setBounds({
+        x: content.width - 1,
+        y: content.height - 1,
+        width: Math.max(1, Math.min(Math.round(this.stage.width), MAX_PARKED_PX)),
+        height: Math.max(1, Math.min(Math.round(this.stage.height), MAX_PARKED_PX))
+      })
       return
     }
+    const width = Math.max(1, Math.min(Math.round(this.stage.width), content.width))
+    const height = Math.max(1, Math.min(Math.round(this.stage.height), content.height))
     const x = Math.max(0, Math.min(Math.round(this.stage.x), Math.max(0, content.width - width)))
     const y = Math.max(0, Math.min(Math.round(this.stage.y), Math.max(0, content.height - height)))
     this.view.setBounds({ x, y, width, height })
@@ -411,8 +428,8 @@ export class BrowserTabManager {
   }
 
   /** Mirrors attention.ts: a no-op resolver until installed, so this module
-   *  stays importable from tests that never open a window, and headless boot
-   *  (where there is permanently no window) is correct for free. */
+   *  stays importable from tests that never open a window. On a headless boot
+   *  the resolver hands back a host window of the browser's own (index.ts). */
   install(getWindow: () => BrowserWindow | null): void {
     this.getWindow = getWindow
   }
@@ -638,6 +655,8 @@ export class BrowserTabManager {
     } catch (err) {
       wlog.debug(TAG, `sendInput ${t} failed:`, err)
     }
+    // A pointer gliding over a still page changes nothing; everything else may.
+    if (t !== 'mouseMove' && t !== 'keyUp') tab.streamer.expectFrame()
   }
 
   /** The card was resized: re-encode frames at its new device-pixel size. */
