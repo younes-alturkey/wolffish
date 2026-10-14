@@ -34,10 +34,10 @@ export function WebDeeplink(): null {
 
   useEffect(() => {
     let disposed = false
-    const open = async (search: string): Promise<void> => {
+    const open = async (search: string, show: boolean): Promise<void> => {
       const id = new URLSearchParams(search).get('conversation')
       if (!id) return
-      actions.current.goTo('chat')
+      if (show) actions.current.goTo('chat')
       if (actions.current.activateConversation(id)) return
       const conversation = await window.api.conversation.load(id)
       if (disposed) return
@@ -47,12 +47,14 @@ export function WebDeeplink(): null {
       }
       actions.current.openConversation(conversation, mapConversationMessages(conversation))
     }
-    if (location.search.includes('conversation=')) void open(location.search)
+    // On load the screen is FlowProvider's call — the changelog after an
+    // update, onboarding, the disk gate — so the conversation opens behind it.
+    if (location.search.includes('conversation=')) void open(location.search, false)
     const onOpen = (event: Event): void => {
       const url = (event as CustomEvent<{ url: string }>).detail?.url
       if (!url) return
       const qs = url.indexOf('?')
-      void open(qs >= 0 ? url.slice(qs) : '')
+      void open(qs >= 0 ? url.slice(qs) : '', true)
     }
     window.addEventListener('wolffish:open', onOpen)
     return () => {

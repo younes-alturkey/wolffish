@@ -1,4 +1,10 @@
-## v1.0.328 — 2026-10-14 `Latest`
+## v1.0.329 — 2026-10-14 `Latest`
+
+### The Changelog After Every Update in the Web UI
+
+Updating from a browser while a conversation was open — as it usually is when you click Update in **Settings → Updates** — brought the page back on that conversation instead of on what's new. Now an update **always opens the Changelog** first, wherever you clicked Update, and the conversation you had open is **waiting right behind it** when you go back.
+
+## v1.0.328 — 2026-10-14
 
 ### The Live Status Line Shows the Whole Step
 
