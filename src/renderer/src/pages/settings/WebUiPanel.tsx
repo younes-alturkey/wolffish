@@ -433,6 +433,7 @@ export function WebUiPanel(): React.JSX.Element {
         <PasswordCard
           passwordSet={config?.passwordSet === true}
           passwordGenerated={config?.passwordGenerated === true}
+          passwordMask={config?.passwordMask ?? null}
           epoch={configEpoch}
           loaded={loaded}
           onSaved={(result) => {
@@ -730,12 +731,14 @@ function describeAgent(ua: string): string {
 function PasswordCard({
   passwordSet,
   passwordGenerated,
+  passwordMask,
   epoch,
   loaded,
   onSaved
 }: {
   passwordSet: boolean
   passwordGenerated: boolean
+  passwordMask: string | null
   /** Bumps on every config change, so a shown passphrase never outlives its password. */
   epoch: number
   loaded: boolean
@@ -745,13 +748,15 @@ function PasswordCard({
   const toast = useToast()
   const [revealed, setRevealed] = useState<string | null>(null)
   const phraseRef = useRef<HTMLElement>(null)
-  // The revealed passphrase stays on one line, whole: its font shrinks until
-  // it fits the box. Measured, not computed — the monospace font, and so the
-  // width of a character, differs per platform.
+  const shownPhrase = revealed ?? passwordMask
+  // The passphrase stays on one line, whole: its font shrinks until it fits
+  // the box. Measured, not computed — the monospace font, and so the width of
+  // a character, differs per platform. The mask has the phrase's length, so
+  // hidden and revealed fit to the same size.
   useLayoutEffect(() => {
     const el = phraseRef.current
     const box = el?.parentElement
-    if (!el || !box || !revealed) return
+    if (!el || !box || !shownPhrase) return
     const fit = (): void => {
       el.style.fontSize = ''
       const ratio = el.clientWidth / el.scrollWidth
@@ -764,7 +769,7 @@ function PasswordCard({
     const ro = new ResizeObserver(fit)
     ro.observe(box)
     return () => ro.disconnect()
-  }, [revealed])
+  }, [shownPhrase])
   const [copied, setCopied] = useState(false)
   const [regenOpen, setRegenOpen] = useState(false)
   const [ownOpen, setOwnOpen] = useState(false)
@@ -882,11 +887,11 @@ function PasswordCard({
             ref={phraseRef}
             dir="ltr"
             className={cn(
-              'text-fg block font-mono text-sm leading-relaxed whitespace-nowrap select-all',
-              !revealed && 'text-muted overflow-hidden'
+              'block font-mono text-sm leading-relaxed whitespace-nowrap',
+              revealed ? 'text-fg select-all' : 'text-muted select-none'
             )}
           >
-            {revealed ?? '•'.repeat(72)}
+            {shownPhrase}
           </code>
         ) : (
           <p className="text-muted text-xs leading-relaxed">{t('settings.web.password.ownNote')}</p>

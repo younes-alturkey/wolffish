@@ -107,6 +107,11 @@ async function run(): Promise<void> {
     'public config says generated and carries neither phrase nor hash',
     pub1.passwordSet && pub1.passwordGenerated && !('password' in pub1) && !('passwordHash' in pub1)
   )
+  ok(
+    'mask is the phrase with every letter a dot',
+    pub1.passwordMask === (cfg1.password ?? '').replace(/\S/g, '•') &&
+      /^[• ]+$/.test(pub1.passwordMask ?? '')
+  )
 
   // ── the handlers, over a stand-in server ──────────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -172,7 +177,9 @@ async function run(): Promise<void> {
   )
   ok(
     'public config: set, not generated',
-    toPublicConfig(cfg3).passwordSet && toPublicConfig(cfg3).passwordGenerated === false
+    toPublicConfig(cfg3).passwordSet &&
+      toPublicConfig(cfg3).passwordGenerated === false &&
+      toPublicConfig(cfg3).passwordMask === null
   )
   const third = await ensureWebUiPassword()
   ok(

@@ -34,6 +34,11 @@ export type WebUiPublicConfig = Omit<WebUiConfig, 'passwordHash' | 'password' | 
   passwordSet: boolean
   /** True while the password is the generated passphrase, which can be shown. */
   passwordGenerated: boolean
+  /**
+   * The generated passphrase with every letter a dot and its spaces kept, so
+   * the hidden phrase takes exactly the room the revealed one does.
+   */
+  passwordMask: string | null
 }
 
 export function toPublicConfig(config: WebUiConfig): WebUiPublicConfig {
@@ -46,7 +51,8 @@ export function toPublicConfig(config: WebUiConfig): WebUiPublicConfig {
     publicOrigin: config.publicOrigin ?? null,
     verbose: config.verbose,
     passwordSet: typeof config.passwordHash === 'string' && config.passwordHash.length > 0,
-    passwordGenerated: typeof config.password === 'string' && config.password.length > 0
+    passwordGenerated: typeof config.password === 'string' && config.password.length > 0,
+    passwordMask: config.password ? config.password.replace(/\S/g, '•') : null
   }
 }
 

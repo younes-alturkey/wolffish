@@ -1,4 +1,10 @@
-## v1.0.332 — 2026-10-14 `Latest`
+## v1.0.333 — 2026-10-14 `Latest`
+
+### The Hidden Passphrase Keeps Its Shape
+
+While hidden, the generated passphrase in **Settings → Channels → Web UI** used to be a fixed row of dots, and the box **jumped in height** the moment you showed it. Now the hidden phrase is **the phrase itself with every letter a dot** — the same words, the same spaces, the same size — so Show and Hide swap the letters and **nothing else moves**.
+
+## v1.0.332 — 2026-10-14
 
 ### A Proper Preview When You Share the Web UI Link
 
