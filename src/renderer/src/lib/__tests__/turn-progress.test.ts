@@ -1,6 +1,6 @@
 /**
  * The clean feed's live status line: newest of reasoning-summary title and
- * tool call wins, worker segments are ignored, targets are compact.
+ * tool call wins, worker segments are ignored, huge targets are capped.
  *
  * Standalone — no vitest/jest in this repo. Run:
  *   TSX_TSCONFIG_PATH=tsconfig.node.json npx tsx \
@@ -90,12 +90,12 @@ ok(
 )
 
 const untitled = turnProgress([
-  call('shell_exec', { command: 'date -u\necho hi' }),
+  call('shell_exec', { command: 'date -u\n\n  echo hi' }),
   reasoning('plain thinking, no title')
 ])
 ok(
   'untitled reasoning falls through to the call',
-  untitled?.kind === 'tool' && untitled.verb === 'run' && untitled.target === 'date -u',
+  untitled?.kind === 'tool' && untitled.verb === 'run' && untitled.target === 'date -u\necho hi',
   untitled
 )
 
@@ -112,6 +112,17 @@ const workers = turnProgress([
   reasoning('**Worker title**', true)
 ])
 ok('worker segments ignored', workers?.kind === 'tool' && workers.target === 'a.org', workers)
+
+const longCommand = `find /opt/Wolffish -iname "*stt*" 2>/dev/null | head -20; echo ${'x'.repeat(80)}`
+const long = turnProgress([call('shell_exec', { command: longCommand })])
+ok('a long command is kept whole', long?.kind === 'tool' && long.target === longCommand, long)
+
+const huge = turnProgress([call('shell_exec', { command: 'y'.repeat(5000) })])
+ok(
+  'a huge argument is capped',
+  huge?.kind === 'tool' && huge.target.length === 600 && huge.target.endsWith('…'),
+  huge
+)
 
 console.log(`${passed} passed, ${failed} failed`)
 process.exit(failed > 0 ? 1 : 0)

@@ -45,7 +45,13 @@ function describeCall(name: string, args: Record<string, unknown> | undefined): 
   const query = str('query') ?? str('q')
   if (query) return { kind: 'tool', verb: 'search', target: clip(query) }
   const command = str('command')
-  if (command) return { kind: 'tool', verb: 'run', target: clip(command.split('\n')[0]) }
+  if (command) {
+    const lines = command
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+    return { kind: 'tool', verb: 'run', target: clip(lines.join('\n')) }
+  }
   const capability = str('capability')
   if (capability) return { kind: 'tool', verb: 'load', target: capability.replace(/-/g, ' ') }
   const path = str('path') ?? str('file') ?? str('output_path')
@@ -61,6 +67,8 @@ function hostOf(url: string): string {
   }
 }
 
+// The status line clamps itself to four lines on screen; this only keeps a
+// huge argument (a pasted script, a long heredoc) out of the DOM.
 function clip(text: string): string {
-  return text.length > 60 ? `${text.slice(0, 59)}…` : text
+  return text.length > 600 ? `${text.slice(0, 599)}…` : text
 }

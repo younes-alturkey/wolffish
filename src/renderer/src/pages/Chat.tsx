@@ -5357,7 +5357,9 @@ function AssistantBubble({
             ) : awaitingAsk ? (
               <span className="animate-pulse">{t('chat.awaitingAnswer')}</span>
             ) : (
-              <span className="animate-pulse">{progressText ?? typedText}…</span>
+              <span className="animate-pulse line-clamp-4 whitespace-pre-line">
+                {progressText ?? typedText}…
+              </span>
             )}
           </span>
         </div>
@@ -5369,7 +5371,9 @@ function AssistantBubble({
       )}
       {/* Clean feed only: verbose already shows every tool card live. */}
       {isStreaming && !showThinking && !verbose && progressText && (
-        <span className="text-muted animate-pulse px-1 text-xs italic">{progressText}…</span>
+        <span className="text-muted animate-pulse line-clamp-4 px-1 text-xs whitespace-pre-line wrap-break-word italic">
+          {progressText}…
+        </span>
       )}
       {showCopy && (
         <div className="flex items-center gap-1.5">

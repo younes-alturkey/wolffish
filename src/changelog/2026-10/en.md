@@ -1,4 +1,14 @@
-## v1.0.327 — 2026-10-14 `Latest`
+## v1.0.328 — 2026-10-14 `Latest`
+
+### The Live Status Line Shows the Whole Step
+
+The line that tells you what a run is doing right now used to stop at about sixty characters, so a long command read "Running find /opt/Wolffish … head -20; e…". It now takes **up to four lines**: a long command, query or file name shows **in full**, and a command that spans several lines shows **each of its lines**. Anything longer still stops cleanly at four.
+
+### A Cancelled Reboot Brings Wolffish Back
+
+If you chose **Reboot device** and the system then called the reboot off — an app with unsaved work on macOS, a cancelled shutdown on Windows — Wolffish used to stay paused behind the reboot screen. It now notices the machine is still up and **restarts itself**.
+
+## v1.0.327 — 2026-10-14
 
 ### A Notifications Page in the Web UI
 
