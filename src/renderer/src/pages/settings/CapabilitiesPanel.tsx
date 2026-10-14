@@ -3,6 +3,7 @@ import { Button } from '@components/core/Button'
 import { Modal } from '@components/core/Modal'
 import { useToast } from '@components/core/toast/useToast'
 import { cn } from '@lib/utils/cn'
+import { randomId } from '@lib/utils/randomId'
 import type { CapabilityEntry } from '@preload/index'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -30,8 +31,9 @@ export function CapabilitiesPanel(): React.JSX.Element {
   const [capabilities, setCapabilities] = useState<CapabilityEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [resyncing, setResyncing] = useState(false)
-  const [importing, setImporting] = useState(false)
-  const [importError, setImportError] = useState<string | null>(null)
+  const [pending, setPending] = useState<PendingImport[]>([])
+  const importing = pending.length > 0
+  const [importErrors, setImportErrors] = useState<ImportFailure[]>([])
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
 
@@ -68,32 +70,86 @@ export function CapabilitiesPanel(): React.JSX.Element {
     }
   }
 
-  // Validate + import a dropped/picked path, then refresh the list so the new
-  // capability shows up immediately (same machinery as Resync).
+  // Validate + import every dropped/picked path, one after another, each on
+  // its own pending card where the capability will land. Sequential on
+  // purpose: the importer checks name uniqueness against the loaded list, so
+  // two of the same name in one drop must meet it one at a time. On the web
+  // each upload reports its bytes under the card's id; the rest (validation,
+  // the copy into the workspace) has no byte count on either platform. The
+  // list reloads once at the end (same machinery as Resync).
   const runImport = useCallback(
-    async (sourcePath: string): Promise<void> => {
-      if (importing) return
-      setImporting(true)
-      setImportError(null)
+    async (sourcePaths: string[]): Promise<void> => {
+      if (importing || sourcePaths.length === 0) return
+      if (sourcePaths.length > MAX_IMPORTS_PER_BATCH) {
+        toast.show({
+          tone: 'error',
+          message: t('settings.capabilities.import.batchLimit', { max: MAX_IMPORTS_PER_BATCH })
+        })
+      }
+      const cards: PendingImport[] = sourcePaths.slice(0, MAX_IMPORTS_PER_BATCH).map((p) => ({
+        id: randomId(),
+        name: importNameHint(p),
+        loaded: 0,
+        total: 0,
+        phase: 'queued'
+      }))
+      const patch = (id: string, change: Partial<PendingImport>): void =>
+        setPending((prev) => prev.map((c) => (c.id === id ? { ...c, ...change } : c)))
+      setPending(cards)
+      setImportErrors([])
+      const off = window.api.upload.onCopyProgress((tick) => {
+        patch(tick.progressId, {
+          loaded: tick.copiedBytes,
+          total: tick.totalBytes,
+          phase: tick.copiedBytes < tick.totalBytes ? 'uploading' : 'importing'
+        })
+      })
+      const failures: ImportFailure[] = []
+      const imported: string[] = []
       try {
-        const result = await window.api.cerebellum.importCapability(sourcePath)
-        if (result.ok) {
+        for (const [i, card] of cards.entries()) {
+          patch(card.id, { phase: 'importing' })
+          try {
+            const result = await window.api.cerebellum.importCapability(sourcePaths[i], card.id)
+            if (result.ok) {
+              imported.push(result.name)
+              patch(card.id, { name: result.name, phase: 'done' })
+            } else {
+              failures.push({ name: card.name, message: result.error })
+              patch(card.id, { phase: 'failed' })
+            }
+          } catch (err) {
+            failures.push({
+              name: card.name,
+              message: err instanceof Error ? err.message : String(err)
+            })
+            patch(card.id, { phase: 'failed' })
+          }
+        }
+        if (imported.length > 0) {
           const fresh = await window.api.cerebellum.reload()
           setCapabilities(fresh)
           toast.show({
             tone: 'success',
-            message: t('settings.capabilities.import.successToast', { name: result.name })
+            message:
+              imported.length === 1
+                ? t('settings.capabilities.import.successToast', { name: imported[0] })
+                : t('settings.capabilities.import.successMany', { count: imported.length })
           })
-        } else {
-          setImportError(result.error)
-          toast.show({ tone: 'error', message: t('settings.capabilities.import.errorToast') })
         }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err)
-        setImportError(message)
-        toast.show({ tone: 'error', message: t('settings.capabilities.import.errorToast') })
+        if (failures.length > 0) {
+          setImportErrors(failures)
+          toast.show({
+            tone: 'error',
+            message:
+              failures.length === 1
+                ? t('settings.capabilities.import.failedOne')
+                : t('settings.capabilities.import.failedMany', { count: failures.length })
+          })
+        }
       } finally {
-        setImporting(false)
+        off()
+        setPending([])
       }
     },
     [importing, t, toast]
@@ -105,7 +161,7 @@ export function CapabilitiesPanel(): React.JSX.Element {
       title: t('settings.capabilities.import.dialogTitle'),
       filterName: t('settings.capabilities.import.dialogFilter')
     })
-    if (picked) await runImport(picked)
+    if (picked.length > 0) await runImport(picked)
   }, [importing, runImport, t])
 
   // Confirmed delete — nukes the capability folder, then swaps in the fresh
@@ -173,22 +229,28 @@ export function CapabilitiesPanel(): React.JSX.Element {
 
         <ImportSection
           importing={importing}
-          error={importError}
-          onImport={(p) => void runImport(p)}
+          errors={importErrors}
+          onImport={(paths) => void runImport(paths)}
           onBrowse={() => void onBrowse()}
-          onDismissError={() => setImportError(null)}
+          onDismissErrors={() => setImportErrors([])}
         />
 
         {loading ? (
           <div className="text-muted py-12 text-center text-sm">
             {t('settings.capabilities.loading')}
           </div>
-        ) : capabilities.length === 0 ? (
+        ) : capabilities.length === 0 && pending.length === 0 ? (
           <div className="text-muted py-12 text-center text-sm">
             {t('settings.capabilities.empty')}
           </div>
         ) : (
           <section className="bg-surface border-border flex flex-col rounded-2xl border">
+            {pending.map((card, i) => (
+              <div key={card.id}>
+                {i > 0 && <div className="border-border/60 border-t" />}
+                <PendingCapabilityRow pending={card} />
+              </div>
+            ))}
             {[...capabilities]
               // Locked core capabilities sink to the very bottom; within each
               // group official caps sort after user-imported ones. (Array.sort
@@ -198,7 +260,7 @@ export function CapabilitiesPanel(): React.JSX.Element {
               )
               .map((cap, i) => (
                 <div key={cap.name}>
-                  {i > 0 && <div className="border-border/60 border-t" />}
+                  {(i > 0 || pending.length > 0) && <div className="border-border/60 border-t" />}
                   <CapabilityRow
                     cap={cap}
                     onToggle={(enabled) => {
@@ -267,16 +329,16 @@ function DeleteCapabilityModal({
 
 function ImportSection({
   importing,
-  error,
+  errors,
   onImport,
   onBrowse,
-  onDismissError
+  onDismissErrors
 }: {
   importing: boolean
-  error: string | null
-  onImport: (sourcePath: string) => void
+  errors: ImportFailure[]
+  onImport: (sourcePaths: string[]) => void
   onBrowse: () => void
-  onDismissError: () => void
+  onDismissErrors: () => void
 }): React.JSX.Element {
   const { t } = useTranslation()
   const toast = useToast()
@@ -307,16 +369,15 @@ function ImportSection({
       e.stopPropagation()
       setDragActive(false)
       if (importing) return
-      const file = e.dataTransfer.files?.[0]
-      if (!file) return
-      // Resolve the real filesystem path — for a single file, a folder, or a
-      // .zip alike. main does the rest (validate, unpack, copy).
-      const sourcePath = window.api.upload.getPathForFile(file)
-      if (!sourcePath) {
+      const files = Array.from(e.dataTransfer.files ?? [])
+      if (files.length === 0) return
+      // Resolve the real filesystem path of each item — a single file, a
+      // folder, or a .zip alike. main does the rest (validate, unpack, copy).
+      const sourcePaths = files.map((file) => window.api.upload.getPathForFile(file))
+      if (sourcePaths.some((p) => !p)) {
         toast.show({ tone: 'error', message: t('settings.capabilities.import.readError') })
-        return
       }
-      onImport(sourcePath)
+      onImport(sourcePaths.filter(Boolean))
     },
     [importing, onImport, t, toast]
   )
@@ -356,26 +417,15 @@ function ImportSection({
               : 'border-border hover:border-muted cursor-pointer'
         )}
       >
-        {importing ? (
-          <>
-            <Loading03Icon size={24} className="text-muted animate-spin" />
-            <span className="text-muted text-sm">
-              {t('settings.capabilities.import.importing')}
-            </span>
-          </>
-        ) : (
-          <>
-            <CloudUploadIcon size={24} className={dragActive ? 'text-primary' : 'text-muted'} />
-            <span className={cn('text-sm', dragActive ? 'text-primary' : 'text-muted')}>
-              {dragActive
-                ? t('settings.capabilities.import.dropzoneActive')
-                : t('settings.capabilities.import.dropzone')}
-            </span>
-          </>
-        )}
+        <CloudUploadIcon size={24} className={dragActive ? 'text-primary' : 'text-muted'} />
+        <span className={cn('text-sm', dragActive ? 'text-primary' : 'text-muted')}>
+          {dragActive
+            ? t('settings.capabilities.import.dropzoneActive')
+            : t('settings.capabilities.import.dropzone')}
+        </span>
       </div>
 
-      {error && <ImportErrorAlert message={error} onDismiss={onDismissError} />}
+      {errors.length > 0 && <ImportErrorAlert errors={errors} onDismiss={onDismissErrors} />}
 
       <ImportGuide />
     </section>
@@ -383,10 +433,10 @@ function ImportSection({
 }
 
 function ImportErrorAlert({
-  message,
+  errors,
   onDismiss
 }: {
-  message: string
+  errors: ImportFailure[]
   onDismiss: () => void
 }): React.JSX.Element {
   const { t } = useTranslation()
@@ -411,9 +461,20 @@ function ImportErrorAlert({
           {t('settings.capabilities.import.dismiss')}
         </button>
       </div>
-      <pre className="bg-bg/60 border-border text-fg/90 whitespace-pre-wrap wrap-break-word rounded-md border px-3 py-2 font-mono text-xs leading-relaxed">
-        {message}
-      </pre>
+      {errors.map((failure, i) => (
+        <pre
+          key={i}
+          className="bg-bg/60 border-border text-fg/90 whitespace-pre-wrap wrap-break-word rounded-md border px-3 py-2 font-mono text-xs leading-relaxed"
+        >
+          {errors.length > 1 && (
+            <span className="text-muted">
+              {failure.name ?? t('settings.capabilities.import.pendingName')}
+              {' — '}
+            </span>
+          )}
+          {failure.message}
+        </pre>
+      ))}
     </div>
   )
 }
@@ -445,6 +506,122 @@ function ImportGuide(): React.JSX.Element {
       <div className="bg-bg/40 border-border flex items-start gap-2 rounded-md border px-3 py-2.5">
         <InformationCircleIcon size={13} className="text-muted mt-0.5 shrink-0" />
         <span className="text-muted text-xs leading-relaxed">{t(`${base}.tip`)}</span>
+      </div>
+    </div>
+  )
+}
+
+/** How many items one drop or pick imports; the rest are refused up front. */
+const MAX_IMPORTS_PER_BATCH = 20
+
+type ImportFailure = { name: string | null; message: string }
+
+type PendingImport = {
+  id: string
+  /** Best guess from the dropped item's name; null when it says nothing. */
+  name: string | null
+  loaded: number
+  /** 0 until the upload reports its size — and always 0 on the desktop. */
+  total: number
+  phase: 'queued' | 'uploading' | 'importing' | 'done' | 'failed'
+}
+
+/**
+ * The capability's real name lives in its SKILL.md frontmatter, read only
+ * at import time. Until then the dropped item's own name is the hint: a
+ * zip or folder is usually named after its capability, a lone SKILL.md
+ * says nothing.
+ */
+function importNameHint(sourcePath: string): string | null {
+  const base = sourcePath.split(/[/\\]/).filter(Boolean).pop() ?? ''
+  const stem = base.replace(/\.(zip|md)$/i, '').trim()
+  if (!stem || stem.toLowerCase() === 'skill') return null
+  return stem
+}
+
+/**
+ * The card a capability occupies while it is being imported: the same shape
+ * as CapabilityRow, with a progress bar where the description would be. The
+ * bar is real while bytes are going up and sweeps while the import validates
+ * and copies — there is no byte count for that half, on either platform. A
+ * finished card keeps its place, full or red, until the batch ends and the
+ * list reloads around it.
+ */
+function PendingCapabilityRow({ pending }: { pending: PendingImport }): React.JSX.Element {
+  const { t } = useTranslation()
+  const { phase } = pending
+  const percent =
+    phase === 'uploading' && pending.total > 0
+      ? Math.min(100, Math.round((pending.loaded / pending.total) * 100))
+      : 0
+  const base = 'settings.capabilities.import'
+  const status =
+    phase === 'queued'
+      ? t(`${base}.queued`)
+      : phase === 'uploading'
+        ? t(`${base}.uploading`, { percent })
+        : phase === 'importing'
+          ? t(`${base}.importing`)
+          : phase === 'done'
+            ? t(`${base}.done`)
+            : t(`${base}.failed`)
+
+  return (
+    <div className="flex flex-col gap-3 p-5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span
+            className={cn('truncate text-sm font-medium', pending.name ? 'text-fg' : 'text-muted')}
+          >
+            {pending.name ?? t(`${base}.pendingName`)}
+          </span>
+          {phase === 'done' ? (
+            <Badge variant="success" size="sm">
+              <CheckmarkBadge01Icon size={11} />
+              {t(`${base}.done`)}
+            </Badge>
+          ) : phase === 'failed' ? (
+            <Badge variant="danger" size="sm">
+              <AlertCircleIcon size={11} />
+              {t(`${base}.failed`)}
+            </Badge>
+          ) : (
+            <Badge variant="default" size="sm">
+              <Loading03Icon size={11} className={phase === 'queued' ? '' : 'animate-spin'} />
+              {t(`${base}.badge`)}
+            </Badge>
+          )}
+        </div>
+        <span
+          className={cn(
+            'shrink-0 text-xs tabular-nums',
+            phase === 'failed' ? 'text-rose-500' : 'text-muted'
+          )}
+        >
+          {status}
+        </span>
+      </div>
+
+      <div
+        role="progressbar"
+        aria-label={status}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={phase === 'uploading' ? percent : phase === 'done' ? 100 : undefined}
+        className="bg-border relative h-1 w-full overflow-hidden rounded-full"
+      >
+        {phase === 'uploading' ? (
+          <div
+            className="bg-primary h-full rounded-full transition-[width] duration-150"
+            style={{ width: `${percent}%` }}
+          />
+        ) : phase === 'importing' ? (
+          <div className="wf-progress-sweep bg-primary absolute inset-y-0 start-0 w-1/3 rounded-full" />
+        ) : phase === 'done' ? (
+          <div className="h-full w-full rounded-full bg-emerald-500" />
+        ) : phase === 'failed' ? (
+          <div className="h-full w-full rounded-full bg-rose-500" />
+        ) : null}
       </div>
     </div>
   )

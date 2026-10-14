@@ -19,7 +19,6 @@ import { buildApi } from '@preload/api'
 import type { WolffishApi } from '@preload/index'
 import i18n from '@lib/i18n'
 import {
-  emitUploadProgress,
   pendingAttachmentFor,
   peekPickedFile,
   registerPickedFile,
@@ -29,7 +28,6 @@ import {
 } from '@lib/web-bridge/picked-files'
 import { webPrompt } from '@lib/web-bridge/prompt'
 import type { WebTransport } from '@lib/web-bridge/transport'
-import { randomId } from '@lib/utils/randomId'
 
 export type { Staged } from '@lib/web-bridge/picked-files'
 export { uploadToStaging } from '@lib/web-bridge/picked-files'
@@ -142,34 +140,6 @@ export function installWebApi(transport: WebTransport): WolffishApi {
     }
     return paths
   }
-  // A single file whose panel has a busy state but no bar of its own shows
-  // its upload on the send-time pill instead.
-  const stageWithPill = async (file: File): Promise<Staged> => {
-    const id = randomId()
-    const progress = (loaded: number, done: boolean, error: string | null): void =>
-      emitUploadProgress({
-        id,
-        name: file.name,
-        loaded,
-        total: file.size,
-        index: 1,
-        count: 1,
-        done,
-        error
-      })
-    progress(0, false, null)
-    try {
-      const staged = await uploadToStaging(file, file.name, (loaded) =>
-        progress(loaded, false, null)
-      )
-      progress(file.size, true, null)
-      return staged
-    } catch (err) {
-      progress(0, true, err instanceof Error ? err.message : String(err))
-      throw err
-    }
-  }
-
   const folderPrompt = async (): Promise<string | null> => {
     const value = await webPrompt({
       title: i18n.t('web.prompt.folder.title'),
@@ -254,19 +224,22 @@ export function installWebApi(transport: WebTransport): WolffishApi {
       paths
     }) as ReturnType<WolffishApi['automationFiles']['pickFiles']>
   }
+  // Picked or dropped, the file waits as a virtual path until the panel's
+  // import call; the upload happens there, under the panel's progressId, so
+  // its pending card shows the bytes going up and then the import itself.
   api.cerebellum.pickImport = async () => {
-    const [file] = await pickFiles({ accept: '.md,.zip,text/markdown,application/zip' })
-    if (!file) return null
-    return (await stageWithPill(file)).path
+    const files = await pickFiles({
+      multiple: true,
+      accept: '.md,.zip,text/markdown,application/zip'
+    })
+    return files.map(virtualPath)
   }
   const baseImportCapability = api.cerebellum.importCapability
-  // A dropped file reaches the panel as a virtual path (getPathForFile); it
-  // is staged here, so the panel's own import call gets a real path.
-  api.cerebellum.importCapability = async (sourcePath) => {
+  api.cerebellum.importCapability = async (sourcePath, progressId) => {
     const file = takePickedFile(sourcePath)
-    if (!file) return baseImportCapability(sourcePath)
-    const staged = await stageWithPill(file)
-    return baseImportCapability(staged.path)
+    if (!file) return baseImportCapability(sourcePath, progressId)
+    const staged = await stage(file, file.name, progressId)
+    return baseImportCapability(staged.path, progressId)
   }
 
   const asDownload = (answer: DownloadAnswer): DownloadAnswer => {

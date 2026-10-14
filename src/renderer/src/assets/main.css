@@ -258,6 +258,22 @@ textarea,
   transform-origin: 0 50%;
   animation: wf-progress-fake 6s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
 }
+/* An import's "validating" phase has no byte count: a segment sweeps the
+   track until the result lands. */
+@keyframes wf-progress-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+.wf-progress-sweep {
+  animation: wf-progress-sweep 1.4s ease-in-out infinite;
+}
+[dir='rtl'] .wf-progress-sweep {
+  animation-direction: reverse;
+}
 [dir='rtl'] .wf-progress-fake {
   transform-origin: 100% 50%;
 }

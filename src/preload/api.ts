@@ -265,7 +265,8 @@ export function buildApi(transport: ApiTransport): WolffishApi {
       reload: () => transport.invoke('cerebellum:reload'),
       toggleCapability: (name, enabled) =>
         transport.invoke('cerebellum:toggleCapability', name, enabled),
-      importCapability: (sourcePath) => transport.invoke('cerebellum:importCapability', sourcePath),
+      importCapability: (sourcePath, progressId) =>
+        transport.invoke('cerebellum:importCapability', sourcePath, progressId),
       pickImport: (options) => transport.invoke('cerebellum:pickImport', options),
       deleteCapability: (name) => transport.invoke('cerebellum:deleteCapability', name),
       onCapabilitiesChanged: (callback) =>

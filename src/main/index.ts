@@ -4761,22 +4761,21 @@ app.whenReady().then(async () => {
   })
 
   // Native picker for the import dropzone's "browse" affordance. On macOS the
-  // dialog accepts a file (SKILL.md/.zip) or a folder; on Windows only files
-  // (folders still arrive via drag-and-drop). Returns null when canceled.
+  // dialog accepts files (SKILL.md/.zip) or folders; on Windows only files
+  // (folders still arrive via drag-and-drop). Several at once; [] when canceled.
   handle(
     'cerebellum:pickImport',
-    async (_e, options?: { title?: string; filterName?: string }): Promise<string | null> => {
+    async (_e, options?: { title?: string; filterName?: string }): Promise<string[]> => {
       const mainWin = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
-      if (!mainWin) return null
+      if (!mainWin) return []
       // Labels are localized in the renderer and passed in; English fallbacks
       // keep the dialog sane if the call ever arrives without them.
       const result = await dialog.showOpenDialog(mainWin, {
-        title: options?.title ?? 'Import capability',
-        properties: ['openFile', 'openDirectory'],
+        title: options?.title ?? 'Import capabilities',
+        properties: ['openFile', 'openDirectory', 'multiSelections'],
         filters: [{ name: options?.filterName ?? 'Capability', extensions: ['md', 'zip'] }]
       })
-      if (result.canceled || !result.filePaths[0]) return null
-      return result.filePaths[0]
+      return result.canceled ? [] : result.filePaths
     }
   )
 

@@ -1827,10 +1827,14 @@ export type CerebellumApi = {
   listCapabilities: () => Promise<CapabilityEntry[]>
   reload: () => Promise<CapabilityEntry[]>
   toggleCapability: (name: string, enabled: boolean) => Promise<void>
-  /** Validate and import a dropped/picked SKILL.md, folder, or .zip. */
-  importCapability: (sourcePath: string) => Promise<CapabilityImportResult>
-  /** Open a native file/folder picker for the import dropzone. Null if canceled. */
-  pickImport: (options?: { title?: string; filterName?: string }) => Promise<string | null>
+  /**
+   * Validate and import a dropped/picked SKILL.md, folder, or .zip. On the
+   * web the bytes go up first; a `progressId` gets that upload reported on
+   * upload.onCopyProgress so the panel's pending card can show it.
+   */
+  importCapability: (sourcePath: string, progressId?: string) => Promise<CapabilityImportResult>
+  /** Open a native file/folder picker for the import dropzone, several at once. [] if canceled. */
+  pickImport: (options?: { title?: string; filterName?: string }) => Promise<string[]>
   /** Delete a user-imported capability and nuke its folder. Refuses official ones. */
   deleteCapability: (name: string) => Promise<CapabilityDeleteResult>
   /**
