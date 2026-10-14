@@ -183,6 +183,7 @@ async function run(): Promise<void> {
     rendererDir: renderer,
     devServerUrl: null,
     icons: { 128: icon, 256: icon, 512: icon },
+    ogImage: icon,
     getConfig: async () => config,
     setConfig: async (patch) => {
       config = {
@@ -279,6 +280,14 @@ async function run(): Promise<void> {
     manifest.status === 200 && (manifest.json() as { display: string }).display === 'standalone'
   )
   ok('icon served', (await call(`${base}/icon-256.png`)).status === 200)
+  ok('og image served signed out', (await call(`${base}/og.jpg`)).status === 200)
+  const shell = (await call(`${base}/?conversation=secret-id`)).text
+  ok(
+    'og tags absolute, without the deep link',
+    /<meta property="og:image" content="https?:\/\/[^"]+\/og\.jpg" \/>/.test(shell) &&
+      /<meta property="og:url" content="https?:\/\/[^"]+\/" \/>/.test(shell) &&
+      !shell.includes('secret-id')
+  )
 
   console.log('step: auth')
   const status0 = (await call(`${base}/api/auth/status`)).json() as {

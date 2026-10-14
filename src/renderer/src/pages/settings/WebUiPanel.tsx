@@ -30,7 +30,7 @@ import {
   Tick02Icon,
   ViewOffIcon
 } from 'hugeicons-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 /**
@@ -744,6 +744,27 @@ function PasswordCard({
   const { t } = useTranslation()
   const toast = useToast()
   const [revealed, setRevealed] = useState<string | null>(null)
+  const phraseRef = useRef<HTMLElement>(null)
+  // The revealed passphrase stays on one line, whole: its font shrinks until
+  // it fits the box. Measured, not computed — the monospace font, and so the
+  // width of a character, differs per platform.
+  useLayoutEffect(() => {
+    const el = phraseRef.current
+    const box = el?.parentElement
+    if (!el || !box || !revealed) return
+    const fit = (): void => {
+      el.style.fontSize = ''
+      const ratio = el.clientWidth / el.scrollWidth
+      if (ratio < 1) {
+        const base = parseFloat(getComputedStyle(el).fontSize)
+        el.style.fontSize = `${Math.floor(base * ratio * 100) / 100}px`
+      }
+    }
+    fit()
+    const ro = new ResizeObserver(fit)
+    ro.observe(box)
+    return () => ro.disconnect()
+  }, [revealed])
   const [copied, setCopied] = useState(false)
   const [regenOpen, setRegenOpen] = useState(false)
   const [ownOpen, setOwnOpen] = useState(false)
@@ -858,12 +879,11 @@ function PasswordCard({
       <div className="bg-bg border-border flex flex-col gap-3 rounded-xl border p-4">
         {passwordGenerated ? (
           <code
+            ref={phraseRef}
             dir="ltr"
             className={cn(
-              'text-fg block font-mono text-sm leading-relaxed select-all',
-              revealed
-                ? 'whitespace-pre-wrap wrap-anywhere'
-                : 'text-muted overflow-hidden whitespace-nowrap'
+              'text-fg block font-mono text-sm leading-relaxed whitespace-nowrap select-all',
+              !revealed && 'text-muted overflow-hidden'
             )}
           >
             {revealed ?? '•'.repeat(72)}

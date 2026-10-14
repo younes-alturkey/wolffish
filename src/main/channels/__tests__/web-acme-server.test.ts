@@ -189,6 +189,7 @@ async function run(): Promise<void> {
     rendererDir: renderer,
     devServerUrl: null,
     icons: { 128: icon, 256: icon, 512: icon },
+    ogImage: icon,
     getConfig: async () => config,
     setConfig: async (patch) => {
       config = {

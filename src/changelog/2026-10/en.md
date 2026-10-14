@@ -1,4 +1,28 @@
-## v1.0.330 — 2026-10-14 `Latest`
+## v1.0.332 — 2026-10-14 `Latest`
+
+### A Proper Preview When You Share the Web UI Link
+
+Pasting your Web UI address into a chat app or a social post now shows **Wolffish's own preview card** — the logo, the name and a one-line description — instead of a bare link. The card always points at the Web UI itself, so a link copied from inside a conversation **never puts that conversation's id** into the preview.
+
+### The Master Passphrase on One Line
+
+Showing the generated passphrase in **Settings → Channels → Web UI** used to wrap it across two lines. It now stays **on a single line, every word visible**: the text shrinks just enough to fit the box, on a wide screen and on a phone alike, so it reads and copies as one piece.
+
+## v1.0.331 — 2026-10-14
+
+### HTML Pages Render in the Web UI
+
+A page Wolffish builds and sends you — an interactive explainer, a dashboard, a game — used to show as an **empty white box** in the Web UI, because the card used a viewer only the desktop app has. The card now shows **the live page**, the same as on desktop: scripts, 3D, animations and every file next to it load, and **Reload** and **Open in browser** work. The page runs **walled off from Wolffish**, so nothing in it can reach your session or your agent. One difference from the desktop: anything a page saves in the browser is kept until the page reloads.
+
+### Wolffish's Browser on a Server, and in the Web UI
+
+On a server with no screen, Wolffish's own browser could not open a single page, so a run fell back to screenshots. It now **opens pages there too**, and they appear as a **live browser card** in the chat. In the Web UI, **expanding the card shows the page full size** — click, scroll, swipe on a phone, and type, with a **keyboard button** that brings up your phone's keyboard. A card only streams while you are looking at it.
+
+### Website Cards in the Web UI
+
+With **Show all tool activity** on, a page Wolffish fetched now shows **the live site** in the Web UI instead of a blank box. A site that refuses to be shown inside another page opens from the card's link instead.
+
+## v1.0.330 — 2026-10-14
 
 ### Notices Line Up With the Conversation
 

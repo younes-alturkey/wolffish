@@ -88,6 +88,7 @@ import {
   injectHeadTags,
   manifestJson,
   MANIFEST_PATH,
+  OG_IMAGE_PATH,
   SERVICE_WORKER_PATH,
   SERVICE_WORKER_SOURCE
 } from '@main/channels/web/assets'
@@ -173,6 +174,8 @@ export type WebServerDeps = {
   devServerUrl: string | null
   /** PNG icon paths by pixel size, for the manifest and the notification badge. */
   icons: { 128: string; 256: string; 512: string }
+  /** The 1200×630 link-preview image, the landing page's og.jpg. */
+  ogImage: string
   getConfig: () => Promise<WebUiConfig>
   /** Write a config patch; the HTTPS flow applies the mode, ports and identifier it settled on. */
   setConfig: (patch: WebUiConfigPatch) => Promise<void>
@@ -1702,6 +1705,11 @@ export class WebServer {
         download: false,
         cache: 'public, max-age=86400'
       })
+    if (p === OG_IMAGE_PATH)
+      return this.serveFile(req, res, this.deps.ogImage, {
+        download: false,
+        cache: 'public, max-age=86400'
+      })
 
     if (p.startsWith('/api/auth/')) return this.routeAuth(req, res, p, method)
     // Public links: the one route a request reaches with no cookie. The
@@ -2488,7 +2496,7 @@ export class WebServer {
       abs = path.join(root, rel)
     }
     if (rel === 'index.html') {
-      const html = injectHeadTags(await fs.readFile(abs, 'utf8'))
+      const html = injectHeadTags(await fs.readFile(abs, 'utf8'), this.publicOrigin())
       return this.serveText(res, html, 'text/html; charset=utf-8', { 'Cache-Control': 'no-cache' })
     }
     const immutable = rel.startsWith('assets/')
@@ -2512,7 +2520,7 @@ export class WebServer {
         const chunks: Buffer[] = []
         up.on('data', (c: Buffer) => chunks.push(c))
         up.on('end', () => {
-          const html = injectHeadTags(Buffer.concat(chunks).toString('utf8'))
+          const html = injectHeadTags(Buffer.concat(chunks).toString('utf8'), this.publicOrigin())
           const out = { ...up.headers }
           delete out['content-length']
           delete out['transfer-encoding']

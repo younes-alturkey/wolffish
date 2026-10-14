@@ -204,8 +204,43 @@ export const HEAD_TAGS = [
   '<meta name="apple-mobile-web-app-title" content="Wolffish" />'
 ].join('\n    ')
 
-export function injectHeadTags(html: string): string {
+export const OG_IMAGE_PATH = '/og.jpg'
+
+const OG_TITLE = 'Wolffish: The Personal AI Agent For Everyone'
+const OG_DESCRIPTION =
+  'A local-first, markdown-powered personal AI desktop agent for macOS, Windows and Linux. Free and open source.'
+
+function escapeAttr(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
+}
+
+/**
+ * The link-preview card, matching the landing page. Crawlers want absolute
+ * URLs, so they come from the server's public origin — never the request's
+ * Host header — and og:url is the bare origin so a shared deep link does not
+ * carry its conversation id into the card.
+ */
+function openGraphTags(origin: string | null): string[] {
+  const base = origin ? escapeAttr(origin.replace(/\/+$/, '')) : ''
+  const image = `${base}${OG_IMAGE_PATH}`
+  return [
+    '<meta property="og:type" content="website" />',
+    '<meta property="og:site_name" content="Wolffish" />',
+    ...(base ? [`<meta property="og:url" content="${base}/" />`] : []),
+    `<meta property="og:title" content="${OG_TITLE}" />`,
+    `<meta property="og:description" content="${OG_DESCRIPTION}" />`,
+    `<meta name="description" content="${OG_DESCRIPTION}" />`,
+    `<meta property="og:image" content="${image}" />`,
+    '<meta property="og:image:width" content="1200" />',
+    '<meta property="og:image:height" content="630" />',
+    '<meta name="twitter:card" content="summary_large_image" />',
+    `<meta name="twitter:image" content="${image}" />`
+  ]
+}
+
+export function injectHeadTags(html: string, origin: string | null = null): string {
   const index = html.indexOf('</head>')
   if (index < 0) return html
-  return `${html.slice(0, index)}    ${HEAD_TAGS}\n  ${html.slice(index)}`
+  const tags = [HEAD_TAGS, ...openGraphTags(origin)].join('\n    ')
+  return `${html.slice(0, index)}    ${tags}\n  ${html.slice(index)}`
 }

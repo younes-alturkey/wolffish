@@ -19,6 +19,7 @@ import { WebServer, type AttachFilesRequest } from '@main/channels/web/server'
 import webIcon128 from '@resources/icons/icons/128x128.png?asset'
 import webIcon256 from '@resources/icons/icons/256x256.png?asset'
 import webIcon512 from '@resources/icons/icons/512x512.png?asset'
+import webOgImage from '@resources/images/og.jpg?asset'
 import {
   openBrowserUrl,
   type DoctorOptions,
@@ -1104,6 +1105,7 @@ const webServer = new WebServer({
   rendererDir: join(__dirname, '../renderer'),
   devServerUrl: is.dev ? (process.env['ELECTRON_RENDERER_URL'] ?? null) : null,
   icons: { 128: webIcon128, 256: webIcon256, 512: webIcon512 },
+  ogImage: webOgImage,
   getConfig: () => getWebUiConfig(),
   setConfig: async (patch) => {
     await setWebUiConfig(patch)
