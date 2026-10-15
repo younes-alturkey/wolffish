@@ -1190,6 +1190,10 @@ export const CORE_CAPABILITIES: ReadonlySet<string> = new Set([
   // these exist to fix.
   'pdf-design',
   'web-design',
+  // The 3D manuals (three_site_design / three_game_design) ride with the other design
+  // manuals for the same reason: the contract says "call it FIRST".
+  'three-site',
+  'three-game',
   'dataviz',
   // Async video generation (MiniMax H3). Core so the schemas always ship:
   // a video request must reach video_generate without a discovery hop, and
@@ -1231,6 +1235,8 @@ export const LOCKED_CAPABILITIES: ReadonlySet<string> = new Set([
   'knowledge',
   'pdf-design',
   'web-design',
+  'three-site',
+  'three-game',
   'dataviz',
   'procedures',
   'secrets',

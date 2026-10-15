@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#05060f">
+<title>DRIFT — hover canyon runner</title>
+<style>
+  :root { --bg: #05060f; --ink: #eef3ff; --mute: #7f89a8; --cyan: #38e8ff; --pink: #ff3d81; --amber: #ffc24d;
+    --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px); --sal: env(safe-area-inset-left, 0px); --sar: env(safe-area-inset-right, 0px);
+    --f-display: ui-sans-serif, -apple-system, "Segoe UI", Inter, Roboto, sans-serif; --f-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: var(--f-display); overflow: hidden; overscroll-behavior: none; }
+  canvas#gl { position: fixed; top: 0; left: 0; display: block; touch-action: none; }
+  .hud { position: fixed; inset: 0; pointer-events: none; z-index: 2; font-variant-numeric: tabular-nums; }
+  .hud .top { position: absolute; top: calc(14px + var(--sat)); left: calc(16px + var(--sal)); right: calc(16px + var(--sar));
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .score { font-size: clamp(28px, 6vw, 44px); font-weight: 700; letter-spacing: -.02em; line-height: 1; text-shadow: 0 0 24px rgba(56,232,255,.35); }
+  .sub { font-family: var(--f-mono); font-size: 12px; color: var(--mute); letter-spacing: .14em; text-transform: uppercase; margin-top: 6px; }
+  .mult { font-family: var(--f-mono); font-size: 13px; color: var(--amber); letter-spacing: .1em; }
+  .mult b { font-size: 22px; font-weight: 700; display: block; line-height: 1; }
+  .right { text-align: right; }
+  .pips { display: flex; gap: 6px; justify-content: flex-end; margin-top: 8px; }
+  .pip { width: 22px; height: 6px; border-radius: 3px; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); transition: opacity .3s, transform .3s; }
+  .pip.off { opacity: .18; box-shadow: none; transform: scaleX(.6); }
+  .speed { position: absolute; left: 50%; bottom: calc(18px + var(--sab)); transform: translateX(-50%); width: min(46vw, 260px); height: 4px;
+    background: rgba(255,255,255,.1); border-radius: 2px; overflow: hidden; }
+  .speed i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--cyan), var(--pink)); transform-origin: 0 50%; }
+  .toast { position: absolute; left: 50%; top: 32%; transform: translate(-50%, -50%) scale(.9); font-weight: 800; font-size: clamp(18px, 4.5vw, 30px);
+    letter-spacing: .06em; color: var(--amber); opacity: 0; text-shadow: 0 0 22px rgba(255,194,77,.6); transition: opacity .15s, transform .15s; }
+  .toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  .flash { position: fixed; inset: 0; z-index: 3; pointer-events: none; background: var(--pink); opacity: 0; mix-blend-mode: screen; }
+  .vig { position: fixed; inset: 0; z-index: 1; pointer-events: none; background: radial-gradient(70% 70% at 50% 50%, transparent 55%, rgba(5,6,15,.75)); }
+
+  .screen { position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; text-align: center; padding: 24px;
+    background: rgba(5,6,15,.72); transition: opacity .35s; }
+  .screen.hidden { opacity: 0; pointer-events: none; }
+  .screen h1 { font-size: clamp(56px, 14vw, 128px); margin: 0; letter-spacing: .18em; line-height: .9; font-weight: 800;
+    background: linear-gradient(180deg, #fff, var(--cyan)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .screen p { color: var(--mute); max-width: 36ch; margin: 14px auto 0; font-size: 15px; line-height: 1.5; }
+  .screen .big { font-size: clamp(40px, 9vw, 72px); font-weight: 800; margin: 10px 0 0; color: var(--ink); }
+  .screen .best { font-family: var(--f-mono); color: var(--amber); letter-spacing: .14em; font-size: 13px; margin-top: 6px; }
+  .btn { display: inline-flex; align-items: center; gap: 10px; margin-top: 28px; padding: 16px 30px; min-height: 56px; border-radius: 999px;
+    border: 1px solid rgba(56,232,255,.5); background: rgba(56,232,255,.08); color: var(--ink); font-size: 17px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 0 30px rgba(56,232,255,.18); animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 44px rgba(56,232,255,.4); } }
+  .keys { font-family: var(--f-mono); font-size: 12px; color: var(--mute); margin-top: 18px; letter-spacing: .08em; }
+  .keys kbd { border: 1px solid rgba(255,255,255,.2); border-radius: 6px; padding: 2px 7px; margin: 0 2px; }
+  .mute { position: fixed; z-index: 6; right: calc(14px + var(--sar)); bottom: calc(14px + var(--sab)); width: 44px; height: 44px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,.15); background: rgba(5,6,15,.5); color: var(--ink); font-size: 16px; cursor: pointer; display: grid; place-items: center; }
+  #fallback { display: none; position: fixed; inset: 0; z-index: 9; place-items: center; padding: 24px; text-align: center; color: var(--mute); }
+  @media (prefers-reduced-motion: reduce) { .btn { animation: none; } }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div class="vig"></div>
+<div class="flash" id="flash"></div>
+<div class="hud" aria-live="polite">
+  <div class="top">
+    <div><div class="score" id="score">0</div><div class="sub">distance · cores</div></div>
+    <div class="right"><div class="mult">COMBO<b id="mult">×1</b></div><div class="pips" id="pips"><i class="pip"></i><i class="pip"></i><i class="pip"></i></div></div>
+  </div>
+  <div class="toast" id="toast"></div>
+  <div class="speed"><i id="speedBar"></i></div>
+</div>
+<div class="screen" id="start">
+  <div>
+    <h1>DRIFT</h1>
+    <p>Hover down the canyon. Weave through the gates, catch the cores, don't touch the pink.</p>
+    <button class="btn" id="startBtn" type="button"><span>▶</span> Tap to launch</button>
+    <div class="keys"><kbd>←</kbd><kbd>→</kbd> or <kbd>A</kbd><kbd>D</kbd> · swipe on touch · <kbd>P</kbd> pause</div>
+  </div>
+</div>
+<div class="screen hidden" id="over">
+  <div>
+    <p class="sub" style="color:var(--pink);letter-spacing:.2em">HULL BREACH</p>
+    <div class="big" id="finalScore">0</div>
+    <div class="best" id="bestLine">BEST 0</div>
+    <p id="overNote">You made it further than most relays.</p>
+    <button class="btn" id="againBtn" type="button"><span>↻</span> Run again</button>
+  </div>
+</div>
+<button class="mute" id="mute" type="button" aria-label="Toggle sound">♪</button>
+<div id="fallback"><p>This game needs WebGL. Try another browser or device.</p></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+// ---------- viewport + tier ----------
+const vv = window.visualViewport;
+const VW = () => Math.round(vv ? vv.width : document.documentElement.clientWidth);
+const VH = () => Math.round(vv ? vv.height : document.documentElement.clientHeight);
+const MOBILE = matchMedia('(pointer: coarse)').matches || Math.min(VW(), VH()) < 700;
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const DPR = Math.min(devicePixelRatio || 1, MOBILE ? 1.5 : 2);
+const TIER = { stars: MOBILE ? 400 : 1200, bloom: !MOBILE, shadows: false };
+
+const canvas = document.getElementById('gl');
+let renderer;
+try { renderer = new THREE.WebGLRenderer({ canvas, antialias: !MOBILE, powerPreference: 'high-performance' }); }
+catch { document.getElementById('fallback').style.display = 'grid'; }
+if (renderer) main();
+
+function main() {
+  renderer.setPixelRatio(DPR); renderer.setSize(VW(), VH(), true);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.1;
+  renderer.info.autoReset = false;
+  const placeCanvas = () => { if (vv) canvas.style.transform = `translate(${vv.offsetLeft}px, ${vv.offsetTop}px)`; };
+  placeCanvas(); vv?.addEventListener('scroll', placeCanvas);
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0x05060f, 30, 150);
+  scene.background = new THREE.Color(0x05060f);
+  const camera = new THREE.PerspectiveCamera(70, VW() / VH(), 0.1, 300);
+
+  // ---------- constants ----------
+  const LANES = [-3.2, 0, 3.2], LANE_W = 3.2, SEG_LEN = 14, SEGS = 16, TRACK = SEG_LEN * SEGS, WALL_X = 7;
+  const COLORS = { cyan: 0x38e8ff, pink: 0xff3d81, amber: 0xffc24d, hull: 0xdfe8ff };
+
+  // ---------- lights ----------
+  scene.add(new THREE.HemisphereLight(0x5b78ff, 0x0a0618, 0.9));
+  const key = new THREE.DirectionalLight(0xffffff, 1.4); key.position.set(4, 8, 6); scene.add(key);
+  const shipLight = new THREE.PointLight(COLORS.cyan, 7, 12, 2); scene.add(shipLight);
+
+  // ---------- floor: a scrolling neon grid shader ----------
+  const floorMat = new THREE.ShaderMaterial({
+    uniforms: { uScroll: { value: 0 }, uColor: { value: new THREE.Color(COLORS.cyan) }, uPink: { value: new THREE.Color(COLORS.pink) }, uHit: { value: 0 } },
+    vertexShader: `varying vec2 vUv; varying vec3 vP; void main(){ vUv = uv; vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+    fragmentShader: `
+      precision highp float; varying vec2 vUv; varying vec3 vP; uniform float uScroll, uHit; uniform vec3 uColor, uPink;
+      void main(){
+        float x = vP.x, z = vP.y + uScroll;
+        float gx = abs(fract(x / 3.2 + 0.5) - 0.5), gz = abs(fract(z / 4.0) - 0.5);
+        float lx = smoothstep(0.03, 0.0, gx) * 0.9, lz = smoothstep(0.02, 0.0, gz) * 0.6;
+        float edge = smoothstep(5.2, 6.4, abs(x));
+        vec3 base = vec3(0.02, 0.025, 0.06);
+        vec3 col = base + mix(uColor, uPink, uHit) * (lx + lz) * (0.35 + 0.65 * edge) + uPink * edge * 0.25;
+        float fade = smoothstep(-5.0, 40.0, vP.y);
+        gl_FragColor = vec4(col, 1.0);
+      }`
+  });
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(WALL_X * 2 + 2, TRACK + 40, 1, 1), floorMat);
+  floor.rotation.x = -Math.PI / 2; floor.position.set(0, -0.9, -TRACK / 2 + 20); scene.add(floor);
+
+  // ---------- canyon walls (instanced slabs, recycled) ----------
+  const wallGeo = new THREE.BoxGeometry(2.4, 1, 1);
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0x0f1230, roughness: 0.85, metalness: 0.1, emissive: 0x1a1240, emissiveIntensity: 0.4 });
+  const WALLS = SEGS * 4;
+  const walls = new THREE.InstancedMesh(wallGeo, wallMat, WALLS); scene.add(walls);
+  const wallData = [];
+  for (let i = 0; i < WALLS; i++) {
+    const side = i % 2 ? 1 : -1, row = Math.floor(i / 2);
+    wallData.push({ side, z: -row * (SEG_LEN / 2), h: 3 + Math.random() * 9, d: 5 + Math.random() * 4, x: WALL_X + Math.random() * 1.5, tilt: (Math.random() - 0.5) * 0.25 });
+  }
+  const neonGeo = new THREE.BoxGeometry(0.08, 0.08, 1);
+  const neonMat = new THREE.MeshBasicMaterial({ color: COLORS.cyan });
+  const neon = new THREE.InstancedMesh(neonGeo, neonMat, WALLS); scene.add(neon);
+
+  // ---------- obstacles + cores (pools) ----------
+  const OBS = 90, CORES = 90;
+  const gateGeo = new THREE.BoxGeometry(LANE_W * 0.86, 2.6, 0.5);
+  const gateMat = new THREE.MeshStandardMaterial({ color: 0x2a0a1a, roughness: 0.4, metalness: 0.3, emissive: COLORS.pink, emissiveIntensity: 1.1 });
+  const gates = new THREE.InstancedMesh(gateGeo, gateMat, OBS); scene.add(gates);
+  const coreGeo = new THREE.OctahedronGeometry(0.42, 0);
+  const coreMat = new THREE.MeshStandardMaterial({ color: COLORS.amber, roughness: 0.2, metalness: 0.6, emissive: COLORS.amber, emissiveIntensity: 1.4 });
+  const cores = new THREE.InstancedMesh(coreGeo, coreMat, CORES); scene.add(cores);
+  const obs = Array.from({ length: OBS }, () => ({ on: false, lane: 0, z: 0, passed: false }));
+  const crs = Array.from({ length: CORES }, () => ({ on: false, lane: 0, z: 0, spin: Math.random() * 6 }));
+  const HIDE = new THREE.Matrix4().makeScale(0, 0, 0);
+
+  // ---------- the ship: authored silhouette from primitives ----------
+  const ship = new THREE.Group(); scene.add(ship);
+  const hullMat = new THREE.MeshStandardMaterial({ color: 0x7f93bd, roughness: 0.45, metalness: 0.6 });
+  const hull = new THREE.Mesh(new THREE.ConeGeometry(0.55, 2.4, 4), hullMat); hull.rotation.x = -Math.PI / 2; hull.rotation.z = Math.PI / 4; hull.scale.set(1, 1, 0.55); ship.add(hull);
+  const wingGeo = new THREE.BoxGeometry(2.6, 0.08, 0.9);
+  const wing = new THREE.Mesh(wingGeo, hullMat); wing.position.set(0, -0.1, 0.5); ship.add(wing);
+  const finMat = new THREE.MeshBasicMaterial({ color: COLORS.cyan });
+  for (const sx of [-1, 1]) {
+    const fin = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.5, 0.7), finMat); fin.position.set(sx * 1.25, 0.15, 0.6); ship.add(fin);
+    const strip = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.03, 0.06), finMat); strip.position.set(sx * 0.7, -0.05, 0.95); ship.add(strip);
+  }
+  const engine = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 0.5, 12), new THREE.MeshBasicMaterial({ color: COLORS.cyan }));
+  engine.rotation.x = Math.PI / 2; engine.position.set(0, -0.05, 1.3); ship.add(engine);
+  const exhaust = new THREE.Mesh(new THREE.ConeGeometry(0.2, 1.3, 12, 1, true), new THREE.MeshBasicMaterial({ color: COLORS.cyan, transparent: true, opacity: 0.2, side: THREE.DoubleSide, depthWrite: false }));
+  exhaust.rotation.x = Math.PI / 2; exhaust.position.set(0, -0.05, 2.1); ship.add(exhaust);
+  const shadow = new THREE.Mesh(new THREE.CircleGeometry(1.1, 24), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.45, depthWrite: false }));
+  shadow.rotation.x = -Math.PI / 2; shadow.position.y = -0.88; scene.add(shadow);
+
+  // ---------- stars ----------
+  const starPos = new Float32Array(TIER.stars * 3);
+  for (let i = 0; i < TIER.stars; i++) { starPos[i*3] = (Math.random() - 0.5) * 300; starPos[i*3+1] = 10 + Math.random() * 90; starPos[i*3+2] = -60 - Math.random() * 200; }
+  const stars = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(starPos, 3)),
+    new THREE.PointsMaterial({ color: 0x9fb3ff, size: MOBILE ? 1.6 : 1.2, sizeAttenuation: true, transparent: true, opacity: 0.8 }));
+  scene.add(stars);
+
+  // ---------- particles: sparks on pickup/hit (one pool) ----------
+  const SPARKS = 160;
+  const sparkPos = new Float32Array(SPARKS * 3), sparkVel = new Float32Array(SPARKS * 3), sparkLife = new Float32Array(SPARKS);
+  const sparks = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(sparkPos, 3)),
+    new THREE.PointsMaterial({ color: COLORS.amber, size: 0.18, transparent: true, opacity: 0.95, depthWrite: false, blending: THREE.AdditiveBlending }));
+  scene.add(sparks);
+  let sparkHead = 0;
+  const burst = (x, y, z, n, color) => {
+    sparks.material.color.set(color);
+    for (let i = 0; i < n; i++) {
+      const k = sparkHead = (sparkHead + 1) % SPARKS;
+      sparkPos[k*3] = x; sparkPos[k*3+1] = y; sparkPos[k*3+2] = z;
+      sparkVel[k*3] = (Math.random() - 0.5) * 9; sparkVel[k*3+1] = Math.random() * 7; sparkVel[k*3+2] = 4 + Math.random() * 10;
+      sparkLife[k] = 0.6 + Math.random() * 0.5;
+    }
+  };
+
+  // ---------- post ----------
+  let composer = null;
+  if (TIER.bloom) {
+    composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    composer.addPass(new UnrealBloomPass(new THREE.Vector2(VW(), VH()), 0.45, 0.6, 0.8));
+    composer.addPass(new OutputPass());
+  }
+
+  // ---------- audio: synthesized, unlocked on first gesture ----------
+  const audio = { ctx: null, muted: localStorage.getItem('drift.muted') === '1', engine: null, gain: null };
+  const muteBtn = document.getElementById('mute'); const syncMute = () => { muteBtn.textContent = audio.muted ? '×' : '♪'; muteBtn.style.opacity = audio.muted ? .5 : 1; }; syncMute();
+  const unlockAudio = () => {
+    if (audio.ctx) { if (audio.ctx.state === 'suspended') audio.ctx.resume(); return; }
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    const ctx = audio.ctx = new AC(); const master = audio.gain = ctx.createGain(); master.gain.value = audio.muted ? 0 : 0.5; master.connect(ctx.destination);
+    const osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = 55;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 220;
+    const g = ctx.createGain(); g.gain.value = 0.12; osc.connect(lp).connect(g).connect(master); osc.start(); audio.engine = { osc, lp, g };
+  };
+  const blip = (freq, dur, type = 'sine', vol = 0.25) => {
+    if (!audio.ctx || audio.muted) return; const t = audio.ctx.currentTime; const o = audio.ctx.createOscillator(), g = audio.ctx.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t); o.frequency.exponentialRampToValueAtTime(freq * 1.8, t + dur * 0.5);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur); o.connect(g).connect(audio.gain); o.start(t); o.stop(t + dur);
+  };
+  const crash = () => {
+    if (!audio.ctx || audio.muted) return; const t = audio.ctx.currentTime, len = 0.5, buf = audio.ctx.createBuffer(1, audio.ctx.sampleRate * len, audio.ctx.sampleRate);
+    const d = buf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2);
+    const src = audio.ctx.createBufferSource(); src.buffer = buf; const g = audio.ctx.createGain(); g.gain.value = 0.6; src.connect(g).connect(audio.gain); src.start(t);
+  };
+  muteBtn.addEventListener('click', () => { audio.muted = !audio.muted; localStorage.setItem('drift.muted', audio.muted ? '1' : '0'); if (audio.gain) audio.gain.gain.value = audio.muted ? 0 : 0.5; syncMute(); });
+
+  // ---------- state ----------
+  const S = { running: false, over: false, paused: false, t: 0, speed: 22, lane: 1, x: 0, dist: 0, cores: 0, combo: 1, comboT: 0, shield: 3, inv: 0, shake: 0, hit: 0, slow: 1, best: +(localStorage.getItem('drift.best') || 0), nextSpawn: -40, seed: 1 };
+  const rnd = () => (S.seed = (S.seed * 16807) % 2147483647) / 2147483647; // seeded so a run is reproducible for QA
+  const el = (id) => document.getElementById(id);
+  const scoreEl = el('score'), multEl = el('mult'), pips = [...document.querySelectorAll('.pip')], speedBar = el('speedBar'), toast = el('toast'), flash = el('flash');
+  const showToast = (txt) => { toast.textContent = txt; toast.classList.add('show'); clearTimeout(showToast.h); showToast.h = setTimeout(() => toast.classList.remove('show'), 650); };
+  const score = () => Math.floor(S.dist) + S.cores * 25;
+
+  function reset() {
+    Object.assign(S, { running: true, over: false, paused: false, t: 0, speed: 22, lane: 1, x: 0, dist: 0, cores: 0, combo: 1, comboT: 0, shield: 3, inv: 1.2, shake: 0, hit: 0, slow: 1, nextSpawn: -40, seed: (Date.now() % 100000) + 7 });
+    obs.forEach((o) => (o.on = false)); crs.forEach((c) => (c.on = false));
+    for (let i = 0; i < OBS; i++) gates.setMatrixAt(i, HIDE); for (let i = 0; i < CORES; i++) cores.setMatrixAt(i, HIDE);
+    gates.instanceMatrix.needsUpdate = true; cores.instanceMatrix.needsUpdate = true;
+    pips.forEach((p) => p.classList.remove('off')); multEl.textContent = '×1';
+    el('start').classList.add('hidden'); el('over').classList.add('hidden');
+  }
+  function gameOver() {
+    S.running = false; S.over = true; crash(); S.shake = 1.2; flash.style.opacity = .7;
+    const sc = score(); const isBest = sc > S.best; if (isBest) { S.best = sc; localStorage.setItem('drift.best', String(sc)); }
+    el('finalScore').textContent = sc.toLocaleString(); el('bestLine').textContent = (isBest ? 'NEW BEST ' : 'BEST ') + S.best.toLocaleString();
+    el('overNote').textContent = isBest ? 'A new record. The canyon remembers.' : `${Math.floor(S.dist)} m and ${S.cores} cores. One more?`;
+    setTimeout(() => el('over').classList.remove('hidden'), 500);
+  }
+
+  // ---------- spawning: one row per 7 units, always one free lane ----------
+  function spawnRow(z) {
+    const difficulty = Math.min(1, S.dist / 2500);
+    const r = rnd();
+    const free = Math.floor(rnd() * 3);
+    if (r < 0.55 + difficulty * 0.3) {
+      const two = rnd() < 0.25 + difficulty * 0.4;
+      for (let l = 0; l < 3; l++) {
+        if (l === free) continue; if (!two && rnd() < 0.5) continue;
+        const o = obs.find((o) => !o.on); if (!o) break; Object.assign(o, { on: true, lane: l, z, passed: false });
+      }
+      if (rnd() < 0.6) { const c = crs.find((c) => !c.on); if (c) Object.assign(c, { on: true, lane: free, z: z - 3.5 }); }
+    } else {
+      const l = Math.floor(rnd() * 3), n = 3 + Math.floor(rnd() * 3);
+      for (let i = 0; i < n; i++) { const c = crs.find((c) => !c.on); if (c) Object.assign(c, { on: true, lane: l, z: z - i * 2.2 }); }
+    }
+  }
+
+  // ---------- input ----------
+  const moveLane = (d) => { if (!S.running || S.paused) return; const nl = Math.max(0, Math.min(2, S.lane + d)); if (nl !== S.lane) { S.lane = nl; blip(300 + nl * 60, 0.08, 'triangle', 0.08); } };
+  addEventListener('keydown', (e) => {
+    if (e.repeat) return;
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') moveLane(-1);
+    else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') moveLane(1);
+    else if (e.key === 'p' || e.key === 'P') S.paused = !S.paused;
+    else if ((e.key === ' ' || e.key === 'Enter') && !S.running) start();
+  });
+  let px = null, pLane = 1, swiped = false;
+  canvas.addEventListener('pointerdown', (e) => { px = e.clientX; pLane = S.lane; swiped = false; canvas.setPointerCapture(e.pointerId); });
+  canvas.addEventListener('pointermove', (e) => {
+    if (px === null) return;
+    const dx = e.clientX - px, step = Math.min(90, VW() * 0.16);
+    const target = Math.max(0, Math.min(2, pLane + Math.round(dx / step)));
+    if (target !== S.lane) { S.lane = target; swiped = true; blip(300 + target * 60, 0.08, 'triangle', 0.08); }
+  });
+  const endPointer = (e) => {
+    if (px === null) return;
+    if (!swiped && S.running && !S.paused) { // a tap steers toward the tapped side
+      const side = (e.clientX - (vv ? vv.offsetLeft : 0)) < VW() / 2 ? -1 : 1; moveLane(side);
+    }
+    px = null;
+  };
+  canvas.addEventListener('pointerup', endPointer); canvas.addEventListener('pointercancel', () => (px = null));
+  const start = () => { unlockAudio(); reset(); blip(220, 0.4, 'sawtooth', 0.15); };
+  el('startBtn').addEventListener('click', start); el('againBtn').addEventListener('click', start);
+  document.addEventListener('visibilitychange', () => { if (document.hidden && S.running) S.paused = true; });
+
+  // ---------- resize ----------
+  const onResize = () => { camera.aspect = VW() / VH(); camera.updateProjectionMatrix(); renderer.setSize(VW(), VH(), true); composer?.setSize(VW(), VH()); placeCanvas(); };
+  addEventListener('resize', onResize); vv?.addEventListener('resize', onResize);
+
+  // ---------- simulation (fixed step) + render ----------
+  const STEP = 1 / 120; let acc = 0, last = performance.now();
+  const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), v3 = new THREE.Vector3(), s3 = new THREE.Vector3(1, 1, 1), e3 = new THREE.Euler();
+
+  function simulate(dt) {
+    S.t += dt;
+    if (!S.running) return;
+    S.speed = Math.min(62, 22 + S.dist * 0.012); // ramps for the first ~3 km
+    S.slow += (1 - S.slow) * Math.min(1, dt * 4);
+    const v = S.speed * S.slow;
+    S.dist += v * dt;
+    S.inv = Math.max(0, S.inv - dt);
+    S.comboT = Math.max(0, S.comboT - dt); if (S.comboT === 0 && S.combo > 1) { S.combo = 1; multEl.textContent = '×1'; }
+    const targetX = LANES[S.lane]; S.x += (targetX - S.x) * Math.min(1, dt * 12);
+
+    S.nextSpawn += v * dt;
+    while (S.nextSpawn >= 0) { spawnRow(-TRACK + 20); S.nextSpawn -= 7; }
+
+    for (const o of obs) {
+      if (!o.on) continue; o.z += v * dt;
+      if (!o.passed && o.z > 0.6) {
+        o.passed = true;
+        if (o.lane === S.lane && S.inv === 0) {
+          S.shield--; pips[S.shield]?.classList.add('off'); S.inv = 1.4; S.hit = 1; S.shake = 0.9; S.slow = 0.35; S.combo = 1; S.comboT = 0; multEl.textContent = '×1';
+          crash(); burst(S.x, 0, 0, 40, COLORS.pink); flash.style.opacity = .55;
+          if (S.shield <= 0) { gameOver(); return; }
+        } else if (Math.abs(o.lane - S.lane) === 1) { S.dist += 15; showToast('NEAR MISS +15'); blip(900, 0.12, 'square', 0.1); }
+      }
+      if (o.z > 6) o.on = false;
+    }
+    for (const c of crs) {
+      if (!c.on) continue; c.z += v * dt;
+      if (c.lane === S.lane && Math.abs(c.z) < 1.2) {
+        c.on = false; S.cores++; S.comboT = 2.5; S.combo = Math.min(8, S.combo + (S.cores % 4 === 0 ? 1 : 0)); multEl.textContent = `×${S.combo}`;
+        S.dist += 10 * S.combo; burst(LANES[c.lane], 0.2, 0, 14, COLORS.amber); blip(660 + S.combo * 60, 0.18, 'sine', 0.22);
+        if (S.combo >= 4 && S.cores % 4 === 0) showToast(`COMBO ×${S.combo}`);
+      }
+      if (c.z > 6) c.on = false;
+    }
+    for (const w of wallData) { w.z += v * dt; if (w.z > 30) { w.z -= SEGS * (SEG_LEN / 2); w.h = 3 + rnd() * 9; w.x = WALL_X + rnd() * 1.5; } }
+    floorMat.uniforms.uScroll.value -= v * dt;
+    for (let i = 0; i < SPARKS; i++) {
+      if (sparkLife[i] <= 0) continue; sparkLife[i] -= dt;
+      sparkVel[i*3+1] -= 14 * dt; sparkPos[i*3] += sparkVel[i*3] * dt; sparkPos[i*3+1] += sparkVel[i*3+1] * dt; sparkPos[i*3+2] += (sparkVel[i*3+2] + v) * dt;
+      if (sparkLife[i] <= 0) sparkPos[i*3+1] = -999;
+    }
+  }
+
+  function render(dt) {
+    const t = S.t, v = S.speed * S.slow;
+    // ship pose: bank into lane changes, hover bob
+    const bank = (LANES[S.lane] - S.x) * -0.35;
+    ship.position.set(S.x, Math.sin(t * 6) * 0.05 + (S.hit > 0 ? Math.sin(t * 60) * 0.08 * S.hit : 0), 0);
+    ship.rotation.set(0.04 + S.hit * 0.1, 0, bank);
+    ship.visible = !(S.inv > 0 && S.running && Math.floor(t * 18) % 2 === 0) || S.inv > 1.2;
+    shadow.position.x = S.x; shipLight.position.set(S.x, 0.6, 0.5);
+    exhaust.scale.set(1, 0.6 + v / 90, 1); exhaust.material.opacity = 0.14 + v / 400;
+    S.hit = Math.max(0, S.hit - dt * 2); S.shake = Math.max(0, S.shake - dt * 2.2);
+    flash.style.opacity = String(Math.max(0, parseFloat(flash.style.opacity || '0') - dt * 2.5));
+    floorMat.uniforms.uHit.value = S.hit;
+
+    // camera: chase, FOV with speed, shake decays
+    const sh = REDUCED ? 0 : S.shake * S.shake * 0.5;
+    // portrait phones see a narrow slice of the track: sit higher and further back so three lanes and
+    // the next two rows fit, and widen the vertical FOV instead of the horizontal one
+    const portrait = VW() < VH();
+    camera.position.set(S.x * 0.55 + (Math.random() - 0.5) * sh, (portrait ? 5.2 : 3.4) + (Math.random() - 0.5) * sh, portrait ? 10.5 : 7.5);
+    camera.lookAt(S.x * 0.3, 0.6, portrait ? -16 : -8);
+    const fov = (portrait ? 78 : 70) + (v - 22) * 0.35; if (Math.abs(camera.fov - fov) > 0.05) { camera.fov += (fov - camera.fov) * 0.1; camera.updateProjectionMatrix(); }
+    if (audio.engine) { audio.engine.osc.frequency.value = 45 + v * 1.1; audio.engine.lp.frequency.value = 180 + v * 9; }
+
+    // instances
+    for (let i = 0; i < OBS; i++) {
+      const o = obs[i]; if (!o.on) { gates.setMatrixAt(i, HIDE); continue; }
+      v3.set(LANES[o.lane], 0.4, o.z); m4.compose(v3, q.identity(), s3); gates.setMatrixAt(i, m4);
+    }
+    gates.instanceMatrix.needsUpdate = true;
+    for (let i = 0; i < CORES; i++) {
+      const c = crs[i]; if (!c.on) { cores.setMatrixAt(i, HIDE); continue; }
+      v3.set(LANES[c.lane], 0.25 + Math.sin(t * 3 + c.spin) * 0.15, c.z); e3.set(0, t * 2 + c.spin, 0); q.setFromEuler(e3); m4.compose(v3, q, s3); cores.setMatrixAt(i, m4);
+    }
+    cores.instanceMatrix.needsUpdate = true;
+    for (let i = 0; i < WALLS; i++) {
+      const w = wallData[i]; v3.set(w.side * w.x, w.h / 2 - 0.9, w.z); e3.set(0, 0, w.tilt * w.side); q.setFromEuler(e3); s3.set(1, w.h, w.d); m4.compose(v3, q, s3); walls.setMatrixAt(i, m4);
+      v3.set(w.side * (w.x - 1.2), -0.85, w.z); s3.set(1, 1, w.d); m4.compose(v3, q.identity(), s3); neon.setMatrixAt(i, m4);
+    }
+    s3.set(1, 1, 1); walls.instanceMatrix.needsUpdate = true; neon.instanceMatrix.needsUpdate = true;
+    sparks.geometry.attributes.position.needsUpdate = true;
+    stars.rotation.z = t * 0.004;
+
+    // HUD
+    scoreEl.textContent = score().toLocaleString();
+    speedBar.style.width = `${Math.round(((S.speed - 22) / 40) * 100)}%`;
+    if (composer) composer.render(); else renderer.render(scene, camera);
+  }
+
+  function frame(now) {
+    requestAnimationFrame(frame); renderer.info.reset();
+    let dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if (S.paused || document.hidden) return;
+    acc += dt; while (acc >= STEP) { simulate(STEP); acc -= STEP; }
+    render(dt);
+  }
+  requestAnimationFrame(frame);
+  render(0);
+}
+</script>
+</body>
+</html>

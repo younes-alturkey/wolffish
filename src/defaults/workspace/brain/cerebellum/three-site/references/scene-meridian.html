@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#06050a">
+<title>MERIDIAN — a surface that remembers where you touched it</title>
+<meta name="description" content="An abstract, interactive silk surface. Drag to pull it, tap to ripple it, scroll to crystallize it.">
+<style>
+  :root { --bg: #06050a; --ink: #f2eee8; --mute: #8a847c; --accent: #ff7a59;
+    --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px); --gutter: clamp(20px, 5vw, 80px);
+    --f-display: "Iowan Old Style", "Palatino Linotype", Georgia, serif; --f-body: ui-sans-serif, -apple-system, "Segoe UI", Inter, Roboto, sans-serif;
+    --f-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  * { box-sizing: border-box; }
+  html { background: var(--bg); }
+  body { margin: 0; color: var(--ink); font-family: var(--f-body); overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+  canvas#gl { position: fixed; top: 0; left: 0; display: block; z-index: 0; touch-action: pan-y; }
+  .top { position: fixed; z-index: 4; top: calc(16px + var(--sat)); left: var(--gutter); right: var(--gutter); display: flex; justify-content: space-between;
+    font-family: var(--f-mono); font-size: 11px; letter-spacing: .28em; text-transform: uppercase; color: var(--mute); mix-blend-mode: difference; }
+  .top b { color: var(--ink); font-weight: 500; }
+  main { position: relative; z-index: 2; -webkit-user-select: none; user-select: none; }
+  section { min-height: 100svh; display: grid; align-content: center; padding: 20vh var(--gutter); }
+  .word { font-family: var(--f-display); font-weight: 400; font-size: clamp(64px, 15vw, 220px); line-height: .9; letter-spacing: -.03em; margin: 0;
+    display: flex; flex-wrap: wrap; gap: 0 .06em; }
+  .word span { display: inline-block; opacity: 0; transform: translateY(.35em) rotate(3deg); transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .9s cubic-bezier(.2,.7,.2,1); will-change: transform; }
+  .in .word span { opacity: 1; transform: none; }
+  .line { max-width: 34ch; color: #c8c2ba; font-size: clamp(17px, 1.7vw, 22px); line-height: 1.55; margin: 26px 0 0; opacity: 0; transform: translateY(14px); transition: opacity .9s .25s, transform .9s .25s; }
+  .in .line { opacity: 1; transform: none; }
+  .word, .line, .meta { text-shadow: 0 2px 22px rgba(6,5,10,.85), 0 0 2px rgba(6,5,10,.5); }
+  .meta { font-family: var(--f-mono); font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--accent); margin: 0 0 20px; }
+  #s2 { text-align: right; } #s2 .word { justify-content: flex-end; } #s2 .line { margin-left: auto; }
+  #s3 { text-align: center; } #s3 .word { justify-content: center; } #s3 .line { margin-inline: auto; }
+  .hint { position: fixed; z-index: 4; bottom: calc(18px + var(--sab)); left: 50%; transform: translateX(-50%); font-family: var(--f-mono);
+    font-size: 11px; letter-spacing: .3em; text-transform: uppercase; color: var(--mute); white-space: nowrap; transition: opacity .6s; }
+  .hint.off { opacity: 0; }
+  .cta { display: inline-flex; margin: 30px auto 0; padding: 14px 26px; border-radius: 999px; border: 1px solid rgba(242,238,232,.22); color: var(--ink);
+    text-decoration: none; font-size: 15px; backdrop-filter: blur(8px); background: rgba(6,5,10,.3); }
+  footer { position: relative; z-index: 2; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 30px var(--gutter) calc(30px + var(--sab));
+    font-family: var(--f-mono); font-size: 11px; letter-spacing: .14em; color: var(--mute); border-top: 1px solid rgba(242,238,232,.1); }
+  #loader { position: fixed; inset: 0; z-index: 1; background: var(--bg); display: grid; place-items: center; transition: opacity .8s; font-family: var(--f-mono); font-size: 11px; letter-spacing: .4em; color: var(--mute); }
+  #loader.gone { opacity: 0; pointer-events: none; }
+  #fallback { display: none; position: fixed; inset: 0; z-index: 0; background: radial-gradient(70% 60% at 50% 50%, #2b1a2a, #06050a 70%); }
+  @media (prefers-reduced-motion: reduce) { .word span, .line { transition: none; opacity: 1; transform: none; } }
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js" } }
+</script>
+</head>
+<body>
+<div id="loader">MERIDIAN</div>
+<canvas id="gl" aria-hidden="true"></canvas>
+<div id="fallback" aria-hidden="true"></div>
+<div class="top"><span><b>MERIDIAN</b> · study 04</span><span id="phase">silk</span></div>
+<div class="hint" id="hint">drag · tap · scroll</div>
+
+<main>
+  <section id="s1"><p class="meta">01 — Surface</p><h1 class="word" data-word="Meridian"></h1>
+    <p class="line">A sheet of light that behaves like cloth. Drag it and it follows; tap it and it rings; leave it and it breathes.</p></section>
+  <section id="s2"><p class="meta">02 — Pressure</p><h2 class="word" data-word="Tension"></h2>
+    <p class="line">Scroll, and the same surface hardens. The folds sharpen into facets, the warmth drains into glass.</p></section>
+  <section id="s3"><p class="meta">03 — Memory</p><h2 class="word" data-word="Crystal"></h2>
+    <p class="line">Everything you touched is still in the surface, faint, until it forgets. Go back up to soften it again.</p>
+    <a class="cta" href="#s1">Return to silk</a></section>
+</main>
+<footer><span>A WEBGL STUDY</span><span id="perf"></span><span>NO ASSETS · ONE SHADER</span></footer>
+
+<script>
+// Kinetic type and reveals run from a classic script before three.js arrives, so the copy reads on first paint.
+// A loader has a deadline: if three.js never arrives (blocked CDN, captive portal), show the static fallback instead of waiting forever.
+setTimeout(() => { const l = document.getElementById('loader'); if (l && !l.classList.contains('gone')) { l.classList.add('gone'); const f = document.getElementById('fallback'); if (f) f.style.display = 'block'; } }, 12000);
+document.querySelectorAll('.word').forEach((el) => { el.innerHTML = [...el.dataset.word].map((ch, i) => `<span style="transition-delay:${i * 45}ms">${ch}</span>`).join(''); });
+const io = new IntersectionObserver((es) => es.forEach((e) => e.target.classList.toggle('in', e.isIntersecting)), { threshold: 0.35 });
+document.querySelectorAll('section').forEach((s) => io.observe(s));
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const vv = window.visualViewport;
+const VW = () => Math.round(vv ? vv.width : document.documentElement.clientWidth);
+const VH = () => Math.round(vv ? vv.height : document.documentElement.clientHeight);
+const PAGE_TOP = () => (vv ? vv.pageTop : scrollY);
+const MOBILE = matchMedia('(pointer: coarse)').matches || Math.min(VW(), VH()) < 700;
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const DPR = Math.min(devicePixelRatio || 1, MOBILE ? 1.5 : 2);
+const SEG = MOBILE ? 90 : 160, DUST = MOBILE ? 500 : 1500;
+
+const canvas = document.getElementById('gl'), loader = document.getElementById('loader');
+let renderer;
+try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' }); }
+catch { document.getElementById('fallback').style.display = 'block'; canvas.remove(); loader.classList.add('gone'); }
+if (renderer) main();
+
+function main() {
+  renderer.setPixelRatio(DPR); renderer.setSize(VW(), VH(), true);
+  const placeCanvas = () => { if (vv) canvas.style.transform = `translate(${vv.offsetLeft}px, ${vv.offsetTop}px)`; };
+  placeCanvas(); vv?.addEventListener('scroll', placeCanvas);
+
+  const scene = new THREE.Scene(); scene.background = new THREE.Color(0x06050a);
+  const camera = new THREE.PerspectiveCamera(45, VW() / VH(), 0.1, 50);
+  camera.position.set(0, 0.3, MOBILE ? 8.2 : 6.4); camera.lookAt(0, -0.9, 0);
+
+  // ---------- the surface ----------
+  const RIPPLES = 10;
+  const uniforms = {
+    uTime: { value: 0 }, uMorph: { value: 0 }, uHue: { value: 0 },
+    uPointer: { value: new THREE.Vector3(0, 0, 0) },          // x, y in surface space; z = pull strength
+    uRipples: { value: Array.from({ length: RIPPLES }, () => new THREE.Vector4(0, 0, -100, 0)) }, // x, y, startTime, strength
+    uLight: { value: new THREE.Vector3(2, 3, 4) }, uAspect: { value: 1 }
+  };
+  const surfaceMat = new THREE.ShaderMaterial({
+    uniforms, side: THREE.DoubleSide,
+    vertexShader: `
+      uniform float uTime, uMorph; uniform vec3 uPointer; uniform vec4 uRipples[${RIPPLES}];
+      varying vec3 vPos; varying vec3 vNormalW; varying float vH;
+      // simplex-style 3D noise (Ashima / Gustavson, public domain)
+      vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;} vec4 mod289(vec4 x){return x-floor(x*(1.0/289.0))*289.0;}
+      vec4 permute(vec4 x){return mod289(((x*34.0)+1.0)*x);} vec4 taylorInvSqrt(vec4 r){return 1.79284291400159-0.85373472095314*r;}
+      float snoise(vec3 v){ const vec2 C=vec2(1.0/6.0,1.0/3.0); const vec4 D=vec4(0.0,0.5,1.0,2.0);
+        vec3 i=floor(v+dot(v,C.yyy)); vec3 x0=v-i+dot(i,C.xxx); vec3 g=step(x0.yzx,x0.xyz); vec3 l=1.0-g; vec3 i1=min(g.xyz,l.zxy); vec3 i2=max(g.xyz,l.zxy);
+        vec3 x1=x0-i1+C.xxx; vec3 x2=x0-i2+C.yyy; vec3 x3=x0-D.yyy; i=mod289(i);
+        vec4 p=permute(permute(permute(i.z+vec4(0.0,i1.z,i2.z,1.0))+i.y+vec4(0.0,i1.y,i2.y,1.0))+i.x+vec4(0.0,i1.x,i2.x,1.0));
+        float n_=0.142857142857; vec3 ns=n_*D.wyz-D.xzx; vec4 j=p-49.0*floor(p*ns.z*ns.z); vec4 x_=floor(j*ns.z); vec4 y_=floor(j-7.0*x_);
+        vec4 x=x_*ns.x+ns.yyyy; vec4 y=y_*ns.x+ns.yyyy; vec4 h=1.0-abs(x)-abs(y); vec4 b0=vec4(x.xy,y.xy); vec4 b1=vec4(x.zw,y.zw);
+        vec4 s0=floor(b0)*2.0+1.0; vec4 s1=floor(b1)*2.0+1.0; vec4 sh=-step(h,vec4(0.0)); vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy; vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;
+        vec3 p0=vec3(a0.xy,h.x); vec3 p1=vec3(a0.zw,h.y); vec3 p2=vec3(a1.xy,h.z); vec3 p3=vec3(a1.zw,h.w);
+        vec4 norm=taylorInvSqrt(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3))); p0*=norm.x; p1*=norm.y; p2*=norm.z; p3*=norm.w;
+        vec4 m=max(0.6-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.0); m=m*m; return 42.0*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3))); }
+      float height(vec2 p){
+        float t = uTime * 0.18;
+        // silk: two octaves of slow noise. crystal: a sharper, higher-frequency fold mixed in by uMorph.
+        float silk = snoise(vec3(p * 0.26, t)) * 1.15 + snoise(vec3(p * 0.7 + 3.0, t * 1.3)) * 0.3 + snoise(vec3(p * 1.8 + 7.0, t * 0.8)) * 0.05;
+        float crystal = (abs(snoise(vec3(p * 0.62 + 11.0, t * 0.45))) * 1.7 - 0.55) + snoise(vec3(p * 1.5 + 5.0, t * 0.4)) * 0.12;
+        float h = mix(silk, crystal, uMorph);
+        // pull toward the pointer
+        float d = length(p - uPointer.xy);
+        h += uPointer.z * exp(-d * d * 0.9) * 0.9;
+        // ripples: expanding rings that decay
+        for (int i = 0; i < ${RIPPLES}; i++) {
+          vec4 r = uRipples[i]; float age = uTime - r.z; if (age < 0.0 || age > 4.0) continue;
+          float rd = length(p - r.xy); float wave = sin(rd * 6.0 - age * 7.0) * exp(-rd * 0.9) * exp(-age * 1.1);
+          h += wave * 0.22 * r.w * smoothstep(0.0, 0.25, age);
+        }
+        return h;
+      }
+      void main(){
+        vec3 p = position; float h = height(p.xy); p.z += h;
+        float e = 0.045;
+        vec3 dx = vec3(e, 0.0, height(position.xy + vec2(e, 0.0)) - h);
+        vec3 dy = vec3(0.0, e, height(position.xy + vec2(0.0, e)) - h);
+        vec3 n = normalize(cross(dx, dy));
+        vNormalW = normalize(normalMatrix * n); vPos = (modelViewMatrix * vec4(p, 1.0)).xyz; vH = h;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+      }`,
+    fragmentShader: `
+      precision highp float; uniform float uTime, uMorph, uHue; uniform vec3 uLight; varying vec3 vPos; varying vec3 vNormalW; varying float vH;
+      vec3 hsl(float h, float s, float l){ vec3 rgb = clamp(abs(mod(h*6.0+vec3(0.0,4.0,2.0),6.0)-3.0)-1.0, 0.0, 1.0); return l + s*(rgb-0.5)*(1.0-abs(2.0*l-1.0)); }
+      void main(){
+        // smooth normal for silk; screen-space derivative normal for crystal, so the folds become facets
+        vec3 Ns = normalize(vNormalW); vec3 Nf = normalize(cross(dFdx(vPos), dFdy(vPos)));
+        vec3 N = normalize(mix(Ns, Nf, uMorph)); if (!gl_FrontFacing) N = -N;
+        vec3 V = normalize(-vPos); vec3 L = normalize(uLight - vPos); vec3 H = normalize(L + V);
+        float ndl = max(dot(N, L), 0.0), ndv = max(dot(N, V), 0.0);
+        float fres = pow(1.0 - ndv, 3.0);
+        // thin-film iridescence lives in the highlights only, inside a copper → rose → violet window
+        float band = ndv * 1.2 + vH * 0.35 + uHue;
+        vec3 film = hsl(fract(0.96 + band * 0.11), 0.62, 0.56);
+        vec3 bg = vec3(0.024, 0.02, 0.04);
+        vec3 silkCol = vec3(0.06, 0.04, 0.07) + film * (0.16 + 0.42 * ndl);
+        vec3 glassTint = mix(vec3(0.30, 0.46, 0.72), vec3(0.78, 0.58, 0.70), smoothstep(-0.5, 0.9, vH));
+        vec3 glassCol = vec3(0.04, 0.045, 0.08) + glassTint * (0.14 + 0.44 * ndl);
+        vec3 col = mix(silkCol, glassCol, uMorph);
+        float specPow = mix(60.0, 140.0, uMorph);
+        col += vec3(1.0, 0.95, 0.88) * pow(max(dot(N, H), 0.0), specPow) * mix(0.9, 1.5, uMorph);
+        col += mix(film, vec3(0.6, 0.7, 0.9), uMorph) * fres * 0.7;
+        // the far edge dissolves into the background so the sheet has a horizon, not a border
+        float fade = smoothstep(-15.0 + uMorph * 5.0, -5.0 + uMorph * 2.5, vPos.z); col = mix(bg, col, fade);
+        float grain = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) * 0.03;
+        gl_FragColor = vec4(col + grain, 1.0);
+      }`
+  });
+  const surface = new THREE.Mesh(new THREE.PlaneGeometry(18, 18, SEG, SEG), surfaceMat);
+  surface.rotation.x = -1.25; surface.position.y = -1.6; scene.add(surface);
+
+  // ---------- dust: a field that drifts and leans toward the pointer ----------
+  const dustPos = new Float32Array(DUST * 3), dustSeed = new Float32Array(DUST);
+  for (let i = 0; i < DUST; i++) { dustPos[i*3] = (Math.random() - 0.5) * 14; dustPos[i*3+1] = (Math.random() - 0.5) * 9; dustPos[i*3+2] = (Math.random() - 0.5) * 6; dustSeed[i] = Math.random() * 100; }
+  const dustGeo = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(dustPos, 3)).setAttribute('seed', new THREE.BufferAttribute(dustSeed, 1));
+  const dustMat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    uniforms: { uTime: uniforms.uTime, uPointer3: { value: new THREE.Vector3() }, uMorph: uniforms.uMorph, uDpr: { value: DPR } },
+    vertexShader: `attribute float seed; uniform float uTime, uMorph, uDpr; uniform vec3 uPointer3; varying float vA;
+      void main(){ vec3 p = position; p.x += sin(uTime * 0.3 + seed) * 0.4; p.y += cos(uTime * 0.23 + seed * 1.7) * 0.3;
+        vec3 toP = uPointer3 - p; float d = length(toP); p += toP * (0.35 * exp(-d * 0.6));
+        vec4 mv = modelViewMatrix * vec4(p, 1.0); gl_Position = projectionMatrix * mv;
+        gl_PointSize = (1.2 + fract(seed) * 2.2) * uDpr * (6.0 / -mv.z); vA = 0.25 + 0.5 * fract(seed * 7.0) * (1.0 - uMorph * 0.5); }`,
+    fragmentShader: `precision highp float; varying float vA; void main(){ vec2 c = gl_PointCoord - 0.5; float a = smoothstep(0.5, 0.1, length(c)); gl_FragColor = vec4(1.0, 0.9, 0.8, a * vA * 1.4); }`
+  });
+  scene.add(new THREE.Points(dustGeo, dustMat));
+
+  // ---------- pointer → surface space ----------
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), hitPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), hit = new THREE.Vector3(), local = new THREE.Vector3();
+  const inv = new THREE.Matrix4();
+  const toSurface = (cx, cy, out) => {
+    ndc.set(((cx - (vv ? vv.offsetLeft : 0)) / VW()) * 2 - 1, -((cy - (vv ? vv.offsetTop : 0)) / VH()) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    surface.updateMatrixWorld(); inv.copy(surface.matrixWorld).invert();
+    hitPlane.normal.set(0, 0, 1).applyQuaternion(surface.quaternion); hitPlane.constant = -surface.position.dot(hitPlane.normal);
+    if (!ray.ray.intersectPlane(hitPlane, hit)) return false;
+    local.copy(hit).applyMatrix4(inv); out.set(local.x, local.y); return true;
+  };
+  const pTarget = new THREE.Vector2(), pNow = new THREE.Vector2(); let pull = 0, pullTarget = 0, dragging = false, downAt = 0, moved = 0, rippleHead = 0;
+  const hint = document.getElementById('hint'); let interacted = false;
+  const onDown = (e) => { if (e.button !== undefined && e.button !== 0) return; dragging = true; downAt = performance.now(); moved = 0; if (toSurface(e.clientX, e.clientY, pTarget)) { pNow.copy(pTarget); pullTarget = -0.9; } };
+  const onMove = (e) => { if (toSurface(e.clientX, e.clientY, pTarget) && !dragging) pullTarget = -0.25; if (dragging) moved += Math.abs(e.movementX || 0) + Math.abs(e.movementY || 0); };
+  const onUp = (e) => {
+    if (!dragging) return; dragging = false; pullTarget = 0;
+    if (performance.now() - downAt < 260 && moved < 12) { // a tap rings the surface
+      const r = uniforms.uRipples.value[rippleHead = (rippleHead + 1) % RIPPLES]; r.set(pTarget.x, pTarget.y, uniforms.uTime.value, 1);
+    }
+    if (!interacted) { interacted = true; hint.classList.add('off'); }
+  };
+  canvas.addEventListener('pointerdown', onDown); addEventListener('pointermove', onMove, { passive: true }); addEventListener('pointerup', onUp); addEventListener('pointercancel', onUp);
+  // text sits over the canvas; let a press on empty section space reach the surface too
+  document.querySelectorAll('main section').forEach((s) => s.addEventListener('pointerdown', (e) => { if (e.target === s) onDown(e); }));
+  if (!MOBILE) addEventListener('mouseleave', () => (pullTarget = 0));
+
+  // ---------- scroll → morph ----------
+  let scrollT = 0, scroll = 0;
+  const onScroll = () => { scrollT = Math.max(0, Math.min(1, PAGE_TOP() / (document.documentElement.scrollHeight - VH()))); placeCanvas(); };
+  addEventListener('scroll', onScroll, { passive: true }); vv?.addEventListener('scroll', onScroll); onScroll();
+  const phase = document.getElementById('phase');
+
+  // ---------- resize ----------
+  let raf = 0;
+  const onResize = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { camera.aspect = VW() / VH(); camera.updateProjectionMatrix(); renderer.setSize(VW(), VH(), true); placeCanvas(); }); };
+  addEventListener('resize', onResize); vv?.addEventListener('resize', onResize);
+
+  // ---------- loop ----------
+  const timer = new THREE.Timer(); timer.connect(document); let visible = true, frames = 0, fpsT = 0; const perf = document.getElementById('perf');
+  document.addEventListener('visibilitychange', () => { visible = !document.hidden; if (visible) { timer.update(); tick(); } });
+  function tick() {
+    if (!visible) return; requestAnimationFrame(tick);
+    timer.update(); const dt = Math.min(timer.getDelta(), 0.05); uniforms.uTime.value += dt * (REDUCED ? 0.35 : 1);
+    scroll += (scrollT - scroll) * (1 - Math.pow(0.002, dt));
+    uniforms.uMorph.value = Math.min(1, Math.max(0, (scroll - 0.25) / 0.5));
+    uniforms.uHue.value = scroll * 0.6;
+    pNow.lerp(pTarget, 1 - Math.pow(0.001, dt)); pull += (pullTarget - pull) * (1 - Math.pow(0.01, dt));
+    uniforms.uPointer.value.set(pNow.x, pNow.y, pull);
+    dustMat.uniforms.uPointer3.value.set(hit.x, hit.y, hit.z);
+    const t = uniforms.uTime.value;
+    uniforms.uLight.value.set(Math.sin(t * 0.25) * 3, 2.5 + Math.cos(t * 0.2) * 1.2, 4);
+    // the crystal beat keeps its horizon: tilt and climb less than the sheet needs to fill the frame
+    surface.rotation.x = -1.25 + scroll * 0.22; surface.rotation.z = Math.sin(t * 0.07) * 0.05 + scroll * 0.3;
+    camera.position.z = (MOBILE ? 8.2 : 6.4) - scroll * 0.6; camera.position.y = 0.3 + scroll * 0.45; camera.lookAt(0, -0.9, 0);
+    phase.textContent = uniforms.uMorph.value < 0.05 ? 'silk' : uniforms.uMorph.value > 0.95 ? 'crystal' : 'tension';
+    hint.classList.toggle('off', interacted || scroll > 0.06);
+    renderer.render(scene, camera);
+    frames++; fpsT += dt; if (fpsT > 1) { perf.textContent = `${Math.round(frames / fpsT)} FPS · ${(SEG + 1) * (SEG + 1)} VERTS`; frames = 0; fpsT = 0; }
+  }
+  tick(); requestAnimationFrame(() => loader.classList.add('gone'));
+
+}
+</script>
+</body>
+</html>
