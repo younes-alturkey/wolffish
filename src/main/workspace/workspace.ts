@@ -5,6 +5,7 @@ import { importOutsideProjectFiles } from '@main/projects'
 import { sweepDeckPreviews } from '@main/uploads/deck-preview'
 import { mcpCapabilityName } from '@main/runtime/mcp/naming'
 import type { McpConfig, McpOauthState, McpServerConfig } from '@main/runtime/mcp/types'
+import { MCP_OAUTH_STATE_KEYS } from '@main/runtime/mcp/types'
 import { isKnownModelName } from '@main/runtime/models'
 import { normalizeReasoningMode, type ReasoningMode } from '@main/runtime/reasoning'
 import { app } from 'electron'
@@ -2166,7 +2167,7 @@ export async function patchMcpServerOauth(
         servers: servers.map((s) => {
           if (s.id !== id) return s
           const oauth: McpOauthState = { ...s.oauth }
-          for (const key of ['clientInformation', 'tokens', 'redirectPort'] as const) {
+          for (const key of MCP_OAUTH_STATE_KEYS) {
             if (!(key in patch)) continue
             const value = patch[key]
             if (value === undefined) delete oauth[key]

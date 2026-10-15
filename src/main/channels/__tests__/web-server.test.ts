@@ -177,8 +177,24 @@ async function run(): Promise<void> {
 
   let statusChanges = 0
   const logs: string[] = []
+  // The MCP sign-in seam as the app wires it: what the override started,
+  // what the callback route delivered, and whether a flow was waiting.
+  const mcpBegun: Array<{ id: string; redirectUrl: string }> = []
+  const mcpDelivered: Array<{ state: string | null; code: string | null; error: string | null }> =
+    []
+  let mcpFlowWaiting = false
   const server = new WebServer({
     handlers,
+    mcpAuth: {
+      begin: async (id, redirectUrl) => {
+        mcpBegun.push({ id, redirectUrl })
+        return { ok: true, authUrl: 'https://as.example/authorize?client_id=x' }
+      },
+      deliver: (params) => {
+        mcpDelivered.push(params)
+        return mcpFlowWaiting
+      }
+    },
     version: '1.2.3',
     rendererDir: renderer,
     devServerUrl: null,
@@ -568,6 +584,43 @@ async function run(): Promise<void> {
     (await call(`${base}/device?path=${encodeURIComponent(icon)}`, { cookie })).status === 200
   )
 
+  console.log('step: mcp sign-in callback')
+  // The authorization server sends the browser here with no cookie: the
+  // route answers from the flow's own state, and a callback nobody waits
+  // for is told so without cancelling anything.
+  const strayCb = await call(`${base}/wolffish/mcp/callback?code=abc&state=nope`)
+  ok(
+    'callback without a cookie is served, not sent to sign in',
+    strayCb.status === 200 && /text\/html/.test(strayCb.headers.get('content-type') ?? '')
+  )
+  ok('unmatched callback says no sign-in is waiting', /No sign-in is waiting/.test(strayCb.text))
+  ok(
+    'unmatched callback was offered to the flows',
+    mcpDelivered.length === 1 &&
+      mcpDelivered[0]!.code === 'abc' &&
+      mcpDelivered[0]!.state === 'nope' &&
+      mcpDelivered[0]!.error === null
+  )
+  mcpFlowWaiting = true
+  const goodCb = await call(`${base}/wolffish/mcp/callback?code=abc&state=s1`)
+  ok(
+    'matched callback shows the connected page with a way back',
+    goodCb.status === 200 && /connected/.test(goodCb.text) && /href="\/"/.test(goodCb.text)
+  )
+  const deniedCb = await call(`${base}/wolffish/mcp/callback?error=access_denied&state=s1`)
+  ok(
+    'denied callback shows the error',
+    /didn't complete/.test(deniedCb.text) && /access_denied/.test(deniedCb.text)
+  )
+  ok(
+    'the error reaches the flow',
+    mcpDelivered[2]!.error === 'access_denied' && mcpDelivered[2]!.code === null
+  )
+  const noCodeCb = await call(`${base}/wolffish/mcp/callback?state=s1`)
+  ok('callback without a code shows the error', /missing an authorization code/.test(noCodeCb.text))
+  ok('callback pages are not cached', goodCb.headers.get('cache-control') === 'no-store')
+  mcpFlowWaiting = false
+
   console.log('step: websocket')
   const ws = new WebSocket(`ws://127.0.0.1:${port}/ws`, { headers: { origin: base, cookie } })
   // Frames queue until something asks for them, so one that lands before a
@@ -628,6 +681,22 @@ async function run(): Promise<void> {
     'GUI-only channel refused',
     refused.ok === false && /desktop window/.test(String(refused.error)),
     JSON.stringify(refused)
+  )
+  // A sign-in from this browser: the redirect is this server's callback at
+  // the origin the socket came from, and the page goes back to the browser.
+  const signIn = await invoke('mcp:authorize', 'srv-1')
+  ok(
+    "mcp:authorize starts the browser flow with this origin's callback",
+    mcpBegun.length === 1 &&
+      mcpBegun[0]!.id === 'srv-1' &&
+      mcpBegun[0]!.redirectUrl === `${base}/wolffish/mcp/callback`,
+    JSON.stringify(mcpBegun)
+  )
+  ok(
+    'mcp:authorize hands the page back to the browser',
+    signIn.ok === true &&
+      (signIn.value as { authUrl?: string }).authUrl === 'https://as.example/authorize?client_id=x',
+    JSON.stringify(signIn)
   )
   const bin = await invoke('echo:bin', { $bin: Buffer.from('abc').toString('base64') })
   ok(

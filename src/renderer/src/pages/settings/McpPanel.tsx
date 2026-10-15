@@ -14,7 +14,7 @@ import {
   ViewIcon,
   ViewOffIcon
 } from 'hugeicons-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 /**
@@ -91,6 +91,26 @@ function parseEnvLines(text: string): Record<string, string> {
     env[trimmed.slice(0, eq).trim()] = trimmed.slice(eq + 1).trim()
   }
   return env
+}
+
+/**
+ * A tab opened from a click, holding a line of text until it is pointed
+ * somewhere; null when the browser blocked it. The tab gets no opener,
+ * so the page it will show cannot steer this one.
+ */
+function openBlankTab(placeholder: string): Window | null {
+  const tab = window.open('', '_blank')
+  if (!tab) return null
+  try {
+    tab.opener = null
+    tab.document.write(
+      `<!doctype html><title>Wolffish</title><body style="margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#101014;color:#9a9aa2;font-family:system-ui,sans-serif;font-size:14px">${placeholder}</body>`
+    )
+    tab.document.close()
+  } catch {
+    // a browser that denies the write still shows the page once pointed
+  }
+  return tab
 }
 
 const ICON_BUTTON =
@@ -280,6 +300,11 @@ export function McpPanel(): React.JSX.Element {
     })
   }, [])
 
+  // Sign-ins started in a browser finish on the server after the call has
+  // answered, so their failure arrives on a status change: the servers
+  // whose sign-in is still out, to show that error when it lands.
+  const awaitingSignIn = useRef(new Set<string>())
+
   // Update both the live state and the module cache in one place. A server
   // that is now connected has no outstanding issue, so drop any stale one.
   const commit = useCallback((list: McpServerSnapshot[]) => {
@@ -291,6 +316,12 @@ export function McpPanel(): React.JSX.Element {
       for (const s of list) {
         if (s.state === 'connected' && next[s.id]) {
           delete next[s.id]
+          changed = true
+        }
+        if (!awaitingSignIn.current.has(s.id) || s.state === 'connecting') continue
+        awaitingSignIn.current.delete(s.id)
+        if (s.state === 'needs-auth' && s.error) {
+          next[s.id] = s.error
           changed = true
         }
       }
@@ -380,16 +411,32 @@ export function McpPanel(): React.JSX.Element {
     [clearIssue, toast, t]
   )
 
+  // In a browser the sign-in page is this page's to open, and a tab opened
+  // from the click itself is the one pop-up blockers let through — so the
+  // tab opens first, blank, and gets the page once the server has it. The
+  // flow then finishes on the server, and the outcome arrives on the
+  // status change. On the desktop the server opens the page itself and
+  // answers when the flow is over.
   const handleSignIn = useCallback(
     async (id: string) => {
       setBusy((prev) => ({ ...prev, [id]: 'auth' }))
+      const tab = isWeb ? openBlankTab(t('settings.mcp.auth.opening')) : null
       try {
         const result = await window.api.mcp.authorize(id)
+        if (result.authUrl) {
+          clearIssue(id)
+          awaitingSignIn.current.add(id)
+          if (tab) tab.location.href = result.authUrl
+          return
+        }
+        tab?.close()
         if (result.ok) {
           clearIssue(id)
         } else if (result.error) {
           setIssues((prev) => ({ ...prev, [id]: result.error! }))
         }
+      } catch {
+        tab?.close()
       } finally {
         setBusy((prev) => {
           const next = { ...prev }
@@ -398,7 +445,7 @@ export function McpPanel(): React.JSX.Element {
         })
       }
     },
-    [clearIssue]
+    [clearIssue, t]
   )
 
   const openHeaderEditor = useCallback((server: McpServerSnapshot) => {
@@ -674,24 +721,14 @@ export function McpPanel(): React.JSX.Element {
                             )}
                           </span>
                         </span>
-                        <div className="flex shrink-0 flex-col items-end gap-1">
-                          <Button
-                            size="sm"
-                            variant="primary"
-                            disabled={rowBusy != null}
-                            onClick={() => void handleSignIn(server.id)}
-                          >
-                            {t('settings.mcp.actions.signIn')}
-                          </Button>
-                          {/* The consent page opens on the machine running
-                              Wolffish, and its callback lands there too — a
-                              browser elsewhere only starts the flow. */}
-                          {isWeb && (
-                            <span className="text-muted text-end text-[11px] leading-snug">
-                              {t('settings.mcp.actions.signInWebHint')}
-                            </span>
-                          )}
-                        </div>
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          disabled={rowBusy != null}
+                          onClick={() => void handleSignIn(server.id)}
+                        >
+                          {t('settings.mcp.actions.signIn')}
+                        </Button>
                       </div>
                     )}
                     {/* Below the URL: while connecting, the live handshake
@@ -701,10 +738,32 @@ export function McpPanel(): React.JSX.Element {
                     {(() => {
                       if (server.state === 'connecting') {
                         return (
-                          <div className="ms-5">
+                          <div className="ms-5 flex flex-col gap-2">
                             <pre dir="ltr" className={cn(CODE_BLOCK, 'text-muted')}>
                               {server.progress ?? t('settings.mcp.progress.generic')}
                             </pre>
+                            {/* A sign-in started in a browser: the page it
+                                has to finish on, for when the tab the click
+                                opened was blocked or closed, or the sign-in
+                                is picked up from another device. */}
+                            {server.authUrl && (
+                              <div className="flex items-center gap-2 text-xs">
+                                <a
+                                  href={server.authUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-accent truncate hover:underline"
+                                >
+                                  {t('settings.mcp.auth.openLink')}
+                                </a>
+                                <CopyButton
+                                  text={server.authUrl}
+                                  variant="overlay"
+                                  ariaLabelKey="chat.copy"
+                                  className="shrink-0"
+                                />
+                              </div>
+                            )}
                           </div>
                         )
                       }

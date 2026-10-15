@@ -322,12 +322,16 @@ async function run(): Promise<void> {
   const { origin, counters } = authServer
 
   // In-memory persistence with patchMcpServerOauth's merge/delete semantics
-  // — shared across connection instances to simulate app restarts.
+  // — the same key list, so a field the patcher would drop is dropped here
+  // too — shared across connection instances to simulate app restarts.
+  const { MCP_OAUTH_STATE_KEYS } = await import('@main/runtime/mcp/types')
   const persisted: Record<string, unknown> = {}
   const persistence = {
     load: async () => persisted as never,
     save: async (patch: Record<string, unknown>) => {
-      for (const [k, v] of Object.entries(patch)) {
+      for (const k of MCP_OAUTH_STATE_KEYS) {
+        if (!(k in patch)) continue
+        const v = patch[k]
         if (v === undefined) delete persisted[k]
         else persisted[k] = v
       }
@@ -493,6 +497,136 @@ async function run(): Promise<void> {
     clientInformation: { client_id: 'c' } as never
   })
   ok('revokeTokens swallows an unreachable provider', unreachable === false)
+
+  // ------------------------------------------------ 7. sign-in from a browser
+  // The Web UI's flow: no loopback, no system browser. The authorization
+  // page is handed back, the redirect is the Web UI's callback, and the
+  // code comes in through deliverAuthCallback. The registration so far
+  // knows the loopback only, so the first such flow registers again with
+  // both redirects and throws the old client's tokens away.
+  delete persisted.tokens
+  const webRedirect = 'https://wolffish.example/wolffish/mcp/callback'
+  const reg4 = { count: 0 }
+  const conn4 = makeConnection('oauth-4', reg4)
+  conn4.start()
+  snap = conn4.snapshot()
+  for (let i = 0; i < 100 && snap.state !== 'needs-auth'; i++) {
+    await sleep(20)
+    snap = conn4.snapshot()
+  }
+  check('relay: without tokens the silent connect parks in needs-auth', snap.state, 'needs-auth')
+  const registrationsBefore = counters.registrations
+  const handedUrls: string[] = []
+  let relayCallback: URL | null = null
+  let authUrlWhileWaiting: string | undefined
+  let strayAccepted: boolean | null = null
+  const relayAuth = conn4.authorize({
+    relay: {
+      redirectUrl: webRedirect,
+      onAuthorizationUrl: (url) => {
+        handedUrls.push(url)
+        void (async () => {
+          const authRes = await fetch(url, { redirect: 'manual' })
+          const location = authRes.headers.get('location')
+          if (!location) return
+          relayCallback = new URL(location)
+          await sleep(60)
+          authUrlWhileWaiting = conn4.snapshot().authUrl
+          // A callback for some other flow: refused, and the sign-in keeps waiting.
+          strayAccepted = conn4.deliverAuthCallback({
+            state: 'not-this-flow',
+            code: 'whatever',
+            error: null
+          })
+          const taken = conn4.deliverAuthCallback({
+            state: relayCallback.searchParams.get('state'),
+            code: relayCallback.searchParams.get('code'),
+            error: null
+          })
+          ok('relay: the real callback is taken by its flow', taken === true)
+        })()
+      }
+    }
+  })
+  const relayResult = await relayAuth
+  ok('relay: authorize() succeeds end-to-end', relayResult.ok === true)
+  ok('relay: the system browser was never opened', browserVisits.length === 1)
+  ok('relay: the authorization URL was handed back once', handedUrls.length === 1)
+  ok(
+    'relay: the authorization request named the web callback as redirect_uri',
+    new URL(handedUrls[0] ?? 'http://x').searchParams.get('redirect_uri') === webRedirect
+  )
+  ok(
+    'relay: the AS sent the browser back to the web callback',
+    (relayCallback as URL | null)?.toString().startsWith(`${webRedirect}?`) === true
+  )
+  ok('relay: the snapshot carried the page while waiting', authUrlWhileWaiting === handedUrls[0])
+  ok('relay: the page is gone from the snapshot after', conn4.snapshot().authUrl === undefined)
+  ok('relay: a stray callback was refused', strayAccepted === false)
+  ok(
+    'relay: the client was registered again, with the web callback',
+    counters.registrations === registrationsBefore + 1
+  )
+  check('relay: the registration records both redirects', persisted.redirectUris, [
+    `http://127.0.0.1:${persisted.redirectPort}/wolffish/mcp/callback`,
+    webRedirect
+  ])
+  check('relay: connected after sign-in', conn4.snapshot().state, 'connected')
+  ok('relay: tokens were persisted', persisted.tokens !== undefined)
+
+  // A second browser sign-in at the same origin reuses the registration.
+  delete persisted.tokens
+  const relayAgain = await conn4.authorize({
+    relay: {
+      redirectUrl: webRedirect,
+      onAuthorizationUrl: (url) => {
+        void (async () => {
+          const authRes = await fetch(url, { redirect: 'manual' })
+          const back = new URL(authRes.headers.get('location') ?? 'http://x')
+          conn4.deliverAuthCallback({
+            state: back.searchParams.get('state'),
+            code: back.searchParams.get('code'),
+            error: null
+          })
+        })()
+      }
+    }
+  })
+  ok('relay again: succeeds', relayAgain.ok === true)
+  ok('relay again: no new registration', counters.registrations === registrationsBefore + 1)
+  await conn4.stop()
+
+  // The desktop's silent paths still work on the widened registration.
+  const reg5 = { count: 0 }
+  const conn5 = makeConnection('oauth-5', reg5)
+  conn5.start()
+  snap = conn5.snapshot()
+  for (let i = 0; i < 100 && snap.state !== 'connected'; i++) {
+    await sleep(20)
+    snap = conn5.snapshot()
+  }
+  check('after relay: a restart connects silently with the new tokens', snap.state, 'connected')
+  ok('after relay: still no new registration', counters.registrations === registrationsBefore + 1)
+  await conn5.stop()
+
+  // The browser's AS denied the request: the error reaches the flow.
+  delete persisted.tokens
+  const conn6 = makeConnection('oauth-6', { count: 0 })
+  const denied = await conn6.authorize({
+    relay: {
+      redirectUrl: webRedirect,
+      onAuthorizationUrl: () => {
+        setTimeout(() => {
+          const state = (conn6 as unknown as { authProvider: { lastState: string | null } })
+            .authProvider.lastState
+          conn6.deliverAuthCallback({ state, code: null, error: 'access_denied' })
+        }, 30)
+      }
+    }
+  })
+  check('relay denied: the AS error is the result', denied, { ok: false, error: 'access_denied' })
+  check('relay denied: back to needs-auth', conn6.snapshot().state, 'needs-auth')
+  await conn6.stop()
 
   authServer.close()
   console.log(`${passed} passed, ${failed} failed`)

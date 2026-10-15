@@ -27,6 +27,7 @@ import {
 } from '@main/channels/extension/doctor'
 import { ExtensionServer } from '@main/channels/extension/server'
 import { MobileChannel } from '@main/channels/mobile/channel'
+import { configureKeystore } from '@main/channels/mobile/keys'
 import {
   CUSTOMIZATION_DOCS,
   CUSTOMIZATION_MAX_BYTES,
@@ -364,6 +365,8 @@ app.setAppLogsPath(join(WOLFFISH_ROOT, 'logs'))
  * nothing had to change for the process to survive with zero windows.
  */
 const IS_HEADLESS = process.argv.includes('--headless') || process.env.WOLFFISH_HEADLESS === '1'
+// The macOS keychain cannot be asked anything on a headless boot — see keys.ts.
+configureKeystore({ headless: IS_HEADLESS })
 
 // Resolve a path the assistant mentioned in chat (which may start with ~) to an
 // absolute path. Returns null for anything that isn't a real absolute/home path
@@ -1120,6 +1123,10 @@ const webServer = new WebServer({
   tlsDir: join(workspaceRoot(), 'web', 'tls'),
   exportPdf: (html) => renderHtmlToPdf(html),
   attachFiles: (request) => webAttachFiles(request),
+  mcpAuth: {
+    begin: (id, redirectUrl) => mcpManager.authorizeFromBrowser(id, redirectUrl),
+    deliver: (params) => mcpManager.deliverAuthCallback(params)
+  },
   onStatusChange: () => {
     void webServer
       .status()

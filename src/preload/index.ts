@@ -318,6 +318,8 @@ export type McpServerSnapshot = {
   /** Live connect-progress line, present only while state is `connecting`. */
   progress?: string
   lastConnectedAt?: number
+  /** The sign-in page of a browser-started sign-in, while it waits for the callback. */
+  authUrl?: string
 }
 
 export type McpTestResult = {
@@ -344,7 +346,12 @@ export type McpApi = {
   setEnabled: (id: string, enabled: boolean) => Promise<{ ok: boolean; error?: string }>
   setHeaders: (id: string, headers: McpHeader[]) => Promise<{ ok: boolean; error?: string }>
   test: (id: string) => Promise<McpTestResult>
-  authorize: (id: string) => Promise<{ ok: boolean; error?: string }>
+  /**
+   * `authUrl` is set only in the Web UI, where the sign-in page is the
+   * browser's to open; the outcome then arrives on the status change
+   * that follows the callback. The desktop answers once the flow is over.
+   */
+  authorize: (id: string) => Promise<{ ok: boolean; error?: string; authUrl?: string | null }>
   onStatusChange: (callback: (servers: McpServerSnapshot[]) => void) => () => void
 }
 

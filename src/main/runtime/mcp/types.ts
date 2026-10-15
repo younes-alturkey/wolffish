@@ -26,7 +26,27 @@ export type McpOauthState = {
    * across app restarts and token refreshes.
    */
   redirectPort?: number
+  /**
+   * The redirect URIs the current client registration was made with. A
+   * sign-in started from a browser needs the Web UI's own callback in
+   * this list; when it is missing the client is registered again with
+   * the longer list. Absent on records registered before the Web UI
+   * could sign in, which means "the loopback only".
+   */
+  redirectUris?: string[]
 }
+
+/**
+ * Every field of the persisted OAuth state — what a patch may set or
+ * clear. The workspace's patcher walks this list, so a field missing
+ * here is silently dropped on save.
+ */
+export const MCP_OAUTH_STATE_KEYS = [
+  'clientInformation',
+  'tokens',
+  'redirectPort',
+  'redirectUris'
+] as const satisfies readonly (keyof McpOauthState)[]
 
 /**
  * One custom HTTP header sent with every request to a remote server.
@@ -107,6 +127,13 @@ export type McpServerSnapshot = {
    */
   progress?: string
   lastConnectedAt?: number
+  /**
+   * The authorization page of a sign-in started from a browser, present
+   * only while that sign-in waits for the browser to come back through
+   * the Web UI's callback. The desktop flow opens the page itself and
+   * never sets this.
+   */
+  authUrl?: string
 }
 
 export type McpTestResult = {
@@ -128,3 +155,22 @@ export type McpAddInput = {
 }
 
 export type McpAddResult = { ok: true; server: McpServerSnapshot } | { ok: false; error: string }
+
+/**
+ * What a sign-in started from a browser answers at once. `authUrl` set:
+ * the browser opens it and the outcome arrives on the status change
+ * that follows the callback. `authUrl` null with `ok`: the stored
+ * credentials still worked and no page was needed.
+ */
+export type McpAuthorizeResult = {
+  ok: boolean
+  error?: string
+  authUrl?: string | null
+}
+
+/** The query of the Web UI's OAuth callback, as the authorization server sent the browser back. */
+export type McpAuthCallbackParams = {
+  state: string | null
+  code: string | null
+  error: string | null
+}

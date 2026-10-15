@@ -94,6 +94,8 @@ import {
 } from '@main/channels/web/assets'
 import type { ConversationMessage } from '@main/conversations'
 import type { IpcHandler } from '@main/ipc-registry'
+import { CALLBACK_PATH as MCP_CALLBACK_PATH, renderCallbackPage } from '@main/runtime/mcp/auth'
+import type { McpAuthCallbackParams, McpAuthorizeResult } from '@main/runtime/mcp/types'
 import { classifyFile, resolveUploadPath, sanitizeFileName } from '@main/uploads/uploads'
 import { workspaceRoot } from '@main/workspace/root'
 import {
@@ -194,6 +196,16 @@ export type WebServerDeps = {
    * every browser; without it (tests) the browsers alone are told.
    */
   onNotifications?: (items: WebNotificationRecord[]) => void
+  /**
+   * MCP sign-in from a browser: `begin` starts the flow with this
+   * server's callback as the redirect, `deliver` hands the browser's
+   * return to the flow waiting on it. Absent (tests), sign-in takes the
+   * desktop path.
+   */
+  mcpAuth?: {
+    begin: (id: string, redirectUrl: string) => Promise<McpAuthorizeResult>
+    deliver: (params: McpAuthCallbackParams) => boolean
+  }
   log: (line: string) => void
   warn: (line: string) => void
 }
@@ -320,6 +332,8 @@ type Client = {
   session: WebSession
   address: string
   userAgent: string
+  /** The origin the page is on, as the browser said on the upgrade — where its redirects must return. */
+  origin: string | null
   alive: boolean
   sender: { send: (channel: string, payload: unknown) => void; isDestroyed: () => boolean }
   page: PageLink | null
@@ -485,6 +499,26 @@ function isNavigation(req: http.IncomingMessage): boolean {
   const mode = req.headers['sec-fetch-mode']
   if (typeof mode === 'string') return mode === 'navigate'
   return String(req.headers.accept ?? '').includes('text/html')
+}
+
+/**
+ * The origin a browser is using — what a redirect has to come back to.
+ * The Origin header is the browser's own word on it, scheme included,
+ * which holds behind a TLS-terminating proxy too; the Host it asked for
+ * is the fallback.
+ */
+function browserOrigin(req: http.IncomingMessage): string | null {
+  const origin = req.headers.origin
+  if (typeof origin === 'string') {
+    try {
+      return new URL(origin).origin
+    } catch {
+      // fall through to the host
+    }
+  }
+  const host = req.headers.host
+  if (!host) return null
+  return `${isEncrypted(req) ? 'https' : 'http'}://${host}`
 }
 
 /** Same-origin check: the Origin header's host must be the Host we were asked for. */
@@ -1712,6 +1746,12 @@ export class WebServer {
       })
 
     if (p.startsWith('/api/auth/')) return this.routeAuth(req, res, p, method)
+    // The OAuth return of an MCP sign-in started here: the authorization
+    // server sends the browser back, and the flow's own state parameter
+    // is what admits it, not a cookie — the consent may have run in a
+    // browser profile that holds none.
+    if (p === MCP_CALLBACK_PATH && (method === 'GET' || method === 'HEAD'))
+      return this.routeMcpCallback(res, url)
     // Public links: the one route a request reaches with no cookie. The
     // token in the path is the whole permission; public.ts owns the records.
     if (p.startsWith(PUBLIC_PATH_PREFIX)) return this.routePublic(req, res, url)
@@ -1777,6 +1817,37 @@ export class WebServer {
     const data = Buffer.from(text, 'utf8')
     res.writeHead(200, { 'Content-Type': type, 'Content-Length': data.length, ...headers })
     res.end(data)
+  }
+
+  /**
+   * Where the authorization server sends the browser after an MCP
+   * sign-in started here. The flow waiting on the callback's state takes
+   * it; a callback nobody waits for is told so and cancels nothing.
+   */
+  private routeMcpCallback(res: http.ServerResponse, url: URL): void {
+    const params: McpAuthCallbackParams = {
+      state: url.searchParams.get('state'),
+      code: url.searchParams.get('code'),
+      error: url.searchParams.get('error')
+    }
+    const matched = this.deps.mcpAuth?.deliver(params) ?? false
+    const page = !matched
+      ? renderCallbackPage(
+          { ok: false, detail: 'No sign-in is waiting for this callback — it may have timed out.' },
+          '/'
+        )
+      : params.error
+        ? renderCallbackPage(
+            { ok: false, detail: `The authorization server reported: ${params.error}.` },
+            '/'
+          )
+        : !params.code
+          ? renderCallbackPage(
+              { ok: false, detail: 'The callback was missing an authorization code.' },
+              '/'
+            )
+          : renderCallbackPage({ ok: true }, '/')
+    this.serveText(res, page, 'text/html; charset=utf-8', { 'Cache-Control': 'no-store' })
   }
 
   // ─── auth routes ───────────────────────────────────────────────────────────
@@ -2613,6 +2684,7 @@ export class WebServer {
       session,
       address: remoteAddress(req),
       userAgent: String(req.headers['user-agent'] ?? ''),
+      origin: browserOrigin(req),
       alive: true,
       sender: {
         send: (channel, payload) => {
@@ -2896,6 +2968,20 @@ export class WebServer {
       if (typeof url !== 'string' || !/^https?:\/\//i.test(url))
         return { ok: false, error: 'Only http(s) URLs open outside.' }
       return { ok: true, openUrl: url }
+    },
+    // A sign-in started in a browser has to finish in that browser: the
+    // redirect is this server's callback at the origin the browser is on,
+    // and the page to open goes back to it rather than to this machine's
+    // desktop. Without the dependency (tests) the desktop flow runs.
+    'mcp:authorize': async (args, ctx) => {
+      const id = typeof args[0] === 'string' ? args[0] : ''
+      const origin = ctx.client.origin
+      if (!this.deps.mcpAuth || !origin) {
+        const handler = this.deps.handlers.get('mcp:authorize')
+        if (!handler) throw new Error('unknown channel: mcp:authorize')
+        return handler({ sender: ctx.client.sender, webSessionId: ctx.client.session.id }, id)
+      }
+      return this.deps.mcpAuth.begin(id, `${origin}${MCP_CALLBACK_PATH}`)
     },
     'mic:checkAccess': async () => 'granted',
     'mic:requestAccess': async () => true,

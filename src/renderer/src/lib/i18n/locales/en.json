@@ -1511,8 +1511,7 @@
       "actions": {
         "test": "Test",
         "remove": "Remove",
-        "signIn": "Sign in",
-        "signInWebHint": "The sign-in page opens on the computer running Wolffish — finish it there."
+        "signIn": "Sign in"
       },
       "toggle": {
         "label": "Enabled",
@@ -1529,7 +1528,9 @@
       },
       "auth": {
         "prompt": "This server requires sign-in.",
-        "promptHeaders": "This server requires sign-in — or an updated header value below."
+        "promptHeaders": "This server requires sign-in — or an updated header value below.",
+        "opening": "Opening the sign-in page…",
+        "openLink": "Open the sign-in page"
       },
       "headers": {
         "toggle": "+ Headers",

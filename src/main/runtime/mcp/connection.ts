@@ -46,11 +46,15 @@ import {
 import { mcpCapabilityName, parseCommandLine } from '@main/runtime/mcp/naming'
 import {
   allocateLoopbackPort,
+  createRelayCallback,
   waitForCallback,
+  type LoopbackResult,
+  type RelayCallback,
   WolffishOAuthProvider,
   type OauthPersistence
 } from '@main/runtime/mcp/auth'
 import type {
+  McpAuthCallbackParams,
   McpHeader,
   McpServerConfig,
   McpServerSnapshot,
@@ -135,6 +139,9 @@ export class McpConnection {
   private preferSse = false
   private interactiveAuth = false
   private cancelAuthCallback: (() => void) | null = null
+  /** A browser-started sign-in waiting for the web server to relay its callback. */
+  private relay: RelayCallback | null = null
+  private pendingAuthUrl: string | null = null
   private authProvider: WolffishOAuthProvider | null = null
 
   constructor(private readonly deps: McpConnectionDeps) {}
@@ -247,7 +254,8 @@ export class McpConnection {
       serverVersion: this.serverVersion ?? undefined,
       error: this.lastError ?? undefined,
       progress: state === 'connecting' ? (this.connectPhase ?? undefined) : undefined,
-      lastConnectedAt: this.lastConnectedAt ?? undefined
+      lastConnectedAt: this.lastConnectedAt ?? undefined,
+      authUrl: this.pendingAuthUrl ?? undefined
     }
   }
 
@@ -307,8 +315,15 @@ export class McpConnection {
    * browser, waits on the loopback callback, exchanges the code, then
    * reconnects with the stored tokens. Silent reconnects never end up
    * here — they park in needs-auth and wait for this user action.
+   *
+   * With `relay`, the sign-in was started from a browser through the Web
+   * UI: the authorization page is handed to `onAuthorizationUrl` instead
+   * of opened here, the redirect is the Web UI's callback, and the code
+   * arrives through `deliverAuthCallback` from the web server's route.
    */
-  async authorize(): Promise<{ ok: boolean; error?: string }> {
+  async authorize(
+    opts: { relay?: { redirectUrl: string; onAuthorizationUrl: (url: string) => void } } = {}
+  ): Promise<{ ok: boolean; error?: string }> {
     const cfg = this.deps.config
     if (cfg.transport !== 'http' || !cfg.url) {
       return { ok: false, error: 'only remote servers use OAuth sign-in' }
@@ -333,19 +348,36 @@ export class McpConnection {
     if (oldClient) await oldClient.close().catch(() => undefined)
     this.interactiveAuth = true
     this.state = 'connecting'
-    this.setPhase('opening the browser for sign-in')
+    const relay = opts.relay
+    this.setPhase(relay ? 'preparing the sign-in page' : 'opening the browser for sign-in')
     try {
       const provider = await this.ensureAuthProvider()
       provider.interactive = true
-      const port = provider.currentPort()
-      const callback = waitForCallback({
-        port,
-        expectedState: () => provider.lastState,
-        timeoutMs: AUTH_FLOW_TIMEOUT_MS,
-        onCancel: (cancel) => {
-          this.cancelAuthCallback = cancel
+      let callback: Promise<LoopbackResult>
+      if (relay) {
+        provider.redirectOverride = relay.redirectUrl
+        provider.onAuthorizationUrl = (url) => {
+          this.pendingAuthUrl = url
+          this.deps.notify()
+          relay.onAuthorizationUrl(url)
         }
-      })
+        const relayCallback = createRelayCallback({
+          expectedState: () => provider.lastState,
+          timeoutMs: AUTH_FLOW_TIMEOUT_MS
+        })
+        this.relay = relayCallback
+        this.cancelAuthCallback = relayCallback.cancel
+        callback = relayCallback.result
+      } else {
+        callback = waitForCallback({
+          port: provider.currentPort(),
+          expectedState: () => provider.lastState,
+          timeoutMs: AUTH_FLOW_TIMEOUT_MS,
+          onCancel: (cancel) => {
+            this.cancelAuthCallback = cancel
+          }
+        })
+      }
       const transport = new StreamableHTTPClientTransport(new URL(cfg.url), {
         authProvider: provider,
         // Same headers as regular connects: if they satisfy the server,
@@ -366,7 +398,11 @@ export class McpConnection {
         needsCode = true
       }
       if (needsCode) {
-        this.setPhase('waiting for sign-in to finish in the browser')
+        this.setPhase(
+          relay
+            ? 'waiting for sign-in to finish in your browser'
+            : 'waiting for sign-in to finish in the browser'
+        )
         const result = await callback
         this.cancelAuthCallback = null
         if (!result.ok) {
@@ -405,10 +441,28 @@ export class McpConnection {
       return { ok: false, error: message }
     } finally {
       this.interactiveAuth = false
-      if (this.authProvider) this.authProvider.interactive = false
+      if (this.authProvider) {
+        this.authProvider.interactive = false
+        this.authProvider.redirectOverride = null
+        this.authProvider.onAuthorizationUrl = null
+      }
       this.cancelAuthCallback?.()
       this.cancelAuthCallback = null
+      this.relay = null
+      if (this.pendingAuthUrl) {
+        this.pendingAuthUrl = null
+        this.deps.notify()
+      }
     }
+  }
+
+  /**
+   * The web server saw the browser come back from the authorization
+   * server. True when it was this connection's sign-in; a callback for
+   * no flow, or another one's, changes nothing here.
+   */
+  deliverAuthCallback(params: McpAuthCallbackParams): boolean {
+    return this.relay?.deliver(params) ?? false
   }
 
   // ---------------------------------------------------------------- connect

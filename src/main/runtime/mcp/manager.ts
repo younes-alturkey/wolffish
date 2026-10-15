@@ -19,6 +19,8 @@ import {
 import type {
   McpAddInput,
   McpAddResult,
+  McpAuthCallbackParams,
+  McpAuthorizeResult,
   McpConfig,
   McpHeader,
   McpServerConfig,
@@ -281,6 +283,50 @@ export class McpManager {
     const result = await connection.authorize()
     this.notifySoon()
     return result
+  }
+
+  /**
+   * A sign-in started from a browser through the Web UI. Answers as soon
+   * as there is something for that browser to do: the authorization page
+   * to open, or the outcome when the stored credentials still worked (or
+   * the flow failed before any page). The flow itself keeps running until
+   * the web server relays the callback; its outcome reaches the browser
+   * on the status change, like every other connection event.
+   */
+  authorizeFromBrowser(id: string, redirectUrl: string): Promise<McpAuthorizeResult> {
+    if (!this.owns) return Promise.resolve({ ok: false, error: McpManager.NOT_OWNER })
+    const connection = this.connections.get(id)
+    if (!connection) return Promise.resolve({ ok: false, error: 'unknown connection' })
+    return new Promise((resolve) => {
+      let answered = false
+      const answer = (result: McpAuthorizeResult): void => {
+        if (answered) return
+        answered = true
+        resolve(result)
+      }
+      void connection
+        .authorize({
+          relay: { redirectUrl, onAuthorizationUrl: (url) => answer({ ok: true, authUrl: url }) }
+        })
+        .then((result) => {
+          this.notifySoon()
+          answer({ ...result, authUrl: null })
+        })
+    })
+  }
+
+  /**
+   * The browser came back through the Web UI's callback. Whichever
+   * connection is waiting on that state takes it; true when one did.
+   */
+  deliverAuthCallback(params: McpAuthCallbackParams): boolean {
+    for (const connection of this.connections.values()) {
+      if (connection.deliverAuthCallback(params)) {
+        this.notifySoon()
+        return true
+      }
+    }
+    return false
   }
 
   private createConnection(server: McpServerConfig): McpConnection {
