@@ -1,4 +1,24 @@
-## v1.0.333 — 2026-10-14 `Latest`
+## v1.0.335 — 2026-10-16 `Latest`
+
+### Sign In to an MCP Server From the Web UI
+
+Signing in to an MCP server from the Web UI used to open the consent page **on the computer running Wolffish**, so from a phone or another machine you could start the sign-in but never finish it. The sign-in now **opens in the browser you clicked from** — with a link to tap if the pop-up was blocked — and when you approve, the server's reply comes back through the Web UI itself and **the card updates on its own**. A server you already signed in to on the desktop keeps working; the first browser sign-in simply registers the new route.
+
+### 3D Websites and Games
+
+Ask Wolffish for a **3D website** — a hero scene, a scroll-driven story, a shader piece — or for a **browser game** — a runner, an arcade loop, a fighter — and it now works from two new built-in design manuals before it writes a line. They set the one-file three.js build, the phone and desktop budgets, and the checks Wolffish runs before handing anything over: **screenshots on a desktop and on a phone viewport, a clean console, measured frame rate and draw calls**, and for a game a real play-through from start to game over and restart. Both deliver a single `.html` to open in your browser.
+
+### A Headless Launch on a Mac No Longer Hangs
+
+Starting Wolffish without a window on a Mac — over SSH, from a background shell, under a fresh account — could **stall silently at boot**: the keychain asked for permission in a dialog nobody could see. A headless launch now **never touches the keychain**. The mobile pairing is kept in a plain file, the Mobile panel's privacy card says so, and a pairing that was sealed with the keychain by a normal launch is left in place until Wolffish next runs with a window.
+
+## v1.0.334 — 2026-10-14
+
+### Capability Imports Land on Their Own Cards
+
+Importing a capability in **Settings → Capabilities** used to show a floating upload pill. Each dropped or picked item now gets **its own pending card at the top of the list**, in the shape of the row it will become, with a real progress bar while the Web UI uploads it and a sweep while the import validates. You can **drop or pick several at once** — up to 20 per drop — imported one after another, with one notice per batch and every failure listed.
+
+## v1.0.333 — 2026-10-14
 
 ### The Hidden Passphrase Keeps Its Shape
 
