@@ -1,6 +1,6 @@
 {
   "name": "wolffish-app",
-  "version": "1.0.334",
+  "version": "1.0.335",
   "license": "MIT",
   "description": "Wolffish is a personal AI agent that runs on your machine with full system access. It thinks, acts, and learns — entirely local.",
   "main": "./out/main/index.js",
