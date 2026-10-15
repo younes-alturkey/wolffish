@@ -75,7 +75,11 @@ async function run(): Promise<void> {
         unregisterInProcessCapability: () => undefined
       }
     },
-    runner: { send: () => ({ turnId: 't', controller: new AbortController() }) },
+    runner: {
+      send: () => ({ turnId: 't', controller: new AbortController() }),
+      // start() subscribes to withdrawn interjections; nothing here fires one.
+      onInterjection: () => () => undefined
+    },
     serializeCapabilities: async () => [],
     loadNotificationsEnabled: async () => (await getMobileChannelConfig()).notifications !== false,
     saveNotificationsEnabled: async (enabled: boolean) => {

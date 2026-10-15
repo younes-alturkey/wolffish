@@ -14,6 +14,7 @@
  */
 import { generateKeypair, type Keypair } from '@main/tunnel/noise'
 import { fromBase64Url, rendezvousId, toBase64Url, toHex } from '@main/tunnel/pairing'
+import { wlog } from '@main/workspace/logger'
 import { workspaceRoot } from '@main/workspace/root'
 import { safeStorage } from 'electron'
 import { promises as fs } from 'node:fs'
@@ -65,23 +66,55 @@ function stateFile(): string {
 }
 
 /**
+ * Whether this process may touch the OS keystore at all.
+ *
+ * On macOS the keystore is the login keychain, and
+ * `safeStorage.isEncryptionAvailable()` is not a cheap query there: on first
+ * use it creates the app's "Safe Storage" item, and when the keychain is
+ * locked or missing — a launch over SSH, from a background shell, under a
+ * fresh account — that SecItemAdd blocks the main thread on an authorization
+ * dialog nobody can see (`sample` shows the boot parked in
+ * SecItemAdd → makeLoginAuthUI at 0% CPU, right after `[cli] ipc registered`).
+ * A headless boot has no one to answer such a dialog, so it never asks: the
+ * pairing file is written in the clear, a keychain-sealed file is reported
+ * rather than opened, and the panel's privacy card says `plaintext`. DPAPI and
+ * the Linux stores never prompt, so those platforms keep theirs.
+ */
+let keystoreOffLimits = false
+
+export function configureKeystore(opts: { headless: boolean }): void {
+  keystoreOffLimits = opts.headless && process.platform === 'darwin'
+}
+
+/**
  * Encrypt when the platform can, and say so in the envelope. A file written on
  * a machine with a working keystore must not silently become unreadable, and a
  * file written without one must not masquerade as protected.
  */
 function seal(plain: string): string {
-  if (!safeStorage.isEncryptionAvailable()) return JSON.stringify({ enc: false, data: plain })
+  if (keystoreOffLimits || !safeStorage.isEncryptionAvailable()) {
+    return JSON.stringify({ enc: false, data: plain })
+  }
   return JSON.stringify({
     enc: true,
     data: safeStorage.encryptString(plain).toString('base64')
   })
 }
 
+function parseEnvelope(raw: string): { enc: boolean; data: string } | null {
+  try {
+    return JSON.parse(raw) as { enc: boolean; data: string }
+  } catch {
+    return null
+  }
+}
+
 function open(raw: string): string | null {
   try {
-    const envelope = JSON.parse(raw) as { enc: boolean; data: string }
+    const envelope = parseEnvelope(raw)
+    if (!envelope) return null
     if (!envelope.enc) return envelope.data
-    if (!safeStorage.isEncryptionAvailable()) return null
+    if (keystoreOffLimits || !safeStorage.isEncryptionAvailable()) return null
     return safeStorage.decryptString(Buffer.from(envelope.data, 'base64'))
   } catch {
     return null
@@ -89,6 +122,15 @@ function open(raw: string): string | null {
 }
 
 let cache: StoredState | null = null
+
+/**
+ * A sealed file this boot cannot open — paired with a window, launched
+ * headless. Writes refuse while it stands: every write starts from a fresh
+ * identity when `read` comes back empty, and that would silently replace the
+ * user's pairing with a key-less plaintext one.
+ */
+let sealedUnreadable = false
+let sealedWarned = false
 
 /**
  * All writes pass through one chain. `write` is a plain whole-file
@@ -100,18 +142,42 @@ let writeChain: Promise<void> = Promise.resolve()
 
 async function read(): Promise<StoredState | null> {
   if (cache) return cache
+  let raw: string
   try {
-    const raw = await fs.readFile(stateFile(), 'utf8')
-    const plain = open(raw)
-    if (!plain) return null
+    raw = await fs.readFile(stateFile(), 'utf8')
+  } catch {
+    sealedUnreadable = false
+    return null
+  }
+  const plain = open(raw)
+  if (!plain) {
+    sealedUnreadable = parseEnvelope(raw)?.enc === true
+    if (sealedUnreadable && !sealedWarned) {
+      sealedWarned = true
+      wlog.warn(
+        'mobile',
+        `${stateFile()} is sealed with the OS keystore, which this boot does not use — ` +
+          `the stored pairing stays on disk but is unavailable until Wolffish runs with a window`
+      )
+    }
+    return null
+  }
+  try {
     cache = JSON.parse(plain) as StoredState
-    return cache
   } catch {
     return null
   }
+  sealedUnreadable = false
+  return cache
 }
 
 async function write(state: StoredState): Promise<void> {
+  if (sealedUnreadable) {
+    throw new Error(
+      `${stateFile()} is sealed with the OS keystore, which this boot does not use — ` +
+        `run Wolffish with a window once, or delete the file to pair afresh`
+    )
+  }
   cache = state
   const file = stateFile()
   const run = async (): Promise<void> => {
@@ -215,6 +281,7 @@ export { toHex }
  * effectively in the clear — worth telling the user rather than hiding.
  */
 export function storageBackend(): { available: boolean; backend: string } {
+  if (keystoreOffLimits) return { available: false, backend: 'plaintext' }
   const available = safeStorage.isEncryptionAvailable()
   let backend = available ? 'os-keystore' : 'unavailable'
   if (process.platform === 'linux') {
