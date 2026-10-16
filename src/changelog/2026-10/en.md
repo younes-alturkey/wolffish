@@ -1,4 +1,10 @@
-## v1.0.335 — 2026-10-16 `Latest`
+## v1.0.336 — 2026-10-16 `Latest`
+
+### The Composer Waits for Your Upload
+
+Sending a message with files from the Web UI used to **clear the composer at once**, while the files were still on their way up: the text vanished, the chips vanished, and a long upload left nothing to look at but the progress pill. The composer now **holds your message in place, greyed out, until the last file has landed**. The text stays in the field, the chips stay beneath it, Enter and Send are off with a tooltip that says why, and the moment the upload finishes the message goes out and the composer clears itself. A failed upload leaves everything where it was, so you can simply try again.
+
+## v1.0.335 — 2026-10-16
 
 ### Sign In to an MCP Server From the Web UI
 

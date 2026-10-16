@@ -3124,6 +3124,7 @@
       "uploading": "Uploading {{name}}…",
       "count": "{{index}} of {{count}}",
       "done": "Uploaded",
+      "wait": "Wait for the upload to finish",
       "lost": "{{name}} is no longer available — attach it again."
     },
     "connection": {

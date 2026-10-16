@@ -57,6 +57,7 @@ import { formatBytesL, formatCompact } from '@lib/utils/format'
 import { isWeb, pageTopPadding } from '@lib/utils/platform'
 import { webTransport } from '@lib/web-bridge/boot'
 import { finalizeAttachments } from '@lib/web-bridge/attachments'
+import { isPickedPath } from '@lib/web-bridge/picked-files'
 import {
   changedDirectories,
   collectChangedFiles,
@@ -719,6 +720,9 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
    */
   const [stagingFiles, setStagingFiles] = useState<StagingFile[]>([])
   const staging = stagingFiles.length > 0
+  // Web only: the picked files are going up right now. The draft stays in
+  // the field, greyed, until they land — nothing else can be typed or sent.
+  const [uploading, setUploading] = useState(false)
   /**
    * Mid-turn messages not yet read by the agent — this window's own and
    * anyone else's on the same conversation (see PendingInterjection). Kept
@@ -2321,9 +2325,15 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
       let status: 'pending' | 'no_live_turn'
       try {
         // Mid-turn on the web the picked files go up now too.
-        const attachments = isWeb
-          ? await finalizeAttachments(conversationId, item.attachments)
-          : item.attachments
+        let attachments = item.attachments
+        if (isWeb && attachments.some((a) => isPickedPath(a.filePath))) {
+          setUploading(true)
+          try {
+            attachments = await finalizeAttachments(conversationId, attachments)
+          } finally {
+            setUploading(false)
+          }
+        }
         status = (
           await window.api.chat.interject({
             conversationId,
@@ -2381,6 +2391,8 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
          * model reads it as a system note and the feed shows a muted line.
          */
         systemAside?: boolean
+        /** Web: runs once the picked files are up — the composer clears here, not before. */
+        onUploaded?: () => void
       }
     ) => {
       const trimmed = content.trim()
@@ -2397,14 +2409,19 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
       if (busy || sendingRef.current) return
       sendingRef.current = true
       markSending(sessionKey, true)
+      // The Web UI holds picked files in the page until now. The composer
+      // locks before the conversation create below, not after: in that
+      // window a second Enter would otherwise re-queue the same draft.
+      const picked = isWeb && attachments.some((a) => isPickedPath(a.filePath))
+      if (picked) setUploading(true)
 
       try {
         const conversationId = await ensureConversationId()
 
-        // The Web UI holds picked files in the page until now: they go up
-        // here, each becoming a real attachment, before anything is composed
-        // or shown. A failure puts the draft and the chips back.
-        if (isWeb) {
+        // The picked files go up here, each becoming a real attachment,
+        // before anything is composed or shown. A failure puts the draft
+        // and the chips back.
+        if (picked) {
           try {
             attachments = await finalizeAttachments(conversationId, attachments)
           } catch (err) {
@@ -2412,7 +2429,10 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
             setDraft((prev) => (prev.trim().length > 0 ? prev : content))
             setPendingAttachments((prev) => (prev.length > 0 ? prev : attachments))
             return
+          } finally {
+            setUploading(false)
           }
+          opts?.onUploaded?.()
         }
 
         const userMessage: ChatMessage = {
@@ -2531,6 +2551,7 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
           setMessages((prev) => markError(prev, response.turnId, response.error ?? 'unknown error'))
         }
       } finally {
+        if (picked) setUploading(false)
         // Release the synchronous re-entry guard once the turn is in flight
         // (or the send failed): `streaming` now guards further sends, and a
         // streaming session is already eviction-proof.
@@ -2566,7 +2587,7 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
     // A file is still being copied into the workspace — sending now would
     // drop it from the message. The buttons are disabled too; this catches
     // the Enter key, which doesn't go through them.
-    if (staging) return
+    if (staging || uploading) return
     const atts = pendingAttachments
     // Mid-turn submits SEND: the message goes to the running turn, which
     // reads it at its next step (a pending bubble at the tail of the feed
@@ -2582,10 +2603,21 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
       void flushHeldRef.current()
       return
     }
+    // On the web the files go up inside sendContent. The draft and chips
+    // stay put, disabled, until they have landed, so the wait is visible.
+    if (isWeb && atts.some((a) => isPickedPath(a.filePath))) {
+      await sendContent(trimmed, atts, {
+        onUploaded: () => {
+          setDraft('')
+          setPendingAttachments([])
+        }
+      })
+      return
+    }
     setDraft('')
     setPendingAttachments([])
     await sendContent(trimmed, atts)
-  }, [draft, pendingAttachments, staging, busy, sendContent])
+  }, [draft, pendingAttachments, staging, uploading, busy, sendContent])
 
   // "Try again" on a failed turn's error card: continue the conversation with
   // a message that names what went wrong, so the model resumes from where it
@@ -3736,10 +3768,12 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
                   }
                 }}
                 rows={1}
+                disabled={uploading}
                 placeholder={busy ? t('chat.interject.placeholder') : t('chat.placeholder')}
                 dir={isRtl ? 'rtl' : 'ltr'}
                 className={cn(
                   'text-fg placeholder:text-muted max-h-40 min-h-9.5 min-w-0 flex-1 resize-none bg-transparent px-3.5 pt-2.5 pb-0.5 text-sm outline-none',
+                  'disabled:cursor-wait disabled:opacity-60',
                   placeholderAlign
                 )}
               />
@@ -4033,8 +4067,14 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
                   <button
                     type="button"
                     onClick={() => void send()}
-                    disabled={!hasAnyModel || staging}
-                    title={staging ? t('chat.upload.copyingWait') : t('chat.send')}
+                    disabled={!hasAnyModel || staging || uploading}
+                    title={
+                      uploading
+                        ? t('web.upload.wait')
+                        : staging
+                          ? t('chat.upload.copyingWait')
+                          : t('chat.send')
+                    }
                     aria-label={t('chat.send')}
                     className={cn(
                       'flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full max-sm:h-9 max-sm:w-9',
@@ -4062,9 +4102,16 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
                     !busy &&
                     (!hasAnyModel ||
                       staging ||
+                      uploading ||
                       (draft.trim().length === 0 && pendingAttachments.length === 0))
                   }
-                  title={!busy && staging ? t('chat.upload.copyingWait') : undefined}
+                  title={
+                    !busy && uploading
+                      ? t('web.upload.wait')
+                      : !busy && staging
+                        ? t('chat.upload.copyingWait')
+                        : undefined
+                  }
                   aria-label={busy ? t('chat.stop') : t('chat.send')}
                   className={cn(
                     'flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full max-sm:h-9 max-sm:w-9',
