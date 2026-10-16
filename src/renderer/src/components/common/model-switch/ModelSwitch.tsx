@@ -1,4 +1,5 @@
 import { OllamaLogo } from '@components/core/ProviderLogos'
+import { useHoverCapable } from '@hooks/use-hover-capable/useHoverCapable'
 import { cn } from '@lib/utils/cn'
 import { formatBytesL } from '@lib/utils/format'
 import type { ReasoningMode } from '@main/runtime/reasoning'
@@ -123,6 +124,7 @@ export function ModelSwitch({
   onSelectChatMode: (next: ChatMode) => Promise<void>
 }): React.JSX.Element {
   const { t } = useTranslation()
+  const hoverCapable = useHoverCapable()
   const [open, setOpen] = useState(false)
   const [pinned, setPinned] = useState(false)
   const [query, setQuery] = useState('')
@@ -163,22 +165,32 @@ export function ModelSwitch({
   }, [])
 
   // Autofocus the search only when pinned (deliberate open), never on hover —
-  // mousing across the composer must not steal focus from the textarea.
+  // mousing across the composer must not steal focus from the textarea. Not
+  // on touch either: focusing an input there raises the keyboard over the
+  // card the tap just opened.
   useEffect(() => {
-    if (!pinned) return
+    if (!pinned || !hoverCapable) return
     const id = requestAnimationFrame(() => searchRef.current?.focus())
     return () => cancelAnimationFrame(id)
-  }, [pinned])
+  }, [pinned, hoverCapable])
 
+  // Without hover a tap still fires mouseenter and focus, so these stay inert
+  // there and the click alone toggles the card.
   const onEnter = (): void => {
-    if (disabled) return
+    if (disabled || !hoverCapable) return
     if (hoverTimer.current) clearTimeout(hoverTimer.current)
     hoverTimer.current = setTimeout(() => setOpen(true), 150)
   }
   const onLeave = (): void => {
+    if (!hoverCapable) return
     if (hoverTimer.current) clearTimeout(hoverTimer.current)
     if (pinned) return
     hoverTimer.current = setTimeout(() => setOpen(false), 200)
+  }
+  const toggle = (): void => {
+    const next = !pinned
+    setPinned(next)
+    if (next || !hoverCapable) setOpen(next)
   }
   const cardVisible = (open || pinned) && !disabled
 
@@ -354,11 +366,7 @@ export function ModelSwitch({
         disabled={disabled}
         onClick={() => {
           if (disabled) return
-          setPinned((p) => {
-            const next = !p
-            if (next) setOpen(true)
-            return next
-          })
+          toggle()
         }}
         onFocus={onEnter}
         onBlur={onLeave}

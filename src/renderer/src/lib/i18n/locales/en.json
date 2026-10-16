@@ -2134,7 +2134,7 @@
     "awaitingPermission": "Awaiting permission…",
     "awaitingAnswer": "Awaiting your answer…",
     "errorPrefix": "Something went wrong",
-    "newChat": "New chat",
+    "newChat": "New conversation",
     "attachFile": "Attach file",
     "interject": {
       "pending": "Read at the next step",
@@ -2948,7 +2948,7 @@
     "deleteCancel": "Cancel",
     "deleteBusy": "Couldn't delete — this conversation still has a turn running.",
     "deleteFailed": "Couldn't delete the conversation. Check the connection and try again.",
-    "newChat": "New chat",
+    "newChat": "New conversation",
     "processing": "Processing…",
     "diagnosticsPending": "Not indexed yet — try again in a moment",
     "searchPlaceholder": "Search conversations by title",

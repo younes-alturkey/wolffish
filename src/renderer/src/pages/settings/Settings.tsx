@@ -264,6 +264,15 @@ export function Settings(): React.JSX.Element {
     [providerList]
   )
 
+  // Connected providers lead the grid: a cloud provider with a saved key, and
+  // Ollama while its daemon answers. The sort is stable, so each group keeps
+  // PROVIDERS' order and Ollama still heads the connected ones.
+  const sortedProviders = useMemo(() => {
+    const connected = (p: Provider): boolean =>
+      p === 'ollama' ? ollamaReachable === true : keyedProviders.has(p)
+    return [...PROVIDERS].sort((a, b) => Number(connected(b)) - Number(connected(a)))
+  }, [keyedProviders, ollamaReachable])
+
   // Warm up the Google Workspace snapshot, the capability gate and the
   // Ollama panel's data the moment Settings opens, so by the time the user
   // opens a card the data is already populated and the panel renders
@@ -580,7 +589,7 @@ export function Settings(): React.JSX.Element {
             subtitle={t('settings.model.subtitle')}
             searchPlaceholder={t('settings.model.searchPlaceholder')}
             emptyLabel={t('settings.model.noMatches')}
-            cards={PROVIDERS.map((p) => {
+            cards={sortedProviders.map((p) => {
               const Logo = PROVIDER_ICONS[p]
               return {
                 id: p,

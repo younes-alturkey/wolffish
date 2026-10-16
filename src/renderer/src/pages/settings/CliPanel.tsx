@@ -298,7 +298,7 @@ export function CliPanel(): React.JSX.Element {
             pathBroken ? 'border-primary/50' : 'border-border'
           )}
         >
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start justify-between gap-4 max-sm:flex-col max-sm:gap-3">
             <div className="flex items-start gap-3">
               <CommandLineIcon
                 size={18}
@@ -339,8 +339,11 @@ export function CliPanel(): React.JSX.Element {
                 treatment the Data tab's factory reset uses — red border, red
                 tint, red text, before it is hovered rather than after. Removal
                 should look like removal everywhere in the app, and a control
-                that only reveals its danger on hover reveals it too late. */}
-            <div className="flex shrink-0 items-center gap-2">
+                that only reveals its danger on hover reveals it too late.
+
+                On a phone the pair drops to its own row, indented by the icon
+                plus its gap (18 + 12px) so it lines up with the title. */}
+            <div className="flex shrink-0 items-center gap-2 max-sm:ms-7.5">
               {pathState?.present && (
                 <Button
                   size="sm"

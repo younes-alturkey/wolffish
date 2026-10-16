@@ -1,4 +1,22 @@
-## v1.0.336 — 2026-10-16 `Latest`
+## v1.0.337 — 2026-10-16 `Latest`
+
+### The Web UI Answers a Tap
+
+On a phone there is no hover, so the cards that opened under the mouse in the Web UI were **out of reach**, and the plus button could only start a plain conversation. A tap now does the work. **Tapping the plus button opens the project list**, led by a plain New conversation row, so starting a conversation inside a project takes two taps. The **model, usage and working-folder cards open with a tap and close with a second one**, the model search no longer throws the keyboard over the card it just opened, and the copy button on each log entry is **always visible** instead of waiting for a hover that never comes. On a computer with a mouse, everything behaves exactly as before.
+
+### Pages That Fit a Phone
+
+Several screens were laid out for a wide window and **crowded or overlapped** on a phone. Now **Models and Services show two cards per row**, the wolffish command card puts **Remove and Reinstall on their own row** under its title, **Memory compaction and Reflection** put each time and day picker under its name at full width, and **Notifications** keeps Mark all read and Archive all off the title, in a full-width row under the description. In the **Library**, the tabs fill the header and the cards/markdown toggle **stays in place on every tab** instead of disappearing when you switch to Projects.
+
+### Connected Providers First
+
+The Models grid now **puts the providers you have connected at the front**: every cloud provider with a saved key, and Ollama while it is running. The rest follow in their usual order, so the provider you actually use is the first card you see, on the desktop and in the Web UI alike.
+
+### New Conversation
+
+The button that starts a fresh conversation now **says New conversation** instead of New chat, on the plus button, in its project list and on the History page.
+
+## v1.0.336 — 2026-10-16
 
 ### The Composer Waits for Your Upload
 

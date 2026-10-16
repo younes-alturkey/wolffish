@@ -12,6 +12,7 @@ import {
   XAILogo,
   ZaiLogo
 } from '@components/core/ProviderLogos'
+import { useHoverCapable } from '@hooks/use-hover-capable/useHoverCapable'
 import { cn } from '@lib/utils/cn'
 import { formatCompact } from '@lib/utils/format'
 import type { WorkflowAgentView, WorkflowSnapshot } from '@main/runtime/broca'
@@ -303,6 +304,7 @@ export function ContextMeter({
   provider
 }: ContextMeterProps): React.JSX.Element | null {
   const { t } = useTranslation()
+  const hoverCapable = useHoverCapable()
   const [now, setNow] = useState<number>(() => Date.now())
   const [open, setOpen] = useState(false)
   const [pinned, setPinned] = useState(false)
@@ -356,14 +358,23 @@ export function ContextMeter({
     turnStartedAt !== null ? Math.max(0, (turnEndedAt ?? now) - turnStartedAt) : null
   const shownElapsedMs = liveElapsedMs ?? lastTurn?.elapsedMs ?? null
 
+  // Without hover a tap still fires mouseenter and focus, so these stay inert
+  // there and the click alone toggles the card.
   const onEnter = (): void => {
+    if (!hoverCapable) return
     if (hoverTimer.current) clearTimeout(hoverTimer.current)
     hoverTimer.current = setTimeout(() => setOpen(true), 150)
   }
   const onLeave = (): void => {
+    if (!hoverCapable) return
     if (hoverTimer.current) clearTimeout(hoverTimer.current)
     if (pinned) return
     hoverTimer.current = setTimeout(() => setOpen(false), 200)
+  }
+  const toggle = (): void => {
+    const next = !pinned
+    setPinned(next)
+    if (next || !hoverCapable) setOpen(next)
   }
   const cardVisible = open || pinned
 
@@ -462,13 +473,7 @@ export function ContextMeter({
         type="button"
         aria-label={t('chat.contextCard.aria')}
         aria-expanded={cardVisible}
-        onClick={() => {
-          setPinned((p) => {
-            const next = !p
-            if (next) setOpen(true)
-            return next
-          })
-        }}
+        onClick={toggle}
         onFocus={onEnter}
         onBlur={onLeave}
         className={cn(

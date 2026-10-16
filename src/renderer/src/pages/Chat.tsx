@@ -45,6 +45,7 @@ import { CopyButton } from '@components/core/CopyButton'
 import { ExpandedSheet } from '@components/core/ExpandedSheet'
 import { Markdown } from '@components/core/Markdown'
 import { useToast } from '@components/core/toast/useToast'
+import { useHoverCapable } from '@hooks/use-hover-capable/useHoverCapable'
 import { buildChatPdfHtml, hasExportableContent } from '@lib/chat-export/buildChatPdfHtml'
 import {
   mapConversationMessage,
@@ -4530,6 +4531,7 @@ function WorkingFolderButton({
   removeDisabled: boolean
 }): React.JSX.Element {
   const { t } = useTranslation()
+  const hoverCapable = useHoverCapable()
   const [open, setOpen] = useState(false)
   const [pinned, setPinned] = useState(false)
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -4565,12 +4567,15 @@ function WorkingFolderButton({
     }
   }, [])
 
+  // Without hover a tap still fires mouseenter and focus, so these stay inert
+  // there and the click alone toggles the card.
   const onEnter = (): void => {
-    if (!hasFolders) return
+    if (!hasFolders || !hoverCapable) return
     if (hoverTimer.current) clearTimeout(hoverTimer.current)
     hoverTimer.current = setTimeout(() => setOpen(true), 150)
   }
   const onLeave = (): void => {
+    if (!hoverCapable) return
     if (hoverTimer.current) clearTimeout(hoverTimer.current)
     if (pinned) return
     hoverTimer.current = setTimeout(() => setOpen(false), 200)
@@ -4594,11 +4599,9 @@ function WorkingFolderButton({
             onAdd()
             return
           }
-          setPinned((p) => {
-            const next = !p
-            if (next) setOpen(true)
-            return next
-          })
+          const next = !pinned
+          setPinned(next)
+          if (next || !hoverCapable) setOpen(next)
         }}
         onFocus={onEnter}
         onBlur={onLeave}
@@ -4764,7 +4767,9 @@ function TimelineList({
                   >
                     {content}
                   </pre>
-                  <div className="absolute right-1.5 top-1.5 opacity-0 group-hover/tl:opacity-100">
+                  {/* Tailwind v4's `hover:` is gated on (hover: hover), so
+                      without it the button would never appear. */}
+                  <div className="absolute right-1.5 top-1.5 opacity-0 group-hover/tl:opacity-100 [@media(hover:none)]:opacity-100">
                     <CopyButton text={content} />
                   </div>
                 </div>

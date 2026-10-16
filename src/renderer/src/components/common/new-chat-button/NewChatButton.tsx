@@ -1,4 +1,5 @@
 import { glassButtonClass } from '@components/common/floating-chrome/glass'
+import { useHoverCapable } from '@hooks/use-hover-capable/useHoverCapable'
 import { cn } from '@lib/utils/cn'
 import type { Project } from '@preload/index'
 import { PlusSignIcon } from 'hugeicons-react'
@@ -13,6 +14,10 @@ import { useTranslation } from 'react-i18next'
  * as cards — picking one starts the new conversation inside that project.
  * Projects load lazily on first reveal; with none, the card never shows and
  * this stays a plain New button.
+ *
+ * Without hover (phones, tablets) there is no reveal, so the tap itself opens
+ * the card, which then leads with a plain "New conversation" row — every choice the
+ * desktop offers across hover + click, reachable by tap.
  */
 export function NewChatButton({
   onNew,
@@ -22,6 +27,7 @@ export function NewChatButton({
   onNewInProject: (projectId: string) => void
 }): React.JSX.Element {
   const { t } = useTranslation()
+  const hoverCapable = useHoverCapable()
   const [open, setOpen] = useState(false)
   const [projects, setProjects] = useState<Project[] | null>(null)
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -70,16 +76,25 @@ export function NewChatButton({
     }
   }, [])
 
+  // A tap fires mouseenter and focus too; without hover those must stay inert
+  // or the timer would reopen the card right after the tap closed it.
   const onEnter = (): void => {
+    if (!hoverCapable) return
     if (hoverTimer.current) clearTimeout(hoverTimer.current)
     hoverTimer.current = setTimeout(() => setOpen(true), 150)
   }
   const onLeave = (): void => {
+    if (!hoverCapable) return
     if (hoverTimer.current) clearTimeout(hoverTimer.current)
     hoverTimer.current = setTimeout(() => setOpen(false), 200)
   }
 
   const cardVisible = open && projects !== null && projects.length > 0
+  const rowClass = cn(
+    'flex w-full cursor-pointer items-start gap-2.5 rounded-lg border px-2.5 py-2 text-start',
+    'focus-visible:ring-2 focus-visible:ring-accent',
+    'border-border hover:bg-border/40'
+  )
 
   return (
     <span
@@ -91,8 +106,29 @@ export function NewChatButton({
       <button
         type="button"
         onClick={() => {
-          setOpen(false)
-          onNew()
+          if (hoverCapable) {
+            setOpen(false)
+            onNew()
+            return
+          }
+          if (open) {
+            setOpen(false)
+            return
+          }
+          // The tap has to know whether there is anything to choose from:
+          // with no projects it stays a plain New button, with some it
+          // opens the card (the reveal effect refreshes the list again).
+          void window.api.projects
+            .list()
+            .catch((): Project[] => [])
+            .then((list) => {
+              if (list.length === 0) {
+                onNew()
+                return
+              }
+              setProjects(list)
+              setOpen(true)
+            })
         }}
         onFocus={onEnter}
         onBlur={onLeave}
@@ -113,6 +149,23 @@ export function NewChatButton({
           className="border-border bg-surface absolute top-full inset-e-0 z-50 mt-2 flex w-80 max-w-[90vw] flex-col gap-1.5 rounded-xl border p-1.5 shadow-xl"
         >
           <div className="flex max-h-64 flex-col gap-1.5 overflow-y-auto">
+            {!hoverCapable && (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false)
+                  onNew()
+                }}
+                className={rowClass}
+              >
+                <span aria-hidden className="mt-0.5 flex h-4 shrink-0 items-center">
+                  <PlusSignIcon size={14} />
+                </span>
+                <span className="text-fg min-w-0 flex-1 truncate text-xs font-medium">
+                  {t('chat.newChat')}
+                </span>
+              </button>
+            )}
             {projects.map((p) => {
               // Single truncated line of the project's instructions — the
               // same name + description shape as the mode/thinking cards.
@@ -125,11 +178,7 @@ export function NewChatButton({
                     setOpen(false)
                     onNewInProject(p.id)
                   }}
-                  className={cn(
-                    'flex w-full cursor-pointer items-start gap-2.5 rounded-lg border px-2.5 py-2 text-start',
-                    'focus-visible:ring-2 focus-visible:ring-accent',
-                    'border-border hover:bg-border/40'
-                  )}
+                  className={rowClass}
                 >
                   <span aria-hidden className="mt-0.5 shrink-0 text-base leading-none">
                     {p.icon || '📁'}

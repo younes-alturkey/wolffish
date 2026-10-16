@@ -66,7 +66,7 @@ export function SettingsCardGrid({
             {emptyLabel}
           </div>
         ) : (
-          <ul className="grid grid-cols-3 gap-3">
+          <ul className="grid grid-cols-3 gap-3 max-sm:grid-cols-2">
             {visible.map((card) => (
               <li key={card.id} className="min-w-0">
                 <button

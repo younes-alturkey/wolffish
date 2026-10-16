@@ -105,13 +105,15 @@ export function Notifications(): React.JSX.Element {
         <div className="flex min-h-full w-full items-start justify-center px-6 pt-4 pb-10 max-sm:px-3">
           <div className="flex w-full max-w-2xl flex-col gap-6">
             <header className="flex flex-col gap-2">
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-3 max-sm:contents">
                 <h1 className="text-fg min-w-0 flex-1 text-2xl font-semibold tracking-tight">
                   {t('notifications.title')}
                 </h1>
-                {/* Inbox only: nothing in the archive is left to read or archive. */}
+                {/* Inbox only: nothing in the archive is left to read or archive.
+                    On a phone the row above dissolves (`contents`) so this pair
+                    can follow the subtitle as a full-width row of its own. */}
                 {tab === 'inbox' && (
-                  <div className="flex shrink-0 items-center gap-2">
+                  <div className="flex shrink-0 items-center gap-2 max-sm:order-last max-sm:mt-2 max-sm:w-full max-sm:*:flex-1">
                     <Button
                       variant="outline"
                       size="sm"

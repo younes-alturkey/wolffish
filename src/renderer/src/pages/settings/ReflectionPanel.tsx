@@ -173,7 +173,7 @@ export function ReflectionPanel(): React.JSX.Element {
             the hour and the quiet gate are configurable. */}
         <section className="bg-surface border-border flex flex-col gap-6 rounded-2xl border p-6">
           <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-4 max-sm:flex-col max-sm:items-stretch max-sm:gap-2">
               <div className="flex items-center gap-2">
                 <span className="text-fg text-sm font-medium">
                   {t('settings.knowledge.reflection.nightly.label')}
@@ -202,7 +202,7 @@ export function ReflectionPanel(): React.JSX.Element {
 
           {/* Quiet gate */}
           <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-4 max-sm:flex-col max-sm:items-stretch max-sm:gap-2">
               <span className="text-fg text-sm font-medium">
                 {t('settings.knowledge.reflection.quiet.label')}
               </span>

@@ -53,8 +53,9 @@ let lastTab: Tab = 'automations'
  * would let a hidden Automations tab's Cmd+S listener fire from Projects.
  *
  * The cards/markdown toggle Automations used to keep in its own header sits
- * at the trailing end of this one while that tab is active, so it stays where
- * it was on screen; `view` lives here because the header does.
+ * at the trailing end of this one on every tab, so the header never reflows
+ * when the tab changes; it only acts on Automations and is inert elsewhere.
+ * `view` lives here because the header does.
  */
 export function Library(): React.JSX.Element {
   const { t } = useTranslation()
@@ -93,7 +94,7 @@ export function Library(): React.JSX.Element {
           <div
             role="tablist"
             aria-label={t('library.title')}
-            className="border-border bg-surface flex min-w-0 items-center overflow-x-auto rounded-lg border p-0.5"
+            className="border-border bg-surface flex min-w-0 items-center overflow-x-auto rounded-lg border p-0.5 max-sm:flex-1"
           >
             {TABS.map(({ key, icon: Icon, labelKey }) => {
               const selected = key === active
@@ -118,22 +119,22 @@ export function Library(): React.JSX.Element {
           </div>
         </div>
 
-        {active === 'automations' ? (
-          <button
-            type="button"
-            onClick={() => setView((v) => (v === 'cards' ? 'markdown' : 'cards'))}
-            aria-label={view === 'cards' ? t('heartbeat.markdownMode') : t('heartbeat.cardsMode')}
-            className={cn(
-              'text-muted hover:text-fg flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-2 text-sm',
-              'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg'
-            )}
-          >
-            {view === 'cards' ? <SourceCodeIcon size={16} /> : <GridViewIcon size={16} />}
-            <span className="max-sm:hidden">
-              {view === 'cards' ? t('heartbeat.markdownMode') : t('heartbeat.cardsMode')}
-            </span>
-          </button>
-        ) : null}
+        <button
+          type="button"
+          disabled={active !== 'automations'}
+          onClick={() => setView((v) => (v === 'cards' ? 'markdown' : 'cards'))}
+          aria-label={view === 'cards' ? t('heartbeat.markdownMode') : t('heartbeat.cardsMode')}
+          className={cn(
+            'text-muted flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-2 text-sm',
+            'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
+            active === 'automations' ? 'hover:text-fg cursor-pointer' : 'cursor-default opacity-50'
+          )}
+        >
+          {view === 'cards' ? <SourceCodeIcon size={16} /> : <GridViewIcon size={16} />}
+          <span className="max-sm:hidden">
+            {view === 'cards' ? t('heartbeat.markdownMode') : t('heartbeat.cardsMode')}
+          </span>
+        </button>
       </header>
 
       {active === 'automations' ? (
