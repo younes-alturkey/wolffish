@@ -130,6 +130,7 @@
     "protobufjs@7.5.6": true,
     "protobufjs@6.8.8": true,
     "sharp@0.34.5": true,
-    "@whiskeysockets/baileys@7.0.0-rc.9": true
+    "@whiskeysockets/baileys@7.0.0-rc.9": true,
+    "fsevents@2.3.3": true
   }
 }
