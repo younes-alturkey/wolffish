@@ -10,6 +10,8 @@ export type ExpandedSheetProps = {
   onClose: () => void
   /** Shown in the header bar; also used as the close button's accessible title. */
   title?: string
+  /** A view switch (preview/source, chart/data) — kept beside the title on a phone. */
+  tabs?: ReactNode
   /** Action controls rendered in the header before the close button. */
   actions?: ReactNode
   /** Rendered just before the title (an icon or logo). */
@@ -34,6 +36,7 @@ export function ExpandedSheet({
   open,
   onClose,
   title,
+  tabs,
   actions,
   leading,
   children
@@ -75,11 +78,11 @@ export function ExpandedSheet({
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
-        className="wf-sheet-panel-end border-border bg-surface absolute inset-y-0 inset-e-0 flex w-[80vw] max-w-full flex-col overflow-hidden border-s shadow-xl"
+        className="wf-sheet-panel-end border-border bg-surface absolute inset-y-0 inset-e-0 flex w-[80vw] max-w-full flex-col overflow-hidden border-s pb-[env(safe-area-inset-bottom)] shadow-xl max-sm:w-full max-sm:border-s-0"
       >
         <div
           className={cn(
-            'border-border flex shrink-0 items-center gap-2 border-b px-5 py-3',
+            'border-border flex shrink-0 items-center gap-2 border-b px-5 py-3 max-sm:flex-wrap',
             underTrafficLights && 'pt-12'
           )}
         >
@@ -91,7 +94,14 @@ export function ExpandedSheet({
           >
             {title}
           </span>
-          {actions}
+          {tabs}
+          {/* A phone has no room for a viewer's whole row of controls beside the
+              title: they drop to a second row, so the × stays on the first. */}
+          {actions && (
+            <div className="flex items-center gap-2 max-sm:order-last max-sm:basis-full max-sm:justify-end">
+              {actions}
+            </div>
+          )}
           <button
             ref={closeRef}
             type="button"

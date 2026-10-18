@@ -234,9 +234,9 @@ export function ChartCard({
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
         title={title}
+        tabs={sheetViewToggle}
         actions={
           <>
-            {sheetViewToggle}
             {pngButton}
             {downloadButton}
             {revealButton}

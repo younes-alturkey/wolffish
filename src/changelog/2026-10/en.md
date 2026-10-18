@@ -1,4 +1,14 @@
-## v1.0.337 — 2026-10-16 `Latest`
+## v1.0.338 — 2026-10-18 `Latest`
+
+### Sheets That Fill a Phone
+
+In the Web UI on a phone, the sheets that open over a conversation **covered only part of the screen**, so reading a PDF, browsing a site or editing a long prompt meant squinting past a strip of the page behind. Every sheet now **opens full screen on a phone**: the file viewers, the browser, charts, the automation, project and procedure editors, Notifications, and the conversation's Timeline and Files. Each one **closes with the × in its header**, and Timeline and Files, which used to close only with a tap outside them, now have one too. When a viewer has more controls than fit beside its title, the **title stays on one line** with the Preview/Source or Chart/Data switch and the × next to it, and the other buttons drop to a row of their own underneath. On a computer, the sheets look exactly as before.
+
+### Downloads in the iPhone App
+
+Downloading a file from the Web UI installed on an iPhone home screen used to **open it full screen with no way back**, so the only escape was to quit the app and open it again. A download there now **asks before saving**: tap Save and the iPhone's share sheet opens, with **Save to Files** and the rest, and you stay right where you were in Wolffish. In a browser, on Android and on the desktop, downloads work as they always have.
+
+## v1.0.337 — 2026-10-16
 
 ### The Web UI Answers a Tap
 

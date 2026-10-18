@@ -83,7 +83,7 @@ export function EditorSheet({
         className={cn(
           'wf-sheet-panel-end border-border bg-surface absolute inset-y-0 inset-e-0 flex flex-col overflow-hidden border-s shadow-xl',
           // The conversations sheet's exact width, mirrored to this edge.
-          'w-130 max-w-[92vw]'
+          'w-130 max-w-[92vw] pb-[env(safe-area-inset-bottom)] max-sm:w-full max-sm:max-w-full max-sm:border-s-0'
         )}
       >
         <div

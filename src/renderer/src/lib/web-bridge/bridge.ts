@@ -77,6 +77,55 @@ function triggerDownload(url: string): void {
   setTimeout(() => a.remove(), 1000)
 }
 
+/**
+ * An iPhone home-screen app has no download manager: a download link opens the
+ * file full screen with no way back but quitting the app. There the file is
+ * fetched and handed to the share sheet instead ("Save to Files" and the rest),
+ * behind a tap of our own, since the sheet only opens from a gesture and the
+ * fetch outlives the one that started it. `navigator.standalone` exists only on
+ * Apple's WebKit, and is true only in the home-screen app.
+ */
+const saveViaShareSheet =
+  (navigator as Navigator & { standalone?: boolean }).standalone === true &&
+  typeof navigator.canShare === 'function'
+
+async function saveToDevice(url: string): Promise<void> {
+  const res = await fetch(url, { credentials: 'same-origin' })
+  if (!res.ok) throw new Error(`${url}: ${res.status}`)
+  const blob = await res.blob()
+  const name = attachmentName(res.headers.get('Content-Disposition'), url)
+  const file = new File([blob], name, { type: blob.type || 'application/octet-stream' })
+  if (!navigator.canShare({ files: [file] })) {
+    triggerDownload(url)
+    return
+  }
+  void webPrompt({
+    title: i18n.t('web.save.title'),
+    description: name,
+    action: {
+      label: i18n.t('web.save.action'),
+      run: () => void navigator.share({ files: [file] }).catch(() => undefined)
+    }
+  })
+}
+
+function attachmentName(disposition: string | null, url: string): string {
+  const encoded = disposition?.match(/filename\*=UTF-8''([^;]+)/i)?.[1]
+  if (encoded) {
+    try {
+      return decodeURIComponent(encoded)
+    } catch {
+      // fall through to the URL
+    }
+  }
+  const segment = new URL(url, location.href).pathname.split('/').pop() ?? ''
+  try {
+    return decodeURIComponent(segment) || 'download'
+  } catch {
+    return segment || 'download'
+  }
+}
+
 function openInNewTab(url: string): void {
   window.open(url, '_blank', 'noopener')
 }
@@ -242,9 +291,15 @@ export function installWebApi(transport: WebTransport): WolffishApi {
     return baseImportCapability(staged.path, progressId)
   }
 
-  const asDownload = (answer: DownloadAnswer): DownloadAnswer => {
+  const asDownload = async (answer: DownloadAnswer): Promise<DownloadAnswer> => {
     if (answer?.downloadUrl) {
-      triggerDownload(answer.downloadUrl)
+      if (saveViaShareSheet) {
+        try {
+          await saveToDevice(answer.downloadUrl)
+        } catch (err) {
+          return { ok: false, error: err instanceof Error ? err.message : String(err) }
+        }
+      } else triggerDownload(answer.downloadUrl)
       return { ok: true }
     }
     return answer

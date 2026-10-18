@@ -13,6 +13,12 @@ export type WebPromptOptions = {
   validate?: (value: string) => Promise<string | null> | string | null
   /** Browse the server's folders instead of only typing a path; `defaultValue` is where it opens. */
   browse?: 'directory'
+  /**
+   * No field: one button that runs `run` inside the tap itself, for the calls
+   * a browser allows only straight from a gesture (the share sheet). The
+   * prompt resolves '' once it ran.
+   */
+  action?: { label: string; run: () => void }
 }
 
 type PromptHandler = (options: WebPromptOptions) => Promise<string | null>

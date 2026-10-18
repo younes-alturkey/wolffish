@@ -3089,6 +3089,10 @@
       "show": "Show password",
       "hide": "Hide password"
     },
+    "save": {
+      "title": "Save to your device",
+      "action": "Save"
+    },
     "prompt": {
       "confirm": "Use this path",
       "folder": {

@@ -337,7 +337,6 @@ export function CodeFileViewer({
 
   const sheetActions = (
     <>
-      {sheetViewToggle}
       {reloadButton}
       {devToolsButton}
       {copyButton}
@@ -393,6 +392,7 @@ export function CodeFileViewer({
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
         title={fileName}
+        tabs={sheetViewToggle}
         actions={sheetActions}
       >
         {livePreview ? sheetPreview : body}

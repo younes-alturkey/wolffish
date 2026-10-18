@@ -118,6 +118,7 @@ import iconTransparent from '@resources/images/icon_transparent.png'
 import {
   ArrowUp02Icon,
   BubbleChatIcon,
+  Cancel01Icon,
   CancelCircleIcon,
   Clock01Icon,
   CloudUploadIcon,
@@ -4168,7 +4169,7 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
               role="dialog"
               aria-modal="true"
               onClick={(e) => e.stopPropagation()}
-              className="wf-sheet-panel-end border-border bg-surface absolute inset-y-0 inset-e-0 flex w-[80vw] max-w-full flex-col max-sm:w-[92vw] overflow-hidden border-s shadow-xl"
+              className="wf-sheet-panel-end border-border bg-surface absolute inset-y-0 inset-e-0 flex w-[80vw] max-w-full flex-col overflow-hidden border-s pb-[env(safe-area-inset-bottom)] shadow-xl max-sm:w-full max-sm:border-s-0"
             >
               <div className="border-border flex shrink-0 items-center justify-between border-b px-5 py-3">
                 <h2 className="text-fg min-w-0 flex-1 truncate text-sm font-semibold">
@@ -4194,6 +4195,15 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
                 <span className="text-muted ms-3 shrink-0 text-[10px] tabular-nums">
                   {t('chat.timeline.eventCount', { count: timelineEventCount })}
                 </span>
+                <button
+                  type="button"
+                  onClick={() => setTimelineOpen(false)}
+                  aria-label={t('chat.fileCard.close')}
+                  title={t('chat.fileCard.close')}
+                  className="text-muted hover:text-fg focus-visible:ring-accent ms-3 flex shrink-0 cursor-pointer items-center justify-center rounded p-1 focus-visible:ring-2"
+                >
+                  <Cancel01Icon size={16} />
+                </button>
               </div>
               <TimelineList entries={displayTimeline} locale={locale} />
             </aside>
@@ -4213,7 +4223,7 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
               role="dialog"
               aria-modal="true"
               onClick={(e) => e.stopPropagation()}
-              className="wf-sheet-panel-end border-border bg-surface absolute inset-y-0 inset-e-0 flex w-[80vw] max-w-full flex-col max-sm:w-[92vw] overflow-hidden border-s shadow-xl"
+              className="wf-sheet-panel-end border-border bg-surface absolute inset-y-0 inset-e-0 flex w-[80vw] max-w-full flex-col overflow-hidden border-s pb-[env(safe-area-inset-bottom)] shadow-xl max-sm:w-full max-sm:border-s-0"
             >
               <div className="border-border flex shrink-0 items-center justify-between border-b px-5 py-3">
                 <h2 className="text-fg min-w-0 flex-1 truncate text-sm font-semibold">
@@ -4239,6 +4249,15 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
                 <span className="text-muted ms-3 shrink-0 text-[10px] tabular-nums">
                   {t('chat.files.fileCount', { count: presentFiles.length })}
                 </span>
+                <button
+                  type="button"
+                  onClick={() => setFilesOpen(false)}
+                  aria-label={t('chat.fileCard.close')}
+                  title={t('chat.fileCard.close')}
+                  className="text-muted hover:text-fg focus-visible:ring-accent ms-3 flex shrink-0 cursor-pointer items-center justify-center rounded p-1 focus-visible:ring-2"
+                >
+                  <Cancel01Icon size={16} />
+                </button>
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-4 max-sm:px-3">
                 <AttachmentList attachments={presentFiles} variant="grid" />

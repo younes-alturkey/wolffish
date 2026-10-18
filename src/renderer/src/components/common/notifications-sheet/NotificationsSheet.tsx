@@ -75,7 +75,7 @@ export function NotificationsSheet({
         role="dialog"
         aria-modal="true"
         aria-label={t('notifications.title')}
-        className="wf-sheet-panel-end bg-bg border-border/40 absolute inset-y-0 inset-e-0 flex w-96 max-w-[92vw] flex-col border-s"
+        className="wf-sheet-panel-end bg-bg border-border/40 absolute inset-y-0 inset-e-0 flex w-96 max-w-[92vw] flex-col border-s pb-[env(safe-area-inset-bottom)] max-sm:w-full max-sm:max-w-full max-sm:border-s-0"
       >
         <div
           className={cn(
