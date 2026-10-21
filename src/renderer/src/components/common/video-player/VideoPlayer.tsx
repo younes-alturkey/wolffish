@@ -1,7 +1,7 @@
 import { MediaLightbox } from '@components/common/media-lightbox/MediaLightbox'
 import { useUploadBlob } from '@hooks/use-upload-blob/useUploadBlob'
 import { cn } from '@lib/utils/cn'
-import { canRevealInFolder } from '@lib/utils/platform'
+import { canOpenExternal, canRevealInFolder } from '@lib/utils/platform'
 import {
   ArrowExpandIcon,
   Download01Icon,
@@ -135,17 +135,19 @@ function ActiveVideo({
         >
           <ArrowExpandIcon size={14} />
         </button>
-        <button
-          type="button"
-          onClick={openExternal}
-          title="Open in default player"
-          className={cn(
-            'text-muted hover:text-fg flex shrink-0 cursor-pointer items-center justify-center rounded p-1',
-            'focus-visible:ring-2 focus-visible:ring-accent'
-          )}
-        >
-          <LinkSquare02Icon size={14} />
-        </button>
+        {canOpenExternal && (
+          <button
+            type="button"
+            onClick={openExternal}
+            title="Open in default player"
+            className={cn(
+              'text-muted hover:text-fg flex shrink-0 cursor-pointer items-center justify-center rounded p-1',
+              'focus-visible:ring-2 focus-visible:ring-accent'
+            )}
+          >
+            <LinkSquare02Icon size={14} />
+          </button>
+        )}
         {canRevealInFolder && (
           <button
             type="button"

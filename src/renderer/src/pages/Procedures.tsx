@@ -513,7 +513,7 @@ export function Procedures(): React.JSX.Element {
             // identity tiles — wide enough that a long name, its meta line and
             // the mode toggle stay readable. The prompt, files and folders are
             // NOT on the card — they are what the editor sheet is for.
-            <ul className="grid grid-cols-2 gap-3">
+            <ul className="grid grid-cols-2 gap-3 max-sm:grid-cols-1">
               {procedures.map((procedure) => {
                 const name = procedure.title.trim() || t('procedures.untitled')
                 const runnable = procedure.prompt.trim().length > 0

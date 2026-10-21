@@ -3,6 +3,7 @@ import { CodeEditor, type CodeLanguage } from '@components/core/CodeEditor'
 import { CopyButton } from '@components/core/CopyButton'
 import { Markdown } from '@components/core/Markdown'
 import { ImageLightbox } from '@components/common/image-viewer/ImageViewer'
+import { PdfPages } from '@components/common/pdf-pages/PdfPages'
 import { SheetGrid } from '@components/common/spreadsheet-viewer/SheetGrid'
 import { useToast } from '@components/core/toast/useToast'
 import { RTL_LOCALES } from '@lib/i18n'
@@ -904,7 +905,7 @@ function WorkspacePdf({
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {url ? (
-        <iframe src={url} title={fileName} className="h-full w-full border-0" />
+        <PdfPages url={url} title={fileName} className="h-full w-full" />
       ) : (
         <div className="flex-1" />
       )}

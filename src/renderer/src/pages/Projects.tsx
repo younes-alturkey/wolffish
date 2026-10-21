@@ -337,7 +337,7 @@ export function Projects(): React.JSX.Element {
             // and its meta line stay readable. The instructions are NOT on the
             // card, and neither are the file and folder LISTS: the card counts
             // them, the edit sheet is where their contents live.
-            <ul className="grid grid-cols-2 gap-3">
+            <ul className="grid grid-cols-2 gap-3 max-sm:grid-cols-1">
               {projects.map((project) => {
                 const name = project.title.trim() || t('projects.untitled')
                 const stats = convStats.get(project.id)

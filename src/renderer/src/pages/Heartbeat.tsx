@@ -1821,7 +1821,7 @@ export function Heartbeat({ view }: { view: HeartbeatView }): React.JSX.Element 
               // identity tiles — wide enough that the next-run chip, the name
               // and the toggles stay readable. The prompt, files and folders
               // are NOT on the card — they are what the editor sheet is for.
-              <ul className="grid grid-cols-2 gap-x-3 gap-y-5">
+              <ul className="grid grid-cols-2 gap-x-3 gap-y-5 max-sm:grid-cols-1">
                 {orderedJobs.map((job) => {
                   const busy = job.active ? busyByLabel.get(job.label) : undefined
                   // The name is what this automation is CALLED; the schedule

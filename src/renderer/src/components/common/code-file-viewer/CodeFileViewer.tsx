@@ -3,7 +3,7 @@ import { CopyButton } from '@components/core/CopyButton'
 import { ExpandedSheet } from '@components/core/ExpandedSheet'
 import { HtmlPreview, type HtmlPreviewHandle } from '@components/common/html-preview/HtmlPreview'
 import { cn } from '@lib/utils/cn'
-import { canRevealInFolder, isWeb } from '@lib/utils/platform'
+import { canOpenExternal, canRevealInFolder, isWeb } from '@lib/utils/platform'
 import { formatBytesL } from '@lib/utils/format'
 import hljs from 'highlight.js/lib/common'
 import {
@@ -275,17 +275,20 @@ export function CodeFileViewer({
     )
   // Hands the file to the OS. For an .html file that means the default browser
   // — the same live page in a full window.
-  const openExternalButton = onOpenExternal ? (
-    <button
-      type="button"
-      onClick={onOpenExternal}
-      title={t(htmlPreview ? 'chat.htmlViewer.openInBrowser' : 'chat.pdfViewer.openExternal')}
-      aria-label={t(htmlPreview ? 'chat.htmlViewer.openInBrowser' : 'chat.pdfViewer.openExternal')}
-      className={cn(iconButton)}
-    >
-      <LinkSquare02Icon size={14} />
-    </button>
-  ) : null
+  const openExternalButton =
+    onOpenExternal && canOpenExternal ? (
+      <button
+        type="button"
+        onClick={onOpenExternal}
+        title={t(htmlPreview ? 'chat.htmlViewer.openInBrowser' : 'chat.pdfViewer.openExternal')}
+        aria-label={t(
+          htmlPreview ? 'chat.htmlViewer.openInBrowser' : 'chat.pdfViewer.openExternal'
+        )}
+        className={cn(iconButton)}
+      >
+        <LinkSquare02Icon size={14} />
+      </button>
+    ) : null
   const downloadButton = onDownload ? (
     <button
       type="button"

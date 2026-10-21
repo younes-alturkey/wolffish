@@ -1,4 +1,18 @@
-## v1.0.338 — 2026-10-18 `Latest`
+## v1.0.339 — 2026-10-21 `Latest`
+
+### Every Page of a PDF on a Phone
+
+In the Web UI on an iPhone or iPad, a PDF **showed only a still picture of its first page**, and on Android it often showed nothing at all. PDFs there now **show every page**, in the chat, in the full-screen viewer and in the workspace viewer, and you scroll through them as you would a document. **Pinch to zoom** in on a page and it redraws sharp, staying centered between your fingers, without zooming the rest of the app. On the desktop and in browsers that already show PDFs well, nothing changes.
+
+### No Dead End From the iPhone App
+
+In the Web UI installed on a phone's home screen, the **open-outside button** on files, images, videos and PDFs replaced the app's screen with the file, **with no way back**. That button is now **gone in the installed app**, where Expand and Download already cover the same ground. In a browser and on the desktop, it is still there.
+
+### One Card per Row on a Phone
+
+**Automations, Projects and Procedures** now show **one card per row** on a phone, so names, schedules and toggles have room to read instead of being squeezed into half the screen.
+
+## v1.0.338 — 2026-10-18
 
 ### Sheets That Fill a Phone
 

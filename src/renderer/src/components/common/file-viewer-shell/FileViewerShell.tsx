@@ -1,6 +1,6 @@
 import { ExpandedSheet } from '@components/core/ExpandedSheet'
 import { cn } from '@lib/utils/cn'
-import { canRevealInFolder } from '@lib/utils/platform'
+import { canOpenExternal, canRevealInFolder } from '@lib/utils/platform'
 import { ArrowExpandIcon, Download01Icon, FolderOpenIcon, LinkSquare02Icon } from 'hugeicons-react'
 import { useCallback, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -83,9 +83,11 @@ export function FileViewerShell({
             <ArrowExpandIcon size={14} />
           </ViewerAction>
         )}
-        <ViewerAction title={t('chat.pdfViewer.openExternal')} onClick={openExternal}>
-          <LinkSquare02Icon size={14} />
-        </ViewerAction>
+        {canOpenExternal && (
+          <ViewerAction title={t('chat.pdfViewer.openExternal')} onClick={openExternal}>
+            <LinkSquare02Icon size={14} />
+          </ViewerAction>
+        )}
         {canRevealInFolder && (
           <ViewerAction title={t('chat.fileCard.reveal')} onClick={revealInFolder}>
             <FolderOpenIcon size={14} />

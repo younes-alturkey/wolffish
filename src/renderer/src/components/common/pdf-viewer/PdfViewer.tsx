@@ -1,7 +1,8 @@
+import { PdfPages } from '@components/common/pdf-pages/PdfPages'
 import { ExpandedSheet } from '@components/core/ExpandedSheet'
 import { useUploadBlob } from '@hooks/use-upload-blob/useUploadBlob'
 import { cn } from '@lib/utils/cn'
-import { canRevealInFolder } from '@lib/utils/platform'
+import { canOpenExternal, canRevealInFolder, framesPdf } from '@lib/utils/platform'
 import {
   ArrowExpandIcon,
   Download01Icon,
@@ -95,8 +96,9 @@ function ActivePdf({
         'overflow-hidden rounded-2xl border'
       )}
     >
-      {url ? (
-        <iframe src={url} title={fileName} className="h-100 w-full border-0" />
+      {/* pdf.js holds a whole document per mount; a phone gets one at a time. */}
+      {url && (framesPdf || !open) ? (
+        <PdfPages url={url} title={fileName} className="h-100 w-full" />
       ) : (
         <div className="flex h-100 w-full items-center justify-center">
           <span className="text-muted animate-pulse text-xs">{t('chat.pdfViewer.loading')}</span>
@@ -123,17 +125,19 @@ function ActivePdf({
         >
           <ArrowExpandIcon size={14} />
         </button>
-        <button
-          type="button"
-          onClick={openExternal}
-          title={t('chat.pdfViewer.openExternal')}
-          className={cn(
-            'text-muted hover:text-fg flex shrink-0 cursor-pointer items-center justify-center rounded p-1',
-            'focus-visible:ring-2 focus-visible:ring-accent'
-          )}
-        >
-          <LinkSquare02Icon size={14} />
-        </button>
+        {canOpenExternal && (
+          <button
+            type="button"
+            onClick={openExternal}
+            title={t('chat.pdfViewer.openExternal')}
+            className={cn(
+              'text-muted hover:text-fg flex shrink-0 cursor-pointer items-center justify-center rounded p-1',
+              'focus-visible:ring-2 focus-visible:ring-accent'
+            )}
+          >
+            <LinkSquare02Icon size={14} />
+          </button>
+        )}
         {canRevealInFolder && (
           <button
             type="button"
@@ -175,7 +179,7 @@ export type PdfLightboxProps = {
 }
 
 /**
- * The same native PDF viewer on the shared trailing-edge sheet, alongside the
+ * The same PDF pages on the shared trailing-edge sheet, alongside the
  * code/markdown/html viewers. No zoom/pan wrapper: Chromium's viewer already
  * scrolls and zooms, and its frame swallows those events before a stage would
  * ever see them. Dismissed by Escape or the sheet's × button.
@@ -188,7 +192,7 @@ export function PdfLightbox({
 }: PdfLightboxProps): React.JSX.Element | null {
   return (
     <ExpandedSheet open={open} onClose={onClose} title={fileName}>
-      <iframe src={url} title={fileName} className="h-full w-full border-0" />
+      <PdfPages url={url} title={fileName} className="h-full w-full" />
     </ExpandedSheet>
   )
 }
