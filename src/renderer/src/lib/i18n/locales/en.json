@@ -47,7 +47,7 @@
     },
     "update": {
       "title": "Updating Wolffish",
-      "subtitle": "The update is installing. Wolffish starts again on its own.",
+      "subtitle": "Installing. Wolffish restarts on its own.",
       "bodyTitle": "Installing the update",
       "body": "Reconnects once the new version is running."
     }
