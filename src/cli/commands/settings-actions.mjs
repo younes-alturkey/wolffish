@@ -1097,6 +1097,13 @@ const testBrave = tester('Brave Search', async (client) => {
   return { ...result, detail: result?.ok ? 'the key works' : undefined }
 })
 
+const testDeepSeekSearch = tester('DeepSeek Search & Fetch', async (client) => {
+  const config = await client.invoke('deepseekSearch:getConfig')
+  if (!config?.apiKey) return { ok: false, error: 'no key set' }
+  const result = await client.invoke('deepseekSearch:test', config.apiKey)
+  return { ...result, detail: result?.ok ? 'the key works' : undefined }
+})
+
 const testVideo = tester('Video generation', async (client) => {
   const result = await client.invoke('video:test')
   return { ...result, detail: result?.ok ? 'the key works' : undefined }
@@ -1669,7 +1676,9 @@ export const ACTIONS = [
     label: 'Forget the OAuth credentials',
     run: googleForgetCredentials
   },
-  { section: 'services.brave', label: 'Test the key', run: testBrave },
+  { section: 'services.webSearch', label: 'Test the Brave key', run: testBrave },
+  { section: 'services.webSearch', label: 'Test the DeepSeek key', run: testDeepSeekSearch },
+  { section: 'services.webFetch', label: 'Test the DeepSeek key', run: testDeepSeekSearch },
   { section: 'services.video', label: 'Test the key', run: testVideo },
   { section: 'services.memes', label: 'Test Giphy and Imgflip', run: testMemes },
   {

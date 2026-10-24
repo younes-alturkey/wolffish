@@ -99,6 +99,8 @@ async function snapshotPaths(): Promise<Set<string>> {
       telegram: {},
       whatsapp: {},
       brave: {},
+      deepseekSearch: {},
+      webTools: {},
       video: {},
       memes: { imgflip: {}, giphy: {} },
       stt: {},

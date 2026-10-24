@@ -828,7 +828,16 @@ export type DataApi = {
 
 /** Which service's config changed — the panels re-seed from this. */
 export type ServicesChangedPayload = {
-  service: 'brave' | 'memes' | 'stt' | 'tts' | 'computerUse' | 'browserExtension' | 'video'
+  service:
+    | 'brave'
+    | 'webTools'
+    | 'deepseekSearch'
+    | 'memes'
+    | 'stt'
+    | 'tts'
+    | 'computerUse'
+    | 'browserExtension'
+    | 'video'
 }
 
 /** Video generation (MiniMax H3) service config — its own key, see VideoApi. */
@@ -2051,6 +2060,61 @@ export type BraveApi = {
   test: (apiKey: string) => Promise<BraveTestResult>
 }
 
+export type WebSearchEngine = 'brave' | 'deepseek' | 'duckduckgo'
+export type WebFetchEngine = 'direct' | 'deepseek'
+
+/** Engine order for web_search / web_fetch — every engine, exactly once. */
+export type WebToolsConfig = {
+  searchOrder: WebSearchEngine[]
+  fetchOrder: WebFetchEngine[]
+  duckduckgoEnabled: boolean
+}
+
+export type WebToolsApi = {
+  getConfig: () => Promise<WebToolsConfig>
+  setConfig: (patch: Partial<WebToolsConfig>) => Promise<{ ok: true; config: WebToolsConfig }>
+}
+
+/**
+ * DeepSeek Search & Fetch API — its own key, separate from the DeepSeek
+ * model key. One key serves both APIs, each with its own toggle, so the Web
+ * Search and Web Fetch panels edit the same record.
+ */
+export type DeepSeekSearchErrorKind =
+  | 'missing_key'
+  | 'invalid_key'
+  | 'insufficient_balance'
+  | 'rate_limit'
+  | 'network'
+  | 'unknown'
+
+export type DeepSeekSearchStatus = {
+  status: 'disabled' | 'configured' | 'error'
+  errorKind: DeepSeekSearchErrorKind | null
+  error: string | null
+}
+
+export type DeepSeekSearchConfig = {
+  apiKey: string
+  searchEnabled: boolean
+  fetchEnabled: boolean
+}
+
+export type DeepSeekSearchTestResult =
+  | { ok: true }
+  | { ok: false; kind: DeepSeekSearchErrorKind; message?: string }
+
+export type DeepSeekSearchApi = {
+  getConfig: () => Promise<DeepSeekSearchConfig>
+  setConfig: (patch: Partial<DeepSeekSearchConfig>) => Promise<{
+    ok: true
+    status: DeepSeekSearchStatus
+    config: DeepSeekSearchConfig
+  }>
+  status: () => Promise<DeepSeekSearchStatus>
+  test: (apiKey: string) => Promise<DeepSeekSearchTestResult>
+}
+
 export type GoogleConfig = {
   status: 'inactive' | 'active'
   account: string
@@ -2750,6 +2814,8 @@ export type WolffishApi = {
   web: WebUiApi
   mcp: McpApi
   brave: BraveApi
+  webTools: WebToolsApi
+  deepseekSearch: DeepSeekSearchApi
   notion: NotionApi
   github: GitHubApi
   google: GoogleApi

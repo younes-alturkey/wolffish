@@ -177,11 +177,16 @@ export const CLI_SETTING_SECTIONS: CliSettingSection[] = [
     label: 'WhatsApp'
   },
 
-  // Services — the desktop's nine cards, in its grid order.
+  // Services — the desktop's ten cards, in its grid order.
   {
-    id: 'services.brave',
+    id: 'services.webSearch',
     group: 'services',
-    label: 'Brave Search'
+    label: 'Web Search'
+  },
+  {
+    id: 'services.webFetch',
+    group: 'services',
+    label: 'Web Fetch'
   },
   {
     id: 'services.google',
@@ -936,10 +941,10 @@ export const CLI_SETTINGS: CliSetting[] = [
   {
     id: 'services.brave.enabled',
     group: 'services',
-    section: 'services.brave',
-    label: 'Status',
+    section: 'services.webSearch',
+    label: 'Brave Search',
     description:
-      'When on, web searches go through Brave first. When off, DuckDuckGo is used directly.',
+      'Brave runs in its place in the engine order (default: first). Order is set in the desktop app.',
     kind: 'boolean',
     read: 'services.braveEnabled',
     channel: 'brave:setConfig',
@@ -948,13 +953,71 @@ export const CLI_SETTINGS: CliSetting[] = [
   {
     id: 'services.brave.apiKey',
     group: 'services',
-    section: 'services.brave',
-    label: 'API key',
+    section: 'services.webSearch',
+    label: 'Brave API key',
     description:
       'Free key (2,000 searches a month) from api.search.brave.com. Stored locally in config.json.',
     kind: 'secret',
     read: 'services.braveApiKey',
     channel: 'brave:setConfig',
+    wrap: 'apiKey'
+  },
+  {
+    id: 'services.deepseekSearch.searchEnabled',
+    group: 'services',
+    section: 'services.webSearch',
+    label: 'DeepSeek Search',
+    description:
+      "DeepSeek's search engine: site:/lang:/date filters, dates and summaries. $0.75 per 1,000 searches.",
+    kind: 'boolean',
+    read: 'services.deepseekSearchEnabled',
+    channel: 'deepseekSearch:setConfig',
+    wrap: 'searchEnabled'
+  },
+  {
+    id: 'services.deepseekSearch.apiKey',
+    group: 'services',
+    section: 'services.webSearch',
+    label: 'DeepSeek Search & Fetch key',
+    description:
+      'From platform.deepseek.com — separate from the DeepSeek model key, shared with Web Fetch.',
+    kind: 'secret',
+    read: 'services.deepseekSearchApiKey',
+    channel: 'deepseekSearch:setConfig',
+    wrap: 'apiKey'
+  },
+  {
+    id: 'services.duckduckgo.enabled',
+    group: 'services',
+    section: 'services.webSearch',
+    label: 'DuckDuckGo',
+    description: 'Free, no key, slow and easily rate-limited. The last resort by default.',
+    kind: 'boolean',
+    read: 'services.duckduckgoEnabled',
+    channel: 'webTools:setConfig',
+    wrap: 'duckduckgoEnabled'
+  },
+  {
+    id: 'services.deepseekSearch.fetchEnabled',
+    group: 'services',
+    section: 'services.webFetch',
+    label: 'DeepSeek Fetch',
+    description:
+      'Reads pages a direct fetch cannot, after it by default. $0.75 per 1,000 pages. Direct fetch is always on.',
+    kind: 'boolean',
+    read: 'services.deepseekFetchEnabled',
+    channel: 'deepseekSearch:setConfig',
+    wrap: 'fetchEnabled'
+  },
+  {
+    id: 'services.deepseekFetch.apiKey',
+    group: 'services',
+    section: 'services.webFetch',
+    label: 'DeepSeek Search & Fetch key',
+    description: 'The same key as on Web Search — saving it here fills it in there too.',
+    kind: 'secret',
+    read: 'services.deepseekSearchApiKey',
+    channel: 'deepseekSearch:setConfig',
     wrap: 'apiKey'
   },
   {

@@ -1,6 +1,5 @@
 import {
   AnthropicLogo,
-  BraveLogo,
   DeepSeekLogo,
   GoogleLogo,
   KimiLogo,
@@ -20,7 +19,6 @@ import { RTL_LOCALES, type SupportedLocale } from '@lib/i18n'
 import { cn } from '@lib/utils/cn'
 import { pageTopPadding } from '@lib/utils/platform'
 import { ModelPicker } from '@pages/ModelPicker'
-import { BravePanel } from '@pages/settings/BravePanel'
 import { BrowserExtensionPanel } from '@pages/settings/BrowserExtensionPanel'
 import { CapabilitiesPanel } from '@pages/settings/CapabilitiesPanel'
 import { CloudProviderPanel } from '@pages/settings/CloudProviderPanel'
@@ -31,6 +29,7 @@ import { DataPanel } from '@pages/settings/DataPanel'
 import { GitHubPanel } from '@pages/settings/GitHubPanel'
 import { GooglePanel } from '@pages/settings/GooglePanel'
 import { prefetchGooglePanel } from '@pages/settings/googleSnapshot'
+import { prefetchWebTools } from '@pages/settings/webToolsSnapshot'
 import { loadLocalModels } from '@pages/settings/localModelsSnapshot'
 import { refreshProviderList, useProviderList } from '@pages/settings/providerListSnapshot'
 import { CliPanel } from '@pages/settings/CliPanel'
@@ -47,6 +46,8 @@ import { TextToSpeechPanel } from '@pages/settings/TextToSpeechPanel'
 import { UpdatesPanel } from '@pages/settings/UpdatesPanel'
 import { UsagePanel } from '@pages/settings/UsagePanel'
 import { VariablesPanel } from '@pages/settings/VariablesPanel'
+import { WebFetchPanel } from '@pages/settings/WebFetchPanel'
+import { WebSearchPanel } from '@pages/settings/WebSearchPanel'
 import { WhatsAppPanel } from '@pages/settings/WhatsAppPanel'
 import { WolffishPanel } from '@pages/settings/WolffishPanel'
 import { PowerDialog, type PowerAction } from '@pages/settings/PowerDialog'
@@ -68,8 +69,10 @@ import {
   ComputerIcon,
   ComputerTerminal01Icon,
   Database02Icon,
+  Download04Icon,
   DnaIcon,
   GithubIcon,
+  GlobalSearchIcon,
   Globe02Icon,
   Key01Icon,
   McpServerIcon,
@@ -144,7 +147,12 @@ function restoreSnapshot(
       s?.provider && PROVIDERS.includes(s.provider as Provider) ? (s.provider as Provider) : null,
     channel:
       s?.channel && CHANNELS.includes(s.channel as Channel) ? (s.channel as Channel) : 'inapp',
-    service: s?.service && SERVICES.includes(s.service as Service) ? (s.service as Service) : null,
+    service:
+      s?.service === 'brave'
+        ? 'webSearch'
+        : s?.service && SERVICES.includes(s.service as Service)
+          ? (s.service as Service)
+          : null,
     knowledgeTab:
       s?.knowledgeTab && KNOWLEDGE_TABS.includes(s.knowledgeTab as KnowledgeTab)
         ? (s.knowledgeTab as KnowledgeTab)
@@ -273,13 +281,14 @@ export function Settings(): React.JSX.Element {
     return [...PROVIDERS].sort((a, b) => Number(connected(b)) - Number(connected(a)))
   }, [keyedProviders, ollamaReachable])
 
-  // Warm up the Google Workspace snapshot, the capability gate and the
-  // Ollama panel's data the moment Settings opens, so by the time the user
+  // Warm up the Google Workspace and web tools snapshots, the capability gate
+  // and the Ollama panel's data the moment Settings opens, so by the time the user
   // opens a card the data is already populated and the panel renders
   // without a flash. The provider list is warm from boot; re-reading it here
   // catches a provider:updated missed while the Web UI socket was down.
   useEffect(() => {
     void prefetchGooglePanel().catch(() => {})
+    void prefetchWebTools().catch(() => {})
     prefetchCapabilityGate()
     refreshProviderList()
     void loadLocalModels().catch(() => {})
@@ -749,7 +758,6 @@ type NavIconComponent = React.ComponentType<{ size?: number }>
  */
 const NAV_ICON_SIZE = 14
 const NAV_ICON_SIZE_OVERRIDES = new Map<NavIconComponent, number>([
-  [BraveLogo, 13],
   [GoogleLogo, 13],
   [NotionLogo, 13],
   [TelegramLogo, 13],
@@ -789,7 +797,8 @@ type KnowledgeTab = 'compaction' | 'reflection'
 const KNOWLEDGE_TABS: KnowledgeTab[] = ['compaction', 'reflection']
 
 type Service =
-  | 'brave'
+  | 'webSearch'
+  | 'webFetch'
   | 'notion'
   | 'github'
   | 'google'
@@ -804,7 +813,8 @@ type Service =
 // A new service is one entry here plus SERVICE_ICONS and SERVICE_PANELS —
 // the grid picks it up from there.
 const SERVICES: Service[] = [
-  'brave',
+  'webSearch',
+  'webFetch',
   'google',
   'memes',
   'video',
@@ -816,7 +826,8 @@ const SERVICES: Service[] = [
 ]
 
 const SERVICE_ICONS: Record<Service, NavIconComponent> = {
-  brave: BraveLogo,
+  webSearch: GlobalSearchIcon,
+  webFetch: Download04Icon,
   notion: NotionLogo,
   github: GithubIcon,
   google: GoogleLogo,
@@ -828,7 +839,8 @@ const SERVICE_ICONS: Record<Service, NavIconComponent> = {
 }
 
 const SERVICE_PANELS: Record<Service, React.ComponentType> = {
-  brave: BravePanel,
+  webSearch: WebSearchPanel,
+  webFetch: WebFetchPanel,
   notion: NotionPanel,
   github: GitHubPanel,
   google: GooglePanel,

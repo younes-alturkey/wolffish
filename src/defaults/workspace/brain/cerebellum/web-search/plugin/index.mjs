@@ -3,12 +3,21 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 
 const DEFAULT_MAX_RESULTS = 5
-const DEFAULT_MAX_LENGTH = 15_000
+const MAX_RESULTS = 20
+// Page text riding along with a DeepSeek result (includeContent) is capped
+// per result so a 20-result search cannot flood the context window.
+const MAX_CONTENT_PER_RESULT = 4_000
 const BRAVE_SEARCH_ENDPOINT = 'https://api.search.brave.com/res/v1/web/search'
+const DEEPSEEK_SEARCH_ENDPOINT = 'https://api.deepseek.com/v1/tools/search'
 
-// Workspace root captured at init() so we can read the live brave config
-// on every search. Re-reading on each call (instead of caching) means
-// users see config changes take effect without restarting the app.
+const ENGINES = ['brave', 'deepseek', 'duckduckgo']
+const DEFAULT_ORDER = ['brave', 'deepseek', 'duckduckgo']
+
+const ENGINE_LABEL = { brave: 'Brave', deepseek: 'DeepSeek', duckduckgo: 'DuckDuckGo' }
+
+// Workspace root captured at init() so we can read the live config on every
+// search. Re-reading on each call (instead of caching) means settings changes
+// take effect without restarting the app.
 let workspaceRoot = null
 
 // DDG rate-limit guard — enforce a minimum gap between consecutive scrapes.
@@ -24,48 +33,77 @@ function ddgThrottle() {
 const BROWSER_UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
-const PRIVATE_IP_RE =
-  /^https?:\/\/(127\.\d+\.\d+\.\d+|localhost|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|\[::1\]|.*\.local)(:\d+)?(\/|$)/i
-
 const toolDefinitions = [
   {
     name: 'web_search',
     description:
-      "Search the web. Returns titles, snippets and URLs — never a page. Fast, and each query spends the user's money, so use it to settle one fact or to find which URL to open. To actually read or work with a site, prefer the browser-extension capability.",
+      "Search the web. Returns titles, snippets and URLs — never a page. Fast, and a query on Brave or DeepSeek spends the user's money, so use it to settle one fact or to find which URL to open. Engines run in the user's order (default Brave, then DeepSeek, then DuckDuckGo); pass `engine` to pick one, and it falls back down that order if the pick is off or fails. The result names the engine that answered. To actually read or work with a site, prefer the browser-extension capability.",
     parameters: {
       type: 'object',
       properties: {
-        query: { type: 'string', description: 'The search query' },
+        query: {
+          type: 'string',
+          description:
+            'The search query. On DeepSeek it also takes operators: site:, -site:, "exact phrase", -term, lang:en, after:2026-01-01, before:2026.'
+        },
         maxResults: {
           type: 'number',
-          description: 'Maximum number of results to return (default 5)'
+          description: 'Maximum number of results to return (default 5, max 20)'
+        },
+        engine: {
+          type: 'string',
+          enum: ENGINES,
+          description:
+            'Optional. Which engine to try first. brave: broad general index, strong on English and Western news. deepseek: query operators, publication dates, authority scores, model-ready summaries and optional page text; strong on Chinese and other Asian sources. duckduckgo: free, no key, last resort — slow and easily rate-limited. Omit to follow the user\'s order.'
+        },
+        includeContent: {
+          type: 'boolean',
+          description:
+            'Optional, DeepSeek only. Also return each result\'s page text (capped per result), which often saves a web_fetch. Ignored by other engines.'
         }
       },
       required: ['query']
     }
-  },
-  {
-    name: 'web_fetch',
-    description:
-      'One plain HTTP GET of a URL, returned as text. Instant and free, but it sees only what the server sends — JS-rendered pages come back empty, and paywalls, logins, consent walls and bot checks defeat it. When that happens, or when the page needs a click or scroll, switch to the browser-extension capability rather than retrying.',
-    parameters: {
-      type: 'object',
-      properties: {
-        url: { type: 'string', description: 'The URL of the web page to fetch' },
-        maxLength: {
-          type: 'number',
-          description: 'Maximum characters to return (default 15000)'
-        },
-        timeout: {
-          type: 'number',
-          description:
-            'Optional. Seconds to wait before giving up on a slow or unresponsive page. Omit to wait indefinitely (no timeout).'
-        }
-      },
-      required: ['url']
-    }
   }
 ]
+
+async function readConfig() {
+  if (!workspaceRoot) return null
+  try {
+    return JSON.parse(await fs.readFile(path.join(workspaceRoot, 'config.json'), 'utf8'))
+  } catch {
+    return null
+  }
+}
+
+// Same normalization as workspace.ts getWebToolsConfig: the user's order for
+// known engines, then any engine the stored list predates.
+function normalizeOrder(stored) {
+  const seen = new Set()
+  if (Array.isArray(stored)) for (const e of stored) if (ENGINES.includes(e)) seen.add(e)
+  for (const e of DEFAULT_ORDER) seen.add(e)
+  return [...seen]
+}
+
+// Which engines can run right now, and in what order. An engine is usable
+// when it is switched on and (for the paid ones) has a key.
+async function readSettings() {
+  const cfg = await readConfig()
+  const braveKey = String(cfg?.brave?.apiKey ?? '').trim()
+  const deepseekKey = String(cfg?.deepseekSearch?.apiKey ?? '').trim()
+  return {
+    order: normalizeOrder(cfg?.webTools?.searchOrder),
+    keys: {
+      brave: cfg?.brave?.enabled && braveKey ? braveKey : null,
+      deepseek: cfg?.deepseekSearch?.searchEnabled === true && deepseekKey ? deepseekKey : null
+    },
+    usable: {
+      brave: Boolean(cfg?.brave?.enabled && braveKey),
+      deepseek: Boolean(cfg?.deepseekSearch?.searchEnabled === true && deepseekKey),
+      duckduckgo: cfg?.webTools?.duckduckgoEnabled !== false
+    }
+  }
+}
 
 // Helpers
 
@@ -180,53 +218,91 @@ async function runProvider(provider, query, maxResults) {
   return provider.parse(cheerio.load(html), maxResults)
 }
 
-// Brave Search — used when the user has enabled it and supplied a key in
-// the settings panel. Falls through to DDG providers on any failure.
+// Brave Search — runs when the user switched it on and saved a key.
 async function searchBrave(apiKey, query, maxResults) {
   const url = `${BRAVE_SEARCH_ENDPOINT}?q=${encodeURIComponent(query)}&count=${maxResults}`
-  const res = await fetchWithTimeout(
-    url,
-    {
-      headers: {
-        Accept: 'application/json',
-        'Accept-Encoding': 'gzip',
-        'X-Subscription-Token': apiKey
-      }
-    },
-  )
-  if (res.status === 401 || res.status === 403) {
-    throw new Error('brave: invalid API key')
-  }
-  if (res.status === 429) throw new Error('brave: rate limited')
-  if (!res.ok) throw new Error(`brave: HTTP ${res.status}`)
+  const res = await fetchWithTimeout(url, {
+    headers: {
+      Accept: 'application/json',
+      'Accept-Encoding': 'gzip',
+      'X-Subscription-Token': apiKey
+    }
+  })
+  if (res.status === 401 || res.status === 403) throw new Error('invalid API key')
+  if (res.status === 429) throw new Error('rate limited')
+  if (res.status === 422) throw new Error('subscription expired')
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
   const json = await res.json()
   const raw = Array.isArray(json?.web?.results) ? json.web.results : []
   return raw
     .slice(0, maxResults)
-    .map((r) => ({
-      title: r.title ?? '',
-      snippet: r.description ?? '',
-      url: r.url ?? ''
-    }))
+    .map((r) => {
+      const result = { title: r.title ?? '', snippet: r.description ?? '', url: r.url ?? '' }
+      if (r.age) result.date = r.age
+      return result
+    })
     .filter((r) => r.title && /^https?:/i.test(r.url))
 }
 
-// Read brave config from <workspaceRoot>/config.json. Returns null when
-// disabled, key is empty, or anything goes wrong reading the file —
-// callers fall through to the DDG providers in that case.
-async function readBraveConfig() {
-  if (!workspaceRoot) return null
-  try {
-    const raw = await fs.readFile(path.join(workspaceRoot, 'config.json'), 'utf8')
-    const cfg = JSON.parse(raw)
-    const brave = cfg?.brave
-    if (!brave?.enabled) return null
-    const apiKey = String(brave.apiKey ?? '').trim()
-    if (!apiKey) return null
-    return { apiKey }
-  } catch {
-    return null
+// DeepSeek Search — its own key (deepseekSearch.apiKey), not the model key.
+// Billed per successful non-empty search; failures and empty results are free.
+async function searchDeepSeek(apiKey, query, maxResults, includeContent) {
+  const res = await fetchWithTimeout(DEEPSEEK_SEARCH_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    },
+    body: JSON.stringify({
+      query: query.slice(0, 128),
+      count: maxResults,
+      need_content: includeContent === true
+    })
+  })
+  if (res.status === 401 || res.status === 403) throw new Error('invalid API key')
+  if (res.status === 402) throw new Error('insufficient balance — top up at platform.deepseek.com')
+  if (res.status === 429) throw new Error('rate limited')
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    const message = text.match(/"message"\s*:\s*"([^"]+)"/)?.[1]
+    throw new Error(`HTTP ${res.status}${message ? `: ${message}` : ''}`)
   }
+  const json = await res.json()
+  const raw = Array.isArray(json?.results) ? json.results : []
+  return raw
+    .slice(0, maxResults)
+    .map((r) => {
+      const result = {
+        title: r.title ?? '',
+        url: r.url ?? '',
+        snippet: r.snippet ?? '',
+        summary: r.summary ?? ''
+      }
+      if (r.date) result.date = r.date
+      if (r.site_name) result.site = r.site_name
+      if (typeof r.authority === 'number' && r.authority >= 0) result.authority = r.authority
+      if (typeof r.rerank_score === 'number') result.score = Math.round(r.rerank_score * 100) / 100
+      if (includeContent && r.content) result.content = String(r.content).slice(0, MAX_CONTENT_PER_RESULT)
+      return result
+    })
+    .filter((r) => r.title && /^https?:/i.test(r.url))
+}
+
+async function searchDuckDuckGo(query, maxResults) {
+  const errors = []
+  for (const p of PROVIDERS) {
+    try {
+      await ddgThrottle()
+      const results = await runProvider(p, query, maxResults)
+      lastDdgSearchAt = Date.now()
+      return results
+    } catch (err) {
+      lastDdgSearchAt = Date.now()
+      errors.push(`${p.name}: ${err?.message ?? err}`)
+    }
+  }
+  throw new Error(errors.join('; '))
 }
 
 // Brave usage tracking — appends one line per successful query to the
@@ -267,169 +343,77 @@ async function recordBraveUsage(query) {
   }
 }
 
+// Why an engine the model asked for was skipped — worded for the model, which
+// relays it when the user asks why their pick was not used.
+function unavailableReason(engine) {
+  if (engine === 'duckduckgo') return 'DuckDuckGo is switched off in Settings → Services → Web Search'
+  return `${ENGINE_LABEL[engine]} is not set up (it needs to be switched on with a key in Settings → Services → Web Search)`
+}
+
 // web_search
 
 async function executeSearch(args) {
   const query = String(args?.query ?? '').trim()
   if (!query) return { success: false, error: 'empty search query' }
 
-  const maxResults = Math.max(1, Math.round(Number(args?.maxResults) || DEFAULT_MAX_RESULTS))
+  const maxResults = Math.min(
+    MAX_RESULTS,
+    Math.max(1, Math.round(Number(args?.maxResults) || DEFAULT_MAX_RESULTS))
+  )
+  const requested = typeof args?.engine === 'string' ? args.engine.trim().toLowerCase() : ''
+  const settings = await readSettings()
 
-  let results
-  let provider
-  const errors = []
-
-  // Try Brave first when the user has enabled it. On any failure, fall
-  // through to the DDG providers — surface the brave error so the user
-  // can debug their key but still return useful results.
-  const brave = await readBraveConfig()
-  if (brave) {
-    try {
-      results = await searchBrave(brave.apiKey, query, maxResults)
-      provider = 'brave'
-      void recordBraveUsage(query)
-    } catch (err) {
-      errors.push(`brave: ${err?.message ?? err}`)
+  const notes = []
+  const chain = []
+  if (requested) {
+    if (!ENGINES.includes(requested)) {
+      notes.push(`Unknown engine "${requested}" — used the user's order instead.`)
+    } else if (settings.usable[requested]) {
+      chain.push(requested)
+    } else {
+      notes.push(`${unavailableReason(requested)}, so the user's order was used instead.`)
     }
   }
-
-  if (!provider) {
-    for (const p of PROVIDERS) {
-      try {
-        await ddgThrottle()
-        results = await runProvider(p, query, maxResults)
-        lastDdgSearchAt = Date.now()
-        provider = p.name
-        break
-      } catch (err) {
-        lastDdgSearchAt = Date.now()
-        errors.push(`${p.name}: ${err?.message ?? err}`)
-      }
-    }
+  for (const engine of settings.order) {
+    if (settings.usable[engine] && !chain.includes(engine)) chain.push(engine)
   }
 
-  if (!provider) {
+  if (chain.length === 0) {
     return {
       success: false,
-      error: `All search providers failed.\n${errors.join('\n')}\nTry a different query or wait 30 seconds before retrying.`
+      error:
+        'No search engine is available: Brave and DeepSeek are not set up and DuckDuckGo is switched off. The user can turn one on in Settings → Services → Web Search.'
     }
   }
 
-  if (!results || results.length === 0) {
-    return {
-      success: true,
-      output: JSON.stringify({
-        provider,
-        results: [],
-        message: 'No results found. Try a different or more specific query.'
-      })
+  const errors = []
+  for (const engine of chain) {
+    try {
+      let results
+      if (engine === 'brave') {
+        results = await searchBrave(settings.keys.brave, query, maxResults)
+        void recordBraveUsage(query)
+      } else if (engine === 'deepseek') {
+        results = await searchDeepSeek(settings.keys.deepseek, query, maxResults, args?.includeContent)
+      } else {
+        results = await searchDuckDuckGo(query, maxResults)
+      }
+      const payload = { engine, results }
+      if (errors.length > 0) payload.fallback = errors
+      if (notes.length > 0) payload.notes = notes
+      if (results.length === 0) {
+        payload.message = 'No results found. Try a different or more specific query, or another engine.'
+      }
+      return { success: true, output: JSON.stringify(payload) }
+    } catch (err) {
+      errors.push(`${engine}: ${err?.message ?? err}`)
     }
   }
 
-  return { success: true, output: JSON.stringify({ provider, results }) }
-}
-
-// web_fetch
-
-const HEADING_PREFIX = { h1: '# ', h2: '## ', h3: '### ', h4: '#### ', h5: '##### ', h6: '###### ' }
-
-function extractContent($) {
-  $('script, style, nav, footer, header, aside, iframe, noscript, svg').remove()
-  let root = $('article').first()
-  if (!root.length) root = $('main').first()
-  if (!root.length) root = $('body')
-
-  const lines = []
-  root.find('h1, h2, h3, h4, h5, h6, p, li, td, th, pre, code, blockquote').each((_, el) => {
-    const tag = el.tagName?.toLowerCase()
-    let text = $(el).text().trim()
-    if (!text) return
-    if (HEADING_PREFIX[tag]) text = HEADING_PREFIX[tag] + text
-    else if (tag === 'li') text = `- ${text}`
-    else if (tag === 'blockquote') text = `> ${text}`
-    else if (tag === 'pre' || tag === 'code') text = `\`\`\`\n${text}\n\`\`\``
-    lines.push(text)
-  })
-  return lines.join('\n\n')
-}
-
-async function executeFetch(args) {
-  const url = String(args?.url ?? '').trim()
-  if (!url) return { success: false, error: 'empty URL' }
-
-  if (!/^https?:\/\//i.test(url)) {
-    return { success: false, error: 'URL must start with http:// or https://' }
+  return {
+    success: false,
+    error: `Every search engine failed.\n${errors.join('\n')}${notes.length ? `\n${notes.join('\n')}` : ''}\nTry a different query or wait 30 seconds before retrying.`
   }
-  if (PRIVATE_IP_RE.test(url)) {
-    return { success: false, error: 'Blocked: cannot fetch private/local network addresses' }
-  }
-
-  const maxLength = Number(args?.maxLength) || DEFAULT_MAX_LENGTH
-
-  // No timeout unless the model explicitly asks for one (in seconds).
-  const timeoutSec = Number(args?.timeout)
-  const timeoutMs = Number.isFinite(timeoutSec) && timeoutSec > 0 ? timeoutSec * 1000 : undefined
-
-  let response
-  try {
-    response = await fetchWithTimeout(
-      url,
-      {
-        headers: {
-          'User-Agent': BROWSER_UA,
-          Accept: 'text/html,application/xhtml+xml,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.9'
-        },
-        redirect: 'follow'
-      },
-      timeoutMs
-    )
-  } catch (err) {
-    if (err?.name === 'TimeoutError') {
-      return { success: false, error: err.message }
-    }
-    return { success: false, error: `Fetch failed: ${err?.message ?? err}` }
-  }
-
-  if (!response.ok) {
-    return { success: false, error: `HTTP ${response.status}: ${response.statusText}` }
-  }
-
-  const contentType = (response.headers.get('content-type') || '').toLowerCase()
-
-  if (
-    contentType.startsWith('image/') ||
-    contentType.startsWith('audio/') ||
-    contentType.startsWith('video/') ||
-    contentType.startsWith('application/octet-stream') ||
-    contentType.startsWith('application/zip') ||
-    contentType.startsWith('application/pdf')
-  ) {
-    return { success: false, error: `Cannot read binary content (Content-Type: ${contentType})` }
-  }
-
-  let text
-  try {
-    const buffer = await response.arrayBuffer()
-    const charsetMatch = contentType.match(/charset=([^\s;]+)/i)
-    const charset = charsetMatch ? charsetMatch[1] : 'utf-8'
-    text = new TextDecoder(charset).decode(buffer)
-  } catch (err) {
-    return { success: false, error: `Failed to decode response: ${err?.message ?? err}` }
-  }
-
-  if (!contentType.includes('html')) {
-    const truncated = text.slice(0, maxLength)
-    if (!truncated.trim()) return { success: true, output: '(Page returned no readable content)' }
-    return { success: true, output: truncated }
-  }
-
-  const $ = cheerio.load(text)
-  let content = extractContent($)
-  content = content.replace(/\n{3,}/g, '\n\n').trim()
-
-  if (!content) return { success: true, output: '(Page returned no readable content)' }
-  return { success: true, output: content.slice(0, maxLength) }
 }
 
 // Plugin export
@@ -450,19 +434,11 @@ export default {
         risk: 'low'
       }
     }
-    if (toolName === 'web_fetch') {
-      return {
-        title: 'Fetch web page',
-        description: `Read: ${args?.url ?? '(empty)'}`,
-        risk: 'low'
-      }
-    }
     return null
   },
 
   async execute(toolName, args) {
     if (toolName === 'web_search') return executeSearch(args)
-    if (toolName === 'web_fetch') return executeFetch(args)
     return { success: false, error: `web-search: unknown tool ${toolName}` }
   }
 }

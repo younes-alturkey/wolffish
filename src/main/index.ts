@@ -5,6 +5,11 @@ import { attachFilesToAutomation, removeAutomationFile } from '@main/automations
 import { projectFoldersFor } from '@main/uploads/project-folders'
 import { installAttention } from '@main/attention'
 import { braveService, type BraveStatus, type BraveTestResult } from '@main/brave'
+import {
+  deepseekSearchService,
+  type DeepSeekSearchStatus,
+  type DeepSeekSearchTestResult
+} from '@main/deepseek-search'
 import { turnRouter } from '@main/channels/channel'
 import { collectChannelStatus } from '@main/channels/status'
 import { normalizeReasoningMode, reasoningModesFor } from '@main/runtime/reasoning'
@@ -243,6 +248,8 @@ import {
   extensionFolderPath,
   factoryReset,
   getBraveConfig,
+  getDeepSeekSearchConfig,
+  getWebToolsConfig,
   getBrowserExtensionConfig,
   getCompactionConfig,
   getComputerUseConfig,
@@ -273,6 +280,8 @@ import {
   setBrain as persistBrain,
   setMode as persistMode,
   setBraveConfig as persistBraveConfig,
+  setDeepSeekSearchConfig as persistDeepSeekSearchConfig,
+  setWebToolsConfig as persistWebToolsConfig,
   setBrowserExtensionConfig as persistBrowserExtensionConfig,
   setBypassPermissions as persistBypassPermissions,
   setCliConfig as persistCliConfig,
@@ -302,6 +311,8 @@ import {
   setCloudProvider,
   workspaceRoot,
   type BraveConfig,
+  type DeepSeekSearchConfig,
+  type WebToolsConfig,
   type BrowserExtensionConfig,
   type ComputerUseConfig,
   type GitHubConfig,
@@ -3891,6 +3902,52 @@ app.whenReady().then(async () => {
   handle(
     'brave:test',
     (_e, apiKey: string): Promise<BraveTestResult> => braveService.testKey(apiKey)
+  )
+
+  // Engine order for web_search / web_fetch. The plugins read it from
+  // config.json on every call, so a save takes effect on the next search.
+  handle('webTools:getConfig', (): Promise<WebToolsConfig> => getWebToolsConfig())
+
+  handle(
+    'webTools:setConfig',
+    async (_e, patch: Partial<WebToolsConfig>): Promise<{ ok: true; config: WebToolsConfig }> => {
+      await persistWebToolsConfig(patch)
+      broadcast('services:changed', { service: 'webTools' })
+      return { ok: true as const, config: await getWebToolsConfig() }
+    }
+  )
+
+  // DeepSeek Search & Fetch — one key shared by both plugins and both
+  // panels; each panel owns one of the two toggles.
+  handle(
+    'deepseekSearch:getConfig',
+    (): Promise<DeepSeekSearchConfig> => getDeepSeekSearchConfig()
+  )
+
+  handle(
+    'deepseekSearch:setConfig',
+    async (
+      _e,
+      patch: Partial<DeepSeekSearchConfig>
+    ): Promise<{ ok: true; status: DeepSeekSearchStatus; config: DeepSeekSearchConfig }> => {
+      await persistDeepSeekSearchConfig(patch)
+      if (patch.apiKey !== undefined) deepseekSearchService.resetCache()
+      broadcast('services:changed', { service: 'deepseekSearch' })
+      return {
+        ok: true as const,
+        status: await deepseekSearchService.getStatus(),
+        config: await getDeepSeekSearchConfig()
+      }
+    }
+  )
+
+  handle('deepseekSearch:status', (): Promise<DeepSeekSearchStatus> =>
+    deepseekSearchService.getStatus()
+  )
+
+  handle(
+    'deepseekSearch:test',
+    (_e, apiKey: string): Promise<DeepSeekSearchTestResult> => deepseekSearchService.testKey(apiKey)
   )
 
   // Notion — stateless service. The notion cerebellum plugin reads the

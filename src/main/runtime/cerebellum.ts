@@ -1136,7 +1136,7 @@ const PLUGIN_FILES = ['index.mjs', 'index.js', 'index.cjs']
  * set that must never require a discovery hop. (1) tool-discovery + the
  * introspect retrieval suite — the keys to every other tool and every byte of
  * memory; (2) universal primitives used across most task types (filesystem,
- * shell, web-search, secrets, system, ask, send_file); (3) the channel send
+ * shell, web-search, web-fetch, secrets, system, ask, send_file); (3) the channel send
  * tools, which register only while connected and can't wait a hop to reply.
  * Everything else — github, google, browser(s), media, documents, MCP
  * servers — is one tool_search away. Tunable via config.pinnedCapabilities.
@@ -1173,6 +1173,7 @@ export const CORE_CAPABILITIES: ReadonlySet<string> = new Set([
   'options',
   'utilities',
   'web-search',
+  'web-fetch',
   'secrets',
   'system',
   'telegram',

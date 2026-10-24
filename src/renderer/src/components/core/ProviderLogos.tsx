@@ -7,6 +7,7 @@
 import {
   SiAnthropic,
   SiBrave,
+  SiDuckduckgo,
   SiGoogle,
   SiNotion,
   SiOllama,
@@ -251,6 +252,7 @@ export {
   SiTelegram as TelegramLogo,
   SiWhatsapp as WhatsAppLogo,
   SiBrave as BraveLogo,
+  SiDuckduckgo as DuckDuckGoLogo,
   SiNotion as NotionLogo,
   SiGoogle as GoogleLogo
 }

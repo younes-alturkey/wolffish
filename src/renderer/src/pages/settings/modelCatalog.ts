@@ -495,10 +495,11 @@ export const MODEL_SPECS: Record<ProviderId, ModelSpec[]> = {
   // DeepSeek bills peak/off-peak since 2026-08-16 (peak 01:00-04:00 and
   // 06:00-10:00 UTC Mon-Fri; off-peak is half) — shown as ranges, low end
   // first. `deepseek-flash` is DeepSeek-V4.1-Flash (the id carries no version
-  // number); it replaced the whole v4-flash line on 2026-09-11 — the old ids
-  // still resolve to it — and sees images. deepseek-v4-pro stays listed at its
-  // own prices; from 2026-09-14 DeepSeek routes it to V4.1-Flash and bills the
-  // Flash rate, so re-check this row after that date (until a V4.1 Pro ships).
+  // number, so it moves to each update — V4.1-Flash-1017 since 2026-10-17, same
+  // prices); it replaced the whole v4-flash line on 2026-09-11 — the old ids
+  // still resolve to it — and sees images. deepseek-v4-pro (V4-Pro-0813) was
+  // due to be rerouted to Flash on 2026-09-14, but DeepSeek kept serving it at
+  // its own prices, so it stays listed.
   deepseek: [
     {
       name: 'deepseek-flash',

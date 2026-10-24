@@ -1,4 +1,18 @@
-## v1.0.339 — 2026-10-21 `Latest`
+## v1.0.340 — 2026-10-24 `Latest`
+
+### Web Search and Web Fetch, Each With Its Own Page
+
+Searching the web and reading a page used to live together behind one **Brave Search** page, with DuckDuckGo as a hidden fallback you could not see or control. They are now **two services of their own** in Settings: **Web Search** and **Web Fetch**. Web Search shows all three engines it can use, **Brave**, **DeepSeek** and **DuckDuckGo**, each on its own card with a short note on what it is good at, and a **priority list** at the top that you reorder with the up and down arrows. Searches go to the first engine that is switched on, and **fall down the list on their own** when one fails, runs out of quota or runs out of balance, so a search still comes back. DuckDuckGo can now be **switched off** if you would rather a search fail than fall back to it. Web Fetch works the same way with two engines: a **direct fetch**, instant, free and always on, and **DeepSeek Fetch**.
+
+### DeepSeek Search and DeepSeek Fetch
+
+DeepSeek's new **Search and Fetch APIs** are built in. **DeepSeek Search** takes filters like `site:`, `lang:` and dates, and returns each result's publication date, how authoritative the source is, and a summary written for the model, and it can include the page itself so a separate fetch is often unnecessary. **DeepSeek Fetch** reads a page on DeepSeek's servers and returns clean text, which gets through some sites that refuse or break a plain request. Each costs **$0.75 per 1,000 calls**. They use **their own key**, entered by hand and kept apart from your DeepSeek model key, and Web Search and Web Fetch **share it**: save it on either page and it is filled in on the other, with a separate switch on each. **Test connection** checks the key against your DeepSeek balance, so it is **free** and also tells you when the account is empty.
+
+### Wolffish Picks the Right Engine
+
+Wolffish now knows where each engine shines and **can choose one for a query that suits it**, such as DeepSeek for a date or site filter, or DeepSeek Fetch straight away for a site it knows refuses plain requests. If its pick is switched off or fails, it falls back to **your order**, and it can tell you which engine answered and why. Localhost and your private network stay off-limits to both fetch engines, and PDFs and other files are never sent to DeepSeek.
+
+## v1.0.339 — 2026-10-21
 
 ### Every Page of a PDF on a Phone
 

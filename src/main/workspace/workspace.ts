@@ -244,6 +244,31 @@ export type BraveConfig = {
   apiKey: string
 }
 
+export type WebSearchEngine = 'brave' | 'deepseek' | 'duckduckgo'
+export type WebFetchEngine = 'direct' | 'deepseek'
+
+/**
+ * Engine order for web_search / web_fetch. The plugins try engines in this
+ * order (after the one the model asked for, if any) and skip any that is off
+ * or has no key. Both lists always hold every engine exactly once.
+ */
+export type WebToolsConfig = {
+  searchOrder: WebSearchEngine[]
+  fetchOrder: WebFetchEngine[]
+  duckduckgoEnabled: boolean
+}
+
+/**
+ * DeepSeek's Search & Fetch API key — deliberately separate from the
+ * DeepSeek model key in `providers`, so a user can pay for one without the
+ * other. One key serves both APIs; each has its own toggle.
+ */
+export type DeepSeekSearchConfig = {
+  apiKey: string
+  searchEnabled: boolean
+  fetchEnabled: boolean
+}
+
 /**
  * A single labeled Notion integration. The user assigns a `label`
  * (e.g. "Personal", "Wolffish") so both they and the model can tell
@@ -544,6 +569,12 @@ export type WorkspaceConfig = {
   // web-search plugin uses Brave first and falls back to DuckDuckGo on
   // failure. Optional so legacy configs migrate cleanly.
   brave?: BraveConfig
+  // Engine order for the web-search / web-fetch plugins. Optional so legacy
+  // configs migrate cleanly — absent means Brave, DeepSeek, DuckDuckGo.
+  webTools?: WebToolsConfig
+  // DeepSeek Search & Fetch API key + per-API toggles. Optional — absent
+  // means both are off.
+  deepseekSearch?: DeepSeekSearchConfig
   // Notion integration token. Optional so legacy configs migrate
   // cleanly — when absent the cerebellum plugin simply has no token
   // and the tools return an "unconfigured" error.
@@ -1758,6 +1789,67 @@ export async function setBraveConfig(patch: Partial<BraveConfig>): Promise<Works
       apiKey: patch.apiKey ?? current.apiKey
     }
     return { ...c, brave: next }
+  })
+}
+
+export const DEFAULT_SEARCH_ORDER: WebSearchEngine[] = ['brave', 'deepseek', 'duckduckgo']
+export const DEFAULT_FETCH_ORDER: WebFetchEngine[] = ['direct', 'deepseek']
+
+// Keeps the user's order for engines it knows, drops strays and duplicates,
+// and appends any engine the stored list predates in default order.
+function normalizeOrder<T extends string>(stored: unknown, defaults: readonly T[]): T[] {
+  const seen = new Set<T>()
+  if (Array.isArray(stored)) {
+    for (const item of stored) {
+      if (defaults.includes(item as T)) seen.add(item as T)
+    }
+  }
+  for (const engine of defaults) seen.add(engine)
+  return [...seen]
+}
+
+export async function getWebToolsConfig(): Promise<WebToolsConfig> {
+  const config = await readConfig()
+  return {
+    searchOrder: normalizeOrder(config?.webTools?.searchOrder, DEFAULT_SEARCH_ORDER),
+    fetchOrder: normalizeOrder(config?.webTools?.fetchOrder, DEFAULT_FETCH_ORDER),
+    duckduckgoEnabled: config?.webTools?.duckduckgoEnabled !== false
+  }
+}
+
+export async function setWebToolsConfig(patch: Partial<WebToolsConfig>): Promise<WorkspaceConfig> {
+  return patchConfig((c) => {
+    const next: WebToolsConfig = {
+      searchOrder: normalizeOrder(
+        patch.searchOrder ?? c.webTools?.searchOrder,
+        DEFAULT_SEARCH_ORDER
+      ),
+      fetchOrder: normalizeOrder(patch.fetchOrder ?? c.webTools?.fetchOrder, DEFAULT_FETCH_ORDER),
+      duckduckgoEnabled: patch.duckduckgoEnabled ?? c.webTools?.duckduckgoEnabled !== false
+    }
+    return { ...c, webTools: next }
+  })
+}
+
+export async function getDeepSeekSearchConfig(): Promise<DeepSeekSearchConfig> {
+  const config = await readConfig()
+  return {
+    apiKey: config?.deepseekSearch?.apiKey ?? '',
+    searchEnabled: config?.deepseekSearch?.searchEnabled === true,
+    fetchEnabled: config?.deepseekSearch?.fetchEnabled === true
+  }
+}
+
+export async function setDeepSeekSearchConfig(
+  patch: Partial<DeepSeekSearchConfig>
+): Promise<WorkspaceConfig> {
+  return patchConfig((c) => {
+    const next: DeepSeekSearchConfig = {
+      apiKey: patch.apiKey ?? c.deepseekSearch?.apiKey ?? '',
+      searchEnabled: patch.searchEnabled ?? c.deepseekSearch?.searchEnabled === true,
+      fetchEnabled: patch.fetchEnabled ?? c.deepseekSearch?.fetchEnabled === true
+    }
+    return { ...c, deepseekSearch: next }
   })
 }
 

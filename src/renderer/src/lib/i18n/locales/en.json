@@ -624,9 +624,10 @@
       "searchPlaceholder": "Search services",
       "noMatches": "No services match your search.",
       "tabs": {
+        "webSearch": "Web Search",
+        "webFetch": "Web Fetch",
         "tts": "Text-to-Speech",
         "stt": "Speech-to-Text",
-        "brave": "Brave Search",
         "notion": "Notion",
         "github": "GitHub",
         "google": "Google Workspace",
@@ -816,12 +817,50 @@
           "silentIgnore": "Other messages are silently ignored."
         }
       },
+      "webSearch": {
+        "title": "Web Search",
+        "subtitle": "Pick the engines behind web_search — Brave, DeepSeek and DuckDuckGo — and the order they run in.",
+        "orderDescription": "Searches try the first available engine, then fall down the list on a failure. The agent can also pick an engine for a query it suits.",
+        "howItWorks": {
+          "order": "Each search runs on the first engine in your order that is on and has a key.",
+          "agent": "The agent may pick an engine itself — DeepSeek for date or site filters, for example — and falls back down your order if that pick is off or fails.",
+          "fallback": "On an error, rate limit or empty balance the next engine answers, so a search still comes back.",
+          "privacy": "Keys stay in your config.json — no proxy, no telemetry."
+        }
+      },
+      "webFetch": {
+        "title": "Web Fetch",
+        "subtitle": "How web_fetch reads a page — a free direct request, or DeepSeek Fetch for pages that refuse one.",
+        "orderDescription": "A page is read by the first engine on the list; if it fails, the next one tries.",
+        "howItWorks": {
+          "order": "Direct fetch runs first by default: instant and free. DeepSeek Fetch steps in when it fails or the page comes back empty.",
+          "agent": "The agent can ask for DeepSeek straight away for a site it knows refuses plain requests.",
+          "private": "Neither engine reaches localhost or your private network, and PDFs and other files are never sent to DeepSeek.",
+          "browser": "Pages behind a login, a paywall or a bot check still need the browser extension."
+        }
+      },
+      "webTools": {
+        "orderTitle": "Priority",
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "engines": {
+          "brave": "Brave Search",
+          "deepseek": "DeepSeek",
+          "duckduckgo": "DuckDuckGo",
+          "direct": "Direct fetch"
+        },
+        "state": {
+          "active": "Active",
+          "off": "Off",
+          "error": "Error"
+        }
+      },
       "brave": {
         "title": "Brave Search",
+        "description": "Brave's independent web index. Broad and fast, strongest on English-language and Western sources. Free key: 2,000 searches a month.",
         "platform": "Platform",
-        "subtitle": "Use Brave Search API as the primary web-search provider, with DuckDuckGo as fallback.",
         "enable": "Enable Brave Search",
-        "enableDescription": "When on, web searches go through Brave first. When off, DuckDuckGo is used directly.",
+        "enableDescription": "When on, Brave takes its place in the priority list above.",
         "toggle": {
           "on": "On",
           "off": "Off"
@@ -831,7 +870,6 @@
         "apiKeyHint": "Free key (2,000/mo) from <link>api.search.brave.com</link>. Stored locally in config.json.",
         "showKey": "Show",
         "hideKey": "Hide",
-        "test": "Save",
         "testConnection": "Test connection",
         "testHint": "Sends a tiny query to Brave to verify the key works. Counts toward your monthly quota.",
         "save": "Save",
@@ -855,14 +893,45 @@
           "network": "Can't reach Brave — check connection.",
           "unknown": "Brave returned an error: {{message}}"
         },
-        "howItWorksTitle": "How it works",
-        "howItWorks": {
-          "primary": "Brave runs first when enabled with a valid key.",
-          "fallback": "Falls back to DuckDuckGo on rate-limit, error, or timeout.",
-          "free": "Free tier: 2,000 queries/month, 1 per second.",
-          "paid": "Heavier use needs a paid plan.",
-          "privacy": "Key stays in your config.json — no proxy, no telemetry."
+        "howItWorksTitle": "How it works"
+      },
+      "deepseekSearch": {
+        "search": {
+          "title": "DeepSeek Search",
+          "description": "DeepSeek's own search engine. Takes site:, lang: and date filters, and returns publication dates, authority scores and summaries written for the model. $0.75 per 1,000 searches.",
+          "enable": "Use DeepSeek for web search",
+          "enableDescription": "When on, DeepSeek takes its place in the priority list above."
+        },
+        "fetch": {
+          "title": "DeepSeek Fetch",
+          "description": "DeepSeek reads the page on its servers and returns clean Markdown. Gets through some sites that refuse or break a direct request. Slower, and $0.75 per 1,000 pages.",
+          "enable": "Use DeepSeek for web fetch",
+          "enableDescription": "When on, DeepSeek takes its place in the priority list above."
+        },
+        "apiKey": "Search & Fetch API key",
+        "apiKeyHint": "Create a key at <link>platform.deepseek.com</link>. It is separate from your DeepSeek model key, and Web Search and Web Fetch share it — saving it here fills it in on both.",
+        "testHint": "Checks the key against your DeepSeek balance. Free — no search is spent.",
+        "saveSuccess": "DeepSeek Search & Fetch key saved",
+        "testSuccess": "DeepSeek key works",
+        "errors": {
+          "missing_key": "API key is required.",
+          "invalid_key": "Key rejected — create a new one on the DeepSeek platform.",
+          "insufficient_balance": "The key works but the account has no balance — top up on the DeepSeek platform.",
+          "rate_limit": "Rate-limited by DeepSeek — wait and retry.",
+          "network": "Can't reach DeepSeek — check connection.",
+          "unknown": "DeepSeek returned an error: {{message}}"
         }
+      },
+      "duckduckgo": {
+        "title": "DuckDuckGo",
+        "description": "Free, no key. Wolffish reads DuckDuckGo's results page, so it is slower (one search every 10 seconds) and gets rate-limited under heavy use — best kept as the last resort.",
+        "enable": "Use DuckDuckGo",
+        "enableDescription": "When off, searches fail once Brave and DeepSeek are unavailable instead of falling back here."
+      },
+      "directFetch": {
+        "title": "Direct fetch",
+        "description": "A plain request from this computer. Instant and free, and always on. It sees only what the server sends back, so pages built by JavaScript come back empty.",
+        "status": "Always on"
       },
       "notion": {
         "title": "Notion",

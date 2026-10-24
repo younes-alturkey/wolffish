@@ -371,6 +371,16 @@ export function buildApi(transport: ApiTransport): WolffishApi {
       status: () => transport.invoke('brave:status'),
       test: (apiKey) => transport.invoke('brave:test', apiKey)
     },
+    webTools: {
+      getConfig: () => transport.invoke('webTools:getConfig'),
+      setConfig: (patch) => transport.invoke('webTools:setConfig', patch)
+    },
+    deepseekSearch: {
+      getConfig: () => transport.invoke('deepseekSearch:getConfig'),
+      setConfig: (patch) => transport.invoke('deepseekSearch:setConfig', patch),
+      status: () => transport.invoke('deepseekSearch:status'),
+      test: (apiKey) => transport.invoke('deepseekSearch:test', apiKey)
+    },
     notion: {
       getConfig: () => transport.invoke('notion:getConfig'),
       setConfig: (connections) => transport.invoke('notion:setConfig', connections),

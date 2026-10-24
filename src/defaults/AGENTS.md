@@ -345,7 +345,8 @@ so hidden — `ls -a` to see them). Drop a folder in, and the agent learns a ski
 | | `.python` | Hermetic uv-managed CPython for native Python plugins — `python_check`, `python_install` |
 | | `.package-manager` | Cross-platform packages (brew/winget/apt/dnf) — `pkg_install`, `pkg_check` |
 | | `.system` | Apps & power — `app_open`, `app_quit`, `app_list`, `open_path`, `system_power` |
-| **Web** | `.web-search` | `web_search` (Brave), `web_fetch` (read a page) |
+| **Web** | `.web-search` | `web_search` — Brave, DeepSeek or DuckDuckGo, in the user's order (`engine` picks one) |
+| | `.web-fetch` | `web_fetch` — read a page: direct GET, or DeepSeek Fetch (`engine` picks one) |
 | | `.browser` | Headless Playwright automation — `browser_launch`, `browser_navigate`, `browser_click`, … |
 | | `.browser-extension` | Drive the user's **real, logged-in** browsers (Chrome, Edge, Brave, Firefox — several can be connected at once) via the extension — ~60 `ext_*` tools (`ext_navigate`, `ext_click`, `ext_set_value`, `ext_read_page`, `ext_screenshot`, `ext_wait`, …; `ext_browsers` lists connections, `ext_use_browser` picks one per conversation) |
 | | `.cloudflared` | Expose a local service — `cloudflared_tunnel` |
@@ -502,7 +503,9 @@ Reading these confidently lets you answer almost any question about the agent.
   "theme": "light",                          // light | dark | system
   "onboardingCompleted": true,
   "lastSettingsState": { … },                // UI state, safe to ignore
-  "brave": { "enabled": true, "apiKey": "***" }
+  "brave": { "enabled": true, "apiKey": "***" },
+  "deepseekSearch": { "apiKey": "***", "searchEnabled": true, "fetchEnabled": false },  // Search & Fetch key, not the model key
+  "webTools": { "searchOrder": ["brave", "deepseek", "duckduckgo"], "fetchOrder": ["direct", "deepseek"], "duckduckgoEnabled": true }
 }
 ```
 > ⚠️ `apiKey` fields are **live secrets**. Never print them, paste them into chats,

@@ -1,6 +1,6 @@
 ---
 name: web-search
-description: Search the web and read web pages for current information, documentation, news, and research
+description: Search the web for current information, documentation, news, and research — Brave, DeepSeek or DuckDuckGo, in the user's order
 triggers:
   - search
   - google
@@ -9,8 +9,6 @@ triggers:
   - web
   - browse
   - website
-  - url
-  - link
   - news
   - latest
   - current
@@ -22,8 +20,6 @@ triggers:
   - what is
   - who is
   - how to
-  - fetch
-  - page
   - site
   - research
   - information
@@ -95,71 +91,59 @@ requires:
 tools:
   - name: web_search
     readOnly: true
-    description: Search the web. Returns titles, snippets and URLs — never a page. Fast, and each query spends the user's money, so use it to settle one fact or to find which URL to open. To actually read or work with a site, prefer the browser-extension capability.
+    description: Search the web. Returns titles, snippets and URLs — never a page. Fast, and a query on Brave or DeepSeek spends the user's money, so use it to settle one fact or to find which URL to open. Engines run in the user's order (default Brave, then DeepSeek, then DuckDuckGo); pass `engine` to pick one, and it falls back down that order if the pick is off or fails. The result names the engine that answered. To actually read or work with a site, prefer the browser-extension capability.
     parameters:
       query:
         type: string
-        description: The search query
+        description: 'The search query. On DeepSeek it also takes operators: site:, -site:, "exact phrase", -term, lang:en, after:2026-01-01, before:2026.'
       maxResults:
         type: number
         required: false
-        description: Maximum number of results to return (default 5, max 10)
-  - name: web_fetch
-    readOnly: true
-    description: One plain HTTP GET of a URL, returned as text. Instant and free, but it sees only what the server sends — JS-rendered pages come back empty, and paywalls, logins, consent walls and bot checks defeat it. When that happens, or when the page needs a click or scroll, switch to the browser-extension capability rather than retrying.
-    parameters:
-      url:
+        description: Maximum number of results to return (default 5, max 20)
+      engine:
         type: string
-        description: The URL of the web page to fetch
-      maxLength:
-        type: number
         required: false
-        description: Maximum characters to return (default 15000)
-danger_patterns:
-  - pattern: 'web_fetch.*127\.0\.0\.1'
-    level: block
-    reason: SSRF — localhost access blocked
-  - pattern: 'web_fetch.*localhost'
-    level: block
-    reason: SSRF — localhost access blocked
-  - pattern: 'web_fetch.*192\.168\.'
-    level: block
-    reason: SSRF — private network access blocked
-  - pattern: 'web_fetch.*10\.0\.'
-    level: block
-    reason: SSRF — private network access blocked
-  - pattern: 'web_fetch.*172\.(1[6-9]|2[0-9]|3[01])\.'
-    level: block
-    reason: SSRF — private network access blocked
-  - pattern: 'web_fetch.*file://'
-    level: block
-    reason: SSRF — local file access blocked
-  - pattern: 'web_fetch.*\.local'
-    level: block
-    reason: SSRF — local network access blocked
-confirm_patterns:
-  - pattern: 'web_fetch.*\.(exe|msi|dmg|pkg|deb|rpm|sh|bat|ps1)$'
-    reason: Fetching executable/installer content
+        enum: [brave, deepseek, duckduckgo]
+        description: Optional. Which engine to try first — see "Picking an engine". Omit to follow the user's order.
+      includeContent:
+        type: boolean
+        required: false
+        description: Optional, DeepSeek only. Also return each result's page text (capped per result), which often saves a web_fetch. Ignored by other engines.
 ---
 
 # Web Search
 
 ## Tools
 
-- `web_search` — search the web, returns titles + snippets + URLs
-- `web_fetch` — fetch and read full page content from a URL
+- `web_search` — search the web, returns titles + snippets + URLs (and, on DeepSeek, summaries, dates and optional page text)
+
+To read a page, use `web_fetch` from the **web-fetch** capability.
 
 ## Search is one of three routes — pick deliberately
 
-These two tools are not the only way to reach the web, and often not the best one. The third is the **browser extension** (`tool_activate("browser-extension")`), which drives the user's real browser.
+`web_search` is not the only way to reach the web, and often not the best one:
 
 | | reaches | costs |
 |---|---|---|
-| `web_search` | an index — snippets, never a page | real money per query; very fast |
-| `web_fetch` | whatever a server returns to a bare GET | free, instant; blind to JS, paywalls, logins, bot checks |
+| `web_search` | an index — snippets, never a page | real money per query on Brave / DeepSeek; very fast |
+| `web_fetch` | one page, as text | free (direct) or paid per page (DeepSeek); blind to JS, paywalls, logins |
 | browser extension | essentially any page the user can open, and can click/scroll/fill | more tokens, more seconds; needs a connected browser |
 
-**Lean toward the browser** whenever the task names a specific site, needs a logged-in or paid-for page, needs interaction, spans more than a page or two, or when a fetch came back thin. Two failed fetches cost more than opening the browser would have. Nothing here is a rule — weigh it yourself; these are the trade-offs to weigh.
+**Lean toward the browser** whenever the task names a specific site, needs a logged-in or paid-for page, needs interaction, or spans more than a page or two. Nothing here is a rule — weigh it yourself.
+
+## Picking an engine
+
+The user sets which engines are on and their order in Settings → Services → Web Search. Omitting `engine` follows that order, and that is the right call most of the time. Pass `engine` when the query plays to one engine's strengths:
+
+| engine | excels at | watch out for |
+|---|---|---|
+| `brave` | broad general index; English-language and Western news, products, docs | paid per query beyond the free tier; plain snippets only |
+| `deepseek` | query operators (`site:`, `-site:`, `"exact"`, `-term`, `lang:`, `after:`, `before:`); a publication `date`, an `authority` tier (0–4, 3+ is highly authoritative) and a relevance `score` (1.5+ is good) per result; a long `summary` written for you to read; `includeContent: true` returns page text so you often skip a fetch; strong on Chinese and other Asian sources | paid per search; queries are capped at 128 characters; stacking several operators can come back empty — drop one and retry |
+| `duckduckgo` | free, needs no key | scraped, so slow (throttled to one query per 10s) and easily rate-limited; plain snippets only |
+
+- If the engine you asked for is off or fails, the call still answers from the next engine in the user's order. The result's `engine` says which one did; `notes` says why your pick was skipped and `fallback` lists engines that failed first. Don't retry an engine the notes say is not set up.
+- For time-sensitive questions, `deepseek` with `after:` (or reading each result's `date`) beats guessing freshness from snippets.
+- When you'd fetch the top hits anyway, `engine: "deepseek"` with `includeContent: true` is one paid call instead of a search plus several fetches.
 
 ## When to use web_search
 
@@ -170,17 +154,6 @@ Use `web_search` when the user:
 - Wants to look something up, find a link, or research a topic
 - Asks about something you don't have reliable knowledge about
 - Needs live data (prices, weather, scores, stock info)
-
-## When to use web_fetch
-
-Use `web_fetch` after `web_search` when:
-- The snippets from search results aren't enough to fully answer the question
-- You need to read an article, documentation page, or reference in detail
-- The user explicitly asks you to read or visit a specific URL
-
-Fetch the most relevant 1–2 URLs, not all of them. Never fetch more than 3 pages in one conversation turn.
-
-**Read what comes back before trusting it.** A page that returns a few hundred characters, a cookie banner, "enable JavaScript", a login form, or a subscribe wall did not actually load — it just failed quietly with a 200. Don't re-fetch it and don't answer from the fragment: that page is a job for the browser extension, which renders it as the user's own browser would. The same goes for any site you already know is JS-rendered or gated.
 
 ## When NOT to search
 
@@ -206,4 +179,4 @@ Do not search when the user is:
 
 ## Rate limiting
 
-If searches start failing, tell the user the search provider is temporarily unavailable and answer from your existing knowledge instead. Don't retry the same query more than twice.
+If every engine fails, tell the user search is temporarily unavailable and answer from your existing knowledge instead. Don't retry the same query more than twice.

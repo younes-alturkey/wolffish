@@ -396,6 +396,13 @@ export async function buildConfigSnapshot(sources: SnapshotSources): Promise<Con
       // The credential itself, not a mask: the phone's field EDITS it, and
       // both devices are the same person's — the tunnel is end-to-end sealed.
       braveApiKey: str(config.brave?.apiKey),
+      // DeepSeek Search & Fetch: its own key (not the DeepSeek model key),
+      // shared by web_search and web_fetch, each with its own switch.
+      deepseekSearchApiKey: str(config.deepseekSearch?.apiKey),
+      deepseekSearchEnabled: bool(config.deepseekSearch?.searchEnabled),
+      deepseekFetchEnabled: bool(config.deepseekSearch?.fetchEnabled),
+      // Absent-means-on, matching getWebToolsConfig.
+      duckduckgoEnabled: config.webTools?.duckduckgoEnabled !== false,
       // Video generation (MiniMax H3): same shape as Brave — an enabled flag
       // (the capability isn't switched off) plus the editable credential.
       // Deliberately NOT the MiniMax chat provider's key (see VideoConfig).
