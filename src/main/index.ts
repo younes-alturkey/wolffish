@@ -157,6 +157,11 @@ import {
   type ProjectFileRef
 } from '@main/projects'
 import {
+  forgetRecentConversation,
+  listRecentConversations,
+  markConversationOpened
+} from '@main/recent-conversations'
+import {
   defaultModelsFolder,
   detect as detectOllama,
   enrichWithDetails,
@@ -1060,6 +1065,11 @@ agent.corpus.on('conversation.deleted', ({ id }) => {
   // A deleted transcript has nowhere to re-home a parked message into, and
   // resurrecting the conversation to deliver one would be worse than the loss.
   void forgetConversationPark(id).catch(() => undefined)
+  void forgetRecentConversation(id)
+    .then(({ ids, changed }) => {
+      if (changed) broadcast('conversation:recentChanged', ids)
+    })
+    .catch(() => undefined)
 })
 // Relay conversation (re)index/remove so the rail + History refresh for every
 // create/rename/delete path — including the ones that emit no turn lifecycle
@@ -2974,6 +2984,7 @@ const MOBILE_CONFIG_SILENT = new Set([
   'conversation:changed',
   'conversation:deleted',
   'conversation:messageMirror',
+  'conversation:recentChanged',
   'conversation:summaryUpdated',
   'diagnostics:progress',
   'heartbeat:jobLog',
@@ -6206,6 +6217,12 @@ app.whenReady().then(async () => {
       queueConversationSummarization(conv.id)
       return { ok: true as const }
     })
+  })
+  handle('conversation:recent', (): Promise<string[]> => listRecentConversations())
+  handle('conversation:opened', async (_e, id: string): Promise<string[]> => {
+    const { ids, changed } = await markConversationOpened(String(id))
+    if (changed) broadcast('conversation:recentChanged', ids)
+    return ids
   })
   handle('conversation:delete', async (_e, id: string): Promise<{ ok: boolean }> => {
     // Deleting a conversation whose turn is still running would race the

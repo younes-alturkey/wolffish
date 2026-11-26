@@ -1,6 +1,7 @@
 import { ChannelIcon } from '@components/common/channel-icon/ChannelIcon'
 import { hasChannelIcon } from '@components/common/channel-icon/hasChannelIcon'
 import { UnreadBadge } from '@components/core/UnreadBadge'
+import { useRecentConversations } from '@hooks/use-recent-conversations/useRecentConversations'
 import {
   unreadFor,
   unreadTotal,
@@ -11,8 +12,10 @@ import { settleConversationDeletes, usePendingConversationDeletes } from '@lib/c
 import { mapConversationMessages } from '@lib/conversation-open'
 import {
   buildConversationRows,
+  conversationSearchKeywords,
   filterConversationRows,
   groupConversationRows,
+  recentlyOpenedRows,
   runPhaseKey,
   type ConversationRow
 } from '@lib/conversation-rows'
@@ -181,6 +184,17 @@ export function ConversationsSheet({ onClose }: { onClose: () => void }): React.
   )
   const groups = useMemo(() => groupConversationRows(windowed), [windowed])
   const hasMore = visible.length > windowed.length
+
+  // Pinned above the date groups, and hidden while searching: a search is
+  // looking for something specific, and the section would only push the
+  // matches down. Positions come from `visible` (the whole list, not the
+  // window), so each pinned row's chip shows the same number as its twin.
+  const recentIds = useRecentConversations()
+  const searching = conversationSearchKeywords(query).length > 0
+  const recent = useMemo(
+    () => (searching ? [] : recentlyOpenedRows(visible, recentIds)),
+    [searching, visible, recentIds]
+  )
 
   // Grow the window as the sentinel nears the viewport. The observer re-fires
   // after each growth relayouts the sentinel, so a tall screen keeps growing
@@ -360,81 +374,44 @@ export function ConversationsSheet({ onClose }: { onClose: () => void }): React.
               {rows.length === 0 ? t('history.empty') : t('history.searchEmpty')}
             </p>
           ) : (
-            <nav className="flex w-full flex-col gap-0.5">
+            // pt-2: a row's text sits inside its own py-1.5, the search box's
+            // border does not, so the first header needs this to sit as far
+            // below the search as every other header sits below its row.
+            <nav className="flex w-full flex-col gap-0.5 pt-2">
+              {recent.length > 0 && (
+                <div className="flex w-full flex-col gap-0.5">
+                  <span className="text-muted truncate px-1.5 pt-2 text-[10px] font-medium tracking-wide uppercase">
+                    {t('history.recentlyOpened')}
+                  </span>
+                  {recent.map(({ row, position }) => (
+                    <SheetConversationRow
+                      key={row.conversationId}
+                      row={row}
+                      position={position}
+                      isActive={row.conversationId === activeConversationId}
+                      unread={unreadFor(notifications, row.conversationId)}
+                      onOpen={openRow}
+                    />
+                  ))}
+                </div>
+              )}
               {groups.map((group) => (
                 <div key={group.key} className="flex w-full flex-col gap-0.5">
                   <span className="text-muted truncate px-1.5 pt-2 text-[10px] font-medium tracking-wide uppercase">
                     {t(group.labelKey)}
                   </span>
-                  {group.rows.map((row, i) => {
+                  {group.rows.map((row, i) => (
                     // Rank in the WHOLE list — the chip keeps counting past the
                     // group headers rather than restarting at 1 under each.
-                    const position = group.startIndex + i
-                    const isActive = row.conversationId === activeConversationId
-                    return (
-                      <button
-                        key={row.conversationId}
-                        type="button"
-                        onClick={() => void openRow(row.conversationId)}
-                        title={row.title}
-                        aria-label={row.title}
-                        className={cn(
-                          // `group` lets the chip react to hovering anywhere on
-                          // the row. One border ternary (never transparent +
-                          // colored at once) because `cn` is a plain join, not
-                          // tailwind-merge; both states reserve the 1px so
-                          // selection never reflows the list.
-                          'group text-muted flex w-full cursor-pointer items-center gap-2 rounded-lg px-1.5 py-1.5 text-start',
-                          'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
-                          isActive
-                            ? 'bg-surface border-border border'
-                            : 'hover:bg-surface border border-transparent'
-                        )}
-                      >
-                        <span className="relative inline-flex shrink-0">
-                          <span
-                            aria-hidden
-                            className={cn(
-                              CONVERSATION_CHIP_BASE,
-                              conversationChipClasses(row.phase, isActive)
-                            )}
-                          >
-                            {position}
-                          </span>
-                          {/* Origin badge: where this conversation came from
-                              (channel / automation / procedure), floated off
-                              the chip's bottom-end corner, direction-logical. */}
-                          {row.icon ? (
-                            <span
-                              aria-hidden
-                              className="absolute -inset-e-1 -bottom-1.5 flex h-3.5 w-3.5 items-center justify-center text-[9px] leading-none"
-                            >
-                              {row.icon}
-                            </span>
-                          ) : (
-                            hasChannelIcon(row.channel) && (
-                              <span className="absolute -inset-e-1 -bottom-1.5 flex h-3.5 w-3.5 items-center justify-center">
-                                <ChannelIcon
-                                  channel={row.channel}
-                                  size={9}
-                                  className="text-muted"
-                                />
-                              </span>
-                            )
-                          )}
-                        </span>
-                        <span
-                          className={cn(
-                            'group-hover:text-fg min-w-0 flex-1 truncate text-xs whitespace-nowrap',
-                            isActive && 'text-fg'
-                          )}
-                        >
-                          {row.title}
-                        </span>
-                        <UnreadBadge count={unreadFor(notifications, row.conversationId)} />
-                      </button>
-                    )
-                  })}
+                    <SheetConversationRow
+                      key={row.conversationId}
+                      row={row}
+                      position={group.startIndex + i}
+                      isActive={row.conversationId === activeConversationId}
+                      unread={unreadFor(notifications, row.conversationId)}
+                      onOpen={openRow}
+                    />
+                  ))}
                 </div>
               ))}
             </nav>
@@ -443,5 +420,72 @@ export function ConversationsSheet({ onClose }: { onClose: () => void }): React.
         </div>
       </aside>
     </div>
+  )
+}
+
+function SheetConversationRow({
+  row,
+  position,
+  isActive,
+  unread,
+  onOpen
+}: {
+  row: ConversationRow
+  position: number
+  isActive: boolean
+  unread: number
+  onOpen: (conversationId: string) => void | Promise<void>
+}): React.JSX.Element {
+  return (
+    <button
+      type="button"
+      onClick={() => void onOpen(row.conversationId)}
+      title={row.title}
+      aria-label={row.title}
+      className={cn(
+        // `group` lets the chip react to hovering anywhere on the row. One
+        // border ternary (never transparent + colored at once) because `cn` is
+        // a plain join, not tailwind-merge; both states reserve the 1px so
+        // selection never reflows the list.
+        'group text-muted flex w-full cursor-pointer items-center gap-2 rounded-lg px-1.5 py-1.5 text-start',
+        'focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
+        isActive ? 'bg-surface border-border border' : 'hover:bg-surface border border-transparent'
+      )}
+    >
+      <span className="relative inline-flex shrink-0">
+        <span
+          aria-hidden
+          className={cn(CONVERSATION_CHIP_BASE, conversationChipClasses(row.phase, isActive))}
+        >
+          {position}
+        </span>
+        {/* Origin badge: where this conversation came from (channel /
+            automation / procedure), floated off the chip's bottom-end corner,
+            direction-logical. */}
+        {row.icon ? (
+          <span
+            aria-hidden
+            className="absolute -inset-e-1 -bottom-1.5 flex h-3.5 w-3.5 items-center justify-center text-[9px] leading-none"
+          >
+            {row.icon}
+          </span>
+        ) : (
+          hasChannelIcon(row.channel) && (
+            <span className="absolute -inset-e-1 -bottom-1.5 flex h-3.5 w-3.5 items-center justify-center">
+              <ChannelIcon channel={row.channel} size={9} className="text-muted" />
+            </span>
+          )
+        )}
+      </span>
+      <span
+        className={cn(
+          'group-hover:text-fg min-w-0 flex-1 truncate text-xs whitespace-nowrap',
+          isActive && 'text-fg'
+        )}
+      >
+        {row.title}
+      </span>
+      <UnreadBadge count={unread} />
+    </button>
   )
 }

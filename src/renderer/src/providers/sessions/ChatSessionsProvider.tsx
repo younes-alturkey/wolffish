@@ -1,3 +1,4 @@
+import { recordConversationOpened } from '@hooks/use-recent-conversations/useRecentConversations'
 import { webTransport } from '@lib/web-bridge/boot'
 import type { ConversationFile, Project } from '@preload/index'
 import type { ChatMessage, PendingProcedure } from '@providers/flow/useFlow'
@@ -409,6 +410,13 @@ export function ChatSessionsProvider({ children }: { children: ReactNode }): Rea
     infos.get(activeSessionKey)?.conversationId ??
     sessions.find((s) => s.key === activeSessionKey)?.initialConversationId ??
     null
+
+  // Every way into a conversation (the sheet, History, a notification, a
+  // resumed session, a new chat getting its id) ends with it active, so this is
+  // the one place an "open" is recorded for the Recently opened section.
+  useEffect(() => {
+    if (activeConversationId) recordConversationOpened(activeConversationId)
+  }, [activeConversationId])
 
   const value = useMemo<ChatSessionsValue>(
     () => ({

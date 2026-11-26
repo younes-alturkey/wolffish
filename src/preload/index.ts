@@ -1303,6 +1303,12 @@ export type ConversationApi = {
   /** ok:false ⇒ refused (conversation has a turn in flight). */
   delete: (id: string) => Promise<{ ok: boolean }>
   create: (model: string | null) => Promise<ConversationFile>
+  /** Conversation ids most recently opened on any surface, newest first. */
+  recent: () => Promise<string[]>
+  /** Record that this surface just opened `id`; resolves to the updated list. */
+  markOpened: (id: string) => Promise<string[]>
+  /** Fired with the new list whenever any surface opens or deletes a conversation. */
+  onRecentChanged: (listener: (ids: string[]) => void) => () => void
   /**
    * Fired when the main-side rolling summarizer persisted a new prefix
    * summary. The renderer folds it into its in-memory conversation so the

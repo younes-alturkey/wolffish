@@ -3316,6 +3316,7 @@
     "processing": "قيد المعالجة…",
     "diagnosticsPending": "لم تُفهرَس بعد — أعد المحاولة بعد لحظات",
     "searchPlaceholder": "ابحث في المحادثات بالعنوان",
+    "recentlyOpened": "المفتوحة مؤخراً",
     "searchEmpty": "لا توجد محادثات تطابق هذا البحث.",
     "groups": {
       "today": "اليوم",

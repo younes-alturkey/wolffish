@@ -3,6 +3,7 @@ import { DiagnosticExportOverlay } from '@components/common/diagnostic-export-ov
 import { Button } from '@components/core/Button'
 import { Modal } from '@components/core/Modal'
 import { useToast } from '@components/core/toast/useToast'
+import { useRecentConversations } from '@hooks/use-recent-conversations/useRecentConversations'
 import { CONVERSATION_CHIP_BASE, conversationChipClasses } from '@lib/conversation-chip'
 import {
   requestConversationDelete,
@@ -11,8 +12,10 @@ import {
 } from '@lib/conversation-delete'
 import {
   buildConversationRows,
+  conversationSearchKeywords,
   filterConversationRows,
   groupConversationRows,
+  recentlyOpenedRows,
   runPhaseKey,
   type ConversationRow
 } from '@lib/conversation-rows'
@@ -159,6 +162,16 @@ export function History(): React.JSX.Element {
   // which is a question about the visible list.
   const groups = useMemo(() => groupConversationRows(visible), [visible])
 
+  // Pinned above the date groups and hidden while searching, as in the sheet.
+  // Positions are each row's place in `visible`, so a pinned row's chip shows
+  // the same number as its twin in the groups below.
+  const recentIds = useRecentConversations()
+  const searching = conversationSearchKeywords(query).length > 0
+  const recent = useMemo(
+    () => (searching ? [] : recentlyOpenedRows(visible, recentIds)),
+    [searching, visible, recentIds]
+  )
+
   const handleResume = useCallback(
     async (id: string) => {
       // A still-processing in-app conversation has no file on disk yet, so
@@ -299,8 +312,32 @@ export function History(): React.JSX.Element {
                end-side padding — the last row ends flush against the window
                edge. Padding on the overflowing content itself survives (a
                margin does not). The scroller keeps its pb-6 for short lists
-               that never overflow. */
-            <div className="flex flex-col gap-5 pb-8">
+               that never overflow. pt-4 for the same reason at the top: a row's
+               text sits inside its own py-3 and the search box's border does
+               not, so the first header needs it to sit as far below the search
+               as every other header sits below its row. */
+            <div className="flex flex-col gap-5 pt-4 pb-8">
+              {recent.length > 0 && (
+                <section className="flex flex-col gap-1.5">
+                  <h2 className="text-muted px-4 text-[11px] font-medium tracking-wide uppercase max-sm:px-2.5">
+                    {t('history.recentlyOpened')}
+                  </h2>
+                  <div className="grid grid-cols-1 gap-x-3 gap-y-1 md:grid-cols-2">
+                    {recent.map(({ row, position }) => (
+                      <HistoryRow
+                        key={row.conversationId}
+                        row={row}
+                        position={position}
+                        isActive={activeConversationId === row.conversationId}
+                        locale={locale}
+                        onResume={handleResume}
+                        onDiagnostics={setDiagnosticsTarget}
+                        onDelete={setDeleteTarget}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
               {groups.map((group) => (
                 <section key={group.key} className="flex flex-col gap-1.5">
                   {/* The header sits at the row padding's inset so it lines up
@@ -309,142 +346,20 @@ export function History(): React.JSX.Element {
                     {t(group.labelKey)}
                   </h2>
                   <div className="grid grid-cols-1 gap-x-3 gap-y-1 md:grid-cols-2">
-                    {group.rows.map((row, i) => {
+                    {group.rows.map((row, i) => (
                       // Rank in the WHOLE list, not in this group — the chip
                       // number has to keep counting across the headers.
-                      const position = group.startIndex + i
-                      const isActive = activeConversationId === row.conversationId
-                      const processing = row.phase === 'processing'
-                      const title = row.title
-                      const sourceIcon = row.icon
-                      const diagnosticsDisabled = !row.indexed
-                      // Visibility and the disabled dim are ONE decision, not two
-                      // opacity utilities stacked in the class list: `cn` is plain
-                      // clsx, so a second `opacity-*` would be settled by stylesheet
-                      // order rather than by the order written here. The row that is
-                      // currently open keeps its actions on screen — it is already
-                      // pinned with its own surface, so the controls read as part of
-                      // that row instead of as hover chrome; every other row reveals
-                      // them on hover.
-                      const actionVisibility = (disabled: boolean): string =>
-                        disabled
-                          ? isActive
-                            ? 'opacity-40'
-                            : 'opacity-0 group-hover:opacity-40 max-sm:opacity-40'
-                          : isActive
-                            ? 'opacity-100'
-                            : 'opacity-0 group-hover:opacity-100 max-sm:opacity-100'
-                      return (
-                        <div
-                          key={row.conversationId}
-                          className={cn(
-                            'group flex items-center gap-3 rounded-xl px-4 py-3 max-sm:gap-2 max-sm:px-2.5',
-                            'hover:bg-surface cursor-pointer',
-                            isActive && 'bg-surface border-border border'
-                          )}
-                          onClick={() => handleResume(row.conversationId)}
-                          role="button"
-                          tabIndex={0}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') void handleResume(row.conversationId)
-                          }}
-                        >
-                          <span
-                            aria-hidden
-                            className={cn(
-                              CONVERSATION_CHIP_BASE,
-                              conversationChipClasses(row.phase, isActive)
-                            )}
-                          >
-                            {position}
-                          </span>
-                          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                            <div className="flex min-w-0 items-center gap-1.5">
-                              <span className="text-fg truncate text-sm font-medium">{title}</span>
-                              {sourceIcon ? (
-                                <span aria-hidden className="shrink-0 text-xs leading-none">
-                                  {sourceIcon}
-                                </span>
-                              ) : (
-                                <ChannelIcon
-                                  channel={row.channel}
-                                  size={12}
-                                  className="text-muted shrink-0"
-                                />
-                              )}
-                            </div>
-                            <span className="text-muted text-xs">
-                              {relativeTime(row.updatedAt, locale)}
-                            </span>
-                          </div>
-                          {/* Row actions as one cluster — the row's own gap-3
-                              would read as two unrelated controls, not a pair. */}
-                          <div className="flex shrink-0 items-center gap-0.5">
-                            {/* Diagnostic export — this is the ONLY export
-                                button in the app now (the chat composer used to
-                                carry a second one), so it stays live for the
-                                open conversation too. The collector reads the
-                                conversation off DISK, and an in-app transcript
-                                only lands there at turn boundaries, so pressing
-                                this mid-turn bundles a transcript ending at the
-                                previous turn — the corpus logs still cover the
-                                live turn, which is what a run that has gone
-                                wrong is usually read from. Background runs were
-                                always exportable on exactly that reasoning; the
-                                open conversation is no different. Off only
-                                while the row is live-only (`!indexed`): that
-                                conversation isn't in the index — for an in-app
-                                first turn it isn't even on disk yet — so there
-                                is nothing to collect until the index catches
-                                up. */}
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                if (!diagnosticsDisabled) setDiagnosticsTarget(row.conversationId)
-                              }}
-                              disabled={diagnosticsDisabled}
-                              aria-label={t('diagnostics.button')}
-                              title={
-                                diagnosticsDisabled
-                                  ? t('history.diagnosticsPending')
-                                  : t('diagnostics.button')
-                              }
-                              className={cn(
-                                'text-muted rounded-lg p-1.5',
-                                actionVisibility(diagnosticsDisabled),
-                                diagnosticsDisabled
-                                  ? 'cursor-not-allowed'
-                                  : 'cursor-pointer hover:text-fg',
-                                'focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-accent'
-                              )}
-                            >
-                              <Bug01Icon size={14} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                if (!processing) setDeleteTarget(row)
-                              }}
-                              disabled={processing}
-                              aria-label={t('history.delete')}
-                              title={processing ? t('history.processing') : undefined}
-                              className={cn(
-                                'text-muted rounded-lg p-1.5',
-                                actionVisibility(processing),
-                                processing
-                                  ? 'cursor-not-allowed'
-                                  : 'cursor-pointer hover:text-red-600 dark:hover:text-red-400',
-                                'focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-accent'
-                              )}
-                            >
-                              <Delete01Icon size={14} />
-                            </button>
-                          </div>
-                        </div>
-                      )
-                    })}
+                      <HistoryRow
+                        key={row.conversationId}
+                        row={row}
+                        position={group.startIndex + i}
+                        isActive={activeConversationId === row.conversationId}
+                        locale={locale}
+                        onResume={handleResume}
+                        onDiagnostics={setDiagnosticsTarget}
+                        onDelete={setDeleteTarget}
+                      />
+                    ))}
                   </div>
                 </section>
               ))}
@@ -491,6 +406,140 @@ export function History(): React.JSX.Element {
         />
       )}
     </main>
+  )
+}
+
+function HistoryRow({
+  row,
+  position,
+  isActive,
+  locale,
+  onResume,
+  onDiagnostics,
+  onDelete
+}: {
+  row: ConversationRow
+  position: number
+  isActive: boolean
+  locale: string
+  onResume: (conversationId: string) => void | Promise<void>
+  onDiagnostics: (conversationId: string) => void
+  onDelete: (row: ConversationRow) => void
+}): React.JSX.Element {
+  const { t } = useTranslation()
+  const processing = row.phase === 'processing'
+  const title = row.title
+  const sourceIcon = row.icon
+  const diagnosticsDisabled = !row.indexed
+  // Visibility and the disabled dim are ONE decision, not two
+  // opacity utilities stacked in the class list: `cn` is plain
+  // clsx, so a second `opacity-*` would be settled by stylesheet
+  // order rather than by the order written here. The row that is
+  // currently open keeps its actions on screen — it is already
+  // pinned with its own surface, so the controls read as part of
+  // that row instead of as hover chrome; every other row reveals
+  // them on hover.
+  const actionVisibility = (disabled: boolean): string =>
+    disabled
+      ? isActive
+        ? 'opacity-40'
+        : 'opacity-0 group-hover:opacity-40 max-sm:opacity-40'
+      : isActive
+        ? 'opacity-100'
+        : 'opacity-0 group-hover:opacity-100 max-sm:opacity-100'
+  return (
+    <div
+      className={cn(
+        'group flex items-center gap-3 rounded-xl px-4 py-3 max-sm:gap-2 max-sm:px-2.5',
+        'hover:bg-surface cursor-pointer',
+        isActive && 'bg-surface border-border border'
+      )}
+      onClick={() => void onResume(row.conversationId)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') void onResume(row.conversationId)
+      }}
+    >
+      <span
+        aria-hidden
+        className={cn(CONVERSATION_CHIP_BASE, conversationChipClasses(row.phase, isActive))}
+      >
+        {position}
+      </span>
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className="text-fg truncate text-sm font-medium">{title}</span>
+          {sourceIcon ? (
+            <span aria-hidden className="shrink-0 text-xs leading-none">
+              {sourceIcon}
+            </span>
+          ) : (
+            <ChannelIcon channel={row.channel} size={12} className="text-muted shrink-0" />
+          )}
+        </div>
+        <span className="text-muted text-xs">{relativeTime(row.updatedAt, locale)}</span>
+      </div>
+      {/* Row actions as one cluster — the row's own gap-3
+          would read as two unrelated controls, not a pair. */}
+      <div className="flex shrink-0 items-center gap-0.5">
+        {/* Diagnostic export — this is the ONLY export
+            button in the app now (the chat composer used to
+            carry a second one), so it stays live for the
+            open conversation too. The collector reads the
+            conversation off DISK, and an in-app transcript
+            only lands there at turn boundaries, so pressing
+            this mid-turn bundles a transcript ending at the
+            previous turn — the corpus logs still cover the
+            live turn, which is what a run that has gone
+            wrong is usually read from. Background runs were
+            always exportable on exactly that reasoning; the
+            open conversation is no different. Off only
+            while the row is live-only (`!indexed`): that
+            conversation isn't in the index — for an in-app
+            first turn it isn't even on disk yet — so there
+            is nothing to collect until the index catches
+            up. */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            if (!diagnosticsDisabled) onDiagnostics(row.conversationId)
+          }}
+          disabled={diagnosticsDisabled}
+          aria-label={t('diagnostics.button')}
+          title={diagnosticsDisabled ? t('history.diagnosticsPending') : t('diagnostics.button')}
+          className={cn(
+            'text-muted rounded-lg p-1.5',
+            actionVisibility(diagnosticsDisabled),
+            diagnosticsDisabled ? 'cursor-not-allowed' : 'cursor-pointer hover:text-fg',
+            'focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-accent'
+          )}
+        >
+          <Bug01Icon size={14} />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            if (!processing) onDelete(row)
+          }}
+          disabled={processing}
+          aria-label={t('history.delete')}
+          title={processing ? t('history.processing') : undefined}
+          className={cn(
+            'text-muted rounded-lg p-1.5',
+            actionVisibility(processing),
+            processing
+              ? 'cursor-not-allowed'
+              : 'cursor-pointer hover:text-red-600 dark:hover:text-red-400',
+            'focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-accent'
+          )}
+        >
+          <Delete01Icon size={14} />
+        </button>
+      </div>
+    </div>
   )
 }
 

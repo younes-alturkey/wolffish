@@ -242,6 +242,37 @@ export function groupConversationRows<T extends { at: number } = ConversationRow
   return groups
 }
 
+/** How many conversations the Recently opened section pins above the list. */
+export const RECENTLY_OPENED_SHOWN = 3
+
+export type RecentlyOpenedRow<T> = {
+  row: T
+  /** The row's 1-based position in `rows`, so its chip matches its twin below. */
+  position: number
+}
+
+/**
+ * The Recently opened section: the first `count` of `recentIds` (newest open
+ * first) that are in `rows`. Picked from the rows a surface is already listing,
+ * so a deleted conversation, one outside the active project, or one the index
+ * hasn't caught up with simply doesn't take a slot — the next one moves up.
+ * The rows stay in the list below as well; this is a shortcut, not a move.
+ */
+export function recentlyOpenedRows<T extends { conversationId: string }>(
+  rows: readonly T[],
+  recentIds: readonly string[],
+  count: number = RECENTLY_OPENED_SHOWN
+): RecentlyOpenedRow<T>[] {
+  const index = new Map(rows.map((row, i) => [row.conversationId, i]))
+  const out: RecentlyOpenedRow<T>[] = []
+  for (const id of new Set(recentIds)) {
+    if (out.length >= count) break
+    const i = index.get(id)
+    if (i !== undefined) out.push({ row: rows[i], position: i + 1 })
+  }
+  return out
+}
+
 /**
  * A stable key over the live phases, for effects that must refetch the
  * conversation list whenever a turn starts or ends ANYWHERE — that transition
