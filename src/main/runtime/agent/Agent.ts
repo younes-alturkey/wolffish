@@ -3,11 +3,13 @@ import {
   loadConversation,
   mintMessageId,
   saveConversation,
+  updateConversation,
   type ConversationChannel,
   type ConversationFile,
   type ConversationMessage
 } from '@main/conversations'
-import { titleFromMessage } from '@main/conversation-titler'
+import { automationName } from '@main/automations/names'
+import { runTitle, TITLE_DEADLINE_REASON, titleRunOutcome } from '@main/conversation-titler'
 import { diskWriter } from '@main/io/diskWriter'
 import { net } from 'electron'
 import { AsyncLocalStorage } from 'node:async_hooks'
@@ -284,6 +286,13 @@ const AUTONOMOUS_MIRROR_THROTTLE_MS = 500
  * ended abnormally.
  */
 const AUTONOMOUS_PERSIST_THROTTLE_MS = 30_000
+
+/**
+ * How long a finished run waits on its outcome title before announcing it is
+ * done. A provider that slow is retrying, and a run that keeps its plain name
+ * is better than one held open by a label.
+ */
+const RUN_OUTCOME_TITLE_DEADLINE_MS = 12_000
 
 export type AgentOptions = {
   thalamus: Thalamus
@@ -2981,17 +2990,58 @@ export class Agent {
     return kept
   }
 
+  /**
+   * Append what this run reported to its title, so run 40 of an automation
+   * reads differently from run 39. Runs after the final save, so the answer is
+   * already on disk and on screen; the rename is its own write and leaves a
+   * title someone changed in the meantime alone.
+   */
+  private async titleRunByOutcome(
+    conv: ConversationFile,
+    name: string,
+    report: string
+  ): Promise<void> {
+    if (!report.trim()) return
+    const deadline = new AbortController()
+    const timer = setTimeout(
+      () => deadline.abort(TITLE_DEADLINE_REASON),
+      RUN_OUTCOME_TITLE_DEADLINE_MS
+    )
+    timer.unref?.()
+    try {
+      const outcome = await titleRunOutcome(name, report, this.thalamus, deadline.signal)
+      if (!outcome) return
+      const title = runTitle(name, outcome)
+      let applied = false
+      await updateConversation(conv.id, (disk) => {
+        if (!disk || disk.title !== name) return null
+        applied = true
+        return { ...disk, title }
+      })
+      if (applied) conv.title = title
+    } catch {
+      // the run already succeeded; a missing label must never fail it
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+
   async processAutonomous(opts: AutonomousTurnOptions): Promise<AutonomousTurnResult> {
     await this.init().catch(() => undefined)
 
-    // Pure LLM title of the job's instruction (falls back to a plain trim if
-    // the model is unreachable), prefixed with the job label so a scheduled
-    // run reads e.g. "Hourly (15): Summarize unread email".
-    const summary = await titleFromMessage(opts.instruction, this.thalamus).catch(() => 'Untitled')
+    // Titled under the automation's fixed name while it runs; once it has
+    // reported, the outcome is appended (see RUN_TITLE_SEPARATOR). A
+    // procedure's label is the title its user gave it, so it names itself.
+    const name =
+      (await automationName({
+        instruction: opts.instruction,
+        givenName: opts.jobName ?? (opts.channel === 'procedure' ? opts.jobLabel : undefined),
+        llm: this.thalamus
+      }).catch(() => '')) || opts.jobLabel
 
     const conv: ConversationFile = {
       ...createConversation(null),
-      title: summary === 'Untitled' ? opts.jobLabel : `${opts.jobLabel}: ${summary}`,
+      title: name,
       channel: opts.channel ?? 'heartbeat',
       sealed: true,
       ...(opts.projectId ? { projectId: opts.projectId } : {}),
@@ -3349,6 +3399,7 @@ export class Agent {
     const responseText = await persistRun(
       result.stopReason === 'canceled' ? 'end_turn' : result.stopReason
     )
+    if (result.stopReason !== 'canceled') await this.titleRunByOutcome(conv, name, responseText)
     emitLifecycle(result.stopReason === 'canceled' ? 'canceled' : 'done')
 
     return {

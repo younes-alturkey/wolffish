@@ -310,6 +310,138 @@ export async function ensureConversationTitle(
   return title
 }
 
+/**
+ * An automation's run conversations are titled `<name> · <outcome>`.
+ *
+ * Titling every run from its instruction gave every run of one automation the
+ * same title (or worse, a reworded one), because the instruction never
+ * changes — what differs between runs is only known once a run has reported.
+ * So the title is split: a NAME that identifies the automation and stays fixed
+ * from run to run, and an OUTCOME, written from what this run actually said,
+ * that tells it apart from the others. The schedule is not in either: the rail
+ * already badges the row as an automation and groups it under its day.
+ */
+export const RUN_TITLE_SEPARATOR = ' · '
+
+const AUTOMATION_NAME_MAX_CHARS = 40
+const RUN_OUTCOME_MAX_CHARS = 48
+
+/**
+ * The run's answer is read at both ends: an unattended run usually says what
+ * it is picking up first and what it covered last, with tool chatter between.
+ */
+const RUN_REPORT_HEAD_CHARS = 1200
+const RUN_REPORT_TAIL_CHARS = 1800
+
+const AUTOMATION_NAME_SYSTEM =
+  `You name a recurring automation: a saved instruction an assistant runs on a schedule. ` +
+  `The name labels every run of it in a sidebar list of chats, so it has to stay right run after run.\n` +
+  `Read the automation's instruction and write ONE name that:\n` +
+  `- is a short noun phrase for what the automation is, not an instruction ` +
+  `(e.g. "Inbox Triage", "Competitor Watch", "Weekly Retro")\n` +
+  `- names the subject, never the schedule (no "Daily", "Hourly", times or weekdays)\n` +
+  `- is 2 or 3 words, at most ~24 characters\n` +
+  `- uses Title Case, with no surrounding quotes, no trailing punctuation, and no emoji\n` +
+  `- is plain human text: never append tokenizer control tokens (no <| … |> markers)\n` +
+  `Reply with ONLY the name — nothing else.`
+
+const RUN_OUTCOME_SYSTEM =
+  `You label one run of a recurring automation in a sidebar list of chats. ` +
+  `Every run of this automation is already shown under the automation's name; your label goes ` +
+  `after that name and is the only thing that tells this run apart from all the others.\n` +
+  `Read what this run reported and write ONE label that:\n` +
+  `- names what is specific to THIS run: the item it covered, its main finding, or a count ` +
+  `(e.g. "Ch. 12 Volatile Agents", "3 Urgent, 2 Drafted", "Build 412 Failed")\n` +
+  `- never repeats the automation's name and never restates its standing task\n` +
+  `- says so plainly when the run failed or found nothing (e.g. "Failed: Source Missing", "Nothing New")\n` +
+  `- is 2 to 5 words, at most ~36 characters\n` +
+  `- uses Title Case, with no surrounding quotes, no trailing punctuation, and no emoji\n` +
+  `- is plain human text: never append tokenizer control tokens (no <| … |> markers)\n` +
+  `Reply with ONLY the label — nothing else.`
+
+/**
+ * The automation's fixed NAME, from its instruction, by a pure LLM call.
+ * '' when the model can't produce one (unreachable, cancelled, empty reply) —
+ * the caller must not persist anything for '', or one outage would freeze a
+ * degraded name onto every later run.
+ */
+export async function nameAutomation(
+  instruction: string,
+  llm: TitlerLLM,
+  signal?: AbortSignal
+): Promise<string> {
+  const source = titleSource(instruction)
+  if (!source || signal?.aborted) return ''
+  try {
+    const { text } = await runDetached(() =>
+      llm.title(source.slice(0, TITLE_INPUT_MAX_CHARS), AUTOMATION_NAME_SYSTEM, signal)
+    )
+    return cleanShortTitle(text, AUTOMATION_NAME_MAX_CHARS)
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * The name an automation falls back to with no model: its instruction's first
+ * line, cut at a word. Long prompts tend to open with their own heading, and a
+ * first line is never as long as the 80-char slice a chat title degrades to.
+ */
+export function offlineAutomationName(instruction: string): string {
+  const firstLine =
+    instruction
+      .split(/\r?\n/)
+      .map((l) => titleSource(l))
+      .find((l) => l.length > 0) ?? ''
+  return cutAtWord(firstLine.replace(/[.!?,;:]+$/, ''), AUTOMATION_NAME_MAX_CHARS)
+}
+
+/**
+ * The OUTCOME half of a run's title, from the run's own answer. '' when the
+ * model can't produce one or the run said nothing — the run then keeps its
+ * bare name, which is accurate, just not distinctive.
+ */
+export async function titleRunOutcome(
+  automationName: string,
+  report: string,
+  llm: TitlerLLM,
+  signal?: AbortSignal
+): Promise<string> {
+  const text = report.replace(/\s+/g, ' ').trim()
+  if (!text || signal?.aborted) return ''
+  const excerpt =
+    text.length <= RUN_REPORT_HEAD_CHARS + RUN_REPORT_TAIL_CHARS
+      ? text
+      : `${text.slice(0, RUN_REPORT_HEAD_CHARS)} … ${text.slice(-RUN_REPORT_TAIL_CHARS)}`
+  const input = `Automation: ${automationName}\n\nWhat this run reported:\n${excerpt}`
+  try {
+    const { text: raw } = await runDetached(() => llm.title(input, RUN_OUTCOME_SYSTEM, signal))
+    return stripLeadingName(cleanShortTitle(raw, RUN_OUTCOME_MAX_CHARS), automationName)
+  } catch {
+    return ''
+  }
+}
+
+export function runTitle(automationName: string, outcome: string): string {
+  return outcome ? `${automationName}${RUN_TITLE_SEPARATOR}${outcome}` : automationName
+}
+
+/** The model was told not to repeat the name; if it did anyway, drop it rather than show it twice. */
+function stripLeadingName(outcome: string, name: string): string {
+  if (!name || !outcome.toLowerCase().startsWith(name.toLowerCase())) return outcome
+  return outcome
+    .slice(name.length)
+    .replace(/^[\s·:\-–—|]+/, '')
+    .trim()
+}
+
+function cutAtWord(text: string, max: number): string {
+  if (text.length <= max) return text
+  const cut = text.slice(0, max)
+  const space = cut.lastIndexOf(' ')
+  return (space > max / 2 ? cut.slice(0, space) : cut).trim()
+}
+
 /** Strip the model's framing (quotes, "Title:", trailing punctuation, extra lines). */
 function cleanTitle(raw: string): string {
   let t = raw.trim()
@@ -319,6 +451,11 @@ function cleanTitle(raw: string): string {
   t = t.replace(/[.!?,;:]+$/, '').trim()
   if (t.length > TITLE_MAX_CHARS) t = t.slice(0, TITLE_MAX_CHARS).trim()
   return t
+}
+
+/** cleanTitle for the automation name and run outcome: their own framing words, and a word-boundary cap. */
+function cleanShortTitle(raw: string, max: number): string {
+  return cutAtWord(cleanTitle(raw.trim().replace(/^(?:name|label)\s*[:\-–—]\s*/i, '')), max)
 }
 
 /** Plain trimmed slice — the only fallback when the model is unreachable. */

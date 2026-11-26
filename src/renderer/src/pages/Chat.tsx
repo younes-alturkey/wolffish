@@ -1499,6 +1499,10 @@ export function Chat({ sessionKey, visible, descriptor }: ChatProps): React.JSX.
       if (pendingTurnIdRef.current !== null) return
       const conv = await window.api.conversation.load(targetId)
       if (cancelled || !conv || conversationIdRef.current !== targetId) return
+      // A title written elsewhere (an automation's outcome title, a rename on
+      // another surface) must reach the copy this screen saves back, or the
+      // next turn's save would restore the title it loaded with.
+      if (conversationRef.current?.id === targetId) conversationRef.current.title = conv.title
       setMessages((prev) => reconcileFeedWithDisk(prev, conv, isPersistedMessage))
     }
 

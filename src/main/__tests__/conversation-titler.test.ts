@@ -462,6 +462,128 @@ async function run(): Promise<void> {
     }
   }
 
+  // ── automation runs: a fixed name, then an outcome per run ─────────────
+  {
+    const { nameAutomation, offlineAutomationName, titleRunOutcome, runTitle } =
+      await import('@main/conversation-titler')
+    const { automationName } = await import('@main/automations/names')
+
+    const calls: Array<{ input: string; system: string }> = []
+    const reply = (text: string): import('@main/conversation-titler').TitlerLLM => ({
+      title: async (input: string, system: string): Promise<{ text: string }> => {
+        calls.push({ input, system })
+        return { text }
+      }
+    })
+    const down = {
+      title: async (): Promise<{ text: string }> => {
+        throw new Error('unreachable')
+      }
+    }
+
+    const named = await nameAutomation(
+      'Sweep my inbox and flag replies',
+      reply('Name: "Inbox Triage."')
+    )
+    ok('name: framing stripped', named === 'Inbox Triage', named)
+    ok(
+      'name: asks for an automation name, not a chat title',
+      calls.at(-1)?.system.includes('recurring automation') === true
+    )
+    ok('name: unreachable model yields empty', (await nameAutomation('x', down)) === '')
+
+    const miller =
+      "DAILY SWEEP AUTOMATION — MILLER'S ANESTHESIA, 10TH ED.\n\nThis run is unattended: never ask."
+    const offline = offlineAutomationName(miller)
+    ok(
+      'offline name: first line, cut at a word, within 40 chars',
+      offline.startsWith('DAILY SWEEP AUTOMATION') &&
+        offline.length <= 40 &&
+        !offline.endsWith(' '),
+      offline
+    )
+
+    calls.length = 0
+    const report = `START-MARK ${'tool chatter '.repeat(600)} END-MARK covered Ch. 12`
+    const outcome = await titleRunOutcome(
+      'Anesthesia Sweep',
+      report,
+      reply('Anesthesia Sweep · Ch. 12 Volatile Agents.')
+    )
+    ok('outcome: repeated name dropped', outcome === 'Ch. 12 Volatile Agents', outcome)
+    const seen = calls[0]?.input ?? ''
+    ok(
+      'outcome: reads both ends of a long report',
+      seen.includes('START-MARK') && seen.includes('END-MARK') && seen.includes(' … '),
+      seen.slice(0, 80)
+    )
+    ok(
+      'outcome: names the automation to the model',
+      seen.startsWith('Automation: Anesthesia Sweep')
+    )
+    calls.length = 0
+    ok(
+      'outcome: empty report never calls the model',
+      (await titleRunOutcome('A', '  ', reply('x'))) === ''
+    )
+    ok('outcome: no call made for empty report', calls.length === 0)
+    ok(
+      'outcome: unreachable model yields empty',
+      (await titleRunOutcome('A', 'did it', down)) === ''
+    )
+
+    ok(
+      'runTitle: joins name and outcome',
+      runTitle('Inbox Triage', '3 Urgent') === 'Inbox Triage · 3 Urgent'
+    )
+    ok('runTitle: bare name without an outcome', runTitle('Inbox Triage', '') === 'Inbox Triage')
+
+    calls.length = 0
+    const given = await automationName({
+      instruction: 'anything',
+      givenName: 'Morning digest',
+      llm: reply('Ignored')
+    })
+    ok(
+      'cache: a given name wins with no model call',
+      given === 'Morning digest' && calls.length === 0
+    )
+
+    const first = await automationName({
+      instruction: 'Watch competitor pricing pages',
+      llm: reply('Competitor Watch')
+    })
+    const again = await automationName({
+      instruction: '  Watch   competitor pricing\npages ',
+      llm: reply('Rival Tracker')
+    })
+    ok('cache: first run names it', first === 'Competitor Watch', first)
+    ok('cache: later runs keep the same name', again === 'Competitor Watch', again)
+    ok('cache: one model call for both runs', calls.length === 1, String(calls.length))
+
+    const edited = await automationName({
+      instruction: 'Watch competitor hiring pages',
+      llm: reply('Hiring Watch')
+    })
+    ok('cache: a rewritten instruction gets a new name', edited === 'Hiring Watch', edited)
+
+    calls.length = 0
+    const degraded = await automationName({
+      instruction: 'Check the deploy pipeline\nthen notify',
+      llm: down
+    })
+    ok(
+      'cache: model down falls back to the first line',
+      degraded === 'Check the deploy pipeline',
+      degraded
+    )
+    await automationName({
+      instruction: 'Check the deploy pipeline\nthen notify',
+      llm: reply('Deploy Watch')
+    })
+    ok('cache: a fallback name is not remembered', calls.length === 1, String(calls.length))
+  }
+
   await fs.promises.rm(TEST_HOME, { recursive: true, force: true }).catch(() => undefined)
   console.log(`\n${passed} passed, ${failed} failed`)
   process.exit(failed ? 1 : 0)
